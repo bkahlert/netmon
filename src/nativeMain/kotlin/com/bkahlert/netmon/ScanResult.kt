@@ -14,6 +14,7 @@ import kotlinx.serialization.encodeToString
 
 @Serializable
 data class ScanResult(
+    @SerialName("network") val network: Cidr,
     @SerialName("hosts") val hosts: List<Host>,
     @SerialName("timestamp") val timestamp: Long = timestamp(),
 ) {
@@ -28,8 +29,10 @@ data class ScanResult(
     }
 
     fun merge(result: ScanResult): ScanResult {
+        check(network == result.network) { "Networks do not match: $network != ${result.network}" }
         val upSince = hosts.associate { it.ip to it.firstUp }
         return ScanResult(
+            network = network,
             hosts = result.hosts.map { host ->
                 host.copy(
                     firstUp = upSince[host.ip] ?: host.firstUp,
@@ -45,13 +48,13 @@ data class ScanResult(
         }
 
         fun get(
-            privileged: Boolean = true,
+            network: Cidr,
+            privileged: Boolean = Defaults.privileged,
             timingTemplate: TimingTemplate = TimingTemplate.Normal,
-            targets: List<String> = Defaults.targets,
         ): ScanResult = ShellScript(
             """
             nmap \
-                -sn ${targets.joinToString(" ") { "'$it'" }} \
+                -sn '$network' \
                 -T${timingTemplate.value} \
                 -oG -
             """.trimIndent().let { if (privileged) "sudo $it" else it }
@@ -60,7 +63,7 @@ data class ScanResult(
             .filterNot { it.startsWith("#") }
             .map(Host::parse)
             .toList()
-            .let(::ScanResult)
+            .let { ScanResult(network, it) }
 
         fun load(
             file: File = Defaults.resultFile,
