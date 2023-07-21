@@ -1,7 +1,10 @@
 package com.bkahlert.netmon
 
 sealed interface ScanEvent {
-    fun publish() = println(this)
+
+    fun publish() {
+        println(this)
+    }
 
     data class ScanRestoredEvent(val result: ScanResult) : ScanEvent {
         override fun toString(): String = "${this::class.simpleName}(up=${result.hosts.size})"

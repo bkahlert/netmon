@@ -13,10 +13,22 @@ sudo apt-get install -y nmap
 
 Based on a great article by [zone84][kotlin-native-raspberry-1] I was able to get a Kotlin/Native application running on my Raspberry PI.
 
+### Copy SSH key
+
+```shell
+sshpass -p raspberry \
+  ssh-copy-id \
+      -i ~/.ssh/id_rsa20 \
+      -o UserKnownHostsFile=/dev/null \
+      -o StrictHostKeyChecking=no \
+      -o PreferredAuthentications=password \
+      pi@10.0.0.2
+```
+
 ```shell
 ./gradlew linkReleaseExecutableNative
-scp build/bin/native/releaseExecutable/netmon.kexe bkahlert@unicorn-hd.local:/home/bkahlert/
-ssh bkahlert@unicorn-hd.local './netmon.kexe'
+scp build/bin/native/releaseExecutable/netmon.kexe pi@10.0.0.2:/home/pi/
+ssh pi@10.0.0.2 './netmon.kexe'
 ```
 
 ```shell

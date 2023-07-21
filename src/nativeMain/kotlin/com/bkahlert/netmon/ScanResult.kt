@@ -1,12 +1,21 @@
 package com.bkahlert.netmon
 
-import Config
+import Defaults
 import com.bkahlert.exec.ShellScript
-import com.bkahlert.io.readLines
-import com.bkahlert.io.writeFile
+import com.bkahlert.io.File
+import com.bkahlert.io.Logger
+import com.bkahlert.serialization.JsonFormat
+import com.bkahlert.time.timestamp
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.StringFormat
+import kotlinx.serialization.decodeFromString
+import kotlinx.serialization.encodeToString
 
+@Serializable
 data class ScanResult(
-    val hosts: List<Host>,
+    @SerialName("hosts") val hosts: List<Host>,
+    @SerialName("timestamp") val timestamp: Long = timestamp(),
 ) {
     fun diff(result: ScanResult) = sequence {
         val newIps = result.hosts.map { it.ip }
@@ -29,15 +38,6 @@ data class ScanResult(
         )
     }
 
-    override fun toString(): String = hosts.joinToString("\n") { host ->
-        listOf(
-            host.ip,
-            host.name,
-            host.status?.name,
-            host.firstUp,
-        ).joinToString("\t") { it?.toString() ?: "" }
-    }
-
     companion object {
 
         enum class TimingTemplate(val value: Int) {
@@ -46,8 +46,8 @@ data class ScanResult(
 
         fun get(
             privileged: Boolean = true,
-            timingTemplate: TimingTemplate = TimingTemplate.Polite,
-            targets: List<String> = Config.targets,
+            timingTemplate: TimingTemplate = TimingTemplate.Normal,
+            targets: List<String> = Defaults.targets,
         ): ScanResult = ShellScript(
             """
             nmap \
@@ -62,31 +62,20 @@ data class ScanResult(
             .toList()
             .let(::ScanResult)
 
-        fun load(fileName: String = Config.resultFile): ScanResult = kotlin.runCatching {
-            readLines(fileName)
-                .filterNot { it.isBlank() }
-                .filterNot { it.startsWith("#") }
-                .map {
-                    val parts = it.split("\t")
-                        .map { it.takeUnless(String::isBlank) }
-                    Host(
-                        ip = parts.getOrNull(0),
-                        name = parts.getOrNull(1),
-                        status = parts.getOrNull(2)?.let { Status.of(it) },
-                        firstUp = parts.getOrNull(3)?.toLong(),
-                    )
-                }
-                .toList()
-                .let(::ScanResult)
-        }.getOrElse {
-            println("Error loading scan result: $it")
-            ScanResult(emptyList())
+        fun load(
+            file: File = Defaults.resultFile,
+            format: StringFormat = JsonFormat,
+        ): ScanResult? = file.takeIf { it.exists() }?.let {
+            format.decodeFromString<ScanResult>(it.readText())
         }
     }
 
-    fun save(fileName: String = Config.resultFile) = kotlin.runCatching {
-        writeFile(fileName, toString() + "\n")
+    fun save(
+        file: File = Defaults.resultFile,
+        format: StringFormat = JsonFormat,
+    ) = kotlin.runCatching {
+        file.writeText(format.encodeToString(this))
     }.getOrElse {
-        println("Error saving scan result: $it")
+        Logger.error("Error saving scan result: $it")
     }
 }

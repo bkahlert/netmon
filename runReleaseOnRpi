@@ -3,5 +3,5 @@
 ./gradlew runReleaseExecutableNativeRemotely -PnativeTarget=linuxX64
 
 #./gradlew linkReleaseExecutableNative -PnativeTarget=linuxArm32Hfp
-#scp build/bin/native/releaseExecutable/netmon.kexe bkahlert@unicorn-hd.local:/home/bkahlert/ 1>/dev/null
-#ssh bkahlert@unicorn-hd.local './netmon.kexe'
+#scp build/bin/native/releaseExecutable/netmon.kexe pi@10.0.0.2:/home/pi/ 1>/dev/null
+#ssh pi@10.0.0.2 './netmon.kexe'

@@ -1,5 +1,6 @@
 package com.bkahlert.exec
 
+import com.bkahlert.io.Logger
 import com.bkahlert.sequences.splitToLines
 import kotlinx.cinterop.refTo
 import kotlinx.cinterop.toKString
@@ -11,6 +12,7 @@ class ShellScript(
     private val script: String,
 ) {
     fun execute(): Sequence<String> = sequence {
+        Logger.debug("Executing: $script")
         val fp = popen(script, "r") ?: error("Failed to run command")
         try {
             val buffer = ByteArray(4096)

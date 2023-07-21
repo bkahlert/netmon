@@ -65,7 +65,7 @@ val cpTask = tasks.register<Exec>("copyReleaseExecutableNativeToRemote") {
         "scp",
         "-r",
         single.absolutePath,
-        "bkahlert@unicorn-hd.local:/home/bkahlert",
+        "pi@10.0.0.2:/home/pi",
     )
     doLast {
         outputs.files.singleFile.apply {
@@ -79,7 +79,7 @@ tasks.register<Exec>("runReleaseExecutableNativeRemotely") {
     dependsOn(cpTask)
     commandLine = listOf(
         "ssh",
-        "bkahlert@unicorn-hd.local",
+        "pi@10.0.0.2",
         "./" + cpTask.get().outputs.files.singleFile.readText() + "/*.kexe",
     )
 }
