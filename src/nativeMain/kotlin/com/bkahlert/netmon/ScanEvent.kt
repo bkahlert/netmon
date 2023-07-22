@@ -12,10 +12,6 @@ import kotlinx.serialization.json.JsonClassDiscriminator
 @JsonClassDiscriminator("event")
 sealed class ScanEvent {
 
-    fun publish() {
-        println(this)
-    }
-
     @Serializable
     @SerialName("scan-restored")
     data class ScanRestoredEvent(val result: ScanResult) : ScanEvent() {
@@ -35,4 +31,6 @@ sealed class ScanEvent {
     @Serializable
     @SerialName("host-up")
     data class HostUpEvent(val host: Host) : ScanEvent()
+
+    companion object
 }

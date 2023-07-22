@@ -9,8 +9,14 @@ class ScanEventTest {
 
     @Test
     fun to_json() {
-        val event: ScanEvent = ScanEvent.HostDownEvent(Host("10.0.0.1"))
-        JsonFormat.encodeToString(event) shouldEqualJson """
+        JsonFormat.encodeToString(ScanEvent.DOWN) shouldEqualJson ScanEvent.DOWN_STRING
+    }
+}
+
+val ScanEvent.Companion.DOWN: ScanEvent get() = ScanEvent.HostDownEvent(Host("10.0.0.1"))
+val ScanEvent.Companion.DOWN_STRING: String
+    get() =
+        """
             {
               "event": "host-down",
               "host": {
@@ -18,5 +24,3 @@ class ScanEventTest {
               }
             }
         """.trimIndent()
-    }
-}

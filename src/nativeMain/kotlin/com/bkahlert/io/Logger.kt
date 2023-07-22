@@ -1,7 +1,7 @@
 package com.bkahlert.io
 
 data object Logger {
-    private val logLevel = LogLevel.INFO
+    private val logLevel = LogLevel.DEBUG
 
     private fun print(
         logLevel: LogLevel,

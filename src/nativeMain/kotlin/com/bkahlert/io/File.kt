@@ -2,6 +2,8 @@ package com.bkahlert.io
 
 import com.bkahlert.sequences.splitToLines
 import kotlinx.cinterop.ByteVar
+import kotlinx.cinterop.ByteVarOf
+import kotlinx.cinterop.CValues
 import kotlinx.cinterop.MemScope
 import kotlinx.cinterop.allocArray
 import kotlinx.cinterop.convert
@@ -43,8 +45,15 @@ data class File(val path: String) {
     fun writeText(text: String) {
         val file = fopen(path, "w") ?: error("Cannot open output file $path")
         try {
-            val cString = text.cstr
-            fwrite(cString.getPointer(scope = MemScope()), 1.convert(), cString.size.convert(), file)
+            val cString: CValues<ByteVarOf<Byte>> = text.cstr
+            fwrite(
+                __ptr = cString.getPointer(scope = MemScope()),
+                __size = 1.convert(),
+                __nitems = cString.size
+                    .minus(1) // drop trailing NUL
+                    .convert(),
+                __stream = file
+            )
         } finally {
             fclose(file)
         }

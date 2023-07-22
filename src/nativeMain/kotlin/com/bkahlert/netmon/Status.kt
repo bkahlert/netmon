@@ -1,14 +1,18 @@
 package com.bkahlert.netmon
 
+import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.descriptors.PrimitiveKind
+import kotlinx.serialization.descriptors.PrimitiveSerialDescriptor
+import kotlinx.serialization.descriptors.SerialDescriptor
+import kotlinx.serialization.encoding.Decoder
+import kotlinx.serialization.encoding.Encoder
 
-@Serializable
+@Serializable(with = StatusSerializer::class)
 sealed interface Status {
-    @Serializable
+
     data object UP : Status
-    @Serializable
     data object DOWN : Status
-    @Serializable
     data class UNKNOWN(val value: String) : Status
 
     companion object {
@@ -20,8 +24,21 @@ sealed interface Status {
     }
 }
 
-/*
-TODO
-Error saving scan result: kotlinx.serialization.SerializationException: Class 'UP' is not registered for polymorphic serialization in the scope of 'Status'.
-To be registered automatically, class 'UP' has to be '@Serializable', and the base class 'Status' has to be sealed and '@Serializable'.
- */
+object StatusSerializer : KSerializer<Status> {
+    override val descriptor: SerialDescriptor = PrimitiveSerialDescriptor("Status", PrimitiveKind.STRING)
+
+    override fun serialize(encoder: Encoder, value: Status) {
+        when (value) {
+            Status.UP -> encoder.encodeString("up")
+            Status.DOWN -> encoder.encodeString("down")
+            is Status.UNKNOWN -> encoder.encodeString("unknown-${value.value}")
+        }
+    }
+
+    override fun deserialize(decoder: Decoder): Status =
+        when (val string = decoder.decodeString().lowercase()) {
+            "up" -> Status.UP
+            "down" -> Status.DOWN
+            else -> Status.UNKNOWN(string.removePrefix("unknown-"))
+        }
+}

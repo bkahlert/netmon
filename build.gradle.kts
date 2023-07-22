@@ -56,6 +56,7 @@ kotlin {
             languageSettings.optIn("kotlin.RequiresOptIn")
             languageSettings.optIn("kotlin.ExperimentalStdlibApi")
             languageSettings.optIn("kotlin.experimental.ExperimentalNativeApi")
+            languageSettings.optIn("kotlin.io.encoding.ExperimentalEncodingApi")
             languageSettings.optIn("kotlinx.cinterop.ExperimentalForeignApi")
             languageSettings.optIn("kotlinx.serialization.ExperimentalSerializationApi")
         }

@@ -1,9 +1,14 @@
-import com.bkahlert.exec.checkCommand
 import com.bkahlert.io.File
 import com.bkahlert.io.Logger
 import com.bkahlert.netmon.Cidr
+import com.bkahlert.netmon.MqttPublisher
+import com.bkahlert.netmon.NetworkScanner
+import com.bkahlert.netmon.NmapNetworkScanner
+import com.bkahlert.netmon.Publisher
+import com.bkahlert.netmon.ScanEvent
 import com.bkahlert.netmon.ScanEvent.ScanCompletedEvent
 import com.bkahlert.netmon.ScanResult
+import com.bkahlert.serialization.JsonFormat
 import kotlinx.cinterop.staticCFunction
 import platform.posix.SIGINT
 import platform.posix.signal
@@ -24,23 +29,39 @@ fun handler(sig: Int) {
 }
 
 fun main() {
-    checkCommand("nmap")
+
 
     signal(SIGINT, staticCFunction(::handler))
 
     check(Defaults.networks.size <= 1) { "Multiple networks are not supported, yet" }
 
     val network = Defaults.networks.first()
+    val networkScanner: NetworkScanner = NmapNetworkScanner()
+    val scansPublisher: Publisher<ScanEvent> = MqttPublisher(
+        topic = "dt/netmon/home/scans",
+        host = "test.mosquitto.org",
+        port = 1883,
+        stringFormat = JsonFormat,
+        serializer = ScanEvent.serializer(),
+    )
+    val updatesPublisher: Publisher<ScanEvent> = MqttPublisher(
+        topic = "dt/netmon/home/updates",
+        host = "test.mosquitto.org",
+        port = 1883,
+        stringFormat = JsonFormat,
+        serializer = ScanEvent.serializer(),
+    )
+
     var old = ScanResult.load() ?: run {
         Logger.info("Performing a quick initial scan...")
-        ScanResult.get(network = network, timingTemplate = ScanResult.Companion.TimingTemplate.Aggressive)
+        NmapNetworkScanner(timingTemplate = ScanResult.Companion.TimingTemplate.Aggressive).scan(network)
     }
     while (running.value != 0) {
-        val new = ScanResult.get(network = network).also {
-            ScanCompletedEvent(it).publish()
+        val new = networkScanner.scan(network).also {
+            scansPublisher.publish(ScanCompletedEvent(it))
         }
         old.diff(new).forEach { event ->
-            event.publish()
+            updatesPublisher.publish(event)
         }
         old = old.merge(new).also { it.save() }
         sleep(1u)

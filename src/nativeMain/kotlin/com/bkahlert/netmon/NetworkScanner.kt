@@ -2,6 +2,7 @@ package com.bkahlert.netmon
 
 import Defaults
 import com.bkahlert.exec.ShellScript
+import com.bkahlert.exec.checkCommand
 import com.bkahlert.io.File
 import com.bkahlert.io.Logger
 import com.bkahlert.serialization.JsonFormat
@@ -11,6 +12,10 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.StringFormat
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
+
+fun interface NetworkScanner {
+    fun scan(network: Cidr): ScanResult
+}
 
 @Serializable
 data class ScanResult(
@@ -47,29 +52,14 @@ data class ScanResult(
             Paranoid(0), Sneaky(1), Polite(2), Normal(3), Aggressive(4), Insane(5)
         }
 
-        fun get(
-            network: Cidr,
-            privileged: Boolean = Defaults.privileged,
-            timingTemplate: TimingTemplate = TimingTemplate.Normal,
-        ): ScanResult = ShellScript(
-            """
-            nmap \
-                -sn '$network' \
-                -T${timingTemplate.value} \
-                -oG -
-            """.trimIndent().let { if (privileged) "sudo $it" else it }
-        ).execute()
-            .filterNot { it.isBlank() }
-            .filterNot { it.startsWith("#") }
-            .map(Host::parse)
-            .toList()
-            .let { ScanResult(network, it) }
-
         fun load(
             file: File = Defaults.resultFile,
             format: StringFormat = JsonFormat,
-        ): ScanResult? = file.takeIf { it.exists() }?.let {
-            format.decodeFromString<ScanResult>(it.readText())
+        ): ScanResult? = file.takeIf { it.exists() }?.runCatching {
+            format.decodeFromString<ScanResult>(readText())
+        }?.getOrElse { error ->
+            Logger.error("Error loading scan result: $error")
+            null
         }
     }
 
@@ -80,5 +70,38 @@ data class ScanResult(
         file.writeText(format.encodeToString(this))
     }.getOrElse {
         Logger.error("Error saving scan result: $it")
+    }
+}
+
+
+data class NmapNetworkScanner(
+    val privileged: Boolean = Defaults.privileged,
+    val timingTemplate: ScanResult.Companion.TimingTemplate = ScanResult.Companion.TimingTemplate.Normal,
+) : NetworkScanner {
+
+    init {
+        checkCommand("nmap")
+    }
+
+    override fun scan(network: Cidr): ScanResult {
+        Logger.debug("Scanning network $network")
+
+        val cmdline = buildList {
+            if (privileged) add("sudo")
+            add("nmap")
+            add("-sn")
+            add("'$network'")
+            add("-T${timingTemplate.value}")
+            add("-oG")
+            add("-")
+        }
+
+        return ShellScript(cmdline.joinToString(" "))
+            .execute()
+            .filterNot { it.isBlank() }
+            .filterNot { it.startsWith("#") }
+            .map(Host::parse)
+            .toList()
+            .let { ScanResult(network, it) }
     }
 }
