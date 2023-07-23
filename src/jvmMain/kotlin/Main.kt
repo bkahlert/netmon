@@ -7,6 +7,8 @@ import com.bkahlert.netmon.Publisher
 import com.bkahlert.netmon.ScanEvent
 import com.bkahlert.netmon.ScanEvent.ScanCompletedEvent
 import com.bkahlert.netmon.ScanResult
+import com.bkahlert.netmon.load
+import com.bkahlert.netmon.save
 import com.bkahlert.serialization.JsonFormat
 import com.github.ajalt.mordant.animation.progressAnimation
 import com.github.ajalt.mordant.animation.textAnimation
@@ -96,13 +98,13 @@ fun main(args: Array<String>) {
     progress.start()
 
     // Sleep for a few seconds to show the indeterminate state
-    Thread.sleep(5000)
+    Thread.sleep(500)
 
     // Update the progress as the download progresses
     progress.updateTotal(3_000_000_000)
     repeat(20) {
         progress.advance(150_000_000)
-        Thread.sleep(50)
+        Thread.sleep(5)
     }
 
     progress.stop()
@@ -131,7 +133,7 @@ fun main(args: Array<String>) {
 
     var old = ScanResult.load() ?: run {
         Logger.info("Performing a quick initial scan...")
-        NmapNetworkScanner(timingTemplate = ScanResult.Companion.TimingTemplate.Aggressive).scan(network)
+        NmapNetworkScanner(timingTemplate = ScanResult.TimingTemplate.Aggressive).scan(network)
     }
     while (running) {
         val new = networkScanner.scan(network).also {
@@ -146,3 +148,19 @@ fun main(args: Array<String>) {
 
     Logger.info("Stopped")
 }
+
+// TODO: did run the following on ssh 10.0.0.2
+// sudo apt-get update
+// sudo apt-get install libudev-dev libasound2-dev libdbus-1-dev fcitx-libs-dev
+// wget https://www.libsdl.org/release/SDL2-2.28.1.tar.gz
+// tar xvf SDL2-2.28.1.tar.gz
+// cd SDL2-2.28.1
+// export VIDEO_RPI=1
+// ./configure --disable-video-x11 --disable-video-opengl --enable-video-rpi
+// make
+// TODO: continue here; build needed because of missing RPI driver
+// sudo make install
+// pip3 install PySDL2 (not using apt-get; would install sdl2 again)
+// TODO: restart and hope show-image.py displays something
+
+// https://www.libsdl.org/release/SDL2-2.28.1.tar.gz

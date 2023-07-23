@@ -1,17 +1,8 @@
 package com.bkahlert.netmon
 
-import com.bkahlert.exec.ShellScript
-import com.bkahlert.exec.checkCommand
-import com.bkahlert.io.File
-import com.bkahlert.io.Logger
-import com.bkahlert.io.readText
-import com.bkahlert.serialization.JsonFormat
 import com.bkahlert.time.timestamp
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.StringFormat
-import kotlinx.serialization.decodeFromString
-import kotlinx.serialization.encodeToString
 
 fun interface NetworkScanner {
     fun scan(network: Cidr): ScanResult
@@ -46,62 +37,9 @@ data class ScanResult(
         )
     }
 
-    companion object {
+    companion object;
 
-        enum class TimingTemplate(val value: Int) {
-            Paranoid(0), Sneaky(1), Polite(2), Normal(3), Aggressive(4), Insane(5)
-        }
-
-        fun load(
-            file: File = Defaults.resultFile,
-            format: StringFormat = JsonFormat,
-        ): ScanResult? = file.takeIf { it.exists() }?.runCatching {
-            format.decodeFromString<ScanResult>(readText())
-        }?.getOrElse { error ->
-            Logger.error("Error loading scan result: $error")
-            null
-        }
-    }
-
-    fun save(
-        file: File = Defaults.resultFile,
-        format: StringFormat = JsonFormat,
-    ) = kotlin.runCatching {
-        file.writeText(format.encodeToString(this))
-    }.getOrElse {
-        Logger.error("Error saving scan result: $it")
-    }
-}
-
-
-data class NmapNetworkScanner(
-    val privileged: Boolean = Defaults.privileged,
-    val timingTemplate: ScanResult.Companion.TimingTemplate = ScanResult.Companion.TimingTemplate.Normal,
-) : NetworkScanner {
-
-    init {
-        checkCommand("nmap")
-    }
-
-    override fun scan(network: Cidr): ScanResult {
-        Logger.debug("Scanning network $network")
-
-        val cmdline = buildList {
-            if (privileged) add("sudo")
-            add("nmap")
-            add("-sn")
-            add("'$network'")
-            add("-T${timingTemplate.value}")
-            add("-oG")
-            add("-")
-        }
-
-        return ShellScript(cmdline.joinToString(" "))
-            .execute()
-            .filterNot { it.isBlank() }
-            .filterNot { it.startsWith("#") }
-            .map(Host::parse)
-            .toList()
-            .let { ScanResult(network, it) }
+    enum class TimingTemplate(val value: Int) {
+        Paranoid(0), Sneaky(1), Polite(2), Normal(3), Aggressive(4), Insane(5)
     }
 }

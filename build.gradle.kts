@@ -36,6 +36,13 @@ kotlin {
             }
         }
 
+        val jvmMain by getting {
+            dependencies {
+                implementation(platform("com.bkahlert.kommons:kommons-bom:2.8.0"))
+                implementation("com.bkahlert.kommons:kommons-exec") { because("CommandLine, ShellScript") }
+            }
+        }
+
         all {
             languageSettings.optIn("kotlin.RequiresOptIn")
             languageSettings.optIn("kotlin.ExperimentalStdlibApi")
