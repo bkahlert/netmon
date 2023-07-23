@@ -26,9 +26,7 @@ sshpass -p raspberry \
 ```
 
 ```shell
-./gradlew linkReleaseExecutableNative
-scp build/bin/native/releaseExecutable/netmon.kexe pi@10.0.0.2:/home/pi/
-ssh pi@10.0.0.2 './netmon.kexe'
+./gradlew runShadowSsh -Pssh.destination='pi@10.0.0.2'
 ```
 
 ```shell

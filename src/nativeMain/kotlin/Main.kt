@@ -1,6 +1,7 @@
-import com.bkahlert.io.File
+package xxx.xxx
+
 import com.bkahlert.io.Logger
-import com.bkahlert.netmon.Cidr
+import com.bkahlert.netmon.Defaults
 import com.bkahlert.netmon.MqttPublisher
 import com.bkahlert.netmon.NetworkScanner
 import com.bkahlert.netmon.NmapNetworkScanner
@@ -15,12 +16,6 @@ import platform.posix.signal
 import platform.posix.sleep
 import kotlin.concurrent.AtomicInt
 
-data object Defaults {
-    val networks: List<Cidr> = listOf(Cidr("192.168.16.0/24"))
-    val privileged: Boolean = true
-    val resultFile: File = File(".netmon-result.json")
-}
-
 val running = AtomicInt(1)
 
 fun handler(sig: Int) {
@@ -29,7 +24,6 @@ fun handler(sig: Int) {
 }
 
 fun main() {
-
 
     signal(SIGINT, staticCFunction(::handler))
 

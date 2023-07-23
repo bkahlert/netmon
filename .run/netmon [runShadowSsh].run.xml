@@ -1,16 +1,16 @@
 <component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="netmon [runReleaseExecutableNativeRemotely]" type="GradleRunConfiguration" factoryName="Gradle">
+  <configuration default="false" name="netmon [runShadowSsh]" type="GradleRunConfiguration" factoryName="Gradle">
     <ExternalSystemSettings>
       <option name="executionName" />
       <option name="externalProjectPath" value="$PROJECT_DIR$" />
       <option name="externalSystemIdString" value="GRADLE" />
-      <option name="scriptParameters" value="-PnativeTarget=linuxArm32Hfp" />
+      <option name="scriptParameters" value="-Pssh.destination='pi@10.0.0.2'" />
       <option name="taskDescriptions">
         <list />
       </option>
       <option name="taskNames">
         <list>
-          <option value="runReleaseExecutableNativeRemotely" />
+          <option value="runShadowSsh" />
         </list>
       </option>
       <option name="vmOptions" />

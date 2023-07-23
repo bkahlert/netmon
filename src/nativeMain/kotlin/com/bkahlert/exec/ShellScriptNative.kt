@@ -8,10 +8,10 @@ import platform.posix.fgets
 import platform.posix.pclose
 import platform.posix.popen
 
-class ShellScript(
+actual class ShellScript actual constructor(
     private val script: String,
 ) {
-    fun execute(): Sequence<String> = sequence {
+    actual fun execute(): Sequence<String> = sequence {
         Logger.debug("Executing: $script")
         val fp = popen(script, "r") ?: error("Failed to run command")
         try {

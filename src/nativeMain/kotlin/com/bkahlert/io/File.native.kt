@@ -1,6 +1,5 @@
 package com.bkahlert.io
 
-import com.bkahlert.sequences.splitToLines
 import kotlinx.cinterop.ByteVar
 import kotlinx.cinterop.ByteVarOf
 import kotlinx.cinterop.CValues
@@ -17,12 +16,12 @@ import platform.posix.fopen
 import platform.posix.fread
 import platform.posix.fwrite
 
-data class File(val path: String) {
+actual data class File actual constructor(val path: String) {
 
-    fun exists(): Boolean = access(path, F_OK) != -1
+    actual fun exists(): Boolean = access(path, F_OK) != -1
 
-    fun readChunks(
-        bufferLength: Int = 64 * 1024,
+    actual fun readChunks(
+        bufferLength: Int,
     ) = sequence {
         val file = fopen(path, "r") ?: error("Cannot open input file $path")
         try {
@@ -38,21 +37,17 @@ data class File(val path: String) {
         }
     }
 
-    fun readText() = readChunks().joinToString(separator = "")
-
-    fun readLines() = readChunks().splitToLines()
-
-    fun writeText(text: String) {
+    actual fun writeText(text: String) {
         val file = fopen(path, "w") ?: error("Cannot open output file $path")
         try {
             val cString: CValues<ByteVarOf<Byte>> = text.cstr
             fwrite(
-                __ptr = cString.getPointer(scope = MemScope()),
-                __size = 1.convert(),
-                __nitems = cString.size
+                cString.getPointer(scope = MemScope()),
+                1.convert(),
+                cString.size
                     .minus(1) // drop trailing NUL
                     .convert(),
-                __stream = file
+                file
             )
         } finally {
             fclose(file)

@@ -1,10 +1,10 @@
 package com.bkahlert.netmon
 
-import Defaults
 import com.bkahlert.exec.ShellScript
 import com.bkahlert.exec.checkCommand
 import com.bkahlert.io.File
 import com.bkahlert.io.Logger
+import com.bkahlert.io.readText
 import com.bkahlert.serialization.JsonFormat
 import com.bkahlert.time.timestamp
 import kotlinx.serialization.SerialName

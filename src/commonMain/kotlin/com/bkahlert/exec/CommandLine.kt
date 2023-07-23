@@ -1,24 +1,14 @@
 package com.bkahlert.exec
 
 import com.bkahlert.term.bold
-import kotlinx.cinterop.toKString
-import platform.posix.X_OK
-import platform.posix.access
-import platform.posix.getenv
 
-class CommandLine(
-    val command: String,
-    val args: List<String>,
+expect class CommandLine(
+    command: String,
+    args: List<String>,
 ) {
-    constructor(command: String, vararg args: String) : this(command, args.asList())
+    constructor(command: String, vararg args: String)
 
-    fun isOnPath(): Boolean {
-        val path = getenv("PATH")?.toKString()
-        return path?.split(":")?.any { dir ->
-            val filePath = "$dir/$command"
-            access(filePath, X_OK) == 0
-        } ?: false
-    }
+    fun isOnPath(): Boolean
 }
 
 fun checkCommand(
