@@ -116,15 +116,7 @@ fun main(args: Array<String>) {
 
     val network = Defaults.networks.first()
     val networkScanner: NetworkScanner = NmapNetworkScanner()
-    val scansPublisher: Publisher<ScanEvent> = MqttPublisher(
-        topic = "dt/netmon/home/scans",
-        host = "test.mosquitto.org",
-        port = 1883,
-        stringFormat = JsonFormat,
-        serializer = ScanEvent.serializer(),
-    )
-    val updatesPublisher: Publisher<ScanEvent> = MqttPublisher(
-        topic = "dt/netmon/home/updates",
+    val publisher: Publisher<ScanEvent> = MqttPublisher(
         host = "test.mosquitto.org",
         port = 1883,
         stringFormat = JsonFormat,
@@ -137,10 +129,16 @@ fun main(args: Array<String>) {
     }
     while (running) {
         val new = networkScanner.scan(network).also {
-            scansPublisher.publish(ScanCompletedEvent(it))
+            publisher.publish(
+                topic = "dt/netmon/home/scans",
+                event = ScanCompletedEvent(it),
+            )
         }
         old.diff(new).forEach { event ->
-            updatesPublisher.publish(event)
+            publisher.publish(
+                topic = "dt/netmon/home/updates",
+                event = event,
+            )
         }
         old = old.merge(new).also { it.save() }
         Thread.sleep(1000L)

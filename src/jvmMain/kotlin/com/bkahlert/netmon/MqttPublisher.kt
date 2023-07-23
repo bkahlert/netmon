@@ -3,71 +3,51 @@ package com.bkahlert.netmon
 import com.bkahlert.io.Logger
 import com.bkahlert.kommons.exec.CommandLine
 import com.bkahlert.serialization.JsonFormat
+import com.hivemq.client.mqtt.MqttClient
+import com.hivemq.client.mqtt.datatypes.MqttQos
+import com.hivemq.client.mqtt.mqtt5.message.publish.Mqtt5PayloadFormatIndicator
 import kotlinx.serialization.SerializationStrategy
 import kotlinx.serialization.StringFormat
 import kotlinx.serialization.json.Json
-import kotlin.io.path.pathString
+import java.util.UUID
 
 data class MqttPublisher<T>(
-    val topic: String,
-    val host: String? = null,
+    val host: String,
     val port: Int? = null,
     val stringFormat: StringFormat = JsonFormat,
     val serializer: SerializationStrategy<T>,
-    val identifier: String? = CommandLine("hostname").exec().readTextOrThrow().lowercase().substringBefore(".")
+    val identifier: String? = CommandLine("hostname").exec().readTextOrThrow().lowercase().substringBefore("."),
 ) : Publisher<T> {
 
-    val binary = requireCommand(
-        "mqtt", installationCommand = listOf(
-            // macOS: brew install hivemq/mqtt-cli/mqtt-cli
-            "wget https://github.com/hivemq/mqtt-cli/releases/download/v4.17.0/mqtt-cli-4.17.0.deb",
-            "sudo apt install ./mqtt-cli-4.17.0.deb"
-        ).joinToString(separator = " && ")
-    ).pathString
+    private val client = MqttClient.builder()
+        .identifier(identifier ?: UUID.randomUUID().toString())
+        .serverHost(host)
+        .serverPort(port ?: 1883)
+        .useMqttVersion5()
+        .automaticReconnectWithDefaultConfig()
+        .buildAsync()
 
-    override fun publish(event: T): PublicationResult {
+    private val connection by lazy {
+        client.connect()
+    }
+
+    override fun publish(topic: String, event: T) {
         val message = stringFormat.encodeToString(serializer, event)
         val bytes = message.encodeToByteArray()
         Logger.debug("Publishing message (${bytes.size} bytes) to $topic")
 
-        return kotlin.runCatching {
-            CommandLine(binary, buildList {
-                add("pub")
-                add("--topic")
-                add(topic)
-                add("--message")
-                add(message)
-                host?.also {
-                    add("-h")
-                    add(it)
-                }
-                port?.also {
-                    add("-p")
-                    add(it.toString())
-                }
-                add("--payloadFormatIndicator")
-                add("UTF_8")
-                if (stringFormat is Json) {
-                    add("--contentType")
-                    add("application/json")
-                }
-
-                if (identifier != null) {
-                    add("--identifier")
-                    add(identifier)
-                }
-            })
-                .exec()
-                .readLinesOrThrow()
-                .filterNot { it.isBlank() }
-                .forEach { Logger.debug(it) }
-            MqttPublicationSuccess
-        }.getOrElse {
-            Logger.error("Error executing $binary: $it")
-            MqttPublicationFailure(it)
-        }
+        connection
+            .thenCompose {
+                client.publishWith()
+                    .topic(topic)
+                    .qos(MqttQos.AT_LEAST_ONCE)
+                    .payloadFormatIndicator(Mqtt5PayloadFormatIndicator.UTF_8)
+                    .apply { if (stringFormat is Json) contentType("application/json") }
+                    .payload(bytes)
+                    .send()
+            }
+            .handle { _, error ->
+                if (error != null) Logger.error("Error publishing to $topic: $error")
+            }
     }
-
-    data object MqttPublicationSuccess : PublicationResult.Success
-    data class MqttPublicationFailure(val cause: Throwable) : PublicationResult.Failure
 }

@@ -40,6 +40,7 @@ kotlin {
             dependencies {
                 implementation(platform("com.bkahlert.kommons:kommons-bom:2.8.0"))
                 implementation("com.bkahlert.kommons:kommons-exec") { because("CommandLine, ShellScript") }
+                implementation("com.hivemq:hivemq-mqtt-client:1.3.0") { because("publish scans") }
             }
         }
 
