@@ -1,7 +1,7 @@
 package com.bkahlert.netmon
 
-import com.bkahlert.io.Logger
-import com.bkahlert.kommons.exec.CommandLine
+import com.bkahlert.kommons.logging.SLF4J
+import com.bkahlert.kommons.orNull
 import com.bkahlert.serialization.JsonFormat
 import com.hivemq.client.mqtt.MqttClient
 import com.hivemq.client.mqtt.datatypes.MqttQos
@@ -16,8 +16,10 @@ data class MqttPublisher<T>(
     val port: Int? = null,
     val stringFormat: StringFormat = JsonFormat,
     val serializer: SerializationStrategy<T>,
-    val identifier: String? = CommandLine("hostname").exec().readTextOrThrow().lowercase().substringBefore("."),
+    val identifier: String? = null,
 ) : Publisher<T> {
+
+    private val logger by SLF4J
 
     private val client = MqttClient.builder()
         .identifier(identifier ?: UUID.randomUUID().toString())
@@ -25,29 +27,33 @@ data class MqttPublisher<T>(
         .serverPort(port ?: 1883)
         .useMqttVersion5()
         .automaticReconnectWithDefaultConfig()
-        .buildAsync()
+        .buildBlocking()
+        .apply { connect() }
 
-    private val connection by lazy {
-        client.connect()
-    }
-
-    override fun publish(topic: String, event: T) {
+    override fun publish(topic: String, event: T): Boolean {
         val message = stringFormat.encodeToString(serializer, event)
         val bytes = message.encodeToByteArray()
-        Logger.debug("Publishing message (${bytes.size} bytes) to $topic")
+        logger.debug("Publishing message ({} bytes) to {}", bytes.size, topic)
 
-        connection
-            .thenCompose {
-                client.publishWith()
-                    .topic(topic)
-                    .qos(MqttQos.AT_LEAST_ONCE)
-                    .payloadFormatIndicator(Mqtt5PayloadFormatIndicator.UTF_8)
-                    .apply { if (stringFormat is Json) contentType("application/json") }
-                    .payload(bytes)
-                    .send()
+        val result = client
+            .publishWith()
+            .topic(topic)
+            .qos(MqttQos.AT_LEAST_ONCE)
+            .payloadFormatIndicator(Mqtt5PayloadFormatIndicator.UTF_8)
+            .apply { if (stringFormat is Json) contentType("application/json") }
+            .payload(bytes)
+            .send()
+
+        return when (val error = result.error.orNull()) {
+            null -> {
+                logger.debug("Published to {}: {}", topic, result)
+                true
             }
-            .handle { _, error ->
-                if (error != null) Logger.error("Error publishing to $topic: $error")
+
+            else -> {
+                logger.error("Error publishing to {}", topic, error)
+                false
             }
+        }
     }
 }

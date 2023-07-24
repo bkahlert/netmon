@@ -20,6 +20,8 @@ kotlin {
     sourceSets {
         val commonMain by getting {
             dependencies {
+                implementation(platform("com.bkahlert.kommons:kommons-bom:2.8.0"))
+                implementation("com.bkahlert.kommons:kommons-time")
                 implementation("com.github.ajalt.mordant:mordant:2.0.1")
                 implementation(platform("org.jetbrains.kotlinx:kotlinx-serialization-bom:1.5.1"))
                 implementation("org.jetbrains.kotlinx:kotlinx-serialization-core")
@@ -38,18 +40,21 @@ kotlin {
 
         val jvmMain by getting {
             dependencies {
-                implementation(platform("com.bkahlert.kommons:kommons-bom:2.8.0"))
+                implementation("com.bkahlert.kommons:kommons-logging-logback")
                 implementation("com.bkahlert.kommons:kommons-exec") { because("CommandLine, ShellScript") }
                 implementation("com.hivemq:hivemq-mqtt-client:1.3.0") { because("publish scans") }
+            }
+        }
+
+        val jvmTest by getting {
+            dependencies {
             }
         }
 
         all {
             languageSettings.optIn("kotlin.RequiresOptIn")
             languageSettings.optIn("kotlin.ExperimentalStdlibApi")
-            languageSettings.optIn("kotlin.experimental.ExperimentalNativeApi")
             languageSettings.optIn("kotlin.io.encoding.ExperimentalEncodingApi")
-            languageSettings.optIn("kotlinx.cinterop.ExperimentalForeignApi")
             languageSettings.optIn("kotlinx.serialization.ExperimentalSerializationApi")
         }
     }

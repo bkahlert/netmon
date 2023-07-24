@@ -1,6 +1,7 @@
 package com.bkahlert.netmon
 
-import com.bkahlert.time.timestamp
+import com.bkahlert.kommons.logging.SLF4J
+import kotlinx.datetime.Instant
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
@@ -12,28 +13,31 @@ fun interface NetworkScanner {
 data class ScanResult(
     @SerialName("network") val network: Cidr,
     @SerialName("hosts") val hosts: List<Host>,
-    @SerialName("timestamp") val timestamp: Long = timestamp(),
+    @SerialName("timestamp") val timestamp: Instant,
 ) {
-    fun diff(result: ScanResult) = sequence {
-        val newIps = result.hosts.map { it.ip }
-        val removedHosts = hosts.filter { it.ip !in newIps }
+    private val logger by SLF4J
+
+    fun diff(newResult: ScanResult): Sequence<ScanEvent> = sequence {
+        val newIps = newResult.hosts.map { it.ip }
+        val removedHosts = hosts.filter { it.ip !in newIps }.map { it.copy(status = Status.DOWN) }
         removedHosts.forEach { yield(ScanEvent.HostDownEvent(it)) }
 
         val oldIps = hosts.map { it.ip }
-        val addedHosts = result.hosts.filter { it.ip !in oldIps }
+        val addedHosts = newResult.hosts.filter { it.ip !in oldIps }
         addedHosts.forEach { yield(ScanEvent.HostUpEvent(it)) }
     }
 
-    fun merge(result: ScanResult): ScanResult {
-        check(network == result.network) { "Networks do not match: $network != ${result.network}" }
-        val upSince = hosts.associate { it.ip to it.firstUp }
+    fun merge(newResult: ScanResult): ScanResult {
+        check(network == newResult.network) { "Networks do not match: $network != ${newResult.network}" }
+        val firstUps: Map<String?, Instant?> = hosts.associate { it.ip to it.firstUp }
         return ScanResult(
             network = network,
-            hosts = result.hosts.map { host ->
+            hosts = newResult.hosts.map { host ->
                 host.copy(
-                    firstUp = upSince[host.ip] ?: host.firstUp,
+                    firstUp = firstUps[host.ip] ?: host.firstUp,
                 )
-            }
+            },
+            timestamp = newResult.timestamp,
         )
     }
 

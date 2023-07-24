@@ -1,12 +1,16 @@
-import com.bkahlert.io.Logger
+import ch.qos.logback.classic.Logger
+import com.bkahlert.kommons.Program
+import com.bkahlert.kommons.logging.SLF4J
+import com.bkahlert.kommons.logging.logback.Logback
+import com.bkahlert.kommons.logging.logback.StructuredArguments.a
 import com.bkahlert.netmon.Defaults
 import com.bkahlert.netmon.MqttPublisher
 import com.bkahlert.netmon.NetworkScanner
 import com.bkahlert.netmon.NmapNetworkScanner
 import com.bkahlert.netmon.Publisher
 import com.bkahlert.netmon.ScanEvent
-import com.bkahlert.netmon.ScanEvent.ScanCompletedEvent
 import com.bkahlert.netmon.ScanResult
+import com.bkahlert.netmon.ScanResult.TimingTemplate.Aggressive
 import com.bkahlert.netmon.load
 import com.bkahlert.netmon.save
 import com.bkahlert.serialization.JsonFormat
@@ -19,15 +23,13 @@ import com.github.ajalt.mordant.table.Borders
 import com.github.ajalt.mordant.table.table
 import com.github.ajalt.mordant.terminal.Terminal
 import com.github.ajalt.mordant.widgets.Spinner
+import java.util.concurrent.atomic.AtomicBoolean
 
-var running = true
-
-fun handler(sig: Int) {
-    Logger.info("\nSignal $sig received, stopping...")
-    running = false
-}
+val logger = SLF4J.getLogger("netmon")
+var running = AtomicBoolean(true)
 
 fun main(args: Array<String>) {
+    Program.onExit { running.set(false) }
 
     val t = Terminal(AnsiLevel.TRUECOLOR)
     TextColors.entries.forEach { color ->
@@ -71,7 +73,7 @@ fun main(args: Array<String>) {
     }.render(t, 80)
 
     t.println("TextAnimation:")
-    val a = t.textAnimation<Int> { frame ->
+    val textAnim = t.textAnimation<Int> { frame ->
         (1..50).joinToString("") {
             val hue = (frame + it) * 3 % 360
             TextColors.hsv(hue, 1, 1)("━")
@@ -80,7 +82,7 @@ fun main(args: Array<String>) {
 
 //    t.cursor.hide(showOnExit = true)
     repeat(120) {
-        a.update(it)
+        textAnim.update(it)
         Thread.sleep(25)
     }
 
@@ -109,29 +111,38 @@ fun main(args: Array<String>) {
 
     progress.stop()
 
-    // TODO
-//    signal(SIGINT, staticCFunction(::handler))
+    logger.info("Starting netmon: {}", a(*args, key = "args"))
+    val rootLogger: Logger = Logback.rootLogger
+    rootLogger.level = ch.qos.logback.classic.Level.DEBUG
+    (SLF4J.getLogger("com.bkahlert.kommons.exec") as Logger).level = ch.qos.logback.classic.Level.WARN
+
 
     check(Defaults.networks.size <= 1) { "Multiple networks are not supported, yet" }
 
-    val network = Defaults.networks.first()
-    val networkScanner: NetworkScanner = NmapNetworkScanner()
+    val network = Defaults.networks.first().also {
+        logger.info("Networks: $it")
+    }
+    val networkScanner: NetworkScanner = NmapNetworkScanner().also {
+        logger.info("Scanner: $it")
+    }
     val publisher: Publisher<ScanEvent> = MqttPublisher(
         host = "test.mosquitto.org",
         port = 1883,
         stringFormat = JsonFormat,
         serializer = ScanEvent.serializer(),
-    )
+    ).also {
+        logger.info("Publisher: $it")
+    }
 
     var old = ScanResult.load() ?: run {
-        Logger.info("Performing a quick initial scan...")
-        NmapNetworkScanner(timingTemplate = ScanResult.TimingTemplate.Aggressive).scan(network)
+        logger.info("Performing initial scan...")
+        NmapNetworkScanner(timingTemplate = Aggressive).scan(network)
     }
-    while (running) {
+    while (running.get()) {
         val new = networkScanner.scan(network).also {
             publisher.publish(
                 topic = "dt/netmon/home/scans",
-                event = ScanCompletedEvent(it),
+                event = ScanEvent.ScanCompletedEvent(it),
             )
         }
         old.diff(new).forEach { event ->
@@ -144,21 +155,5 @@ fun main(args: Array<String>) {
         Thread.sleep(1000L)
     }
 
-    Logger.info("Stopped")
+    logger.info("Stopped")
 }
-
-// TODO: did run the following on ssh 10.0.0.2
-// sudo apt-get update
-// sudo apt-get install libudev-dev libasound2-dev libdbus-1-dev fcitx-libs-dev
-// wget https://www.libsdl.org/release/SDL2-2.28.1.tar.gz
-// tar xvf SDL2-2.28.1.tar.gz
-// cd SDL2-2.28.1
-// export VIDEO_RPI=1
-// ./configure --disable-video-x11 --disable-video-opengl --enable-video-rpi
-// make
-// TODO: continue here; build needed because of missing RPI driver
-// sudo make install
-// pip3 install PySDL2 (not using apt-get; would install sdl2 again)
-// TODO: restart and hope show-image.py displays something
-
-// https://www.libsdl.org/release/SDL2-2.28.1.tar.gz
