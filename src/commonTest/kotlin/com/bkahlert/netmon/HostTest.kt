@@ -36,21 +36,21 @@ class HostTest {
     }
 
     /**
-     * Regression test for when [Host.firstUp] wasn't serialized,
+     * Regression test for when [Host.since] wasn't serialized,
      * likely because of its default parameter `if (status == Status.UP) Now else null`.
      */
     @Test
     fun regression() {
         (0..100).map {
-            val host = Host(ip = "10.0.0.1", name = null, status = Status.UP, firstUp = Now)
+            val host = Host(ip = "10.0.0.1", name = null, status = Status.UP, since = Now)
             val json = JsonFormat.encodeToString(Host.serializer(), host)
-            json.shouldContainJsonKey("first-up")
+            json.shouldContainJsonKey("since")
         }
     }
 
 }
 
-val Host.Companion.UP: Host get() = Host("10.0.0.1", name = "foo.bar", status = Status.UP, firstUp = Instant.fromEpochSeconds(1690159731L))
+val Host.Companion.UP: Host get() = Host("10.0.0.1", name = "foo.bar", status = Status.UP, since = Instant.fromEpochSeconds(1690159731L))
 val Host.Companion.UP_STRING: String
     get() =
         """
@@ -58,7 +58,7 @@ val Host.Companion.UP_STRING: String
               "ip": "10.0.0.1",
               "name": "foo.bar",
               "status": "up",
-              "first-up": 1690159731
+              "since": 1690159731
             }
         """.trimIndent()
 

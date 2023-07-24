@@ -3,4 +3,4 @@
 /.cache
 .gradle
 build
-.netmon.scan.json
+.netmon.*

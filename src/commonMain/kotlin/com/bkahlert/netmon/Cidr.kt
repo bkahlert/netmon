@@ -1,7 +1,6 @@
 package com.bkahlert.netmon
 
 import kotlinx.serialization.Serializable
-import kotlin.jvm.JvmInline
 
 @JvmInline
 @Serializable

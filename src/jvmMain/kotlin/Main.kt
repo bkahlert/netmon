@@ -139,19 +139,20 @@ fun main(args: Array<String>) {
         NmapNetworkScanner(timingTemplate = Aggressive).scan(network)
     }
     while (running.get()) {
-        val new = networkScanner.scan(network).also {
+        val current = networkScanner.scan(network).also {
             publisher.publish(
                 topic = "dt/netmon/home/scans",
                 event = ScanEvent.ScanCompletedEvent(it),
             )
         }
+        val new = old.merge(current).also { it.save() }
         old.diff(new).forEach { event ->
             publisher.publish(
                 topic = "dt/netmon/home/updates",
                 event = event,
             )
         }
-        old = old.merge(new).also { it.save() }
+        old = new
         Thread.sleep(1000L)
     }
 

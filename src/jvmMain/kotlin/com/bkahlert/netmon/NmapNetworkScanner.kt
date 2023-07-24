@@ -66,10 +66,10 @@ data class NmapNetworkScanner(
                     }
                 }
             return Host(
-                ip = ip,
+                ip = checkNotNull(ip) { "IP not found in line: $line" },
                 name = host,
                 status = status,
-                firstUp = if (status == Status.UP) Now else null
+                since = null,
             )
         }
     }
@@ -89,17 +89,21 @@ private class ProcessCleaner(
     private fun log(message: String): Path = logFile.appendLines(listOf(message))
 
     private fun destroyAll() {
-        processes.forEach { destroy(it) }
+        lock.withLock {
+            processes
+                .mapNotNull { destroy(it) }
+                .also {
+                    log("${it.size} process(es) cleaned up.")
+                }
+        }
     }
 
-    private fun destroy(process: Process) {
-        if (process.isAlive) {
-            try {
-                process.destroyForcibly()
-                log("Process $process was destroyed forcibly.")
-            } catch (e: Exception) {
-                log("Process $process failed to destroy forcibly: $e")
-            }
+    private fun destroy(process: Process) = process.takeIf { it.isAlive }?.apply {
+        try {
+            process.destroyForcibly()
+            log("Process $process was destroyed forcibly.")
+        } catch (e: Exception) {
+            log("Process $process failed to destroy forcibly: $e")
         }
     }
 
