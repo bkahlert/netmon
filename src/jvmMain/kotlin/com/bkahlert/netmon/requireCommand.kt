@@ -1,6 +1,5 @@
 package com.bkahlert.netmon
 
-import com.github.ajalt.mordant.rendering.TextStyle
 import java.nio.file.Path
 import java.nio.file.Paths
 import kotlin.io.path.isExecutable
@@ -19,7 +18,7 @@ fun requireCommand(
         appendLine("Command $command not found.")
         if (installationCommand != null) {
             appendLine("Please install $command, e.g. using:")
-            appendLine(TextStyle(bold = true).invoke(installationCommand))
+            appendLine(installationCommand)
         } else {
             appendLine("Please install $command.")
         }

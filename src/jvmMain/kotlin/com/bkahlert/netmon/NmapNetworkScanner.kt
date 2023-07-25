@@ -50,7 +50,7 @@ data class NmapNetworkScanner(
 
     companion object {
         fun parseHost(line: String): Host {
-            var ip: String? = null
+            var ip: IP? = null
             var host: String? = null
             var status: Status? = null
             line.split("\t")
@@ -58,7 +58,7 @@ data class NmapNetworkScanner(
                 .forEach {
                     when (it.first().lowercase()) {
                         "host" -> {
-                            ip = it.last().split(" ").first()
+                            ip = IP(it.last().split(" ").first())
                             host = it.last().split(" ").last().removeSurrounding("(", ")").takeUnless { it.isBlank() }
                         }
 

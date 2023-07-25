@@ -1,6 +1,7 @@
 package com.bkahlert.netmon
 
 data object Defaults {
-    val networks: List<Cidr> = listOf(Cidr("192.168.16.0/24"))
+    val minHosts = "2"
+    val maxHosts = "16777216"
     val privileged: Boolean = true
 }

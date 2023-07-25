@@ -10,27 +10,41 @@ import kotlinx.serialization.json.JsonClassDiscriminator
  */
 @Serializable
 @JsonClassDiscriminator("event")
-sealed class ScanEvent {
+sealed interface ScanEvent {
+
+    val source: String
 
     @Serializable
     @SerialName("scan-restored")
-    data class ScanRestoredEvent(val result: ScanResult) : ScanEvent() {
-        override fun toString(): String = "${this::class.simpleName}(up=${result.hosts.size})"
+    data class ScanRestoredEvent(
+        override val source: String,
+        val scan: ScanResult,
+    ) : ScanEvent {
+        override fun toString(): String = "${this::class.simpleName}(count=${scan.hosts.size})"
     }
 
     @Serializable
     @SerialName("scan-completed")
-    data class ScanCompletedEvent(val result: ScanResult) : ScanEvent() {
-        override fun toString(): String = "${this::class.simpleName}(up=${result.hosts.size})"
+    data class ScanCompletedEvent(
+        override val source: String,
+        val scan: ScanResult,
+    ) : ScanEvent {
+        override fun toString(): String = "${this::class.simpleName}(count=${scan.hosts.size})"
     }
 
     @Serializable
     @SerialName("host-down")
-    data class HostDownEvent(val host: Host) : ScanEvent()
+    data class HostDownEvent(
+        override val source: String,
+        val host: Host,
+    ) : ScanEvent
 
     @Serializable
     @SerialName("host-up")
-    data class HostUpEvent(val host: Host) : ScanEvent()
+    data class HostUpEvent(
+        override val source: String,
+        val host: Host,
+    ) : ScanEvent
 
     companion object
 }

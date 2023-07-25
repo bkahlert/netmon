@@ -42,7 +42,7 @@ class HostTest {
     @Test
     fun regression() {
         (0..100).map {
-            val host = Host(ip = "10.0.0.1", name = null, status = Status.UP, since = Now)
+            val host = Host(ip = IP("10.0.0.1"), name = null, status = Status.UP, since = Now)
             val json = JsonFormat.encodeToString(Host.serializer(), host)
             json.shouldContainJsonKey("since")
         }
@@ -50,7 +50,7 @@ class HostTest {
 
 }
 
-val Host.Companion.UP: Host get() = Host("10.0.0.1", name = "foo.bar", status = Status.UP, since = Instant.fromEpochSeconds(1690159731L))
+val Host.Companion.UP: Host get() = Host(IP("10.0.0.1"), name = "foo.bar", status = Status.UP, since = Instant.fromEpochSeconds(1690159731L))
 val Host.Companion.UP_STRING: String
     get() =
         """
@@ -63,7 +63,7 @@ val Host.Companion.UP_STRING: String
         """.trimIndent()
 
 
-val Host.Companion.DOWN: Host get() = Host("10.0.0.1")
+val Host.Companion.DOWN: Host get() = Host(IP("10.0.0.1"))
 val Host.Companion.DOWN_STRING: String
     get() =
         """

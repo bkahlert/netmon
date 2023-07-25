@@ -22,7 +22,6 @@ kotlin {
             dependencies {
                 implementation(platform("com.bkahlert.kommons:kommons-bom:2.8.0"))
                 implementation("com.bkahlert.kommons:kommons-time")
-                implementation("com.github.ajalt.mordant:mordant:2.0.1")
                 implementation(platform("org.jetbrains.kotlinx:kotlinx-serialization-bom:1.5.1"))
                 implementation("org.jetbrains.kotlinx:kotlinx-serialization-core")
                 implementation("org.jetbrains.kotlinx:kotlinx-serialization-json")
