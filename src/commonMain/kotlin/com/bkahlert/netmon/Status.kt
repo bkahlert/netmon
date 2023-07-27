@@ -11,8 +11,8 @@ import kotlinx.serialization.encoding.Encoder
 @Serializable(with = StatusSerializer::class)
 sealed interface Status {
 
-    object UP : Status
-    object DOWN : Status
+    data object UP : Status
+    data object DOWN : Status
     data class UNKNOWN(val value: String) : Status
 
     companion object {
@@ -24,7 +24,7 @@ sealed interface Status {
     }
 }
 
-object StatusSerializer : KSerializer<Status> {
+data object StatusSerializer : KSerializer<Status> {
     override val descriptor: SerialDescriptor = PrimitiveSerialDescriptor("Status", PrimitiveKind.STRING)
 
     override fun serialize(encoder: Encoder, value: Status) {

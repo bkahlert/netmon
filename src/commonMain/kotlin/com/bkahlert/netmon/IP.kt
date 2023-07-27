@@ -17,7 +17,7 @@ val IP.filenameString: String
         .replace('.', '-')
         .replace(':', '-')
 
-object IPSerializer : KSerializer<IP> {
+data object IPSerializer : KSerializer<IP> {
     override val descriptor: SerialDescriptor = PrimitiveSerialDescriptor("IP", PrimitiveKind.STRING)
 
     override fun serialize(encoder: Encoder, value: IP) {

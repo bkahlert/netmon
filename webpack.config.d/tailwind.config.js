@@ -59,8 +59,9 @@ const tailwindConfig = {
 // Tailwind CSS settings for WebPack
 ;(function (config) {
   'use strict'
-
-  const entry = config.output.path + '/../processedResources/js/main/' + mainCssFile
+  const entry = config && config.output && config.output.path
+    ? config.output.path + '/../../../processedResources/js/main/' + mainCssFile
+    : './kotlin/' + mainCssFile
   config.entry.main.push(entry)
   config.module.rules.push({
     test: /\.css$/,
