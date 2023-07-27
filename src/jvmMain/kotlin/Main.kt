@@ -1,4 +1,4 @@
-import ch.qos.logback.classic.Logger
+import ch.qos.logback.classic.Level
 import com.bkahlert.kommons.logging.SLF4J
 import com.bkahlert.kommons.logging.logback.Logback
 import com.bkahlert.kommons.logging.logback.StructuredArguments.a
@@ -9,6 +9,7 @@ import com.bkahlert.netmon.NmapNetworkScanner
 import com.bkahlert.netmon.ScanEvent
 import com.bkahlert.netmon.Status
 import com.bkahlert.netmon.cidr
+import com.bkahlert.netmon.levels
 import com.bkahlert.netmon.maxHosts
 import com.bkahlert.netmon.scanElligable
 import com.bkahlert.serialization.JsonFormat
@@ -20,9 +21,13 @@ import java.net.NetworkInterface
 val logger = SLF4J.getLogger("netmon")
 
 fun main(args: Array<String>) {
-    val rootLogger: Logger = Logback.rootLogger
-    rootLogger.level = ch.qos.logback.classic.Level.DEBUG
-    (SLF4J.getLogger("com.bkahlert.kommons.exec") as Logger).level = ch.qos.logback.classic.Level.WARN
+    //requireCommand("avahi-resolve", installationPackage = "avahi-utils")
+    //avahi-resolve -a 192.168.16.33
+
+    Logback.levels(
+        "root" to Level.DEBUG,
+        "com.bkahlert.kommons.exec" to Level.DEBUG,
+    )
 
     logger.info("Starting netmon: {}", a(*args, key = "args"))
     val hostname = runCatching { InetAddress.getLocalHost().hostName }
@@ -41,7 +46,7 @@ fun main(args: Array<String>) {
                 .filter { it.scanElligable }
                 .filter { it.maxHosts in hostCountRange }
                 .maxByOrNull { it.maxHosts }
-                ?.let { it.cidr }
+                ?.cidr
         }
         .toList()
 
