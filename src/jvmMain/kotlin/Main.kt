@@ -27,7 +27,7 @@ fun main(args: Array<String>) {
 
     Logback.levels(
         "root" to Level.DEBUG,
-        "com.bkahlert.kommons.exec" to Level.DEBUG,
+        "com.bkahlert.kommons.exec" to Level.INFO,
     )
 
     logger.info("Starting netmon: {}", a(*args, key = "args"))

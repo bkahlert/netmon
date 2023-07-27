@@ -162,21 +162,22 @@ tasks {
         dependsOn(shadowJar)
         outputs.upToDateWhen { false }
         commandLine = listOf(
-            "scp",
-            "-q",
-            "-r",
+            "rsync",
+            "-rvz",
+            "--delete",
             shadowJarFile.absolutePath,
-            "$sshDestination:${shadowJarFile.name}",
+            "$sshDestination:netmon/${shadowJarFile.name}",
         )
     }
 
     register<Exec>("runShadowSsh") {
+        group = "application"
         dependsOn(cpTask)
         commandLine = listOf(
             "ssh",
             "-q",
             sshDestination,
-            "java -jar './${shadowJarFile.name}'",
+            "java -jar './netmon/${shadowJarFile.name}'",
         )
     }
 }

@@ -1,7 +1,9 @@
 # Netmon
 
-A nmap based network monitor that publishes appearing and disappearing hosts using MQTT.
-Raspberry PI application to monitor your network.
+A nmap based network scanner that
+
+- publishes appearing and disappearing hosts using MQTT, and
+- provides a Kotlin/JS + Fritz2 based web interface to display the results.
 
 ## Installation
 
@@ -9,9 +11,47 @@ Raspberry PI application to monitor your network.
 sudo apt-get install -y nmap
 ```
 
+## Update MQTT.js
+
+```shell
+(cd mqtt.js && ./build.sh)
+```
+
+See [mqtt.js/README.md](mqtt.js/README.md) for details.
+
 ## Development
 
-Based on a great article by [zone84][kotlin-native-raspberry-1] I was able to get a Kotlin/Native application running on my Raspberry PI.
+### Network scanner
+
+```shell
+# Compile and run
+./gradlew runShadow
+
+# Compile and push to Raspberry Pi
+./gradlew --no-daemon clean shadowJar \
+  && rsync -rvz --delete \
+  build/libs/netmon-all.jar \
+  pi@192.168.16.46:/home/pi/netmon/netmon-scanner.jar
+```
+
+### Web Display
+
+```shell
+# Compile and run
+./gradlew jsBrowserDevelopmentRun --continuous
+
+# Compile development distribution and push to Raspberry Pi
+./gradlew --no-daemon clean jsBrowserDevelopmentExecutableDistribution \
+  && rsync -rvz --delete \
+  build/dist/js/developmentExecutable/ \
+  pi@192.168.16.46:/home/pi/netmon/netmon-web-display/
+  
+# Compile production distribution and push to Raspberry Pi
+./gradlew --no-daemon clean jsBrowserProductionWebpack \
+  && rsync -rvz --delete \
+  build/dist/js/productionExecutable/ \
+  pi@192.168.16.46:/home/pi/netmon/netmon-web-display/
+```
 
 ### Copy SSH key
 
