@@ -5,6 +5,7 @@ import com.bkahlert.kommons.logging.logback.StructuredArguments.a
 import com.bkahlert.kommons.logging.logback.StructuredArguments.kv
 import com.bkahlert.netmon.Defaults
 import com.bkahlert.netmon.MqttPublisher
+import com.bkahlert.netmon.NetmonScanner
 import com.bkahlert.netmon.NmapNetworkScanner
 import com.bkahlert.netmon.ScanEvent
 import com.bkahlert.netmon.Status
@@ -42,7 +43,6 @@ fun main(args: Array<String>) {
         .filterNot { it.isLoopback }
         .mapNotNull { networkInterface: NetworkInterface ->
             networkInterface.interfaceAddresses.toList()
-                .filter { it.scanElligable }
                 .filter { it.scanElligable }
                 .filter { it.maxHosts in hostCountRange }
                 .maxByOrNull { it.maxHosts }

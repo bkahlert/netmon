@@ -23,7 +23,7 @@ data class ScanResult(
                 hosts.forEach { add(it.ip) }
                 currentResult.hosts.forEach { add(it.ip) }
             }
-                .sortedBy { it.intValue }
+                .sorted()
                 .map { ip ->
                     val recordedHost = hosts.find { it.ip == ip }
                     val scannedHost = currentResult.hosts.find { it.ip == ip }

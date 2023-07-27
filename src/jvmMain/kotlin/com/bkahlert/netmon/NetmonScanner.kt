@@ -1,12 +1,7 @@
+package com.bkahlert.netmon
+
 import com.bkahlert.kommons.logging.SLF4J
-import com.bkahlert.kommons.logging.logback.StructuredArguments
-import com.bkahlert.netmon.Cidr
-import com.bkahlert.netmon.Host
-import com.bkahlert.netmon.NetworkScanner
-import com.bkahlert.netmon.NmapNetworkScanner
-import com.bkahlert.netmon.ScanResult
-import com.bkahlert.netmon.load
-import com.bkahlert.netmon.save
+import com.bkahlert.kommons.logging.logback.StructuredArguments.kv
 import java.nio.file.Path
 import java.nio.file.Paths
 
@@ -21,7 +16,7 @@ class NetmonScanner(
     private val logger by SLF4J
 
     init {
-        logger.info("Starting netmon-scanner {}, {}, {}", StructuredArguments.kv("network", network), StructuredArguments.kv("scanner", scanner))
+        logger.info("Starting netmon-scanner {}, {}", kv("network", network), kv("scanner", scanner))
     }
 
     override fun run() {

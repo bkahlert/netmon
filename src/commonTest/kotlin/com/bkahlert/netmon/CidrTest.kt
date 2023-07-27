@@ -1,15 +1,15 @@
 package com.bkahlert.netmon
 
-import io.kotest.common.runBlocking
 import io.kotest.data.forAll
 import io.kotest.data.row
 import io.kotest.matchers.shouldBe
+import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 
 class CidrTest {
 
     @Test
-    fun to_string() = runBlocking {
+    fun to_string() = runTest {
         forAll(
             row("10.0.0.1/24"),
             row("::ffff:0a00:0001/104"),
@@ -19,7 +19,7 @@ class CidrTest {
     }
 
     @Test
-    fun filename_string() = runBlocking {
+    fun filename_string() = runTest {
         forAll(
             row("10.0.0.1/24", "10-0-0-1_24"),
             row("::ffff:0a00:0001/104", "--ffff-0a00-0001_104"),

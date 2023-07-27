@@ -1,8 +1,8 @@
 package com.bkahlert.netmon
 
 import com.bkahlert.serialization.JsonFormat
-import io.kotest.assertions.json.shouldEqualJson
 import io.kotest.matchers.shouldBe
+import io.ktor.http.quote
 import kotlinx.serialization.encodeToString
 import kotlin.test.Test
 
@@ -10,16 +10,16 @@ class StatusTest {
 
     @Test
     fun to_json() {
-        JsonFormat.encodeToString(Status.UP as Status) shouldEqualJson "\"up\""
-        JsonFormat.encodeToString(Status.DOWN as Status) shouldEqualJson "\"down\""
-        JsonFormat.encodeToString(Status.UNKNOWN("foo") as Status) shouldEqualJson "\"unknown-foo\""
+        JsonFormat.encodeToString(Status.UP as Status) shouldBe "up".quote()
+        JsonFormat.encodeToString(Status.DOWN as Status) shouldBe "down".quote()
+        JsonFormat.encodeToString(Status.UNKNOWN("foo") as Status) shouldBe "unknown-foo".quote()
     }
 
     @Test
     fun from_json() {
-        JsonFormat.decodeFromString<Status>("\"up\"") shouldBe Status.UP
-        JsonFormat.decodeFromString<Status>("\"down\"") shouldBe Status.DOWN
-        JsonFormat.decodeFromString<Status>("\"unknown-foo\"") shouldBe Status.UNKNOWN("foo")
-        JsonFormat.decodeFromString<Status>("\"bar\"") shouldBe Status.UNKNOWN("bar")
+        JsonFormat.decodeFromString<Status>("up".quote()) shouldBe Status.UP
+        JsonFormat.decodeFromString<Status>("down".quote()) shouldBe Status.DOWN
+        JsonFormat.decodeFromString<Status>("unknown-foo".quote()) shouldBe Status.UNKNOWN("foo")
+        JsonFormat.decodeFromString<Status>("bar".quote()) shouldBe Status.UNKNOWN("bar")
     }
 }

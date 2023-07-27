@@ -1,0 +1,42 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Safe-area based spacing to address mobile devices, https://css-tricks.com/the-notch-and-css/ */
+/* Delete, if not needed */
+:root {
+  --sat: env(safe-area-inset-top); --sar: env(safe-area-inset-right); --sab: env(safe-area-inset-bottom); --sal: env(safe-area-inset-left);
+  --tax: env(titlebar-area-x); --tay: env(titlebar-area-y); --taw: env(titlebar-area-width); --tah: env(titlebar-area-height);
+  --kit: env(keyboard-inset-top); --kir: env(keyboard-inset-right); --kib: env(keyboard-inset-bottom);
+  --kil: env(keyboard-inset-left); --kiw: env(keyboard-inset-width); --kih: env(keyboard-inset-height);
+}
+
+/* Minimalist base styles */
+/* Delete, if not needed */
+@layer base {
+  html { @apply scroll-smooth; }
+  hr { @apply w-48 h-1 mx-auto rounded border-0 my-4 md:my-10 bg-default dark:bg-invert; }
+}
+
+/* Prototyping class for block element with arbitrary content */
+/* Delete, if not needed */
+@layer components {
+  .prose-box {
+    @apply mx-auto first:mt-0 sm:first:mt-4 mb-4;
+    @apply px-6 py-2;
+    @apply sm:rounded-lg shadow-lg dark:shadow-xl;
+    @apply bg-default dark:bg-invert;
+    @apply prose dark:prose-invert sm:prose-sm lg:prose-lg xl:prose-xl;
+  }
+}
+
+/* Prototyping class simplified visual debugging */
+/* Delete, if not needed */
+@layer utilities {
+  .debug { @apply ring-8 ring-fuchsia-500/50 ring-inset ring-offset-0; }
+  .debug > * { @apply ring ring-fuchsia-700/50; }
+  .debug > * { @apply ring-1 ring-fuchsia-900/75; }
+  .debug ~ .debug { @apply ring-pink-500/50; }
+  .debug ~ .debug > * { @apply ring-pink-700/50; }
+  .debug ~ .debug > * > * { @apply ring-pink-900/75; }
+}

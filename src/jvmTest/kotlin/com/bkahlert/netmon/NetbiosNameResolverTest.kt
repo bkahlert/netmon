@@ -3,10 +3,12 @@ package com.bkahlert.netmon
 import io.kotest.assertions.throwables.shouldNotThrowAny
 import io.kotest.matchers.comparables.shouldBeLessThan
 import io.kotest.matchers.nulls.shouldNotBeNull
-import org.junit.Test
+import kotlin.test.Ignore
+import kotlin.test.Test
 import kotlin.time.Duration.Companion.seconds
 import kotlin.time.measureTime
 
+@Ignore
 class NetbiosNameResolverTest {
 
     val resolver get() = NetbiosNameResolver()

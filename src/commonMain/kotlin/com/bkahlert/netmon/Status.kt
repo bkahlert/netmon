@@ -11,8 +11,8 @@ import kotlinx.serialization.encoding.Encoder
 @Serializable(with = StatusSerializer::class)
 sealed interface Status {
 
-    data object UP : Status
-    data object DOWN : Status
+    object UP : Status
+    object DOWN : Status
     data class UNKNOWN(val value: String) : Status
 
     companion object {

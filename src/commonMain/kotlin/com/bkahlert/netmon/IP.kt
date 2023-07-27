@@ -1,21 +1,28 @@
 package com.bkahlert.netmon
 
-import kotlinx.serialization.Serializable
-import java.math.BigInteger
-import java.net.InetAddress
+import kotlinx.serialization.KSerializer
+import kotlinx.serialization.descriptors.PrimitiveKind
+import kotlinx.serialization.descriptors.PrimitiveSerialDescriptor
+import kotlinx.serialization.descriptors.SerialDescriptor
+import kotlinx.serialization.encoding.Decoder
+import kotlinx.serialization.encoding.Encoder
 
-@JvmInline
-@Serializable
-value class IP(val value: String) {
+expect class IP(value: String) : Comparable<IP> {
+    val value: String
+    val bytes: UByteArray
+}
 
-    val addr: InetAddress get() = InetAddress.getByName(value)
-    val bytes: ByteArray get() = addr.address
-    val intValue: BigInteger get() = BigInteger(1, bytes)
+val IP.filenameString: String
+    get() = value
+        .replace('.', '-')
+        .replace(':', '-')
 
-    val filenameString: String
-        get() = value
-            .replace('.', '-')
-            .replace(':', '-')
+object IPSerializer : KSerializer<IP> {
+    override val descriptor: SerialDescriptor = PrimitiveSerialDescriptor("IP", PrimitiveKind.STRING)
 
-    override fun toString(): String = value
+    override fun serialize(encoder: Encoder, value: IP) {
+        encoder.encodeString(value.value)
+    }
+
+    override fun deserialize(decoder: Decoder): IP = IP(decoder.decodeString())
 }

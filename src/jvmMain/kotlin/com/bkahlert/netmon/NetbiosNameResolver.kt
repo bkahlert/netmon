@@ -2,6 +2,7 @@ package com.bkahlert.netmon
 
 import com.bkahlert.kommons.exec.CommandLine
 import com.bkahlert.kommons.logging.SLF4J
+import com.bkahlert.kommons.logging.logback.StructuredArguments.v
 import kotlin.io.path.pathString
 
 class NetbiosNameResolver : NameResolver {
@@ -11,7 +12,7 @@ class NetbiosNameResolver : NameResolver {
     private val processCleaner = ProcessCleaner()
 
     override fun resolve(ip: IP): String? {
-        logger.debug("Resolving $ip")
+        logger.debug("Resolving {}", v("ip", ip))
 
         return CommandLine(binary, "-q", "-s", ";", ip.toString())
             .exec()
