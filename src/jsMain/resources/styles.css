@@ -3,13 +3,12 @@
 @tailwind utilities;
 @tailwind components;
 
-html { @apply h-full bg-sky-400; }
+html { @apply h-full bg-invert text-invert; }
 body { @apply min-h-full overflow-y-auto bg-hero-graph-paper; }
 
 /* pseudo-element to create a zero-height barrier at the top to avoid collapsing margins */
 body::before { @apply content-[''] table h-0; }
 
-#app { @apply h-[50vh]; }
 #console {
   @apply h-[50vh] bg-black bg-opacity-50 text-white font-mono font-bold text-lg;
 }

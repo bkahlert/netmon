@@ -35,7 +35,7 @@ See [mqtt.js/README.md](mqtt.js/README.md) for details.
 ./gradlew --no-daemon clean shadowJar \
   && rsync -rvz --delete \
   build/libs/netmon-all.jar \
-  pi@192.168.16.46:/home/pi/netmon/netmon-scanner.jar
+  pi@netmon.local:/home/pi/netmon/netmon-scanner.jar
 ```
 
 ### Web Display
@@ -49,10 +49,10 @@ See [mqtt.js/README.md](mqtt.js/README.md) for details.
 #### Compile development distribution and push to Raspberry Pi
 
 ```shell
-./gradlew --no-daemon clean jsBrowserDevelopmentExecutableDistribution \
+./gradlew jsBrowserDevelopmentExecutableDistribution \
   && rsync -rvz --delete \
   build/dist/js/developmentExecutable/ \
-  pi@192.168.16.46:/home/pi/netmon/netmon-web-display/
+  pi@netmon.local:/home/pi/netmon/netmon-web-display/
 ```
 
 #### Compile production distribution and push to Raspberry Pi
@@ -61,7 +61,7 @@ See [mqtt.js/README.md](mqtt.js/README.md) for details.
 ./gradlew --no-daemon clean jsBrowserProductionWebpack \
   && rsync -rvz --delete \
   build/dist/js/productionExecutable/ \
-  pi@192.168.16.46:/home/pi/netmon/netmon-web-display/
+  pi@netmon.local:/home/pi/netmon/netmon-web-display/
 ```
 
 ### Copy SSH key

@@ -1,0 +1,82 @@
+<svg fill="none" viewBox="0 0 2000 200" width="2000" height="200" xmlns="http://www.w3.org/2000/svg">
+    <path fill="currentColor"
+          d="M 75.63569,1.4806133e-5 A 75.731422,74.018906 0 0 0 7.5696619e-8,74.019268 75.731422,74.018906 0 0 0 75.731808,148.038 75.731422,74.018906 0 0 0 151.4631,74.019268 75.731422,74.018906 0 0 0 75.731808,1.4806133e-5 a 75.731422,74.018906 0 0 0 -0.09612,0 z M 111.16014,18.428347 c 3.52601,0.01826 6.37281,2.879733 6.35465,6.387206 l -0.13126,25.416536 c -0.0181,3.50747 -2.89477,6.338845 -6.4208,6.320544 -3.52602,-0.01826 -6.37285,-2.87922 -6.35465,-6.38669 l -12.775445,-0.06615 c -3.52603,-0.01826 -6.402596,2.813592 -6.420797,6.321062 l -0.03204,6.221842 h 5.896279 a 6.3606494,6.4906672 0 0 1 0.446484,-0.01601 6.3606494,6.4906672 0 0 1 6.360853,6.490557 6.3606494,6.4906672 0 0 1 -6.360853,6.490563 6.3606494,6.4906672 0 0 1 -0.516763,-0.0217 H 53.850976 v -0.02119 a 6.3606494,6.4732442 0 0 1 -0.301792,0.0078 6.3606494,6.4732442 0 0 1 -6.360853,-6.473505 6.3606494,6.4732442 0 0 1 6.360853,-6.472991 6.3606494,6.4732442 0 0 1 0.454237,0.01654 h 5.82445 l 0.06615,-12.708268 c 0.07267,-14.03637 11.57207,-25.357293 25.68267,-25.284244 l 19.163169,0.09922 c 0.0182,-3.507473 2.89426,-6.339322 6.42028,-6.32106 z m -51.430972,60.447988 25.551413,0.132292 -0.0987,19.062403 c -0.07268,14.03613 -11.57207,25.35724 -25.68267,25.28424 l -12.775445,-0.0661 c -0.01815,3.50747 -2.894788,6.33936 -6.420798,6.32106 -3.52603,-0.0183 -6.372852,-2.87974 -6.354651,-6.38721 L 34.08009,97.806447 c 0.01815,-3.50747 2.894258,-6.339361 6.420278,-6.321063 3.52601,0.01826 6.373368,2.879728 6.355168,6.387209 l 6.387724,0.03307 c 3.52602,0.01826 6.40208,-2.813582 6.420281,-6.321063 z"/>
+    <style>
+        @keyframes background-movement {
+        0% { background-position: 75% 0%; }
+        40% { background-position: 0% 75%; }
+        50% { background-position: 25% 100%; }
+        90% { background-position: 100% 25%; }
+        100% { background-position: 75% 0%; }
+        }
+
+        .bg {
+        background: rgb(41,171,226);
+        background: radial-gradient(circle at 50% 50%, rgba(41, 171, 226, 1), rgba(100, 139, 224, 1), rgba(163, 94, 187, 1),
+        rgba(194, 30, 115, 1), rgba(247, 79, 87, 1), rgba(255, 146, 52, 1),
+        rgba(235, 178, 29, 1.0), rgba(203, 207, 40, 1), rgba(153, 196, 53, 1),
+        rgba(105, 183, 69, 1), rgba(4, 169, 113, 1), rgba(0, 151, 139, 1),
+        rgba(1, 129, 143, 1), rgba(0, 144, 170, 1), rgba(0, 158, 198, 1), rgba(41, 171, 226, 1));
+        background-size: 1500% 1500%;
+        animation: background-movement 11s ease infinite; /* slow: 60s; fast: 11s */
+        }
+
+        .fg {
+        color: transparent;
+        text-shadow: 0px 2px 3px rgba(255,255,255,0.5);
+        -webkit-background-clip: text;
+        -moz-background-clip: text;
+        background-clip: text;
+        animation-delay: -30s;
+        }
+
+        .magic {
+        background-size: 800% 800%;
+        animation: background-movement 11s ease infinite;
+        }
+
+        h1, h2, h3, h4, h5, h6, div, span, p {
+        font-family: system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji';
+        }
+
+        .container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        margin: 0;
+        width: 100%;
+        height: 200px;
+
+        box-sizing: border-box;
+        border-radius: 10px;
+        color: white;
+        text-align: center;
+        }
+
+        h1 {
+        margin: 0;
+        font-size: 100px;
+        line-height: 1.3;
+        color: #666;
+        color: #ddd; /* used on embedded device with dark background */
+        }
+
+        @media (prefers-color-scheme: dark) {
+        h1 { color: #ddd; }
+        }
+
+        @media screen and (prefers-reduced-motion: reduce) {
+        .bg { animation: background-movement 180s ease infinite; }
+        .magic { animation: background-movement 120s ease infinite; }
+        }
+    </style>
+    <foreignObject width="100%" height="100%">
+        <div xmlns="http://www.w3.org/1999/xhtml" class="container bg fg">
+            <!-- @formatter:off -->
+            <h1 class="">(つ◕౪◕)つ─<span class="bg fg">☆</span><span class="bg fg magic" style="animation-delay: 0s;">ﾟ</span><span class="bg fg magic" style="animation-delay: 1s;">․</span><span class="bg fg magic" style="animation-delay: 2s;">*</span><span class="bg fg magic" style="animation-delay: 3s;">･</span><span class="bg fg magic" style="animation-delay: 4s;">｡</span><span class="bg fg magic" style="animation-delay: 5s;">ﾟ</span> <span class="bg fg">loading</span> ...
+            </h1>
+            <!-- @formatter:on -->
+        </div>
+    </foreignObject>
+</svg>
