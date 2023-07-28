@@ -3,9 +3,11 @@ import com.bkahlert.kommons.logging.SLF4J
 import com.bkahlert.kommons.logging.logback.Logback
 import com.bkahlert.kommons.logging.logback.StructuredArguments.a
 import com.bkahlert.kommons.logging.logback.StructuredArguments.kv
+import com.bkahlert.kommons.logging.logback.StructuredArguments.o
 import com.bkahlert.netmon.JsonFormat
 import com.bkahlert.netmon.MqttPublisher
 import com.bkahlert.netmon.NetmonScanner
+import com.bkahlert.netmon.Network
 import com.bkahlert.netmon.NmapNetworkScanner
 import com.bkahlert.netmon.ScanEvent
 import com.bkahlert.netmon.Settings
@@ -13,9 +15,11 @@ import com.bkahlert.netmon.Status
 import com.bkahlert.netmon.cidr
 import com.bkahlert.netmon.levels
 import com.bkahlert.netmon.maxHosts
-import com.bkahlert.netmon.scanElligable
+import net.logstash.logback.argument.StructuredArguments.v
 import java.lang.Thread.interrupted
 import java.math.BigInteger
+import java.net.Inet4Address
+import java.net.Inet6Address
 import java.net.InetAddress
 import java.net.NetworkInterface
 
@@ -38,20 +42,67 @@ fun main(args: Array<String>) {
     logger.info("Hostname: {}", kv("hostname", hostname))
 
     val hostCountRange = BigInteger(Settings.minHosts)..BigInteger(Settings.maxHosts)
-    val networks = NetworkInterface.getNetworkInterfaces()
-        .asSequence()
-        .filter { it.isUp }
-        .filterNot { it.isLoopback }
-        .mapNotNull { networkInterface: NetworkInterface ->
-            networkInterface.interfaceAddresses.toList()
-                .filter { it.scanElligable }
-                .filter { it.maxHosts in hostCountRange }
-                .maxByOrNull { it.maxHosts }
-                ?.cidr
-        }
-        .toList()
 
-    logger.info("Found networks: {}", networks)
+    val networkInterfaces = NetworkInterface.getNetworkInterfaces().toList()
+    logger.info("Found {} network {}", v("count", networkInterfaces.size), o("interfaces", networkInterfaces) { it.name })
+    val networks = networkInterfaces
+        .filter { iface ->
+            iface.isUp.also {
+                if (!it) logger.info("Skipping {} because it's down.", kv("interface", iface))
+            }
+        }
+        .filterNot { iface ->
+            iface.isLoopback.also {
+                if (it) logger.info("Skipping {} because it's a loopback interface.", kv("interface", iface))
+            }
+        }
+        .flatMap { iface: NetworkInterface ->
+            val ifaceAddresses = iface.interfaceAddresses.toList()
+            logger.debug("Checking {} of {}", o("addresses", ifaceAddresses), kv("interface", iface))
+            ifaceAddresses
+                .filter { ifaceAddress ->
+                    when (val inetAddress = ifaceAddress.address) {
+                        is Inet4Address -> {
+                            inetAddress.isSiteLocalAddress.also {
+                                if (!it) logger.debug("Skipping {} because it's not site-local.", kv("interfaceAddress", ifaceAddress))
+                            }
+                        }
+
+                        is Inet6Address -> {
+                            inetAddress.isLinkLocalAddress.also {
+                                if (!it) logger.debug("Skipping {} because it's not link-local.", kv("interfaceAddress", ifaceAddress))
+                            }
+                        }
+
+                        else -> {
+                            logger.debug("Skipping {} because it's no supported IP protocol.", kv("interfaceAddress", ifaceAddress))
+                            false
+                        }
+                    }
+                }
+                .filter { ifaceAddress ->
+                    (ifaceAddress.maxHosts in hostCountRange).also {
+                        if (!it) logger.debug(
+                            "Skipping {} because it's {} is not in {}",
+                            kv("interfaceAddress", ifaceAddress),
+                            kv("max-host-count", ifaceAddress.maxHosts),
+                            kv("allowed-host-count-range", hostCountRange),
+                        )
+                    }
+                }
+                .also {
+                    if (it.isEmpty()) logger.info("Skipping {} because no eligible interface address was found.", kv("interface", iface))
+                }
+                .map { ifaceAddress ->
+                    Network(
+                        hostname = hostname,
+                        `interface` = iface.name,
+                        cidr = ifaceAddress.cidr,
+                    )
+                }
+        }
+
+    logger.info("Found {}", o("networks", networks))
 
     val scanner = NmapNetworkScanner()
     val publisher = MqttPublisher(
@@ -62,20 +113,21 @@ fun main(args: Array<String>) {
     )
 
     val netmons: List<NetmonScanner> = networks.map { network ->
+        val source = network.toString()
         NetmonScanner(
-            network = network,
+            network = network.cidr,
             scanner = scanner,
             onScan = { scan ->
                 publisher.publish(
                     topic = "dt/netmon/home/scans",
-                    event = ScanEvent.ScanCompletedEvent(source = hostname, scan = scan),
+                    event = ScanEvent.ScanCompletedEvent(source = source, scan = scan),
                 )
             },
             onChange = { host ->
                 publisher.publish(
                     topic = "dt/netmon/home/updates",
-                    event = if (host.status == Status.DOWN) ScanEvent.HostDownEvent(source = hostname, host = host)
-                    else ScanEvent.HostUpEvent(source = hostname, host = host),
+                    event = if (host.status == Status.DOWN) ScanEvent.HostDownEvent(source = source, host = host)
+                    else ScanEvent.HostUpEvent(source = source, host = host),
                 )
             },
         ).apply { start() }

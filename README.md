@@ -1,9 +1,11 @@
 # Netmon
 
-A nmap based network scanner that
+A Raspberry Pi appliance that detects and displays changes in your home network.
 
-- publishes appearing and disappearing hosts using MQTT, and
-- provides a Kotlin/JS + Fritz2 based web interface to display the results.
+The appliance consists of two parts:
+
+- a JVM-based network scanner that publishes appearing and disappearing hosts using MQTT, and
+- a Kotlin/JS and [Fritz2](https://github.com/jwstegemann/fritz2) based web interface that display the results.
 
 ## Installation
 
