@@ -1,7 +1,6 @@
 package com.bkahlert.netmon
 
 import com.bkahlert.kommons.logging.SLF4J
-import com.bkahlert.serialization.JsonFormat
 import kotlinx.serialization.StringFormat
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString

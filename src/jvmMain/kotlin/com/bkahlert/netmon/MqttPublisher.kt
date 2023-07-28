@@ -2,7 +2,6 @@ package com.bkahlert.netmon
 
 import com.bkahlert.kommons.logging.SLF4J
 import com.bkahlert.kommons.orNull
-import com.bkahlert.serialization.JsonFormat
 import com.hivemq.client.mqtt.MqttClient
 import com.hivemq.client.mqtt.datatypes.MqttQos
 import com.hivemq.client.mqtt.mqtt5.message.publish.Mqtt5PayloadFormatIndicator

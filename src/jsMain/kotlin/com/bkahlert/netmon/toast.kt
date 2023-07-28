@@ -1,4 +1,4 @@
-package app
+package com.bkahlert.netmon
 
 import dev.fritz2.core.Tag
 import dev.fritz2.headless.components.toast

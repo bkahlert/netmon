@@ -1,6 +1,5 @@
 package com.bkahlert.netmon
 
-import com.bkahlert.serialization.JsonFormat
 import io.kotest.matchers.shouldBe
 import io.ktor.http.quote
 import kotlinx.serialization.encodeToString

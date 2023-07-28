@@ -3,17 +3,17 @@ import com.bkahlert.kommons.logging.SLF4J
 import com.bkahlert.kommons.logging.logback.Logback
 import com.bkahlert.kommons.logging.logback.StructuredArguments.a
 import com.bkahlert.kommons.logging.logback.StructuredArguments.kv
-import com.bkahlert.netmon.Defaults
+import com.bkahlert.netmon.JsonFormat
 import com.bkahlert.netmon.MqttPublisher
 import com.bkahlert.netmon.NetmonScanner
 import com.bkahlert.netmon.NmapNetworkScanner
 import com.bkahlert.netmon.ScanEvent
+import com.bkahlert.netmon.Settings
 import com.bkahlert.netmon.Status
 import com.bkahlert.netmon.cidr
 import com.bkahlert.netmon.levels
 import com.bkahlert.netmon.maxHosts
 import com.bkahlert.netmon.scanElligable
-import com.bkahlert.serialization.JsonFormat
 import java.lang.Thread.interrupted
 import java.math.BigInteger
 import java.net.InetAddress
@@ -27,7 +27,8 @@ fun main(args: Array<String>) {
 
     Logback.levels(
         "root" to Level.DEBUG,
-        "com.bkahlert.kommons.exec" to Level.INFO,
+        "io.netty" to Level.WARN,
+        "com.bkahlert.kommons.exec" to Level.WARN,
     )
 
     logger.info("Starting netmon: {}", a(*args, key = "args"))
@@ -36,7 +37,7 @@ fun main(args: Array<String>) {
 
     logger.info("Hostname: {}", kv("hostname", hostname))
 
-    val hostCountRange = BigInteger(Defaults.minHosts)..BigInteger(Defaults.maxHosts)
+    val hostCountRange = BigInteger(Settings.minHosts)..BigInteger(Settings.maxHosts)
     val networks = NetworkInterface.getNetworkInterfaces()
         .asSequence()
         .filter { it.isUp }
@@ -54,8 +55,8 @@ fun main(args: Array<String>) {
 
     val scanner = NmapNetworkScanner()
     val publisher = MqttPublisher(
-        host = "test.mosquitto.org",
-        port = 1883,
+        host = Settings.brokerHost,
+        port = Settings.Scanner.brokerPort,
         stringFormat = JsonFormat,
         serializer = ScanEvent.serializer(),
     )

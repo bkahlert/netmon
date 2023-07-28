@@ -1,4 +1,4 @@
-package app
+package mqtt
 
 @JsModule("./mqtt")
 @JsNonModule
@@ -26,29 +26,4 @@ external interface ClientSubscribeOptions {
      * Same as QoS 1, but there are no duplicates.
      */
     var qos: Int
-}
-
-fun MqttClient.onConnect(callback: () -> Unit) {
-    on("connect", callback)
-}
-
-fun MqttClient.subscribe(topic: String, opts: ClientSubscribeOptions.() -> Unit): MqttClient =
-    subscribe(topic, js("{}").unsafeCast<ClientSubscribeOptions>().apply(opts))
-
-fun MqttClient.onMessage(callback: (topic: String, message: String, packet: dynamic) -> Unit) {
-    on("message") { topic: String, message: ByteArray, packet: dynamic ->
-        callback(topic, message.decodeToString(), packet)
-    }
-}
-
-fun MqttClient.onError(callback: (error: dynamic) -> Unit) {
-    on("error", callback)
-}
-
-fun MqttClient.onDisconnect(callback: (packet: dynamic) -> Unit) {
-    on("disconnect", callback)
-}
-
-fun MqttClient.onClose(callback: () -> Unit) {
-    on("close", callback)
 }

@@ -1,6 +1,5 @@
 package com.bkahlert.netmon
 
-import com.bkahlert.serialization.JsonFormat
 import io.kotest.data.forAll
 import io.kotest.data.row
 import io.kotest.matchers.comparables.shouldBeEqualComparingTo

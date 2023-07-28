@@ -23,11 +23,15 @@ See [mqtt.js/README.md](mqtt.js/README.md) for details.
 
 ### Network scanner
 
-```shell
-# Compile and run
-./gradlew runShadow
+#### Compile and run
 
-# Compile and push to Raspberry Pi
+```shell
+./gradlew runShadow
+```
+
+#### Compile and push to Raspberry Pi
+
+```shell
 ./gradlew --no-daemon clean shadowJar \
   && rsync -rvz --delete \
   build/libs/netmon-all.jar \
@@ -36,17 +40,24 @@ See [mqtt.js/README.md](mqtt.js/README.md) for details.
 
 ### Web Display
 
-```shell
-# Compile and run
-./gradlew jsBrowserDevelopmentRun --continuous
+#### Compile and run
 
-# Compile development distribution and push to Raspberry Pi
+```shell
+./gradlew jsBrowserDevelopmentRun --continuous
+```
+
+#### Compile development distribution and push to Raspberry Pi
+
+```shell
 ./gradlew --no-daemon clean jsBrowserDevelopmentExecutableDistribution \
   && rsync -rvz --delete \
   build/dist/js/developmentExecutable/ \
   pi@192.168.16.46:/home/pi/netmon/netmon-web-display/
-  
-# Compile production distribution and push to Raspberry Pi
+```
+
+#### Compile production distribution and push to Raspberry Pi
+
+```shell
 ./gradlew --no-daemon clean jsBrowserProductionWebpack \
   && rsync -rvz --delete \
   build/dist/js/productionExecutable/ \

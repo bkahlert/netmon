@@ -1,4 +1,4 @@
-package com.bkahlert.serialization
+package com.bkahlert.netmon
 
 import kotlinx.serialization.json.Json
 

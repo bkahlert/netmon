@@ -6,7 +6,7 @@ import com.bkahlert.kommons.time.Now
 import kotlin.io.path.pathString
 
 data class NmapNetworkScanner(
-    val privileged: Boolean = Defaults.privileged,
+    val privileged: Boolean = Settings.privileged,
     val timingTemplate: ScanResult.TimingTemplate = ScanResult.TimingTemplate.Normal,
 ) : NetworkScanner {
 

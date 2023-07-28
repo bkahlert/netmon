@@ -1,6 +1,5 @@
 package com.bkahlert.netmon
 
-import com.bkahlert.serialization.JsonFormat
 import io.kotest.matchers.shouldBe
 import kotlin.test.Test
 

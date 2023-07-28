@@ -1,4 +1,4 @@
-package app
+package com.bkahlert.netmon
 
 import com.bkahlert.kommons.js.attachTo
 import com.bkahlert.kommons.js.catchErrors
@@ -13,6 +13,14 @@ import dev.fritz2.core.storeOf
 import dev.fritz2.headless.components.toastContainer
 import io.ktor.http.ParametersBuilder
 import kotlinx.browser.window
+import kotlinx.dom.appendElement
+import mqtt.MQTT
+import mqtt.onClose
+import mqtt.onConnect
+import mqtt.onDisconnect
+import mqtt.onError
+import mqtt.onMessage
+import mqtt.subscribe
 
 @JsModule("./logo.png")
 @JsNonModule
@@ -21,17 +29,25 @@ private external val logo: String
 
 fun main() {
 
-    window.catchErrors()
-    window.document.getElementById("console")?.also { console.attachTo(it, debug = true) }
+    if (Settings.WebDisplay.globalCatch) {
+        window.catchErrors()
+    }
+    if (Settings.WebDisplay.onScreenConsole) {
+        window.document.run {
+            getElementById("console") ?: body!!.appendElement("div") { id = "console" }
+        }.also { console.attachTo(it, debug = true) }
+    }
 
-    // http://localhost:8080/#broker-uri=ws%3A%2F%2Ftest.mosquitto.org%3A8080
     val parameters = window.location.href.toUri().run {
         ParametersBuilder().apply {
             appendAll(queryParameters.also { console.debug("Query parameters %s", it) })
             appendAll(fragmentParameters.also { console.debug("Fragment parameters %s", it) })
         }
     }
-    val brokerUrl = parameters["broker-uri"] ?: "ws://test.mosquitto.org:8081"
+
+    val brokerHost = parameters["broker.host"] ?: Settings.brokerHost
+    val brokerPort = parameters["broker.port"] ?: Settings.WebDisplay.brokerPort
+    val brokerUrl = parameters["broker.url"] ?: "ws://$brokerHost:$brokerPort"
 
     val frameworkStore = storeOf(brokerUrl)
 
@@ -42,28 +58,47 @@ fun main() {
             subscribe("dt/netmon/home/updates") { qos = 1 }
         }
         onMessage { topic, message, _ ->
-            console.debug("MQTT", "Message received", topic, message)
-            when (topic) {
-                "dt/netmon/home/scans" -> {
-                    val hostCount = message.split("\"ip\"").size + 1
-                    showToast(toastContainerDefault) {
-                        className("bg-gradient-to-r from-fuchsia-700 to-transparent shadow-xl")
-                        +"Received scan with $hostCount devices"
-                    }
-                    frameworkStore.handle { "$hostCount devices" }
-                }
+            console.debug("MQTT", "Message received on topic %s with %s byte(s)", topic, message.size)
+            runCatching {
+                JsonFormat.decodeFromString<ScanEvent>(message.decodeToString())
+            }.fold(
+                onSuccess = { event ->
+                    when (event) {
+                        is ScanEvent.ScanRestoredEvent -> {}
+                        is ScanEvent.ScanCompletedEvent -> {
+                            val hostCount = event.scan.hosts.size
+                            showToast(toastContainerDefault) {
+                                className("bg-gradient-to-r from-fuchsia-700 to-transparent shadow-xl")
+                                +"Received scan with $hostCount devices"
+                            }
+                            frameworkStore.handle { "$hostCount devices" }
+                        }
 
-                "dt/netmon/home/updates" -> {
-                    showToast(toastContainerDefault) {
-                        className("bg-gradient-to-r from-amber-700 to-transparent shadow-xl prose")
-                        h2 {
-                            +message
+                        is ScanEvent.HostDownEvent -> {
+                            showToast(toastContainerDefault) {
+                                className("bg-gradient-to-r from-red-700 to-transparent shadow-xl prose")
+                                h2 {
+                                    +event.host.ip.toString()
+                                }
+                            }
+                        }
+
+                        is ScanEvent.HostUpEvent -> {
+                            showToast(toastContainerDefault) {
+                                className("bg-gradient-to-r from-green-700 to-transparent shadow-xl prose")
+                                h2 {
+                                    +event.host.ip.toString()
+                                }
+                            }
                         }
                     }
-                }
 
-                else -> console.warn("Got message for topic", topic)
-            }
+                    console.debug("MQTT", "Decoded event", event)
+                },
+                onFailure = {
+                    console.error("MQTT", "Failed to decode event", it)
+                }
+            )
         }
         onError { console.error("MQTT", it) }
         onDisconnect { console.warn("MQTT", "Disconnection packet received from broker", it) }
