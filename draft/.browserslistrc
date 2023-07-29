@@ -1,0 +1,6 @@
+# check on https://browsersl.ist
+# source: https://github.com/tailwindlabs/tailwindcss/blob/8132de6660defa34936a698a24c72ff94c83874c/package.json#L102
+> 1%
+not edge <= 18
+not ie 11
+not op_mini all

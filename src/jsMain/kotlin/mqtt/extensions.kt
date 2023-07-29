@@ -18,7 +18,7 @@ fun MqttClient.subscribe(topic: String, options: ClientSubscribeOptions.() -> Un
  * Registers the given [callback] which is invoked on successful (re)connection (i.e., connack rc=0).
  * @see <a href="https://github.com/mqttjs/MQTT.js/#event-connect">Event 'connect'</a>
  */
-fun MqttClient.onConnect(callback: () -> Unit): Unit = on("connect", callback)
+fun MqttClient.onConnect(callback: (packet: dynamic) -> Unit): Unit = on("connect", callback)
 
 /**
  * Registers the given [callback] which is invoked after a disconnection.

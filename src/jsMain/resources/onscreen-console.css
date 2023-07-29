@@ -1,0 +1,34 @@
+@tailwind components;
+
+@layer components {
+  .onscreen-console {
+    @apply fixed top-0 inset-x-0 h-[50vh] overflow-x-hidden overflow-y-auto shadow-2xl;
+    @apply bg-stone-800/95 text-stone-400 text-sm flex flex-col-reverse;
+    @apply empty:before:content-['𝗖𝗼𝗻𝘀𝗼𝗹𝗲\A𝘓𝘰𝘨_𝘮𝘦𝘴𝘴𝘢𝘨𝘦𝘴_𝘢𝘱𝘱𝘦𝘢𝘳_𝘩𝘦𝘳𝘦…'] empty:before:whitespace-pre empty:before:p-2;
+  }
+  .onscreen-console > * + * {
+    @apply border-t border-stone-400/25;
+  }
+  .onscreen-console > * {
+    @apply p-2 flex gap-2;
+  }
+  .onscreen-console > [data-msg-type] {
+    /* important for ⚠ and ℹ to render as emojis */
+    @apply font-serif;
+  }
+  .onscreen-console > [data-msg-type=error] {
+    @apply bg-red-500/25 text-red-500 before:content-['❌'];
+  }
+  .onscreen-console > [data-msg-type=warn] {
+    @apply bg-yellow-500/25 text-yellow-500 before:content-['⚠️'];
+  }
+  .onscreen-console > [data-msg-type=info] {
+    @apply before:content-['ℹ️'];
+  }
+  .onscreen-console > [data-msg-type=debug] {
+    @apply text-blue-500;
+  }
+  .onscreen-console > * > pre {
+    @apply font-mono whitespace-pre-wrap break-all;
+  }
+}

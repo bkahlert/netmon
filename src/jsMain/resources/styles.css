@@ -1,7 +1,8 @@
 @import url("./utils.css");
+@import url("./onscreen-console.css");
 @tailwind base;
-@tailwind utilities;
 @tailwind components;
+@tailwind utilities;
 
 html { @apply h-full bg-invert text-invert; }
 body { @apply min-h-full overflow-y-auto bg-hero-graph-paper; }
@@ -9,6 +10,6 @@ body { @apply min-h-full overflow-y-auto bg-hero-graph-paper; }
 /* pseudo-element to create a zero-height barrier at the top to avoid collapsing margins */
 body::before { @apply content-[''] table h-0; }
 
-#console {
-  @apply h-[50vh] bg-black bg-opacity-50 text-white font-mono font-bold text-lg;
+.app {
+  @apply sm:p-4;
 }

@@ -33,6 +33,7 @@
 /* Prototyping class simplified visual debugging */
 /* Delete, if not needed */
 @layer utilities {
+  .debug { @apply relative; }
   .debug { @apply ring-8 ring-fuchsia-500/50 ring-inset ring-offset-0; }
   .debug > * { @apply ring ring-fuchsia-700/50; }
   .debug > * { @apply ring-1 ring-fuchsia-900/75; }

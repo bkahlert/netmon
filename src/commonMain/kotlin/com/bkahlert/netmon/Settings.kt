@@ -13,7 +13,5 @@ data object Settings {
 
     object WebDisplay {
         val brokerPort: Int = 8081
-        val globalCatch: Boolean = false
-        val onScreenConsole: Boolean = false
     }
 }

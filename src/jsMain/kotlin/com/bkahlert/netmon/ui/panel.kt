@@ -17,8 +17,8 @@ public fun RenderContext.panel(
     content: ContentBuilder<HTMLDivElement>? = null,
 ): Tag<HTMLElement> = div(
     classes(
-        "space-y-5 py-4 sm:px-4 sm:rounded-xl",
-        "bg-white/10 border border-white/20",
+        "space-y-5 pt-4 sm:pb-4 sm:px-4 sm:rounded-xl",
+        "bg-white/10 sm:border sm:border-white/20",
         classes,
     )
 ) {
@@ -27,7 +27,7 @@ public fun RenderContext.panel(
         div("text-xl font-bold") { +name }
     }
 
-    div("grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4") {
+    div("sm:grid grid-cols-[repeat(auto-fit,minmax(min(15rem,100%),1fr))] gap-4") {
         content?.invoke(this)
     }
 }
@@ -46,8 +46,8 @@ public fun RenderContext.subPanel(
     content: ContentBuilder<HTMLDivElement>? = null,
 ): Tag<HTMLElement> = div(
     classes(
-        "space-y-5 py-4 sm:px-4 sm:rounded-xl",
-        "bg-white/10 border border-white/20",
+        "space-y-5 pt-4 sm:pb-4 sm:px-4 sm:rounded-xl",
+        "bg-white/10 sm:border sm:border-white/20",
         "grid grid-rows-[1fr_minmax(1px,100%)]",
         classes,
     )
