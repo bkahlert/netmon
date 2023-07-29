@@ -11,9 +11,9 @@ class MqttPublisherTest {
             host = "test.mosquitto.org",
             port = 1883,
             stringFormat = JsonFormat,
-            serializer = ScanEvent.serializer(),
+            serializer = Event.serializer(),
         )
 
-        publisher.publish("test", ScanEvent.DOWN) shouldBe true
+        publisher.publish("test", Event.DOWN) shouldBe true
     }
 }

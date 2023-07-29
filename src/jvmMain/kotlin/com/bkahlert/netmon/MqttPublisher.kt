@@ -38,6 +38,7 @@ data class MqttPublisher<T>(
             .publishWith()
             .topic(topic)
             .qos(MqttQos.AT_LEAST_ONCE)
+            .retain(true)
             .payloadFormatIndicator(Mqtt5PayloadFormatIndicator.UTF_8)
             .apply { if (stringFormat is Json) contentType("application/json") }
             .payload(bytes)

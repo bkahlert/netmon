@@ -4,12 +4,12 @@ import com.bkahlert.kommons.logging.logback.Logback
 import com.bkahlert.kommons.logging.logback.StructuredArguments.a
 import com.bkahlert.kommons.logging.logback.StructuredArguments.kv
 import com.bkahlert.kommons.logging.logback.StructuredArguments.o
+import com.bkahlert.netmon.Event
 import com.bkahlert.netmon.JsonFormat
 import com.bkahlert.netmon.MqttPublisher
 import com.bkahlert.netmon.NetmonScanner
 import com.bkahlert.netmon.Network
 import com.bkahlert.netmon.NmapNetworkScanner
-import com.bkahlert.netmon.ScanEvent
 import com.bkahlert.netmon.Settings
 import com.bkahlert.netmon.Status
 import com.bkahlert.netmon.cidr
@@ -109,25 +109,32 @@ fun main(args: Array<String>) {
         host = Settings.brokerHost,
         port = Settings.Scanner.brokerPort,
         stringFormat = JsonFormat,
-        serializer = ScanEvent.serializer(),
+        serializer = Event.serializer(),
     )
 
     val netmons: List<NetmonScanner> = networks.map { network ->
-        val source = network.toString()
         NetmonScanner(
             network = network.cidr,
             scanner = scanner,
             onScan = { scan ->
                 publisher.publish(
-                    topic = "dt/netmon/home/scans",
-                    event = ScanEvent.ScanCompletedEvent(source = source, scan = scan),
+                    topic = "dt/netmon/home/scan",
+                    event = Event.ScanEvent(
+                        network = network,
+                        type = Event.ScanEvent.Type.COMPLETED,
+                        hosts = scan.hosts,
+                        timestamp = scan.timestamp,
+                    ),
                 )
             },
             onChange = { host ->
                 publisher.publish(
-                    topic = "dt/netmon/home/updates",
-                    event = if (host.status == Status.DOWN) ScanEvent.HostDownEvent(source = source, host = host)
-                    else ScanEvent.HostUpEvent(source = source, host = host),
+                    topic = "dt/netmon/home/host",
+                    event = Event.HostEvent(
+                        network = network,
+                        type = if (host.status == Status.DOWN) Event.HostEvent.Type.DOWN else Event.HostEvent.Type.UP,
+                        host = host,
+                    ),
                 )
             },
         ).apply { start() }

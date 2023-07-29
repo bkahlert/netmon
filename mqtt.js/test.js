@@ -42,7 +42,7 @@ client.on('error', (err) => {
 
 client.on('connect', () => {
   consoleLog('client connected:' + clientId)
-  client.subscribe('dt/netmon/home/scans', { qos: 1 })
+  client.subscribe('dt/netmon/home/scan', { qos: 1 })
 })
 
 client.on('message', (topic, message, packet) => {

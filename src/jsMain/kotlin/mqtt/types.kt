@@ -1,16 +1,46 @@
 package mqtt
 
+/**
+ * Entrypoint for the [MQTT client](https://github.com/mqttjs/MQTT.js/#api)
+ */
 @JsModule("./mqtt")
 @JsNonModule
 external object MQTT {
-    fun connect(brokerUrl: String): MqttClient
+    /**
+     * Connects to the broker specified by the given [url] and [options],
+     * and returns a [MqttClient].
+     *
+     * @see <a href="https://github.com/mqttjs/MQTT.js/#mqttconnecturl-options">mqtt.connect([url], options)</a>
+     */
+    fun connect(url: String, options: dynamic = definedExternally): MqttClient
 }
 
+/**
+ * [MQTT client](https://github.com/mqttjs/MQTT.js/#api)
+ */
 external object MqttClient {
-    fun subscribe(topic: String, opts: ClientSubscribeOptions = definedExternally): MqttClient
+    /**
+     * Subscribes to the specified [topic] with the given [options].
+     * @see <a href="https://github.com/mqttjs/MQTT.js/#mqttclientsubscribetopictopic-arraytopic-object-options-callback">Event 'connect'</a>
+     */
+    fun subscribe(topic: String, options: ClientSubscribeOptions = definedExternally): MqttClient
+
+    /**
+     * Registers the given [callback] which is invoked when the specified [event].
+     *
+     * @see <a href="https://github.com/mqttjs/MQTT.js/#event-connect">Event overview</a>
+     */
     fun <T : Function<Unit>> on(event: String, callback: T)
+
+    /**
+     * Unregisters the previously registered [callback] from invocations for the specified [event].
+     */
+    fun <T : Function<Unit>> off(event: String, callback: T)
 }
 
+/**
+ * Options for [MqttClient.subscribe]
+ */
 external interface ClientSubscribeOptions {
     /**
      * 0: Received at most once

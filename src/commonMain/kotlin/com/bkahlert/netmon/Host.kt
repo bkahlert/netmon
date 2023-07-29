@@ -12,6 +12,5 @@ data class Host(
     @SerialName("status") val status: Status? = null,
     @SerialName("since") @Serializable(InstantAsEpochSecondsSerializer::class) val since: Instant? = null,
 ) {
-
     companion object
 }

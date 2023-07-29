@@ -10,4 +10,6 @@ data class Network(
     @SerialName("cidr") val cidr: Cidr,
 ) {
     override fun toString(): String = "$hostname:${`interface`}($cidr)"
+
+    companion object
 }
