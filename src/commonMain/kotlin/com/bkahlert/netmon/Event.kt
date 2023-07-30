@@ -7,7 +7,7 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonClassDiscriminator
 
 /**
- * MQTT topic: `dt/netmon/home`
+ * MQTT topic: `dt/netmon/${unqualifiedHostname}/${event}`
  * @see <a href="https://docs.aws.amazon.com/whitepapers/latest/designing-mqtt-topics-aws-iot-core/mqtt-design-best-practices.html">MQTT Design Best Practices</a>
  */
 @Serializable
@@ -18,7 +18,7 @@ sealed interface Event {
     val network: Network
 
     @Serializable
-    @SerialName("scan-completed")
+    @SerialName("scan")
     data class ScanEvent(
         @SerialName("type") val type: Type,
         override val network: Network,

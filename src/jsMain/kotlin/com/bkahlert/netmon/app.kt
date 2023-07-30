@@ -2,18 +2,20 @@ package com.bkahlert.netmon
 
 import com.bkahlert.kommons.js.OnScreenConsole
 import com.bkahlert.kommons.js.console
+import com.bkahlert.kommons.time.Now
 import com.bkahlert.kommons.time.toMomentString
 import com.bkahlert.kommons.uri.fragmentParameters
 import com.bkahlert.kommons.uri.queryParameters
 import com.bkahlert.kommons.uri.toUri
 import com.bkahlert.netmon.net.HostEventsStore
 import com.bkahlert.netmon.net.ScanEventsStore
+import com.bkahlert.netmon.net.UptimeStore
 import com.bkahlert.netmon.net.decode
 import com.bkahlert.netmon.ui.heroicons.SolidHeroIcons
 import com.bkahlert.netmon.ui.host
 import com.bkahlert.netmon.ui.icon
+import com.bkahlert.netmon.ui.network
 import com.bkahlert.netmon.ui.networks
-import com.bkahlert.netmon.ui.panel
 import dev.fritz2.core.handledBy
 import dev.fritz2.core.render
 import io.ktor.http.ParametersBuilder
@@ -21,6 +23,7 @@ import kotlinx.browser.window
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.flow.transform
 import mqtt.MQTT
 import mqtt.messages
 import mqtt.onClose
@@ -28,6 +31,7 @@ import mqtt.onConnect
 import mqtt.onDisconnect
 import mqtt.onError
 import mqtt.subscribe
+import kotlin.time.Duration.Companion.minutes
 
 @JsModule("./loading.svg")
 @JsNonModule
@@ -36,6 +40,7 @@ private external val loadingImage: String
 suspend fun main() {
     loadingImage
 
+    val removeScanEventsOlderThan = 5.minutes
     val onScreenConsole = OnScreenConsole(console).apply { enable() }
 
     val parameters = window.location.href.toUri().run {
@@ -57,19 +62,19 @@ suspend fun main() {
 
         onConnect { packet ->
             console.info("MQTT", "Connected", packet)
-            subscribe("dt/netmon/home/scan") { qos = 1 }
-            subscribe("dt/netmon/home/host") { qos = 1 }
+            subscribe("dt/netmon/+/scan") { qos = 1 }
+            subscribe("dt/netmon/+/host") { qos = 1 }
             console.info("MQTT", "Subscription initiated")
             console.info("Hiding on-screen console when as soon as first event was processed...")
         }
 
         messages
-            .filter { (topic, _, _) -> topic == "dt/netmon/home/scan" }
+            .filter { (topic, _, _) -> topic.endsWith("/scan") }
             .decode<Event.ScanEvent>()
             .onEach { onScreenConsole.disable() } handledBy scanEventsStore.process
 
         messages
-            .filter { (topic, _, _) -> topic == "dt/netmon/home/host" }
+            .filter { (topic, _, _) -> topic.endsWith("/host") }
             .decode<Event.HostEvent>()
             .onEach { onScreenConsole.disable() } handledBy hostEventsStore.process
 
@@ -78,9 +83,20 @@ suspend fun main() {
         onClose { console.warn("MQTT", "Disconnected") }
     }
 
+
+    val uptimeStore = UptimeStore().apply {
+        data.transform {
+            scanEventsStore.current
+                .associateWith { Now - it.timestamp }
+                .filterValues { it > removeScanEventsOlderThan }
+                .forEach { emit(it.key) }
+        } handledBy scanEventsStore.outdated
+    }
+
     render("#root") {
+        div { uptimeStore.data.render(this) { +"Uptime: ${it.toMomentString(descriptive = false)}" } }
         networks(scanEventsStore) { (_, network, hosts, timestamp) ->
-            panel(
+            network(
                 name = network.hostname,
                 icon = SolidHeroIcons.server,
                 extra = {
@@ -91,7 +107,7 @@ suspend fun main() {
                             span("font-semibold") { +network.`interface` }
                         }
                         li {
-                            span("font-semibold") { ticks().render(into = this) { +timestamp.toMomentString() } }
+                            span("font-semibold") { uptimeStore.data.map { timestamp.toMomentString() }.render(into = this) { +it } }
                         }
                     }
                 },
@@ -110,7 +126,7 @@ suspend fun main() {
                     }
                 }
 
-                ul("grid grid-cols-[repeat(auto-fit,minmax(min-content,200px))] gap-4") {
+                ul("grid grid-cols-[repeat(auto-fit,minmax(0,150px))] justify-between gap-4") {
                     hosts.forEach { host ->
                         li { host(host) }
                     }

@@ -60,7 +60,7 @@ rsync -rvz --delete \
 #### Compile production distribution and push to Raspberry Pi
 
 ```shell
-./gradlew --no-daemon clean jsBrowserProductionWebpack \
+./gradlew --no-daemon clean jsBrowserProductionWebpack
 rsync -rvz --delete \
   build/dist/js/productionExecutable/ \
   pi@netmon.local:/home/pi/netmon/netmon-web-display/

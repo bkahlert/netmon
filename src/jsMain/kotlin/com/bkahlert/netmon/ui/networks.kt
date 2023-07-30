@@ -1,9 +1,10 @@
-@file:Suppress("RedundantVisibilityModifier")
-
 package com.bkahlert.netmon.ui
 
+import com.bkahlert.kommons.time.toMomentString
 import com.bkahlert.kommons.uri.Uri
 import com.bkahlert.netmon.Event
+import com.bkahlert.netmon.Host
+import com.bkahlert.netmon.Status
 import com.bkahlert.netmon.net.ScanEventsStore
 import com.bkahlert.netmon.ui.heroicons.SolidHeroIcons
 import dev.fritz2.core.RenderContext
@@ -12,14 +13,15 @@ import dev.fritz2.core.classes
 import org.w3c.dom.HTMLDivElement
 import org.w3c.dom.HTMLElement
 
-public fun RenderContext.networks(
+fun RenderContext.networks(
     scanEventsStore: ScanEventsStore,
     content: RenderContext.(Event.ScanEvent) -> Tag<HTMLElement>,
 ): Tag<HTMLElement> = div("sm:grid grid-cols-[repeat(auto-fit,minmax(min(15rem,100%),1fr))] gap-4") {
     scanEventsStore.data.renderEach(idProvider = { "${it.network}-${it.timestamp}" }, content = content)
 }
 
-public fun RenderContext.panel(
+
+fun RenderContext.network(
     classes: String? = null,
     name: String,
     icon: Uri? = null,
@@ -44,8 +46,35 @@ public fun RenderContext.panel(
     }
 }
 
-public fun RenderContext.panel(
+fun RenderContext.network(
     name: String,
     icon: Uri? = null,
     content: ContentBuilder<HTMLDivElement>? = null,
-): Tag<HTMLElement> = panel(null, name, icon, content)
+): Tag<HTMLElement> = network(null, name, icon, content)
+
+fun RenderContext.host(host: Host) =
+    div("flex justify-center sm:justify-start gap-x-2 truncate") {
+        icon("shrink-0 w-10 h-10", SolidHeroIcons.computer_desktop) {
+            className(
+                when (host.status) {
+                    is Status.UP -> "text-green-600"
+                    is Status.DOWN -> "text-red-600"
+                    is Status.UNKNOWN -> "text-yellow-600"
+                    else -> ""
+                }
+            )
+        }
+        span("truncate") {
+            host.name?.also { div("text-sm font-bold truncate") { +it } }
+            div("text-sm") { +host.ip.toString() }
+            host.status?.also { status ->
+                div("text-xs") {
+                    +status.toString()
+                    host.since?.also {
+                        +" since "
+                        +it.toMomentString(descriptive = false)
+                    }
+                }
+            }
+        }
+    }

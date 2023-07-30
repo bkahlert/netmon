@@ -43,6 +43,7 @@ fun main(args: Array<String>) {
         .getOrElse { throw IllegalStateException("Failed to determine localhost", it) }
     val hostname = runCatching { localhost.hostName }
         .getOrElse { throw IllegalStateException("Failed to determine hostname", it) }
+    val unqualifiedHostname = runCatching { hostname.substringBefore('.') }
 
     logger.info("Hostname: {}", kv("hostname", hostname))
 
@@ -73,7 +74,7 @@ fun main(args: Array<String>) {
                 resolver = resolver,
                 onScan = { scan ->
                     publisher.publish(
-                        topic = "dt/netmon/home/scan",
+                        topic = "dt/netmon/$unqualifiedHostname/scan",
                         event = Event.ScanEvent(
                             network = network,
                             type = Event.ScanEvent.Type.COMPLETED,
@@ -84,7 +85,7 @@ fun main(args: Array<String>) {
                 },
                 onChange = { host ->
                     publisher.publish(
-                        topic = "dt/netmon/home/host",
+                        topic = "dt/netmon/$unqualifiedHostname/host",
                         event = Event.HostEvent(
                             network = network,
                             type = if (host.status == Status.DOWN) Event.HostEvent.Type.DOWN else Event.HostEvent.Type.UP,

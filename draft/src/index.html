@@ -10,6 +10,7 @@
 </head>
 <body>
 <div id="root" class="app">
+    <div data-mount-point="">Uptime: 7m</div>
     <div class="sm:grid grid-cols-[repeat(auto-fit,minmax(min(15rem,100%),1fr))] gap-4">
         <div class="mount-point" data-mount-point="">
             <div class="space-y-5 pt-4 sm:pb-4 sm:px-4 sm:rounded-xl bg-white/10 sm:border sm:border-white/20 grid grid-rows-[1fr_minmax(1px,100%)]">
@@ -25,7 +26,7 @@
                     <div class="flex-grow">
                         <ul class="flex flex-col items-end text-xs">
                             <li><span class="font-semibold">192.168.16.46/24</span> on <span class="font-semibold">eth0</span></li>
-                            <li><span class="font-semibold" data-mount-point="">1s ago</span></li>
+                            <li><span class="font-semibold" data-mount-point="">10s ago</span></li>
                         </ul>
                     </div>
                 </div>
@@ -38,7 +39,15 @@
                                           d="M12 2.25c-5.385 0-9.75 4.365-9.75 9.75s4.365 9.75 9.75 9.75 9.75-4.365 9.75-9.75S17.385 2.25 12 2.25zm.53 5.47a.75.75 0 0 0-1.06 0l-3 3a.75.75 0 1 0 1.06 1.06l1.72-1.72v5.69a.75.75 0 0 0 1.5 0v-5.69l1.72 1.72a.75.75 0 1 0 1.06-1.06l-3-3z"
                                           clip-rule="evenodd"></path>
                                 </svg>
-                                192.168.16.38 is up
+                                192.168.16.41 is up
+                            </div>
+                            <div class="bg-gradient-to-r from-green-700 to-transparent shadow-xl">
+                                <svg class="shrink-0 w-12 h-12 text-green-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+                                    <path fill-rule="evenodd"
+                                          d="M12 2.25c-5.385 0-9.75 4.365-9.75 9.75s4.365 9.75 9.75 9.75 9.75-4.365 9.75-9.75S17.385 2.25 12 2.25zm.53 5.47a.75.75 0 0 0-1.06 0l-3 3a.75.75 0 1 0 1.06 1.06l1.72-1.72v5.69a.75.75 0 0 0 1.5 0v-5.69l1.72 1.72a.75.75 0 1 0 1.06-1.06l-3-3z"
+                                          clip-rule="evenodd"></path>
+                                </svg>
+                                192.168.16.31 is up
                             </div>
                             <div class="bg-gradient-to-r from-red-700 to-transparent shadow-xl">
                                 <svg class="shrink-0 w-12 h-12 text-red-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
@@ -48,1420 +57,170 @@
                                 </svg>
                                 192.168.16.31 is down
                             </div>
-                            <div class="bg-gradient-to-r from-red-700 to-transparent shadow-xl">
-                                <svg class="shrink-0 w-12 h-12 text-red-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-                                    <path fill-rule="evenodd"
-                                          d="M12 2.25c-5.385 0-9.75 4.365-9.75 9.75s4.365 9.75 9.75 9.75 9.75-4.365 9.75-9.75S17.385 2.25 12 2.25zm-.53 14.03a.75.75 0 0 0 1.06 0l3-3a.75.75 0 1 0-1.06-1.06l-1.72 1.72V8.25a.75.75 0 0 0-1.5 0v5.69l-1.72-1.72a.75.75 0 0 0-1.06 1.06l3 3z"
-                                          clip-rule="evenodd"></path>
-                                </svg>
-                                192.168.16.41 is down
-                            </div>
                         </div>
-                        <ul class="grid grid-cols-[repeat(auto-fit,minmax(min(min-content,100%),1fr))] gap-4">
+                        <div class="debug">Debug: <span class="font-semibold" data-mount-point="">2023-07-30T23:21:22.666Z</span></div>
+                        <ul class="grid grid-cols-[repeat(auto-fit,minmax(0,200px))] justify-between gap-4">
                             <li>
-                                <div class="flex items-center justify-center sm:justify-start gap-x-2 truncate">
+                                <div class="flex items-center justify-center sm:justify-start gap-x-2 truncate debug">
                                     <svg class="shrink-0 w-10 h-10 text-green-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
                                         <path fill-rule="evenodd"
                                               d="M2.25 5.25a3 3 0 0 1 3-3h13.5a3 3 0 0 1 3 3V15a3 3 0 0 1-3 3h-3v.257c0 .597.237 1.17.659 1.591l.621.622a.75.75 0 0 1-.53 1.28h-9a.75.75 0 0 1-.53-1.28l.621-.622a2.25 2.25 0 0 0 .659-1.59V18h-3a3 3 0 0 1-3-3V5.25zm1.5 0v7.5a1.5 1.5 0 0 0 1.5 1.5h13.5a1.5 1.5 0 0 0 1.5-1.5v-7.5a1.5 1.5 0 0 0-1.5-1.5H5.25a1.5 1.5 0 0 0-1.5 1.5z"
                                               clip-rule="evenodd"></path>
                                     </svg>
-                                    <span class="truncate"><div class="text-sm">192.168.16.1</div><div class="text-xs">UP</div></span></div>
+                                    <span class="truncate"><div class="text-sm">192.168.16.1</div><div class="text-xs">UP since now</div></span></div>
                             </li>
                             <li>
-                                <div class="flex items-center justify-center sm:justify-start gap-x-2 truncate">
+                                <div class="flex items-center justify-center sm:justify-start gap-x-2 truncate debug">
                                     <svg class="shrink-0 w-10 h-10 text-green-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
                                         <path fill-rule="evenodd"
                                               d="M2.25 5.25a3 3 0 0 1 3-3h13.5a3 3 0 0 1 3 3V15a3 3 0 0 1-3 3h-3v.257c0 .597.237 1.17.659 1.591l.621.622a.75.75 0 0 1-.53 1.28h-9a.75.75 0 0 1-.53-1.28l.621-.622a2.25 2.25 0 0 0 .659-1.59V18h-3a3 3 0 0 1-3-3V5.25zm1.5 0v7.5a1.5 1.5 0 0 0 1.5 1.5h13.5a1.5 1.5 0 0 0 1.5-1.5v-7.5a1.5 1.5 0 0 0-1.5-1.5H5.25a1.5 1.5 0 0 0-1.5 1.5z"
                                               clip-rule="evenodd"></path>
                                     </svg>
-                                    <span class="truncate"><div class="text-sm">192.168.16.10</div><div class="text-xs">UP</div></span></div>
+                                    <span class="truncate"><div class="text-sm font-bold">Anirul.local</div><div class="text-sm">192.168.16.10</div><div
+                                        class="text-xs">UP since now</div></span></div>
                             </li>
                             <li>
-                                <div class="flex items-center justify-center sm:justify-start gap-x-2 truncate">
+                                <div class="flex items-center justify-center sm:justify-start gap-x-2 truncate debug">
                                     <svg class="shrink-0 w-10 h-10 text-green-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
                                         <path fill-rule="evenodd"
                                               d="M2.25 5.25a3 3 0 0 1 3-3h13.5a3 3 0 0 1 3 3V15a3 3 0 0 1-3 3h-3v.257c0 .597.237 1.17.659 1.591l.621.622a.75.75 0 0 1-.53 1.28h-9a.75.75 0 0 1-.53-1.28l.621-.622a2.25 2.25 0 0 0 .659-1.59V18h-3a3 3 0 0 1-3-3V5.25zm1.5 0v7.5a1.5 1.5 0 0 0 1.5 1.5h13.5a1.5 1.5 0 0 0 1.5-1.5v-7.5a1.5 1.5 0 0 0-1.5-1.5H5.25a1.5 1.5 0 0 0-1.5 1.5z"
                                               clip-rule="evenodd"></path>
                                     </svg>
-                                    <span class="truncate"><div class="text-sm">192.168.16.30</div><div class="text-xs">UP</div></span></div>
+                                    <span class="truncate"><div class="text-sm">192.168.16.30</div><div class="text-xs">UP since now</div></span></div>
                             </li>
                             <li>
-                                <div class="flex items-center justify-center sm:justify-start gap-x-2 truncate">
+                                <div class="flex items-center justify-center sm:justify-start gap-x-2 truncate debug">
                                     <svg class="shrink-0 w-10 h-10 text-green-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
                                         <path fill-rule="evenodd"
                                               d="M2.25 5.25a3 3 0 0 1 3-3h13.5a3 3 0 0 1 3 3V15a3 3 0 0 1-3 3h-3v.257c0 .597.237 1.17.659 1.591l.621.622a.75.75 0 0 1-.53 1.28h-9a.75.75 0 0 1-.53-1.28l.621-.622a2.25 2.25 0 0 0 .659-1.59V18h-3a3 3 0 0 1-3-3V5.25zm1.5 0v7.5a1.5 1.5 0 0 0 1.5 1.5h13.5a1.5 1.5 0 0 0 1.5-1.5v-7.5a1.5 1.5 0 0 0-1.5-1.5H5.25a1.5 1.5 0 0 0-1.5 1.5z"
                                               clip-rule="evenodd"></path>
                                     </svg>
-                                    <span class="truncate"><div class="text-sm">192.168.16.32</div><div class="text-xs">UP</div></span></div>
+                                    <span class="truncate"><div class="text-sm">192.168.16.31</div><div class="text-xs">UP since now</div></span></div>
                             </li>
                             <li>
-                                <div class="flex items-center justify-center sm:justify-start gap-x-2 truncate">
+                                <div class="flex items-center justify-center sm:justify-start gap-x-2 truncate debug">
                                     <svg class="shrink-0 w-10 h-10 text-green-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
                                         <path fill-rule="evenodd"
                                               d="M2.25 5.25a3 3 0 0 1 3-3h13.5a3 3 0 0 1 3 3V15a3 3 0 0 1-3 3h-3v.257c0 .597.237 1.17.659 1.591l.621.622a.75.75 0 0 1-.53 1.28h-9a.75.75 0 0 1-.53-1.28l.621-.622a2.25 2.25 0 0 0 .659-1.59V18h-3a3 3 0 0 1-3-3V5.25zm1.5 0v7.5a1.5 1.5 0 0 0 1.5 1.5h13.5a1.5 1.5 0 0 0 1.5-1.5v-7.5a1.5 1.5 0 0 0-1.5-1.5H5.25a1.5 1.5 0 0 0-1.5 1.5z"
                                               clip-rule="evenodd"></path>
                                     </svg>
-                                    <span class="truncate"><div class="text-sm">192.168.16.33</div><div class="text-xs">UP</div></span></div>
+                                    <span class="truncate"><div class="text-sm font-bold">192-168-16-32.local</div><div class="text-sm">192.168.16.32</div><div
+                                        class="text-xs">UP since now</div></span></div>
                             </li>
                             <li>
-                                <div class="flex items-center justify-center sm:justify-start gap-x-2 truncate">
+                                <div class="flex items-center justify-center sm:justify-start gap-x-2 truncate debug">
                                     <svg class="shrink-0 w-10 h-10 text-green-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
                                         <path fill-rule="evenodd"
                                               d="M2.25 5.25a3 3 0 0 1 3-3h13.5a3 3 0 0 1 3 3V15a3 3 0 0 1-3 3h-3v.257c0 .597.237 1.17.659 1.591l.621.622a.75.75 0 0 1-.53 1.28h-9a.75.75 0 0 1-.53-1.28l.621-.622a2.25 2.25 0 0 0 .659-1.59V18h-3a3 3 0 0 1-3-3V5.25zm1.5 0v7.5a1.5 1.5 0 0 0 1.5 1.5h13.5a1.5 1.5 0 0 0 1.5-1.5v-7.5a1.5 1.5 0 0 0-1.5-1.5H5.25a1.5 1.5 0 0 0-1.5 1.5z"
                                               clip-rule="evenodd"></path>
                                     </svg>
-                                    <span class="truncate"><div class="text-sm">192.168.16.34</div><div class="text-xs">UP</div></span></div>
+                                    <span class="truncate"><div class="text-sm font-bold">Paul.local</div><div class="text-sm">192.168.16.33</div><div
+                                        class="text-xs">UP since now</div></span></div>
                             </li>
                             <li>
-                                <div class="flex items-center justify-center sm:justify-start gap-x-2 truncate">
+                                <div class="flex items-center justify-center sm:justify-start gap-x-2 truncate debug">
                                     <svg class="shrink-0 w-10 h-10 text-green-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
                                         <path fill-rule="evenodd"
                                               d="M2.25 5.25a3 3 0 0 1 3-3h13.5a3 3 0 0 1 3 3V15a3 3 0 0 1-3 3h-3v.257c0 .597.237 1.17.659 1.591l.621.622a.75.75 0 0 1-.53 1.28h-9a.75.75 0 0 1-.53-1.28l.621-.622a2.25 2.25 0 0 0 .659-1.59V18h-3a3 3 0 0 1-3-3V5.25zm1.5 0v7.5a1.5 1.5 0 0 0 1.5 1.5h13.5a1.5 1.5 0 0 0 1.5-1.5v-7.5a1.5 1.5 0 0 0-1.5-1.5H5.25a1.5 1.5 0 0 0-1.5 1.5z"
                                               clip-rule="evenodd"></path>
                                     </svg>
-                                    <span class="truncate"><div class="text-sm">192.168.16.35</div><div class="text-xs">UP</div></span></div>
+                                    <span class="truncate"><div class="text-sm font-bold truncate">Alia-baba-baba-baba-baba-baba-baba.local</div><div
+                                        class="text-sm">192.168.16.34</div><div
+                                        class="text-xs">UP since now</div></span></div>
                             </li>
                             <li>
-                                <div class="flex items-center justify-center sm:justify-start gap-x-2 truncate">
+                                <div class="flex items-center justify-center sm:justify-start gap-x-2 truncate debug">
                                     <svg class="shrink-0 w-10 h-10 text-green-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
                                         <path fill-rule="evenodd"
                                               d="M2.25 5.25a3 3 0 0 1 3-3h13.5a3 3 0 0 1 3 3V15a3 3 0 0 1-3 3h-3v.257c0 .597.237 1.17.659 1.591l.621.622a.75.75 0 0 1-.53 1.28h-9a.75.75 0 0 1-.53-1.28l.621-.622a2.25 2.25 0 0 0 .659-1.59V18h-3a3 3 0 0 1-3-3V5.25zm1.5 0v7.5a1.5 1.5 0 0 0 1.5 1.5h13.5a1.5 1.5 0 0 0 1.5-1.5v-7.5a1.5 1.5 0 0 0-1.5-1.5H5.25a1.5 1.5 0 0 0-1.5 1.5z"
                                               clip-rule="evenodd"></path>
                                     </svg>
-                                    <span class="truncate"><div class="text-sm">192.168.16.38</div><div class="text-xs">UP</div></span></div>
+                                    <span class="truncate"><div class="text-sm">192.168.16.41</div><div class="text-xs">UP since now</div></span></div>
                             </li>
                             <li>
-                                <div class="flex items-center justify-center sm:justify-start gap-x-2 truncate">
+                                <div class="flex items-center justify-center sm:justify-start gap-x-2 truncate debug">
                                     <svg class="shrink-0 w-10 h-10 text-green-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
                                         <path fill-rule="evenodd"
                                               d="M2.25 5.25a3 3 0 0 1 3-3h13.5a3 3 0 0 1 3 3V15a3 3 0 0 1-3 3h-3v.257c0 .597.237 1.17.659 1.591l.621.622a.75.75 0 0 1-.53 1.28h-9a.75.75 0 0 1-.53-1.28l.621-.622a2.25 2.25 0 0 0 .659-1.59V18h-3a3 3 0 0 1-3-3V5.25zm1.5 0v7.5a1.5 1.5 0 0 0 1.5 1.5h13.5a1.5 1.5 0 0 0 1.5-1.5v-7.5a1.5 1.5 0 0 0-1.5-1.5H5.25a1.5 1.5 0 0 0-1.5 1.5z"
                                               clip-rule="evenodd"></path>
                                     </svg>
-                                    <span class="truncate"><div class="text-sm">192.168.16.42</div><div class="text-xs">UP</div></span></div>
+                                    <span class="truncate"><div class="text-sm font-bold">Sonos-48A6B8164118.local</div><div class="text-sm">192.168.16.42</div><div
+                                        class="text-xs">UP since now</div></span></div>
                             </li>
                             <li>
-                                <div class="flex items-center justify-center sm:justify-start gap-x-2 truncate">
+                                <div class="flex items-center justify-center sm:justify-start gap-x-2 truncate debug">
                                     <svg class="shrink-0 w-10 h-10 text-green-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
                                         <path fill-rule="evenodd"
                                               d="M2.25 5.25a3 3 0 0 1 3-3h13.5a3 3 0 0 1 3 3V15a3 3 0 0 1-3 3h-3v.257c0 .597.237 1.17.659 1.591l.621.622a.75.75 0 0 1-.53 1.28h-9a.75.75 0 0 1-.53-1.28l.621-.622a2.25 2.25 0 0 0 .659-1.59V18h-3a3 3 0 0 1-3-3V5.25zm1.5 0v7.5a1.5 1.5 0 0 0 1.5 1.5h13.5a1.5 1.5 0 0 0 1.5-1.5v-7.5a1.5 1.5 0 0 0-1.5-1.5H5.25a1.5 1.5 0 0 0-1.5 1.5z"
                                               clip-rule="evenodd"></path>
                                     </svg>
-                                    <span class="truncate"><div class="text-sm">192.168.16.120</div><div class="text-xs">UP</div></span></div>
+                                    <span class="truncate"><div class="text-sm">192.168.16.120</div><div class="text-xs">UP since now</div></span></div>
                             </li>
                             <li>
-                                <div class="flex items-center justify-center sm:justify-start gap-x-2 truncate">
+                                <div class="flex items-center justify-center sm:justify-start gap-x-2 truncate debug">
                                     <svg class="shrink-0 w-10 h-10 text-green-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
                                         <path fill-rule="evenodd"
                                               d="M2.25 5.25a3 3 0 0 1 3-3h13.5a3 3 0 0 1 3 3V15a3 3 0 0 1-3 3h-3v.257c0 .597.237 1.17.659 1.591l.621.622a.75.75 0 0 1-.53 1.28h-9a.75.75 0 0 1-.53-1.28l.621-.622a2.25 2.25 0 0 0 .659-1.59V18h-3a3 3 0 0 1-3-3V5.25zm1.5 0v7.5a1.5 1.5 0 0 0 1.5 1.5h13.5a1.5 1.5 0 0 0 1.5-1.5v-7.5a1.5 1.5 0 0 0-1.5-1.5H5.25a1.5 1.5 0 0 0-1.5 1.5z"
                                               clip-rule="evenodd"></path>
                                     </svg>
-                                    <span class="truncate"><div class="text-sm">192.168.16.140</div><div class="text-xs">UP</div></span></div>
+                                    <span class="truncate"><div class="text-sm">192.168.16.140</div><div class="text-xs">UP since now</div></span></div>
                             </li>
                             <li>
-                                <div class="flex items-center justify-center sm:justify-start gap-x-2 truncate">
+                                <div class="flex items-center justify-center sm:justify-start gap-x-2 truncate debug">
                                     <svg class="shrink-0 w-10 h-10 text-green-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
                                         <path fill-rule="evenodd"
                                               d="M2.25 5.25a3 3 0 0 1 3-3h13.5a3 3 0 0 1 3 3V15a3 3 0 0 1-3 3h-3v.257c0 .597.237 1.17.659 1.591l.621.622a.75.75 0 0 1-.53 1.28h-9a.75.75 0 0 1-.53-1.28l.621-.622a2.25 2.25 0 0 0 .659-1.59V18h-3a3 3 0 0 1-3-3V5.25zm1.5 0v7.5a1.5 1.5 0 0 0 1.5 1.5h13.5a1.5 1.5 0 0 0 1.5-1.5v-7.5a1.5 1.5 0 0 0-1.5-1.5H5.25a1.5 1.5 0 0 0-1.5 1.5z"
                                               clip-rule="evenodd"></path>
                                     </svg>
-                                    <span class="truncate"><div class="text-sm">192.168.16.141</div><div class="text-xs">UP</div></span></div>
+                                    <span class="truncate"><div class="text-sm">192.168.16.141</div><div class="text-xs">UP since now</div></span></div>
                             </li>
                             <li>
-                                <div class="flex items-center justify-center sm:justify-start gap-x-2 truncate">
+                                <div class="flex items-center justify-center sm:justify-start gap-x-2 truncate debug">
                                     <svg class="shrink-0 w-10 h-10 text-green-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
                                         <path fill-rule="evenodd"
                                               d="M2.25 5.25a3 3 0 0 1 3-3h13.5a3 3 0 0 1 3 3V15a3 3 0 0 1-3 3h-3v.257c0 .597.237 1.17.659 1.591l.621.622a.75.75 0 0 1-.53 1.28h-9a.75.75 0 0 1-.53-1.28l.621-.622a2.25 2.25 0 0 0 .659-1.59V18h-3a3 3 0 0 1-3-3V5.25zm1.5 0v7.5a1.5 1.5 0 0 0 1.5 1.5h13.5a1.5 1.5 0 0 0 1.5-1.5v-7.5a1.5 1.5 0 0 0-1.5-1.5H5.25a1.5 1.5 0 0 0-1.5 1.5z"
                                               clip-rule="evenodd"></path>
                                     </svg>
-                                    <span class="truncate"><div class="text-sm">192.168.16.142</div><div class="text-xs">UP</div></span></div>
+                                    <span class="truncate"><div class="text-sm">192.168.16.142</div><div class="text-xs">UP since now</div></span></div>
                             </li>
                             <li>
-                                <div class="flex items-center justify-center sm:justify-start gap-x-2 truncate">
+                                <div class="flex items-center justify-center sm:justify-start gap-x-2 truncate debug">
                                     <svg class="shrink-0 w-10 h-10 text-green-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
                                         <path fill-rule="evenodd"
                                               d="M2.25 5.25a3 3 0 0 1 3-3h13.5a3 3 0 0 1 3 3V15a3 3 0 0 1-3 3h-3v.257c0 .597.237 1.17.659 1.591l.621.622a.75.75 0 0 1-.53 1.28h-9a.75.75 0 0 1-.53-1.28l.621-.622a2.25 2.25 0 0 0 .659-1.59V18h-3a3 3 0 0 1-3-3V5.25zm1.5 0v7.5a1.5 1.5 0 0 0 1.5 1.5h13.5a1.5 1.5 0 0 0 1.5-1.5v-7.5a1.5 1.5 0 0 0-1.5-1.5H5.25a1.5 1.5 0 0 0-1.5 1.5z"
                                               clip-rule="evenodd"></path>
                                     </svg>
-                                    <span class="truncate"><div class="text-sm">192.168.16.143</div><div class="text-xs">UP</div></span></div>
+                                    <span class="truncate"><div class="text-sm">192.168.16.143</div><div class="text-xs">UP since now</div></span></div>
                             </li>
                             <li>
-                                <div class="flex items-center justify-center sm:justify-start gap-x-2 truncate">
+                                <div class="flex items-center justify-center sm:justify-start gap-x-2 truncate debug">
                                     <svg class="shrink-0 w-10 h-10 text-green-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
                                         <path fill-rule="evenodd"
                                               d="M2.25 5.25a3 3 0 0 1 3-3h13.5a3 3 0 0 1 3 3V15a3 3 0 0 1-3 3h-3v.257c0 .597.237 1.17.659 1.591l.621.622a.75.75 0 0 1-.53 1.28h-9a.75.75 0 0 1-.53-1.28l.621-.622a2.25 2.25 0 0 0 .659-1.59V18h-3a3 3 0 0 1-3-3V5.25zm1.5 0v7.5a1.5 1.5 0 0 0 1.5 1.5h13.5a1.5 1.5 0 0 0 1.5-1.5v-7.5a1.5 1.5 0 0 0-1.5-1.5H5.25a1.5 1.5 0 0 0-1.5 1.5z"
                                               clip-rule="evenodd"></path>
                                     </svg>
-                                    <span class="truncate"><div class="text-sm">192.168.16.180</div><div class="text-xs">UP</div></span></div>
+                                    <span class="truncate"><div class="text-sm">192.168.16.180</div><div class="text-xs">UP since now</div></span></div>
                             </li>
                             <li>
-                                <div class="flex items-center justify-center sm:justify-start gap-x-2 truncate">
+                                <div class="flex items-center justify-center sm:justify-start gap-x-2 truncate debug">
                                     <svg class="shrink-0 w-10 h-10 text-green-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
                                         <path fill-rule="evenodd"
                                               d="M2.25 5.25a3 3 0 0 1 3-3h13.5a3 3 0 0 1 3 3V15a3 3 0 0 1-3 3h-3v.257c0 .597.237 1.17.659 1.591l.621.622a.75.75 0 0 1-.53 1.28h-9a.75.75 0 0 1-.53-1.28l.621-.622a2.25 2.25 0 0 0 .659-1.59V18h-3a3 3 0 0 1-3-3V5.25zm1.5 0v7.5a1.5 1.5 0 0 0 1.5 1.5h13.5a1.5 1.5 0 0 0 1.5-1.5v-7.5a1.5 1.5 0 0 0-1.5-1.5H5.25a1.5 1.5 0 0 0-1.5 1.5z"
                                               clip-rule="evenodd"></path>
                                     </svg>
-                                    <span class="truncate"><div class="text-sm">192.168.16.190</div><div class="text-xs">UP</div></span></div>
+                                    <span class="truncate"><div class="text-sm">192.168.16.190</div><div class="text-xs">UP since now</div></span></div>
                             </li>
                             <li>
-                                <div class="flex items-center justify-center sm:justify-start gap-x-2 truncate">
+                                <div class="flex items-center justify-center sm:justify-start gap-x-2 truncate debug">
                                     <svg class="shrink-0 w-10 h-10 text-green-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
                                         <path fill-rule="evenodd"
                                               d="M2.25 5.25a3 3 0 0 1 3-3h13.5a3 3 0 0 1 3 3V15a3 3 0 0 1-3 3h-3v.257c0 .597.237 1.17.659 1.591l.621.622a.75.75 0 0 1-.53 1.28h-9a.75.75 0 0 1-.53-1.28l.621-.622a2.25 2.25 0 0 0 .659-1.59V18h-3a3 3 0 0 1-3-3V5.25zm1.5 0v7.5a1.5 1.5 0 0 0 1.5 1.5h13.5a1.5 1.5 0 0 0 1.5-1.5v-7.5a1.5 1.5 0 0 0-1.5-1.5H5.25a1.5 1.5 0 0 0-1.5 1.5z"
                                               clip-rule="evenodd"></path>
                                     </svg>
-                                    <span class="truncate"><div class="text-sm">192.168.16.46</div><div class="text-xs">UP</div></span></div>
+                                    <span class="truncate"><div class="text-sm">192.168.16.46</div><div class="text-xs">UP since now</div></span></div>
                             </li>
                         </ul>
                     </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-<div class="grid grid-cols-[repeat(auto-fit,minmax(min(15rem,100%),1fr))] gap-4 m-4">
-    <div class="onscreen-console hidden">
-        <div data-msg-type="error">
-        <pre>[webpack-dev-server] Server started: Hot ModuleModuleModuleModuleModuleModuleModuleModuleModuleModuleModuleModuleModuleModuleModuleModuleModuleModuleModuleModuleModuleModule Replacement enabled, Live Reloading enabled, Progress disabled, Overlay enabled.
-log.js:24 [HMR] Waiting for update signal from WDS...</pre>
-        </div>
-        <div data-msg-type="warn">
-        <pre>[webpack-dev-server] Server started: Hot Module Replacement enabled, Live Reloading enabled, Progress disabled, Overlay enabled.
-log.js:24 [HMR] Waiting for update signal from WDS...</pre>
-        </div>
-        <div data-msg-type="info">
-        <pre>[webpack-dev-server] Server started: Hot Module
-log.js:24 [HMR] Waiting for update signal from WDS...</pre>
-        </div>
-        <div data-msg-type="log">
-        <pre>[webpack-dev-server] Server started: Hot Module Replacement enabled, Live Reloading enabled, Progress disabled, Overlay enabled.
-log.js:24 [HMR] Waiting for update signal from WDS...</pre>
-        </div>
-        <div data-msg-type="debug">
-        <pre>[webpack-dev-server] Server started: Hot Module Replacement enabled, Live Reloading enabled, Progress disabled, Overlay enabled.
-log.js:24 [HMR] Waiting for update signal from WDS...</pre>
-        </div>
-        <div>
-        <pre>[webpack-dev-server] Server started: Hot Module Replacement enabled, Live Reloading enabled, Progress disabled, Overlay enabled.
-log.js:24 [HMR] Waiting for update signal from WDS...</pre>
-        </div>
-    </div>
-    <div class="space-y-5 py-4 sm:px-4 sm:rounded-xl bg-white/10 border border-white/20 grid grid-rows-[1fr_minmax(1px,100%)]">
-        <div class="flex items-center justify-center sm:justify-start gap-x-2">
-            <svg class="shrink-0 w-6 h-6" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-                <path
-                    d="M4.08 5.227A3 3 0 0 1 6.979 3H17.02a3 3 0 0 1 2.9 2.227l2.113 7.926A5.228 5.228 0 0 0 18.75 12H5.25a5.228 5.228 0 0 0-3.284 1.153L4.08 5.227z"></path>
-                <path fill-rule="evenodd"
-                      d="M5.25 13.5a3.75 3.75 0 1 0 0 7.5h13.5a3.75 3.75 0 1 0 0-7.5H5.25zm10.5 4.5a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5zm3.75-.75a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0z"
-                      clip-rule="evenodd"></path>
-            </svg>
-            <div class="text-xl font-bold">netmon</div>
-        </div>
-        <div class="overflow-y-auto">
-            <div>
-                <div class="mount-point" data-mount-point="">
-                    <dl class="flex text-xs font-semibold">
-                        <div class="flex m-1 border border-slate-500 rounded-full px-2 py-1 gap-2">
-                            <dt class="font-bold">CIDR</dt>
-                            <dd>192.168.16.46/24</dd>
-                        </div>
-                        <div class="flex m-1 border border-slate-500 rounded-full px-2 py-1 gap-2">
-                            <dt class="font-bold">Interface</dt>
-                            <dd>eth0</dd>
-                        </div>
-                        <div class="flex m-1 border border-slate-500 rounded-full px-2 py-1 gap-2">
-                            <dt class="font-bold">Scan</dt>
-                            <dd>2s ago</dd>
-                        </div>
-                    </dl>
-                </div>
-                <div class="mount-point" data-mount-point="">
-                    <div class="bg-gradient-to-r from-red-700 to-transparent shadow-xl">
-                        <svg class="shrink-0 w-12 h-12 text-red-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-                            <path fill-rule="evenodd"
-                                  d="M12 2.25c-5.385 0-9.75 4.365-9.75 9.75s4.365 9.75 9.75 9.75 9.75-4.365 9.75-9.75S17.385 2.25 12 2.25zm-.53 14.03a.75.75 0 0 0 1.06 0l3-3a.75.75 0 1 0-1.06-1.06l-1.72 1.72V8.25a.75.75 0 0 0-1.5 0v5.69l-1.72-1.72a.75.75 0 0 0-1.06 1.06l3 3z"
-                                  clip-rule="evenodd"></path>
-                        </svg>
-                        192.168.16.41 is down
-                    </div>
-                    <div class="bg-gradient-to-r from-green-700 to-transparent shadow-xl">
-                        <svg class="shrink-0 w-12 h-12 text-green-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-                            <path fill-rule="evenodd"
-                                  d="M12 2.25c-5.385 0-9.75 4.365-9.75 9.75s4.365 9.75 9.75 9.75 9.75-4.365 9.75-9.75S17.385 2.25 12 2.25zm.53 5.47a.75.75 0 0 0-1.06 0l-3 3a.75.75 0 1 0 1.06 1.06l1.72-1.72v5.69a.75.75 0 0 0 1.5 0v-5.69l1.72 1.72a.75.75 0 1 0 1.06-1.06l-3-3z"
-                                  clip-rule="evenodd"></path>
-                        </svg>
-                        192.168.16.38 is up
-                    </div>
-                    <div class="bg-gradient-to-r from-green-700 to-transparent shadow-xl">
-                        <svg class="shrink-0 w-12 h-12 text-green-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-                            <path fill-rule="evenodd"
-                                  d="M12 2.25c-5.385 0-9.75 4.365-9.75 9.75s4.365 9.75 9.75 9.75 9.75-4.365 9.75-9.75S17.385 2.25 12 2.25zm.53 5.47a.75.75 0 0 0-1.06 0l-3 3a.75.75 0 1 0 1.06 1.06l1.72-1.72v5.69a.75.75 0 0 0 1.5 0v-5.69l1.72 1.72a.75.75 0 1 0 1.06-1.06l-3-3z"
-                                  clip-rule="evenodd"></path>
-                        </svg>
-                        192.168.16.41 is up
-                    </div>
-                </div>
-                <ul class="px-4 py-2.5 overflow-x-hidden overflow-y-auto rounded-xl bg-default/60 text-default dark:bg-invert/60 dark:text-invert">
-                    <li>
-                        <div
-                            class="flex items-center justify-center sm:justify-start gap-x-2 w-48 mt-2.5 ml-2.5 px-4 py-3 rounded shadow-md bg-glass text-default dark:text-invert text-sm border border-transparent truncate">
-                            <svg class="shrink-0 w-12 h-12 text-green-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-                                <path fill-rule="evenodd"
-                                      d="M2.25 5.25a3 3 0 0 1 3-3h13.5a3 3 0 0 1 3 3V15a3 3 0 0 1-3 3h-3v.257c0 .597.237 1.17.659 1.591l.621.622a.75.75 0 0 1-.53 1.28h-9a.75.75 0 0 1-.53-1.28l.621-.622a2.25 2.25 0 0 0 .659-1.59V18h-3a3 3 0 0 1-3-3V5.25zm1.5 0v7.5a1.5 1.5 0 0 0 1.5 1.5h13.5a1.5 1.5 0 0 0 1.5-1.5v-7.5a1.5 1.5 0 0 0-1.5-1.5H5.25a1.5 1.5 0 0 0-1.5 1.5z"
-                                      clip-rule="evenodd"></path>
-                            </svg>
-                            <span class="truncate"><div>192.168.16.1 &#9888;&#xFE0F;x ⚠️ 16.1 ⚠️ </div></span></div>
-                    </li>
-                    <li>
-                        <div
-                            class="flex items-center justify-center sm:justify-start gap-x-2 w-48 mt-2.5 ml-2.5 px-4 py-3 rounded shadow-md bg-glass text-default dark:text-invert text-sm border border-transparent truncate">
-                            <svg class="shrink-0 w-12 h-12 text-green-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-                                <path fill-rule="evenodd"
-                                      d="M2.25 5.25a3 3 0 0 1 3-3h13.5a3 3 0 0 1 3 3V15a3 3 0 0 1-3 3h-3v.257c0 .597.237 1.17.659 1.591l.621.622a.75.75 0 0 1-.53 1.28h-9a.75.75 0 0 1-.53-1.28l.621-.622a2.25 2.25 0 0 0 .659-1.59V18h-3a3 3 0 0 1-3-3V5.25zm1.5 0v7.5a1.5 1.5 0 0 0 1.5 1.5h13.5a1.5 1.5 0 0 0 1.5-1.5v-7.5a1.5 1.5 0 0 0-1.5-1.5H5.25a1.5 1.5 0 0 0-1.5 1.5z"
-                                      clip-rule="evenodd"></path>
-                            </svg>
-                            <span class="truncate"><div>192.168.16.10</div></span></div>
-                    </li>
-                    <li>
-                        <div
-                            class="flex items-center justify-center sm:justify-start gap-x-2 w-48 mt-2.5 ml-2.5 px-4 py-3 rounded shadow-md bg-glass text-default dark:text-invert text-sm border border-transparent truncate">
-                            <svg class="shrink-0 w-12 h-12 text-green-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-                                <path fill-rule="evenodd"
-                                      d="M2.25 5.25a3 3 0 0 1 3-3h13.5a3 3 0 0 1 3 3V15a3 3 0 0 1-3 3h-3v.257c0 .597.237 1.17.659 1.591l.621.622a.75.75 0 0 1-.53 1.28h-9a.75.75 0 0 1-.53-1.28l.621-.622a2.25 2.25 0 0 0 .659-1.59V18h-3a3 3 0 0 1-3-3V5.25zm1.5 0v7.5a1.5 1.5 0 0 0 1.5 1.5h13.5a1.5 1.5 0 0 0 1.5-1.5v-7.5a1.5 1.5 0 0 0-1.5-1.5H5.25a1.5 1.5 0 0 0-1.5 1.5z"
-                                      clip-rule="evenodd"></path>
-                            </svg>
-                            <span class="truncate"><div>192.168.16.30</div></span></div>
-                    </li>
-                    <li>
-                        <div
-                            class="flex items-center justify-center sm:justify-start gap-x-2 w-48 mt-2.5 ml-2.5 px-4 py-3 rounded shadow-md bg-glass text-default dark:text-invert text-sm border border-transparent truncate">
-                            <svg class="shrink-0 w-12 h-12 text-green-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-                                <path fill-rule="evenodd"
-                                      d="M2.25 5.25a3 3 0 0 1 3-3h13.5a3 3 0 0 1 3 3V15a3 3 0 0 1-3 3h-3v.257c0 .597.237 1.17.659 1.591l.621.622a.75.75 0 0 1-.53 1.28h-9a.75.75 0 0 1-.53-1.28l.621-.622a2.25 2.25 0 0 0 .659-1.59V18h-3a3 3 0 0 1-3-3V5.25zm1.5 0v7.5a1.5 1.5 0 0 0 1.5 1.5h13.5a1.5 1.5 0 0 0 1.5-1.5v-7.5a1.5 1.5 0 0 0-1.5-1.5H5.25a1.5 1.5 0 0 0-1.5 1.5z"
-                                      clip-rule="evenodd"></path>
-                            </svg>
-                            <span class="truncate"><div>192.168.16.32</div></span></div>
-                    </li>
-                    <li>
-                        <div
-                            class="flex items-center justify-center sm:justify-start gap-x-2 w-48 mt-2.5 ml-2.5 px-4 py-3 rounded shadow-md bg-glass text-default dark:text-invert text-sm border border-transparent truncate">
-                            <svg class="shrink-0 w-12 h-12 text-green-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-                                <path fill-rule="evenodd"
-                                      d="M2.25 5.25a3 3 0 0 1 3-3h13.5a3 3 0 0 1 3 3V15a3 3 0 0 1-3 3h-3v.257c0 .597.237 1.17.659 1.591l.621.622a.75.75 0 0 1-.53 1.28h-9a.75.75 0 0 1-.53-1.28l.621-.622a2.25 2.25 0 0 0 .659-1.59V18h-3a3 3 0 0 1-3-3V5.25zm1.5 0v7.5a1.5 1.5 0 0 0 1.5 1.5h13.5a1.5 1.5 0 0 0 1.5-1.5v-7.5a1.5 1.5 0 0 0-1.5-1.5H5.25a1.5 1.5 0 0 0-1.5 1.5z"
-                                      clip-rule="evenodd"></path>
-                            </svg>
-                            <span class="truncate"><div>192.168.16.33</div></span></div>
-                    </li>
-                    <li>
-                        <div
-                            class="flex items-center justify-center sm:justify-start gap-x-2 w-48 mt-2.5 ml-2.5 px-4 py-3 rounded shadow-md bg-glass text-default dark:text-invert text-sm border border-transparent truncate">
-                            <svg class="shrink-0 w-12 h-12 text-green-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-                                <path fill-rule="evenodd"
-                                      d="M2.25 5.25a3 3 0 0 1 3-3h13.5a3 3 0 0 1 3 3V15a3 3 0 0 1-3 3h-3v.257c0 .597.237 1.17.659 1.591l.621.622a.75.75 0 0 1-.53 1.28h-9a.75.75 0 0 1-.53-1.28l.621-.622a2.25 2.25 0 0 0 .659-1.59V18h-3a3 3 0 0 1-3-3V5.25zm1.5 0v7.5a1.5 1.5 0 0 0 1.5 1.5h13.5a1.5 1.5 0 0 0 1.5-1.5v-7.5a1.5 1.5 0 0 0-1.5-1.5H5.25a1.5 1.5 0 0 0-1.5 1.5z"
-                                      clip-rule="evenodd"></path>
-                            </svg>
-                            <span class="truncate"><div>192.168.16.34</div></span></div>
-                    </li>
-                    <li>
-                        <div
-                            class="flex items-center justify-center sm:justify-start gap-x-2 w-48 mt-2.5 ml-2.5 px-4 py-3 rounded shadow-md bg-glass text-default dark:text-invert text-sm border border-transparent truncate">
-                            <svg class="shrink-0 w-12 h-12 text-green-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-                                <path fill-rule="evenodd"
-                                      d="M2.25 5.25a3 3 0 0 1 3-3h13.5a3 3 0 0 1 3 3V15a3 3 0 0 1-3 3h-3v.257c0 .597.237 1.17.659 1.591l.621.622a.75.75 0 0 1-.53 1.28h-9a.75.75 0 0 1-.53-1.28l.621-.622a2.25 2.25 0 0 0 .659-1.59V18h-3a3 3 0 0 1-3-3V5.25zm1.5 0v7.5a1.5 1.5 0 0 0 1.5 1.5h13.5a1.5 1.5 0 0 0 1.5-1.5v-7.5a1.5 1.5 0 0 0-1.5-1.5H5.25a1.5 1.5 0 0 0-1.5 1.5z"
-                                      clip-rule="evenodd"></path>
-                            </svg>
-                            <span class="truncate"><div>192.168.16.35</div></span></div>
-                    </li>
-                    <li>
-                        <div
-                            class="flex items-center justify-center sm:justify-start gap-x-2 w-48 mt-2.5 ml-2.5 px-4 py-3 rounded shadow-md bg-glass text-default dark:text-invert text-sm border border-transparent truncate">
-                            <svg class="shrink-0 w-12 h-12 text-green-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-                                <path fill-rule="evenodd"
-                                      d="M2.25 5.25a3 3 0 0 1 3-3h13.5a3 3 0 0 1 3 3V15a3 3 0 0 1-3 3h-3v.257c0 .597.237 1.17.659 1.591l.621.622a.75.75 0 0 1-.53 1.28h-9a.75.75 0 0 1-.53-1.28l.621-.622a2.25 2.25 0 0 0 .659-1.59V18h-3a3 3 0 0 1-3-3V5.25zm1.5 0v7.5a1.5 1.5 0 0 0 1.5 1.5h13.5a1.5 1.5 0 0 0 1.5-1.5v-7.5a1.5 1.5 0 0 0-1.5-1.5H5.25a1.5 1.5 0 0 0-1.5 1.5z"
-                                      clip-rule="evenodd"></path>
-                            </svg>
-                            <span class="truncate"><div>192.168.16.38</div></span></div>
-                    </li>
-                    <li>
-                        <div
-                            class="flex items-center justify-center sm:justify-start gap-x-2 w-48 mt-2.5 ml-2.5 px-4 py-3 rounded shadow-md bg-glass text-default dark:text-invert text-sm border border-transparent truncate">
-                            <svg class="shrink-0 w-12 h-12 text-green-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-                                <path fill-rule="evenodd"
-                                      d="M2.25 5.25a3 3 0 0 1 3-3h13.5a3 3 0 0 1 3 3V15a3 3 0 0 1-3 3h-3v.257c0 .597.237 1.17.659 1.591l.621.622a.75.75 0 0 1-.53 1.28h-9a.75.75 0 0 1-.53-1.28l.621-.622a2.25 2.25 0 0 0 .659-1.59V18h-3a3 3 0 0 1-3-3V5.25zm1.5 0v7.5a1.5 1.5 0 0 0 1.5 1.5h13.5a1.5 1.5 0 0 0 1.5-1.5v-7.5a1.5 1.5 0 0 0-1.5-1.5H5.25a1.5 1.5 0 0 0-1.5 1.5z"
-                                      clip-rule="evenodd"></path>
-                            </svg>
-                            <span class="truncate"><div>192.168.16.42</div></span></div>
-                    </li>
-                    <li>
-                        <div
-                            class="flex items-center justify-center sm:justify-start gap-x-2 w-48 mt-2.5 ml-2.5 px-4 py-3 rounded shadow-md bg-glass text-default dark:text-invert text-sm border border-transparent truncate">
-                            <svg class="shrink-0 w-12 h-12 text-green-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-                                <path fill-rule="evenodd"
-                                      d="M2.25 5.25a3 3 0 0 1 3-3h13.5a3 3 0 0 1 3 3V15a3 3 0 0 1-3 3h-3v.257c0 .597.237 1.17.659 1.591l.621.622a.75.75 0 0 1-.53 1.28h-9a.75.75 0 0 1-.53-1.28l.621-.622a2.25 2.25 0 0 0 .659-1.59V18h-3a3 3 0 0 1-3-3V5.25zm1.5 0v7.5a1.5 1.5 0 0 0 1.5 1.5h13.5a1.5 1.5 0 0 0 1.5-1.5v-7.5a1.5 1.5 0 0 0-1.5-1.5H5.25a1.5 1.5 0 0 0-1.5 1.5z"
-                                      clip-rule="evenodd"></path>
-                            </svg>
-                            <span class="truncate"><div>192.168.16.120</div></span></div>
-                    </li>
-                    <li>
-                        <div
-                            class="flex items-center justify-center sm:justify-start gap-x-2 w-48 mt-2.5 ml-2.5 px-4 py-3 rounded shadow-md bg-glass text-default dark:text-invert text-sm border border-transparent truncate">
-                            <svg class="shrink-0 w-12 h-12 text-green-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-                                <path fill-rule="evenodd"
-                                      d="M2.25 5.25a3 3 0 0 1 3-3h13.5a3 3 0 0 1 3 3V15a3 3 0 0 1-3 3h-3v.257c0 .597.237 1.17.659 1.591l.621.622a.75.75 0 0 1-.53 1.28h-9a.75.75 0 0 1-.53-1.28l.621-.622a2.25 2.25 0 0 0 .659-1.59V18h-3a3 3 0 0 1-3-3V5.25zm1.5 0v7.5a1.5 1.5 0 0 0 1.5 1.5h13.5a1.5 1.5 0 0 0 1.5-1.5v-7.5a1.5 1.5 0 0 0-1.5-1.5H5.25a1.5 1.5 0 0 0-1.5 1.5z"
-                                      clip-rule="evenodd"></path>
-                            </svg>
-                            <span class="truncate"><div>192.168.16.140</div></span></div>
-                    </li>
-                    <li>
-                        <div
-                            class="flex items-center justify-center sm:justify-start gap-x-2 w-48 mt-2.5 ml-2.5 px-4 py-3 rounded shadow-md bg-glass text-default dark:text-invert text-sm border border-transparent truncate">
-                            <svg class="shrink-0 w-12 h-12 text-green-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-                                <path fill-rule="evenodd"
-                                      d="M2.25 5.25a3 3 0 0 1 3-3h13.5a3 3 0 0 1 3 3V15a3 3 0 0 1-3 3h-3v.257c0 .597.237 1.17.659 1.591l.621.622a.75.75 0 0 1-.53 1.28h-9a.75.75 0 0 1-.53-1.28l.621-.622a2.25 2.25 0 0 0 .659-1.59V18h-3a3 3 0 0 1-3-3V5.25zm1.5 0v7.5a1.5 1.5 0 0 0 1.5 1.5h13.5a1.5 1.5 0 0 0 1.5-1.5v-7.5a1.5 1.5 0 0 0-1.5-1.5H5.25a1.5 1.5 0 0 0-1.5 1.5z"
-                                      clip-rule="evenodd"></path>
-                            </svg>
-                            <span class="truncate"><div>192.168.16.141</div></span></div>
-                    </li>
-                    <li>
-                        <div
-                            class="flex items-center justify-center sm:justify-start gap-x-2 w-48 mt-2.5 ml-2.5 px-4 py-3 rounded shadow-md bg-glass text-default dark:text-invert text-sm border border-transparent truncate">
-                            <svg class="shrink-0 w-12 h-12 text-green-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-                                <path fill-rule="evenodd"
-                                      d="M2.25 5.25a3 3 0 0 1 3-3h13.5a3 3 0 0 1 3 3V15a3 3 0 0 1-3 3h-3v.257c0 .597.237 1.17.659 1.591l.621.622a.75.75 0 0 1-.53 1.28h-9a.75.75 0 0 1-.53-1.28l.621-.622a2.25 2.25 0 0 0 .659-1.59V18h-3a3 3 0 0 1-3-3V5.25zm1.5 0v7.5a1.5 1.5 0 0 0 1.5 1.5h13.5a1.5 1.5 0 0 0 1.5-1.5v-7.5a1.5 1.5 0 0 0-1.5-1.5H5.25a1.5 1.5 0 0 0-1.5 1.5z"
-                                      clip-rule="evenodd"></path>
-                            </svg>
-                            <span class="truncate"><div>192.168.16.142</div></span></div>
-                    </li>
-                    <li>
-                        <div
-                            class="flex items-center justify-center sm:justify-start gap-x-2 w-48 mt-2.5 ml-2.5 px-4 py-3 rounded shadow-md bg-glass text-default dark:text-invert text-sm border border-transparent truncate">
-                            <svg class="shrink-0 w-12 h-12 text-green-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-                                <path fill-rule="evenodd"
-                                      d="M2.25 5.25a3 3 0 0 1 3-3h13.5a3 3 0 0 1 3 3V15a3 3 0 0 1-3 3h-3v.257c0 .597.237 1.17.659 1.591l.621.622a.75.75 0 0 1-.53 1.28h-9a.75.75 0 0 1-.53-1.28l.621-.622a2.25 2.25 0 0 0 .659-1.59V18h-3a3 3 0 0 1-3-3V5.25zm1.5 0v7.5a1.5 1.5 0 0 0 1.5 1.5h13.5a1.5 1.5 0 0 0 1.5-1.5v-7.5a1.5 1.5 0 0 0-1.5-1.5H5.25a1.5 1.5 0 0 0-1.5 1.5z"
-                                      clip-rule="evenodd"></path>
-                            </svg>
-                            <span class="truncate"><div>192.168.16.143</div></span></div>
-                    </li>
-                    <li>
-                        <div
-                            class="flex items-center justify-center sm:justify-start gap-x-2 w-48 mt-2.5 ml-2.5 px-4 py-3 rounded shadow-md bg-glass text-default dark:text-invert text-sm border border-transparent truncate">
-                            <svg class="shrink-0 w-12 h-12 text-green-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-                                <path fill-rule="evenodd"
-                                      d="M2.25 5.25a3 3 0 0 1 3-3h13.5a3 3 0 0 1 3 3V15a3 3 0 0 1-3 3h-3v.257c0 .597.237 1.17.659 1.591l.621.622a.75.75 0 0 1-.53 1.28h-9a.75.75 0 0 1-.53-1.28l.621-.622a2.25 2.25 0 0 0 .659-1.59V18h-3a3 3 0 0 1-3-3V5.25zm1.5 0v7.5a1.5 1.5 0 0 0 1.5 1.5h13.5a1.5 1.5 0 0 0 1.5-1.5v-7.5a1.5 1.5 0 0 0-1.5-1.5H5.25a1.5 1.5 0 0 0-1.5 1.5z"
-                                      clip-rule="evenodd"></path>
-                            </svg>
-                            <span class="truncate"><div>192.168.16.180</div></span></div>
-                    </li>
-                    <li>
-                        <div
-                            class="flex items-center justify-center sm:justify-start gap-x-2 w-48 mt-2.5 ml-2.5 px-4 py-3 rounded shadow-md bg-glass text-default dark:text-invert text-sm border border-transparent truncate">
-                            <svg class="shrink-0 w-12 h-12 text-green-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-                                <path fill-rule="evenodd"
-                                      d="M2.25 5.25a3 3 0 0 1 3-3h13.5a3 3 0 0 1 3 3V15a3 3 0 0 1-3 3h-3v.257c0 .597.237 1.17.659 1.591l.621.622a.75.75 0 0 1-.53 1.28h-9a.75.75 0 0 1-.53-1.28l.621-.622a2.25 2.25 0 0 0 .659-1.59V18h-3a3 3 0 0 1-3-3V5.25zm1.5 0v7.5a1.5 1.5 0 0 0 1.5 1.5h13.5a1.5 1.5 0 0 0 1.5-1.5v-7.5a1.5 1.5 0 0 0-1.5-1.5H5.25a1.5 1.5 0 0 0-1.5 1.5z"
-                                      clip-rule="evenodd"></path>
-                            </svg>
-                            <span class="truncate"><div>192.168.16.190</div></span></div>
-                    </li>
-                    <li>
-                        <div
-                            class="flex items-center justify-center sm:justify-start gap-x-2 w-48 mt-2.5 ml-2.5 px-4 py-3 rounded shadow-md bg-glass text-default dark:text-invert text-sm border border-transparent truncate">
-                            <svg class="shrink-0 w-12 h-12 text-green-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-                                <path fill-rule="evenodd"
-                                      d="M2.25 5.25a3 3 0 0 1 3-3h13.5a3 3 0 0 1 3 3V15a3 3 0 0 1-3 3h-3v.257c0 .597.237 1.17.659 1.591l.621.622a.75.75 0 0 1-.53 1.28h-9a.75.75 0 0 1-.53-1.28l.621-.622a2.25 2.25 0 0 0 .659-1.59V18h-3a3 3 0 0 1-3-3V5.25zm1.5 0v7.5a1.5 1.5 0 0 0 1.5 1.5h13.5a1.5 1.5 0 0 0 1.5-1.5v-7.5a1.5 1.5 0 0 0-1.5-1.5H5.25a1.5 1.5 0 0 0-1.5 1.5z"
-                                      clip-rule="evenodd"></path>
-                            </svg>
-                            <span class="truncate"><div>192.168.16.46</div></span></div>
-                    </li>
-                </ul>
-            </div>
-        </div>
-    </div>
-    <div class="space-y-5 py-4 sm:px-4 sm:rounded-xl bg-white/10 border border-white/20 grid grid-rows-[1fr_minmax(1px,100%)]">
-        <div class="flex items-center justify-center sm:justify-start gap-x-2">
-            <svg class="shrink-0 w-6 h-6" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-                <path
-                    d="M4.08 5.227A3 3 0 0 1 6.979 3H17.02a3 3 0 0 1 2.9 2.227l2.113 7.926A5.228 5.228 0 0 0 18.75 12H5.25a5.228 5.228 0 0 0-3.284 1.153L4.08 5.227z"></path>
-                <path fill-rule="evenodd"
-                      d="M5.25 13.5a3.75 3.75 0 1 0 0 7.5h13.5a3.75 3.75 0 1 0 0-7.5H5.25zm10.5 4.5a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5zm3.75-.75a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0z"
-                      clip-rule="evenodd"></path>
-            </svg>
-            <div class="text-xl font-bold">netmon</div>
-        </div>
-        <div class="overflow-y-auto">
-            <div>
-                <div class="mount-point" data-mount-point="">
-                    <dl class="flex text-xs font-semibold">
-                        <div class="flex m-1 border border-slate-500 rounded-full px-2 py-1 gap-2">
-                            <dt class="font-bold">CIDR</dt>
-                            <dd>192.168.16.46/24</dd>
-                        </div>
-                        <div class="flex m-1 border border-slate-500 rounded-full px-2 py-1 gap-2">
-                            <dt class="font-bold">Interface</dt>
-                            <dd>eth0</dd>
-                        </div>
-                        <div class="flex m-1 border border-slate-500 rounded-full px-2 py-1 gap-2">
-                            <dt class="font-bold">Scan</dt>
-                            <dd>2s ago</dd>
-                        </div>
-                    </dl>
-                </div>
-                <div class="mount-point" data-mount-point="">
-                    <div class="bg-gradient-to-r from-red-700 to-transparent shadow-xl">
-                        <svg class="shrink-0 w-12 h-12 text-red-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-                            <path fill-rule="evenodd"
-                                  d="M12 2.25c-5.385 0-9.75 4.365-9.75 9.75s4.365 9.75 9.75 9.75 9.75-4.365 9.75-9.75S17.385 2.25 12 2.25zm-.53 14.03a.75.75 0 0 0 1.06 0l3-3a.75.75 0 1 0-1.06-1.06l-1.72 1.72V8.25a.75.75 0 0 0-1.5 0v5.69l-1.72-1.72a.75.75 0 0 0-1.06 1.06l3 3z"
-                                  clip-rule="evenodd"></path>
-                        </svg>
-                        192.168.16.41 is down
-                    </div>
-                    <div class="bg-gradient-to-r from-green-700 to-transparent shadow-xl">
-                        <svg class="shrink-0 w-12 h-12 text-green-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-                            <path fill-rule="evenodd"
-                                  d="M12 2.25c-5.385 0-9.75 4.365-9.75 9.75s4.365 9.75 9.75 9.75 9.75-4.365 9.75-9.75S17.385 2.25 12 2.25zm.53 5.47a.75.75 0 0 0-1.06 0l-3 3a.75.75 0 1 0 1.06 1.06l1.72-1.72v5.69a.75.75 0 0 0 1.5 0v-5.69l1.72 1.72a.75.75 0 1 0 1.06-1.06l-3-3z"
-                                  clip-rule="evenodd"></path>
-                        </svg>
-                        192.168.16.38 is up
-                    </div>
-                    <div class="bg-gradient-to-r from-green-700 to-transparent shadow-xl">
-                        <svg class="shrink-0 w-12 h-12 text-green-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-                            <path fill-rule="evenodd"
-                                  d="M12 2.25c-5.385 0-9.75 4.365-9.75 9.75s4.365 9.75 9.75 9.75 9.75-4.365 9.75-9.75S17.385 2.25 12 2.25zm.53 5.47a.75.75 0 0 0-1.06 0l-3 3a.75.75 0 1 0 1.06 1.06l1.72-1.72v5.69a.75.75 0 0 0 1.5 0v-5.69l1.72 1.72a.75.75 0 1 0 1.06-1.06l-3-3z"
-                                  clip-rule="evenodd"></path>
-                        </svg>
-                        192.168.16.41 is up
-                    </div>
-                </div>
-                <ul class="px-4 py-2.5 overflow-x-hidden overflow-y-auto rounded-xl bg-default/60 text-default dark:bg-invert/60 dark:text-invert">
-                    <li>
-                        <div
-                            class="flex items-center justify-center sm:justify-start gap-x-2 w-48 mt-2.5 ml-2.5 px-4 py-3 rounded shadow-md bg-glass text-default dark:text-invert text-sm border border-transparent truncate">
-                            <svg class="shrink-0 w-12 h-12 text-green-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-                                <path fill-rule="evenodd"
-                                      d="M2.25 5.25a3 3 0 0 1 3-3h13.5a3 3 0 0 1 3 3V15a3 3 0 0 1-3 3h-3v.257c0 .597.237 1.17.659 1.591l.621.622a.75.75 0 0 1-.53 1.28h-9a.75.75 0 0 1-.53-1.28l.621-.622a2.25 2.25 0 0 0 .659-1.59V18h-3a3 3 0 0 1-3-3V5.25zm1.5 0v7.5a1.5 1.5 0 0 0 1.5 1.5h13.5a1.5 1.5 0 0 0 1.5-1.5v-7.5a1.5 1.5 0 0 0-1.5-1.5H5.25a1.5 1.5 0 0 0-1.5 1.5z"
-                                      clip-rule="evenodd"></path>
-                            </svg>
-                            <span class="truncate"><div>192.168.16.1</div></span></div>
-                    </li>
-                    <li>
-                        <div
-                            class="flex items-center justify-center sm:justify-start gap-x-2 w-48 mt-2.5 ml-2.5 px-4 py-3 rounded shadow-md bg-glass text-default dark:text-invert text-sm border border-transparent truncate">
-                            <svg class="shrink-0 w-12 h-12 text-green-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-                                <path fill-rule="evenodd"
-                                      d="M2.25 5.25a3 3 0 0 1 3-3h13.5a3 3 0 0 1 3 3V15a3 3 0 0 1-3 3h-3v.257c0 .597.237 1.17.659 1.591l.621.622a.75.75 0 0 1-.53 1.28h-9a.75.75 0 0 1-.53-1.28l.621-.622a2.25 2.25 0 0 0 .659-1.59V18h-3a3 3 0 0 1-3-3V5.25zm1.5 0v7.5a1.5 1.5 0 0 0 1.5 1.5h13.5a1.5 1.5 0 0 0 1.5-1.5v-7.5a1.5 1.5 0 0 0-1.5-1.5H5.25a1.5 1.5 0 0 0-1.5 1.5z"
-                                      clip-rule="evenodd"></path>
-                            </svg>
-                            <span class="truncate"><div>192.168.16.10</div></span></div>
-                    </li>
-                    <li>
-                        <div
-                            class="flex items-center justify-center sm:justify-start gap-x-2 w-48 mt-2.5 ml-2.5 px-4 py-3 rounded shadow-md bg-glass text-default dark:text-invert text-sm border border-transparent truncate">
-                            <svg class="shrink-0 w-12 h-12 text-green-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-                                <path fill-rule="evenodd"
-                                      d="M2.25 5.25a3 3 0 0 1 3-3h13.5a3 3 0 0 1 3 3V15a3 3 0 0 1-3 3h-3v.257c0 .597.237 1.17.659 1.591l.621.622a.75.75 0 0 1-.53 1.28h-9a.75.75 0 0 1-.53-1.28l.621-.622a2.25 2.25 0 0 0 .659-1.59V18h-3a3 3 0 0 1-3-3V5.25zm1.5 0v7.5a1.5 1.5 0 0 0 1.5 1.5h13.5a1.5 1.5 0 0 0 1.5-1.5v-7.5a1.5 1.5 0 0 0-1.5-1.5H5.25a1.5 1.5 0 0 0-1.5 1.5z"
-                                      clip-rule="evenodd"></path>
-                            </svg>
-                            <span class="truncate"><div>192.168.16.30</div></span></div>
-                    </li>
-                    <li>
-                        <div
-                            class="flex items-center justify-center sm:justify-start gap-x-2 w-48 mt-2.5 ml-2.5 px-4 py-3 rounded shadow-md bg-glass text-default dark:text-invert text-sm border border-transparent truncate">
-                            <svg class="shrink-0 w-12 h-12 text-green-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-                                <path fill-rule="evenodd"
-                                      d="M2.25 5.25a3 3 0 0 1 3-3h13.5a3 3 0 0 1 3 3V15a3 3 0 0 1-3 3h-3v.257c0 .597.237 1.17.659 1.591l.621.622a.75.75 0 0 1-.53 1.28h-9a.75.75 0 0 1-.53-1.28l.621-.622a2.25 2.25 0 0 0 .659-1.59V18h-3a3 3 0 0 1-3-3V5.25zm1.5 0v7.5a1.5 1.5 0 0 0 1.5 1.5h13.5a1.5 1.5 0 0 0 1.5-1.5v-7.5a1.5 1.5 0 0 0-1.5-1.5H5.25a1.5 1.5 0 0 0-1.5 1.5z"
-                                      clip-rule="evenodd"></path>
-                            </svg>
-                            <span class="truncate"><div>192.168.16.32</div></span></div>
-                    </li>
-                    <li>
-                        <div
-                            class="flex items-center justify-center sm:justify-start gap-x-2 w-48 mt-2.5 ml-2.5 px-4 py-3 rounded shadow-md bg-glass text-default dark:text-invert text-sm border border-transparent truncate">
-                            <svg class="shrink-0 w-12 h-12 text-green-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-                                <path fill-rule="evenodd"
-                                      d="M2.25 5.25a3 3 0 0 1 3-3h13.5a3 3 0 0 1 3 3V15a3 3 0 0 1-3 3h-3v.257c0 .597.237 1.17.659 1.591l.621.622a.75.75 0 0 1-.53 1.28h-9a.75.75 0 0 1-.53-1.28l.621-.622a2.25 2.25 0 0 0 .659-1.59V18h-3a3 3 0 0 1-3-3V5.25zm1.5 0v7.5a1.5 1.5 0 0 0 1.5 1.5h13.5a1.5 1.5 0 0 0 1.5-1.5v-7.5a1.5 1.5 0 0 0-1.5-1.5H5.25a1.5 1.5 0 0 0-1.5 1.5z"
-                                      clip-rule="evenodd"></path>
-                            </svg>
-                            <span class="truncate"><div>192.168.16.33</div></span></div>
-                    </li>
-                    <li>
-                        <div
-                            class="flex items-center justify-center sm:justify-start gap-x-2 w-48 mt-2.5 ml-2.5 px-4 py-3 rounded shadow-md bg-glass text-default dark:text-invert text-sm border border-transparent truncate">
-                            <svg class="shrink-0 w-12 h-12 text-green-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-                                <path fill-rule="evenodd"
-                                      d="M2.25 5.25a3 3 0 0 1 3-3h13.5a3 3 0 0 1 3 3V15a3 3 0 0 1-3 3h-3v.257c0 .597.237 1.17.659 1.591l.621.622a.75.75 0 0 1-.53 1.28h-9a.75.75 0 0 1-.53-1.28l.621-.622a2.25 2.25 0 0 0 .659-1.59V18h-3a3 3 0 0 1-3-3V5.25zm1.5 0v7.5a1.5 1.5 0 0 0 1.5 1.5h13.5a1.5 1.5 0 0 0 1.5-1.5v-7.5a1.5 1.5 0 0 0-1.5-1.5H5.25a1.5 1.5 0 0 0-1.5 1.5z"
-                                      clip-rule="evenodd"></path>
-                            </svg>
-                            <span class="truncate"><div>192.168.16.34</div></span></div>
-                    </li>
-                    <li>
-                        <div
-                            class="flex items-center justify-center sm:justify-start gap-x-2 w-48 mt-2.5 ml-2.5 px-4 py-3 rounded shadow-md bg-glass text-default dark:text-invert text-sm border border-transparent truncate">
-                            <svg class="shrink-0 w-12 h-12 text-green-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-                                <path fill-rule="evenodd"
-                                      d="M2.25 5.25a3 3 0 0 1 3-3h13.5a3 3 0 0 1 3 3V15a3 3 0 0 1-3 3h-3v.257c0 .597.237 1.17.659 1.591l.621.622a.75.75 0 0 1-.53 1.28h-9a.75.75 0 0 1-.53-1.28l.621-.622a2.25 2.25 0 0 0 .659-1.59V18h-3a3 3 0 0 1-3-3V5.25zm1.5 0v7.5a1.5 1.5 0 0 0 1.5 1.5h13.5a1.5 1.5 0 0 0 1.5-1.5v-7.5a1.5 1.5 0 0 0-1.5-1.5H5.25a1.5 1.5 0 0 0-1.5 1.5z"
-                                      clip-rule="evenodd"></path>
-                            </svg>
-                            <span class="truncate"><div>192.168.16.35</div></span></div>
-                    </li>
-                    <li>
-                        <div
-                            class="flex items-center justify-center sm:justify-start gap-x-2 w-48 mt-2.5 ml-2.5 px-4 py-3 rounded shadow-md bg-glass text-default dark:text-invert text-sm border border-transparent truncate">
-                            <svg class="shrink-0 w-12 h-12 text-green-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-                                <path fill-rule="evenodd"
-                                      d="M2.25 5.25a3 3 0 0 1 3-3h13.5a3 3 0 0 1 3 3V15a3 3 0 0 1-3 3h-3v.257c0 .597.237 1.17.659 1.591l.621.622a.75.75 0 0 1-.53 1.28h-9a.75.75 0 0 1-.53-1.28l.621-.622a2.25 2.25 0 0 0 .659-1.59V18h-3a3 3 0 0 1-3-3V5.25zm1.5 0v7.5a1.5 1.5 0 0 0 1.5 1.5h13.5a1.5 1.5 0 0 0 1.5-1.5v-7.5a1.5 1.5 0 0 0-1.5-1.5H5.25a1.5 1.5 0 0 0-1.5 1.5z"
-                                      clip-rule="evenodd"></path>
-                            </svg>
-                            <span class="truncate"><div>192.168.16.38</div></span></div>
-                    </li>
-                    <li>
-                        <div
-                            class="flex items-center justify-center sm:justify-start gap-x-2 w-48 mt-2.5 ml-2.5 px-4 py-3 rounded shadow-md bg-glass text-default dark:text-invert text-sm border border-transparent truncate">
-                            <svg class="shrink-0 w-12 h-12 text-green-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-                                <path fill-rule="evenodd"
-                                      d="M2.25 5.25a3 3 0 0 1 3-3h13.5a3 3 0 0 1 3 3V15a3 3 0 0 1-3 3h-3v.257c0 .597.237 1.17.659 1.591l.621.622a.75.75 0 0 1-.53 1.28h-9a.75.75 0 0 1-.53-1.28l.621-.622a2.25 2.25 0 0 0 .659-1.59V18h-3a3 3 0 0 1-3-3V5.25zm1.5 0v7.5a1.5 1.5 0 0 0 1.5 1.5h13.5a1.5 1.5 0 0 0 1.5-1.5v-7.5a1.5 1.5 0 0 0-1.5-1.5H5.25a1.5 1.5 0 0 0-1.5 1.5z"
-                                      clip-rule="evenodd"></path>
-                            </svg>
-                            <span class="truncate"><div>192.168.16.42</div></span></div>
-                    </li>
-                    <li>
-                        <div
-                            class="flex items-center justify-center sm:justify-start gap-x-2 w-48 mt-2.5 ml-2.5 px-4 py-3 rounded shadow-md bg-glass text-default dark:text-invert text-sm border border-transparent truncate">
-                            <svg class="shrink-0 w-12 h-12 text-green-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-                                <path fill-rule="evenodd"
-                                      d="M2.25 5.25a3 3 0 0 1 3-3h13.5a3 3 0 0 1 3 3V15a3 3 0 0 1-3 3h-3v.257c0 .597.237 1.17.659 1.591l.621.622a.75.75 0 0 1-.53 1.28h-9a.75.75 0 0 1-.53-1.28l.621-.622a2.25 2.25 0 0 0 .659-1.59V18h-3a3 3 0 0 1-3-3V5.25zm1.5 0v7.5a1.5 1.5 0 0 0 1.5 1.5h13.5a1.5 1.5 0 0 0 1.5-1.5v-7.5a1.5 1.5 0 0 0-1.5-1.5H5.25a1.5 1.5 0 0 0-1.5 1.5z"
-                                      clip-rule="evenodd"></path>
-                            </svg>
-                            <span class="truncate"><div>192.168.16.120</div></span></div>
-                    </li>
-                    <li>
-                        <div
-                            class="flex items-center justify-center sm:justify-start gap-x-2 w-48 mt-2.5 ml-2.5 px-4 py-3 rounded shadow-md bg-glass text-default dark:text-invert text-sm border border-transparent truncate">
-                            <svg class="shrink-0 w-12 h-12 text-green-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-                                <path fill-rule="evenodd"
-                                      d="M2.25 5.25a3 3 0 0 1 3-3h13.5a3 3 0 0 1 3 3V15a3 3 0 0 1-3 3h-3v.257c0 .597.237 1.17.659 1.591l.621.622a.75.75 0 0 1-.53 1.28h-9a.75.75 0 0 1-.53-1.28l.621-.622a2.25 2.25 0 0 0 .659-1.59V18h-3a3 3 0 0 1-3-3V5.25zm1.5 0v7.5a1.5 1.5 0 0 0 1.5 1.5h13.5a1.5 1.5 0 0 0 1.5-1.5v-7.5a1.5 1.5 0 0 0-1.5-1.5H5.25a1.5 1.5 0 0 0-1.5 1.5z"
-                                      clip-rule="evenodd"></path>
-                            </svg>
-                            <span class="truncate"><div>192.168.16.140</div></span></div>
-                    </li>
-                    <li>
-                        <div
-                            class="flex items-center justify-center sm:justify-start gap-x-2 w-48 mt-2.5 ml-2.5 px-4 py-3 rounded shadow-md bg-glass text-default dark:text-invert text-sm border border-transparent truncate">
-                            <svg class="shrink-0 w-12 h-12 text-green-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-                                <path fill-rule="evenodd"
-                                      d="M2.25 5.25a3 3 0 0 1 3-3h13.5a3 3 0 0 1 3 3V15a3 3 0 0 1-3 3h-3v.257c0 .597.237 1.17.659 1.591l.621.622a.75.75 0 0 1-.53 1.28h-9a.75.75 0 0 1-.53-1.28l.621-.622a2.25 2.25 0 0 0 .659-1.59V18h-3a3 3 0 0 1-3-3V5.25zm1.5 0v7.5a1.5 1.5 0 0 0 1.5 1.5h13.5a1.5 1.5 0 0 0 1.5-1.5v-7.5a1.5 1.5 0 0 0-1.5-1.5H5.25a1.5 1.5 0 0 0-1.5 1.5z"
-                                      clip-rule="evenodd"></path>
-                            </svg>
-                            <span class="truncate"><div>192.168.16.141</div></span></div>
-                    </li>
-                    <li>
-                        <div
-                            class="flex items-center justify-center sm:justify-start gap-x-2 w-48 mt-2.5 ml-2.5 px-4 py-3 rounded shadow-md bg-glass text-default dark:text-invert text-sm border border-transparent truncate">
-                            <svg class="shrink-0 w-12 h-12 text-green-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-                                <path fill-rule="evenodd"
-                                      d="M2.25 5.25a3 3 0 0 1 3-3h13.5a3 3 0 0 1 3 3V15a3 3 0 0 1-3 3h-3v.257c0 .597.237 1.17.659 1.591l.621.622a.75.75 0 0 1-.53 1.28h-9a.75.75 0 0 1-.53-1.28l.621-.622a2.25 2.25 0 0 0 .659-1.59V18h-3a3 3 0 0 1-3-3V5.25zm1.5 0v7.5a1.5 1.5 0 0 0 1.5 1.5h13.5a1.5 1.5 0 0 0 1.5-1.5v-7.5a1.5 1.5 0 0 0-1.5-1.5H5.25a1.5 1.5 0 0 0-1.5 1.5z"
-                                      clip-rule="evenodd"></path>
-                            </svg>
-                            <span class="truncate"><div>192.168.16.142</div></span></div>
-                    </li>
-                    <li>
-                        <div
-                            class="flex items-center justify-center sm:justify-start gap-x-2 w-48 mt-2.5 ml-2.5 px-4 py-3 rounded shadow-md bg-glass text-default dark:text-invert text-sm border border-transparent truncate">
-                            <svg class="shrink-0 w-12 h-12 text-green-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-                                <path fill-rule="evenodd"
-                                      d="M2.25 5.25a3 3 0 0 1 3-3h13.5a3 3 0 0 1 3 3V15a3 3 0 0 1-3 3h-3v.257c0 .597.237 1.17.659 1.591l.621.622a.75.75 0 0 1-.53 1.28h-9a.75.75 0 0 1-.53-1.28l.621-.622a2.25 2.25 0 0 0 .659-1.59V18h-3a3 3 0 0 1-3-3V5.25zm1.5 0v7.5a1.5 1.5 0 0 0 1.5 1.5h13.5a1.5 1.5 0 0 0 1.5-1.5v-7.5a1.5 1.5 0 0 0-1.5-1.5H5.25a1.5 1.5 0 0 0-1.5 1.5z"
-                                      clip-rule="evenodd"></path>
-                            </svg>
-                            <span class="truncate"><div>192.168.16.143</div></span></div>
-                    </li>
-                    <li>
-                        <div
-                            class="flex items-center justify-center sm:justify-start gap-x-2 w-48 mt-2.5 ml-2.5 px-4 py-3 rounded shadow-md bg-glass text-default dark:text-invert text-sm border border-transparent truncate">
-                            <svg class="shrink-0 w-12 h-12 text-green-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-                                <path fill-rule="evenodd"
-                                      d="M2.25 5.25a3 3 0 0 1 3-3h13.5a3 3 0 0 1 3 3V15a3 3 0 0 1-3 3h-3v.257c0 .597.237 1.17.659 1.591l.621.622a.75.75 0 0 1-.53 1.28h-9a.75.75 0 0 1-.53-1.28l.621-.622a2.25 2.25 0 0 0 .659-1.59V18h-3a3 3 0 0 1-3-3V5.25zm1.5 0v7.5a1.5 1.5 0 0 0 1.5 1.5h13.5a1.5 1.5 0 0 0 1.5-1.5v-7.5a1.5 1.5 0 0 0-1.5-1.5H5.25a1.5 1.5 0 0 0-1.5 1.5z"
-                                      clip-rule="evenodd"></path>
-                            </svg>
-                            <span class="truncate"><div>192.168.16.180</div></span></div>
-                    </li>
-                    <li>
-                        <div
-                            class="flex items-center justify-center sm:justify-start gap-x-2 w-48 mt-2.5 ml-2.5 px-4 py-3 rounded shadow-md bg-glass text-default dark:text-invert text-sm border border-transparent truncate">
-                            <svg class="shrink-0 w-12 h-12 text-green-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-                                <path fill-rule="evenodd"
-                                      d="M2.25 5.25a3 3 0 0 1 3-3h13.5a3 3 0 0 1 3 3V15a3 3 0 0 1-3 3h-3v.257c0 .597.237 1.17.659 1.591l.621.622a.75.75 0 0 1-.53 1.28h-9a.75.75 0 0 1-.53-1.28l.621-.622a2.25 2.25 0 0 0 .659-1.59V18h-3a3 3 0 0 1-3-3V5.25zm1.5 0v7.5a1.5 1.5 0 0 0 1.5 1.5h13.5a1.5 1.5 0 0 0 1.5-1.5v-7.5a1.5 1.5 0 0 0-1.5-1.5H5.25a1.5 1.5 0 0 0-1.5 1.5z"
-                                      clip-rule="evenodd"></path>
-                            </svg>
-                            <span class="truncate"><div>192.168.16.190</div></span></div>
-                    </li>
-                    <li>
-                        <div
-                            class="flex items-center justify-center sm:justify-start gap-x-2 w-48 mt-2.5 ml-2.5 px-4 py-3 rounded shadow-md bg-glass text-default dark:text-invert text-sm border border-transparent truncate">
-                            <svg class="shrink-0 w-12 h-12 text-green-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-                                <path fill-rule="evenodd"
-                                      d="M2.25 5.25a3 3 0 0 1 3-3h13.5a3 3 0 0 1 3 3V15a3 3 0 0 1-3 3h-3v.257c0 .597.237 1.17.659 1.591l.621.622a.75.75 0 0 1-.53 1.28h-9a.75.75 0 0 1-.53-1.28l.621-.622a2.25 2.25 0 0 0 .659-1.59V18h-3a3 3 0 0 1-3-3V5.25zm1.5 0v7.5a1.5 1.5 0 0 0 1.5 1.5h13.5a1.5 1.5 0 0 0 1.5-1.5v-7.5a1.5 1.5 0 0 0-1.5-1.5H5.25a1.5 1.5 0 0 0-1.5 1.5z"
-                                      clip-rule="evenodd"></path>
-                            </svg>
-                            <span class="truncate"><div>192.168.16.46</div></span></div>
-                    </li>
-                </ul>
-            </div>
-        </div>
-    </div>
-    <div class="space-y-5 py-4 sm:px-4 sm:rounded-xl bg-white/10 border border-white/20 grid grid-rows-[1fr_minmax(1px,100%)]">
-        <div class="flex items-center justify-center sm:justify-start gap-x-2">
-            <svg class="shrink-0 w-6 h-6" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-                <path
-                    d="M4.08 5.227A3 3 0 0 1 6.979 3H17.02a3 3 0 0 1 2.9 2.227l2.113 7.926A5.228 5.228 0 0 0 18.75 12H5.25a5.228 5.228 0 0 0-3.284 1.153L4.08 5.227z"></path>
-                <path fill-rule="evenodd"
-                      d="M5.25 13.5a3.75 3.75 0 1 0 0 7.5h13.5a3.75 3.75 0 1 0 0-7.5H5.25zm10.5 4.5a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5zm3.75-.75a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0z"
-                      clip-rule="evenodd"></path>
-            </svg>
-            <div class="text-xl font-bold">netmon</div>
-        </div>
-        <div class="overflow-y-auto">
-            <div>
-                <div class="mount-point" data-mount-point="">
-                    <dl class="flex text-xs font-semibold">
-                        <div class="flex m-1 border border-slate-500 rounded-full px-2 py-1 gap-2">
-                            <dt class="font-bold">CIDR</dt>
-                            <dd>192.168.16.46/24</dd>
-                        </div>
-                        <div class="flex m-1 border border-slate-500 rounded-full px-2 py-1 gap-2">
-                            <dt class="font-bold">Interface</dt>
-                            <dd>eth0</dd>
-                        </div>
-                        <div class="flex m-1 border border-slate-500 rounded-full px-2 py-1 gap-2">
-                            <dt class="font-bold">Scan</dt>
-                            <dd>2s ago</dd>
-                        </div>
-                    </dl>
-                </div>
-                <div class="mount-point" data-mount-point="">
-                    <div class="bg-gradient-to-r from-red-700 to-transparent shadow-xl">
-                        <svg class="shrink-0 w-12 h-12 text-red-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-                            <path fill-rule="evenodd"
-                                  d="M12 2.25c-5.385 0-9.75 4.365-9.75 9.75s4.365 9.75 9.75 9.75 9.75-4.365 9.75-9.75S17.385 2.25 12 2.25zm-.53 14.03a.75.75 0 0 0 1.06 0l3-3a.75.75 0 1 0-1.06-1.06l-1.72 1.72V8.25a.75.75 0 0 0-1.5 0v5.69l-1.72-1.72a.75.75 0 0 0-1.06 1.06l3 3z"
-                                  clip-rule="evenodd"></path>
-                        </svg>
-                        192.168.16.41 is down
-                    </div>
-                    <div class="bg-gradient-to-r from-green-700 to-transparent shadow-xl">
-                        <svg class="shrink-0 w-12 h-12 text-green-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-                            <path fill-rule="evenodd"
-                                  d="M12 2.25c-5.385 0-9.75 4.365-9.75 9.75s4.365 9.75 9.75 9.75 9.75-4.365 9.75-9.75S17.385 2.25 12 2.25zm.53 5.47a.75.75 0 0 0-1.06 0l-3 3a.75.75 0 1 0 1.06 1.06l1.72-1.72v5.69a.75.75 0 0 0 1.5 0v-5.69l1.72 1.72a.75.75 0 1 0 1.06-1.06l-3-3z"
-                                  clip-rule="evenodd"></path>
-                        </svg>
-                        192.168.16.38 is up
-                    </div>
-                    <div class="bg-gradient-to-r from-green-700 to-transparent shadow-xl">
-                        <svg class="shrink-0 w-12 h-12 text-green-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-                            <path fill-rule="evenodd"
-                                  d="M12 2.25c-5.385 0-9.75 4.365-9.75 9.75s4.365 9.75 9.75 9.75 9.75-4.365 9.75-9.75S17.385 2.25 12 2.25zm.53 5.47a.75.75 0 0 0-1.06 0l-3 3a.75.75 0 1 0 1.06 1.06l1.72-1.72v5.69a.75.75 0 0 0 1.5 0v-5.69l1.72 1.72a.75.75 0 1 0 1.06-1.06l-3-3z"
-                                  clip-rule="evenodd"></path>
-                        </svg>
-                        192.168.16.41 is up
-                    </div>
-                </div>
-                <ul class="px-4 py-2.5 overflow-x-hidden overflow-y-auto rounded-xl bg-default/60 text-default dark:bg-invert/60 dark:text-invert">
-                    <li>
-                        <div
-                            class="flex items-center justify-center sm:justify-start gap-x-2 w-48 mt-2.5 ml-2.5 px-4 py-3 rounded shadow-md bg-glass text-default dark:text-invert text-sm border border-transparent truncate">
-                            <svg class="shrink-0 w-12 h-12 text-green-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-                                <path fill-rule="evenodd"
-                                      d="M2.25 5.25a3 3 0 0 1 3-3h13.5a3 3 0 0 1 3 3V15a3 3 0 0 1-3 3h-3v.257c0 .597.237 1.17.659 1.591l.621.622a.75.75 0 0 1-.53 1.28h-9a.75.75 0 0 1-.53-1.28l.621-.622a2.25 2.25 0 0 0 .659-1.59V18h-3a3 3 0 0 1-3-3V5.25zm1.5 0v7.5a1.5 1.5 0 0 0 1.5 1.5h13.5a1.5 1.5 0 0 0 1.5-1.5v-7.5a1.5 1.5 0 0 0-1.5-1.5H5.25a1.5 1.5 0 0 0-1.5 1.5z"
-                                      clip-rule="evenodd"></path>
-                            </svg>
-                            <span class="truncate"><div>192.168.16.1</div></span></div>
-                    </li>
-                    <li>
-                        <div
-                            class="flex items-center justify-center sm:justify-start gap-x-2 w-48 mt-2.5 ml-2.5 px-4 py-3 rounded shadow-md bg-glass text-default dark:text-invert text-sm border border-transparent truncate">
-                            <svg class="shrink-0 w-12 h-12 text-green-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-                                <path fill-rule="evenodd"
-                                      d="M2.25 5.25a3 3 0 0 1 3-3h13.5a3 3 0 0 1 3 3V15a3 3 0 0 1-3 3h-3v.257c0 .597.237 1.17.659 1.591l.621.622a.75.75 0 0 1-.53 1.28h-9a.75.75 0 0 1-.53-1.28l.621-.622a2.25 2.25 0 0 0 .659-1.59V18h-3a3 3 0 0 1-3-3V5.25zm1.5 0v7.5a1.5 1.5 0 0 0 1.5 1.5h13.5a1.5 1.5 0 0 0 1.5-1.5v-7.5a1.5 1.5 0 0 0-1.5-1.5H5.25a1.5 1.5 0 0 0-1.5 1.5z"
-                                      clip-rule="evenodd"></path>
-                            </svg>
-                            <span class="truncate"><div>192.168.16.10</div></span></div>
-                    </li>
-                    <li>
-                        <div
-                            class="flex items-center justify-center sm:justify-start gap-x-2 w-48 mt-2.5 ml-2.5 px-4 py-3 rounded shadow-md bg-glass text-default dark:text-invert text-sm border border-transparent truncate">
-                            <svg class="shrink-0 w-12 h-12 text-green-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-                                <path fill-rule="evenodd"
-                                      d="M2.25 5.25a3 3 0 0 1 3-3h13.5a3 3 0 0 1 3 3V15a3 3 0 0 1-3 3h-3v.257c0 .597.237 1.17.659 1.591l.621.622a.75.75 0 0 1-.53 1.28h-9a.75.75 0 0 1-.53-1.28l.621-.622a2.25 2.25 0 0 0 .659-1.59V18h-3a3 3 0 0 1-3-3V5.25zm1.5 0v7.5a1.5 1.5 0 0 0 1.5 1.5h13.5a1.5 1.5 0 0 0 1.5-1.5v-7.5a1.5 1.5 0 0 0-1.5-1.5H5.25a1.5 1.5 0 0 0-1.5 1.5z"
-                                      clip-rule="evenodd"></path>
-                            </svg>
-                            <span class="truncate"><div>192.168.16.30</div></span></div>
-                    </li>
-                    <li>
-                        <div
-                            class="flex items-center justify-center sm:justify-start gap-x-2 w-48 mt-2.5 ml-2.5 px-4 py-3 rounded shadow-md bg-glass text-default dark:text-invert text-sm border border-transparent truncate">
-                            <svg class="shrink-0 w-12 h-12 text-green-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-                                <path fill-rule="evenodd"
-                                      d="M2.25 5.25a3 3 0 0 1 3-3h13.5a3 3 0 0 1 3 3V15a3 3 0 0 1-3 3h-3v.257c0 .597.237 1.17.659 1.591l.621.622a.75.75 0 0 1-.53 1.28h-9a.75.75 0 0 1-.53-1.28l.621-.622a2.25 2.25 0 0 0 .659-1.59V18h-3a3 3 0 0 1-3-3V5.25zm1.5 0v7.5a1.5 1.5 0 0 0 1.5 1.5h13.5a1.5 1.5 0 0 0 1.5-1.5v-7.5a1.5 1.5 0 0 0-1.5-1.5H5.25a1.5 1.5 0 0 0-1.5 1.5z"
-                                      clip-rule="evenodd"></path>
-                            </svg>
-                            <span class="truncate"><div>192.168.16.32</div></span></div>
-                    </li>
-                    <li>
-                        <div
-                            class="flex items-center justify-center sm:justify-start gap-x-2 w-48 mt-2.5 ml-2.5 px-4 py-3 rounded shadow-md bg-glass text-default dark:text-invert text-sm border border-transparent truncate">
-                            <svg class="shrink-0 w-12 h-12 text-green-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-                                <path fill-rule="evenodd"
-                                      d="M2.25 5.25a3 3 0 0 1 3-3h13.5a3 3 0 0 1 3 3V15a3 3 0 0 1-3 3h-3v.257c0 .597.237 1.17.659 1.591l.621.622a.75.75 0 0 1-.53 1.28h-9a.75.75 0 0 1-.53-1.28l.621-.622a2.25 2.25 0 0 0 .659-1.59V18h-3a3 3 0 0 1-3-3V5.25zm1.5 0v7.5a1.5 1.5 0 0 0 1.5 1.5h13.5a1.5 1.5 0 0 0 1.5-1.5v-7.5a1.5 1.5 0 0 0-1.5-1.5H5.25a1.5 1.5 0 0 0-1.5 1.5z"
-                                      clip-rule="evenodd"></path>
-                            </svg>
-                            <span class="truncate"><div>192.168.16.33</div></span></div>
-                    </li>
-                    <li>
-                        <div
-                            class="flex items-center justify-center sm:justify-start gap-x-2 w-48 mt-2.5 ml-2.5 px-4 py-3 rounded shadow-md bg-glass text-default dark:text-invert text-sm border border-transparent truncate">
-                            <svg class="shrink-0 w-12 h-12 text-green-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-                                <path fill-rule="evenodd"
-                                      d="M2.25 5.25a3 3 0 0 1 3-3h13.5a3 3 0 0 1 3 3V15a3 3 0 0 1-3 3h-3v.257c0 .597.237 1.17.659 1.591l.621.622a.75.75 0 0 1-.53 1.28h-9a.75.75 0 0 1-.53-1.28l.621-.622a2.25 2.25 0 0 0 .659-1.59V18h-3a3 3 0 0 1-3-3V5.25zm1.5 0v7.5a1.5 1.5 0 0 0 1.5 1.5h13.5a1.5 1.5 0 0 0 1.5-1.5v-7.5a1.5 1.5 0 0 0-1.5-1.5H5.25a1.5 1.5 0 0 0-1.5 1.5z"
-                                      clip-rule="evenodd"></path>
-                            </svg>
-                            <span class="truncate"><div>192.168.16.34</div></span></div>
-                    </li>
-                    <li>
-                        <div
-                            class="flex items-center justify-center sm:justify-start gap-x-2 w-48 mt-2.5 ml-2.5 px-4 py-3 rounded shadow-md bg-glass text-default dark:text-invert text-sm border border-transparent truncate">
-                            <svg class="shrink-0 w-12 h-12 text-green-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-                                <path fill-rule="evenodd"
-                                      d="M2.25 5.25a3 3 0 0 1 3-3h13.5a3 3 0 0 1 3 3V15a3 3 0 0 1-3 3h-3v.257c0 .597.237 1.17.659 1.591l.621.622a.75.75 0 0 1-.53 1.28h-9a.75.75 0 0 1-.53-1.28l.621-.622a2.25 2.25 0 0 0 .659-1.59V18h-3a3 3 0 0 1-3-3V5.25zm1.5 0v7.5a1.5 1.5 0 0 0 1.5 1.5h13.5a1.5 1.5 0 0 0 1.5-1.5v-7.5a1.5 1.5 0 0 0-1.5-1.5H5.25a1.5 1.5 0 0 0-1.5 1.5z"
-                                      clip-rule="evenodd"></path>
-                            </svg>
-                            <span class="truncate"><div>192.168.16.35</div></span></div>
-                    </li>
-                    <li>
-                        <div
-                            class="flex items-center justify-center sm:justify-start gap-x-2 w-48 mt-2.5 ml-2.5 px-4 py-3 rounded shadow-md bg-glass text-default dark:text-invert text-sm border border-transparent truncate">
-                            <svg class="shrink-0 w-12 h-12 text-green-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-                                <path fill-rule="evenodd"
-                                      d="M2.25 5.25a3 3 0 0 1 3-3h13.5a3 3 0 0 1 3 3V15a3 3 0 0 1-3 3h-3v.257c0 .597.237 1.17.659 1.591l.621.622a.75.75 0 0 1-.53 1.28h-9a.75.75 0 0 1-.53-1.28l.621-.622a2.25 2.25 0 0 0 .659-1.59V18h-3a3 3 0 0 1-3-3V5.25zm1.5 0v7.5a1.5 1.5 0 0 0 1.5 1.5h13.5a1.5 1.5 0 0 0 1.5-1.5v-7.5a1.5 1.5 0 0 0-1.5-1.5H5.25a1.5 1.5 0 0 0-1.5 1.5z"
-                                      clip-rule="evenodd"></path>
-                            </svg>
-                            <span class="truncate"><div>192.168.16.38</div></span></div>
-                    </li>
-                    <li>
-                        <div
-                            class="flex items-center justify-center sm:justify-start gap-x-2 w-48 mt-2.5 ml-2.5 px-4 py-3 rounded shadow-md bg-glass text-default dark:text-invert text-sm border border-transparent truncate">
-                            <svg class="shrink-0 w-12 h-12 text-green-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-                                <path fill-rule="evenodd"
-                                      d="M2.25 5.25a3 3 0 0 1 3-3h13.5a3 3 0 0 1 3 3V15a3 3 0 0 1-3 3h-3v.257c0 .597.237 1.17.659 1.591l.621.622a.75.75 0 0 1-.53 1.28h-9a.75.75 0 0 1-.53-1.28l.621-.622a2.25 2.25 0 0 0 .659-1.59V18h-3a3 3 0 0 1-3-3V5.25zm1.5 0v7.5a1.5 1.5 0 0 0 1.5 1.5h13.5a1.5 1.5 0 0 0 1.5-1.5v-7.5a1.5 1.5 0 0 0-1.5-1.5H5.25a1.5 1.5 0 0 0-1.5 1.5z"
-                                      clip-rule="evenodd"></path>
-                            </svg>
-                            <span class="truncate"><div>192.168.16.42</div></span></div>
-                    </li>
-                    <li>
-                        <div
-                            class="flex items-center justify-center sm:justify-start gap-x-2 w-48 mt-2.5 ml-2.5 px-4 py-3 rounded shadow-md bg-glass text-default dark:text-invert text-sm border border-transparent truncate">
-                            <svg class="shrink-0 w-12 h-12 text-green-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-                                <path fill-rule="evenodd"
-                                      d="M2.25 5.25a3 3 0 0 1 3-3h13.5a3 3 0 0 1 3 3V15a3 3 0 0 1-3 3h-3v.257c0 .597.237 1.17.659 1.591l.621.622a.75.75 0 0 1-.53 1.28h-9a.75.75 0 0 1-.53-1.28l.621-.622a2.25 2.25 0 0 0 .659-1.59V18h-3a3 3 0 0 1-3-3V5.25zm1.5 0v7.5a1.5 1.5 0 0 0 1.5 1.5h13.5a1.5 1.5 0 0 0 1.5-1.5v-7.5a1.5 1.5 0 0 0-1.5-1.5H5.25a1.5 1.5 0 0 0-1.5 1.5z"
-                                      clip-rule="evenodd"></path>
-                            </svg>
-                            <span class="truncate"><div>192.168.16.120</div></span></div>
-                    </li>
-                    <li>
-                        <div
-                            class="flex items-center justify-center sm:justify-start gap-x-2 w-48 mt-2.5 ml-2.5 px-4 py-3 rounded shadow-md bg-glass text-default dark:text-invert text-sm border border-transparent truncate">
-                            <svg class="shrink-0 w-12 h-12 text-green-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-                                <path fill-rule="evenodd"
-                                      d="M2.25 5.25a3 3 0 0 1 3-3h13.5a3 3 0 0 1 3 3V15a3 3 0 0 1-3 3h-3v.257c0 .597.237 1.17.659 1.591l.621.622a.75.75 0 0 1-.53 1.28h-9a.75.75 0 0 1-.53-1.28l.621-.622a2.25 2.25 0 0 0 .659-1.59V18h-3a3 3 0 0 1-3-3V5.25zm1.5 0v7.5a1.5 1.5 0 0 0 1.5 1.5h13.5a1.5 1.5 0 0 0 1.5-1.5v-7.5a1.5 1.5 0 0 0-1.5-1.5H5.25a1.5 1.5 0 0 0-1.5 1.5z"
-                                      clip-rule="evenodd"></path>
-                            </svg>
-                            <span class="truncate"><div>192.168.16.140</div></span></div>
-                    </li>
-                    <li>
-                        <div
-                            class="flex items-center justify-center sm:justify-start gap-x-2 w-48 mt-2.5 ml-2.5 px-4 py-3 rounded shadow-md bg-glass text-default dark:text-invert text-sm border border-transparent truncate">
-                            <svg class="shrink-0 w-12 h-12 text-green-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-                                <path fill-rule="evenodd"
-                                      d="M2.25 5.25a3 3 0 0 1 3-3h13.5a3 3 0 0 1 3 3V15a3 3 0 0 1-3 3h-3v.257c0 .597.237 1.17.659 1.591l.621.622a.75.75 0 0 1-.53 1.28h-9a.75.75 0 0 1-.53-1.28l.621-.622a2.25 2.25 0 0 0 .659-1.59V18h-3a3 3 0 0 1-3-3V5.25zm1.5 0v7.5a1.5 1.5 0 0 0 1.5 1.5h13.5a1.5 1.5 0 0 0 1.5-1.5v-7.5a1.5 1.5 0 0 0-1.5-1.5H5.25a1.5 1.5 0 0 0-1.5 1.5z"
-                                      clip-rule="evenodd"></path>
-                            </svg>
-                            <span class="truncate"><div>192.168.16.141</div></span></div>
-                    </li>
-                    <li>
-                        <div
-                            class="flex items-center justify-center sm:justify-start gap-x-2 w-48 mt-2.5 ml-2.5 px-4 py-3 rounded shadow-md bg-glass text-default dark:text-invert text-sm border border-transparent truncate">
-                            <svg class="shrink-0 w-12 h-12 text-green-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-                                <path fill-rule="evenodd"
-                                      d="M2.25 5.25a3 3 0 0 1 3-3h13.5a3 3 0 0 1 3 3V15a3 3 0 0 1-3 3h-3v.257c0 .597.237 1.17.659 1.591l.621.622a.75.75 0 0 1-.53 1.28h-9a.75.75 0 0 1-.53-1.28l.621-.622a2.25 2.25 0 0 0 .659-1.59V18h-3a3 3 0 0 1-3-3V5.25zm1.5 0v7.5a1.5 1.5 0 0 0 1.5 1.5h13.5a1.5 1.5 0 0 0 1.5-1.5v-7.5a1.5 1.5 0 0 0-1.5-1.5H5.25a1.5 1.5 0 0 0-1.5 1.5z"
-                                      clip-rule="evenodd"></path>
-                            </svg>
-                            <span class="truncate"><div>192.168.16.142</div></span></div>
-                    </li>
-                    <li>
-                        <div
-                            class="flex items-center justify-center sm:justify-start gap-x-2 w-48 mt-2.5 ml-2.5 px-4 py-3 rounded shadow-md bg-glass text-default dark:text-invert text-sm border border-transparent truncate">
-                            <svg class="shrink-0 w-12 h-12 text-green-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-                                <path fill-rule="evenodd"
-                                      d="M2.25 5.25a3 3 0 0 1 3-3h13.5a3 3 0 0 1 3 3V15a3 3 0 0 1-3 3h-3v.257c0 .597.237 1.17.659 1.591l.621.622a.75.75 0 0 1-.53 1.28h-9a.75.75 0 0 1-.53-1.28l.621-.622a2.25 2.25 0 0 0 .659-1.59V18h-3a3 3 0 0 1-3-3V5.25zm1.5 0v7.5a1.5 1.5 0 0 0 1.5 1.5h13.5a1.5 1.5 0 0 0 1.5-1.5v-7.5a1.5 1.5 0 0 0-1.5-1.5H5.25a1.5 1.5 0 0 0-1.5 1.5z"
-                                      clip-rule="evenodd"></path>
-                            </svg>
-                            <span class="truncate"><div>192.168.16.143</div></span></div>
-                    </li>
-                    <li>
-                        <div
-                            class="flex items-center justify-center sm:justify-start gap-x-2 w-48 mt-2.5 ml-2.5 px-4 py-3 rounded shadow-md bg-glass text-default dark:text-invert text-sm border border-transparent truncate">
-                            <svg class="shrink-0 w-12 h-12 text-green-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-                                <path fill-rule="evenodd"
-                                      d="M2.25 5.25a3 3 0 0 1 3-3h13.5a3 3 0 0 1 3 3V15a3 3 0 0 1-3 3h-3v.257c0 .597.237 1.17.659 1.591l.621.622a.75.75 0 0 1-.53 1.28h-9a.75.75 0 0 1-.53-1.28l.621-.622a2.25 2.25 0 0 0 .659-1.59V18h-3a3 3 0 0 1-3-3V5.25zm1.5 0v7.5a1.5 1.5 0 0 0 1.5 1.5h13.5a1.5 1.5 0 0 0 1.5-1.5v-7.5a1.5 1.5 0 0 0-1.5-1.5H5.25a1.5 1.5 0 0 0-1.5 1.5z"
-                                      clip-rule="evenodd"></path>
-                            </svg>
-                            <span class="truncate"><div>192.168.16.180</div></span></div>
-                    </li>
-                    <li>
-                        <div
-                            class="flex items-center justify-center sm:justify-start gap-x-2 w-48 mt-2.5 ml-2.5 px-4 py-3 rounded shadow-md bg-glass text-default dark:text-invert text-sm border border-transparent truncate">
-                            <svg class="shrink-0 w-12 h-12 text-green-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-                                <path fill-rule="evenodd"
-                                      d="M2.25 5.25a3 3 0 0 1 3-3h13.5a3 3 0 0 1 3 3V15a3 3 0 0 1-3 3h-3v.257c0 .597.237 1.17.659 1.591l.621.622a.75.75 0 0 1-.53 1.28h-9a.75.75 0 0 1-.53-1.28l.621-.622a2.25 2.25 0 0 0 .659-1.59V18h-3a3 3 0 0 1-3-3V5.25zm1.5 0v7.5a1.5 1.5 0 0 0 1.5 1.5h13.5a1.5 1.5 0 0 0 1.5-1.5v-7.5a1.5 1.5 0 0 0-1.5-1.5H5.25a1.5 1.5 0 0 0-1.5 1.5z"
-                                      clip-rule="evenodd"></path>
-                            </svg>
-                            <span class="truncate"><div>192.168.16.190</div></span></div>
-                    </li>
-                    <li>
-                        <div
-                            class="flex items-center justify-center sm:justify-start gap-x-2 w-48 mt-2.5 ml-2.5 px-4 py-3 rounded shadow-md bg-glass text-default dark:text-invert text-sm border border-transparent truncate">
-                            <svg class="shrink-0 w-12 h-12 text-green-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-                                <path fill-rule="evenodd"
-                                      d="M2.25 5.25a3 3 0 0 1 3-3h13.5a3 3 0 0 1 3 3V15a3 3 0 0 1-3 3h-3v.257c0 .597.237 1.17.659 1.591l.621.622a.75.75 0 0 1-.53 1.28h-9a.75.75 0 0 1-.53-1.28l.621-.622a2.25 2.25 0 0 0 .659-1.59V18h-3a3 3 0 0 1-3-3V5.25zm1.5 0v7.5a1.5 1.5 0 0 0 1.5 1.5h13.5a1.5 1.5 0 0 0 1.5-1.5v-7.5a1.5 1.5 0 0 0-1.5-1.5H5.25a1.5 1.5 0 0 0-1.5 1.5z"
-                                      clip-rule="evenodd"></path>
-                            </svg>
-                            <span class="truncate"><div>192.168.16.46</div></span></div>
-                    </li>
-                </ul>
-            </div>
-        </div>
-    </div>
-    <div class="space-y-5 py-4 sm:px-4 sm:rounded-xl bg-white/10 border border-white/20 grid grid-rows-[1fr_minmax(1px,100%)]">
-        <div class="flex items-center justify-center sm:justify-start gap-x-2">
-            <svg class="shrink-0 w-6 h-6" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-                <path
-                    d="M4.08 5.227A3 3 0 0 1 6.979 3H17.02a3 3 0 0 1 2.9 2.227l2.113 7.926A5.228 5.228 0 0 0 18.75 12H5.25a5.228 5.228 0 0 0-3.284 1.153L4.08 5.227z"></path>
-                <path fill-rule="evenodd"
-                      d="M5.25 13.5a3.75 3.75 0 1 0 0 7.5h13.5a3.75 3.75 0 1 0 0-7.5H5.25zm10.5 4.5a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5zm3.75-.75a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0z"
-                      clip-rule="evenodd"></path>
-            </svg>
-            <div class="text-xl font-bold">netmon</div>
-        </div>
-        <div class="overflow-y-auto">
-            <div>
-                <div class="mount-point" data-mount-point="">
-                    <dl class="flex text-xs font-semibold">
-                        <div class="flex m-1 border border-slate-500 rounded-full px-2 py-1 gap-2">
-                            <dt class="font-bold">CIDR</dt>
-                            <dd>192.168.16.46/24</dd>
-                        </div>
-                        <div class="flex m-1 border border-slate-500 rounded-full px-2 py-1 gap-2">
-                            <dt class="font-bold">Interface</dt>
-                            <dd>eth0</dd>
-                        </div>
-                        <div class="flex m-1 border border-slate-500 rounded-full px-2 py-1 gap-2">
-                            <dt class="font-bold">Scan</dt>
-                            <dd>2s ago</dd>
-                        </div>
-                    </dl>
-                </div>
-                <div class="mount-point" data-mount-point="">
-                    <div class="bg-gradient-to-r from-red-700 to-transparent shadow-xl">
-                        <svg class="shrink-0 w-12 h-12 text-red-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-                            <path fill-rule="evenodd"
-                                  d="M12 2.25c-5.385 0-9.75 4.365-9.75 9.75s4.365 9.75 9.75 9.75 9.75-4.365 9.75-9.75S17.385 2.25 12 2.25zm-.53 14.03a.75.75 0 0 0 1.06 0l3-3a.75.75 0 1 0-1.06-1.06l-1.72 1.72V8.25a.75.75 0 0 0-1.5 0v5.69l-1.72-1.72a.75.75 0 0 0-1.06 1.06l3 3z"
-                                  clip-rule="evenodd"></path>
-                        </svg>
-                        192.168.16.41 is down
-                    </div>
-                    <div class="bg-gradient-to-r from-green-700 to-transparent shadow-xl">
-                        <svg class="shrink-0 w-12 h-12 text-green-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-                            <path fill-rule="evenodd"
-                                  d="M12 2.25c-5.385 0-9.75 4.365-9.75 9.75s4.365 9.75 9.75 9.75 9.75-4.365 9.75-9.75S17.385 2.25 12 2.25zm.53 5.47a.75.75 0 0 0-1.06 0l-3 3a.75.75 0 1 0 1.06 1.06l1.72-1.72v5.69a.75.75 0 0 0 1.5 0v-5.69l1.72 1.72a.75.75 0 1 0 1.06-1.06l-3-3z"
-                                  clip-rule="evenodd"></path>
-                        </svg>
-                        192.168.16.38 is up
-                    </div>
-                    <div class="bg-gradient-to-r from-green-700 to-transparent shadow-xl">
-                        <svg class="shrink-0 w-12 h-12 text-green-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-                            <path fill-rule="evenodd"
-                                  d="M12 2.25c-5.385 0-9.75 4.365-9.75 9.75s4.365 9.75 9.75 9.75 9.75-4.365 9.75-9.75S17.385 2.25 12 2.25zm.53 5.47a.75.75 0 0 0-1.06 0l-3 3a.75.75 0 1 0 1.06 1.06l1.72-1.72v5.69a.75.75 0 0 0 1.5 0v-5.69l1.72 1.72a.75.75 0 1 0 1.06-1.06l-3-3z"
-                                  clip-rule="evenodd"></path>
-                        </svg>
-                        192.168.16.41 is up
-                    </div>
-                </div>
-                <ul class="px-4 py-2.5 overflow-x-hidden overflow-y-auto rounded-xl bg-default/60 text-default dark:bg-invert/60 dark:text-invert">
-                    <li>
-                        <div
-                            class="flex items-center justify-center sm:justify-start gap-x-2 w-48 mt-2.5 ml-2.5 px-4 py-3 rounded shadow-md bg-glass text-default dark:text-invert text-sm border border-transparent truncate">
-                            <svg class="shrink-0 w-12 h-12 text-green-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-                                <path fill-rule="evenodd"
-                                      d="M2.25 5.25a3 3 0 0 1 3-3h13.5a3 3 0 0 1 3 3V15a3 3 0 0 1-3 3h-3v.257c0 .597.237 1.17.659 1.591l.621.622a.75.75 0 0 1-.53 1.28h-9a.75.75 0 0 1-.53-1.28l.621-.622a2.25 2.25 0 0 0 .659-1.59V18h-3a3 3 0 0 1-3-3V5.25zm1.5 0v7.5a1.5 1.5 0 0 0 1.5 1.5h13.5a1.5 1.5 0 0 0 1.5-1.5v-7.5a1.5 1.5 0 0 0-1.5-1.5H5.25a1.5 1.5 0 0 0-1.5 1.5z"
-                                      clip-rule="evenodd"></path>
-                            </svg>
-                            <span class="truncate"><div>192.168.16.1</div></span></div>
-                    </li>
-                    <li>
-                        <div
-                            class="flex items-center justify-center sm:justify-start gap-x-2 w-48 mt-2.5 ml-2.5 px-4 py-3 rounded shadow-md bg-glass text-default dark:text-invert text-sm border border-transparent truncate">
-                            <svg class="shrink-0 w-12 h-12 text-green-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-                                <path fill-rule="evenodd"
-                                      d="M2.25 5.25a3 3 0 0 1 3-3h13.5a3 3 0 0 1 3 3V15a3 3 0 0 1-3 3h-3v.257c0 .597.237 1.17.659 1.591l.621.622a.75.75 0 0 1-.53 1.28h-9a.75.75 0 0 1-.53-1.28l.621-.622a2.25 2.25 0 0 0 .659-1.59V18h-3a3 3 0 0 1-3-3V5.25zm1.5 0v7.5a1.5 1.5 0 0 0 1.5 1.5h13.5a1.5 1.5 0 0 0 1.5-1.5v-7.5a1.5 1.5 0 0 0-1.5-1.5H5.25a1.5 1.5 0 0 0-1.5 1.5z"
-                                      clip-rule="evenodd"></path>
-                            </svg>
-                            <span class="truncate"><div>192.168.16.10</div></span></div>
-                    </li>
-                    <li>
-                        <div
-                            class="flex items-center justify-center sm:justify-start gap-x-2 w-48 mt-2.5 ml-2.5 px-4 py-3 rounded shadow-md bg-glass text-default dark:text-invert text-sm border border-transparent truncate">
-                            <svg class="shrink-0 w-12 h-12 text-green-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-                                <path fill-rule="evenodd"
-                                      d="M2.25 5.25a3 3 0 0 1 3-3h13.5a3 3 0 0 1 3 3V15a3 3 0 0 1-3 3h-3v.257c0 .597.237 1.17.659 1.591l.621.622a.75.75 0 0 1-.53 1.28h-9a.75.75 0 0 1-.53-1.28l.621-.622a2.25 2.25 0 0 0 .659-1.59V18h-3a3 3 0 0 1-3-3V5.25zm1.5 0v7.5a1.5 1.5 0 0 0 1.5 1.5h13.5a1.5 1.5 0 0 0 1.5-1.5v-7.5a1.5 1.5 0 0 0-1.5-1.5H5.25a1.5 1.5 0 0 0-1.5 1.5z"
-                                      clip-rule="evenodd"></path>
-                            </svg>
-                            <span class="truncate"><div>192.168.16.30</div></span></div>
-                    </li>
-                    <li>
-                        <div
-                            class="flex items-center justify-center sm:justify-start gap-x-2 w-48 mt-2.5 ml-2.5 px-4 py-3 rounded shadow-md bg-glass text-default dark:text-invert text-sm border border-transparent truncate">
-                            <svg class="shrink-0 w-12 h-12 text-green-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-                                <path fill-rule="evenodd"
-                                      d="M2.25 5.25a3 3 0 0 1 3-3h13.5a3 3 0 0 1 3 3V15a3 3 0 0 1-3 3h-3v.257c0 .597.237 1.17.659 1.591l.621.622a.75.75 0 0 1-.53 1.28h-9a.75.75 0 0 1-.53-1.28l.621-.622a2.25 2.25 0 0 0 .659-1.59V18h-3a3 3 0 0 1-3-3V5.25zm1.5 0v7.5a1.5 1.5 0 0 0 1.5 1.5h13.5a1.5 1.5 0 0 0 1.5-1.5v-7.5a1.5 1.5 0 0 0-1.5-1.5H5.25a1.5 1.5 0 0 0-1.5 1.5z"
-                                      clip-rule="evenodd"></path>
-                            </svg>
-                            <span class="truncate"><div>192.168.16.32</div></span></div>
-                    </li>
-                    <li>
-                        <div
-                            class="flex items-center justify-center sm:justify-start gap-x-2 w-48 mt-2.5 ml-2.5 px-4 py-3 rounded shadow-md bg-glass text-default dark:text-invert text-sm border border-transparent truncate">
-                            <svg class="shrink-0 w-12 h-12 text-green-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-                                <path fill-rule="evenodd"
-                                      d="M2.25 5.25a3 3 0 0 1 3-3h13.5a3 3 0 0 1 3 3V15a3 3 0 0 1-3 3h-3v.257c0 .597.237 1.17.659 1.591l.621.622a.75.75 0 0 1-.53 1.28h-9a.75.75 0 0 1-.53-1.28l.621-.622a2.25 2.25 0 0 0 .659-1.59V18h-3a3 3 0 0 1-3-3V5.25zm1.5 0v7.5a1.5 1.5 0 0 0 1.5 1.5h13.5a1.5 1.5 0 0 0 1.5-1.5v-7.5a1.5 1.5 0 0 0-1.5-1.5H5.25a1.5 1.5 0 0 0-1.5 1.5z"
-                                      clip-rule="evenodd"></path>
-                            </svg>
-                            <span class="truncate"><div>192.168.16.33</div></span></div>
-                    </li>
-                    <li>
-                        <div
-                            class="flex items-center justify-center sm:justify-start gap-x-2 w-48 mt-2.5 ml-2.5 px-4 py-3 rounded shadow-md bg-glass text-default dark:text-invert text-sm border border-transparent truncate">
-                            <svg class="shrink-0 w-12 h-12 text-green-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-                                <path fill-rule="evenodd"
-                                      d="M2.25 5.25a3 3 0 0 1 3-3h13.5a3 3 0 0 1 3 3V15a3 3 0 0 1-3 3h-3v.257c0 .597.237 1.17.659 1.591l.621.622a.75.75 0 0 1-.53 1.28h-9a.75.75 0 0 1-.53-1.28l.621-.622a2.25 2.25 0 0 0 .659-1.59V18h-3a3 3 0 0 1-3-3V5.25zm1.5 0v7.5a1.5 1.5 0 0 0 1.5 1.5h13.5a1.5 1.5 0 0 0 1.5-1.5v-7.5a1.5 1.5 0 0 0-1.5-1.5H5.25a1.5 1.5 0 0 0-1.5 1.5z"
-                                      clip-rule="evenodd"></path>
-                            </svg>
-                            <span class="truncate"><div>192.168.16.34</div></span></div>
-                    </li>
-                    <li>
-                        <div
-                            class="flex items-center justify-center sm:justify-start gap-x-2 w-48 mt-2.5 ml-2.5 px-4 py-3 rounded shadow-md bg-glass text-default dark:text-invert text-sm border border-transparent truncate">
-                            <svg class="shrink-0 w-12 h-12 text-green-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-                                <path fill-rule="evenodd"
-                                      d="M2.25 5.25a3 3 0 0 1 3-3h13.5a3 3 0 0 1 3 3V15a3 3 0 0 1-3 3h-3v.257c0 .597.237 1.17.659 1.591l.621.622a.75.75 0 0 1-.53 1.28h-9a.75.75 0 0 1-.53-1.28l.621-.622a2.25 2.25 0 0 0 .659-1.59V18h-3a3 3 0 0 1-3-3V5.25zm1.5 0v7.5a1.5 1.5 0 0 0 1.5 1.5h13.5a1.5 1.5 0 0 0 1.5-1.5v-7.5a1.5 1.5 0 0 0-1.5-1.5H5.25a1.5 1.5 0 0 0-1.5 1.5z"
-                                      clip-rule="evenodd"></path>
-                            </svg>
-                            <span class="truncate"><div>192.168.16.35</div></span></div>
-                    </li>
-                    <li>
-                        <div
-                            class="flex items-center justify-center sm:justify-start gap-x-2 w-48 mt-2.5 ml-2.5 px-4 py-3 rounded shadow-md bg-glass text-default dark:text-invert text-sm border border-transparent truncate">
-                            <svg class="shrink-0 w-12 h-12 text-green-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-                                <path fill-rule="evenodd"
-                                      d="M2.25 5.25a3 3 0 0 1 3-3h13.5a3 3 0 0 1 3 3V15a3 3 0 0 1-3 3h-3v.257c0 .597.237 1.17.659 1.591l.621.622a.75.75 0 0 1-.53 1.28h-9a.75.75 0 0 1-.53-1.28l.621-.622a2.25 2.25 0 0 0 .659-1.59V18h-3a3 3 0 0 1-3-3V5.25zm1.5 0v7.5a1.5 1.5 0 0 0 1.5 1.5h13.5a1.5 1.5 0 0 0 1.5-1.5v-7.5a1.5 1.5 0 0 0-1.5-1.5H5.25a1.5 1.5 0 0 0-1.5 1.5z"
-                                      clip-rule="evenodd"></path>
-                            </svg>
-                            <span class="truncate"><div>192.168.16.38</div></span></div>
-                    </li>
-                    <li>
-                        <div
-                            class="flex items-center justify-center sm:justify-start gap-x-2 w-48 mt-2.5 ml-2.5 px-4 py-3 rounded shadow-md bg-glass text-default dark:text-invert text-sm border border-transparent truncate">
-                            <svg class="shrink-0 w-12 h-12 text-green-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-                                <path fill-rule="evenodd"
-                                      d="M2.25 5.25a3 3 0 0 1 3-3h13.5a3 3 0 0 1 3 3V15a3 3 0 0 1-3 3h-3v.257c0 .597.237 1.17.659 1.591l.621.622a.75.75 0 0 1-.53 1.28h-9a.75.75 0 0 1-.53-1.28l.621-.622a2.25 2.25 0 0 0 .659-1.59V18h-3a3 3 0 0 1-3-3V5.25zm1.5 0v7.5a1.5 1.5 0 0 0 1.5 1.5h13.5a1.5 1.5 0 0 0 1.5-1.5v-7.5a1.5 1.5 0 0 0-1.5-1.5H5.25a1.5 1.5 0 0 0-1.5 1.5z"
-                                      clip-rule="evenodd"></path>
-                            </svg>
-                            <span class="truncate"><div>192.168.16.42</div></span></div>
-                    </li>
-                    <li>
-                        <div
-                            class="flex items-center justify-center sm:justify-start gap-x-2 w-48 mt-2.5 ml-2.5 px-4 py-3 rounded shadow-md bg-glass text-default dark:text-invert text-sm border border-transparent truncate">
-                            <svg class="shrink-0 w-12 h-12 text-green-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-                                <path fill-rule="evenodd"
-                                      d="M2.25 5.25a3 3 0 0 1 3-3h13.5a3 3 0 0 1 3 3V15a3 3 0 0 1-3 3h-3v.257c0 .597.237 1.17.659 1.591l.621.622a.75.75 0 0 1-.53 1.28h-9a.75.75 0 0 1-.53-1.28l.621-.622a2.25 2.25 0 0 0 .659-1.59V18h-3a3 3 0 0 1-3-3V5.25zm1.5 0v7.5a1.5 1.5 0 0 0 1.5 1.5h13.5a1.5 1.5 0 0 0 1.5-1.5v-7.5a1.5 1.5 0 0 0-1.5-1.5H5.25a1.5 1.5 0 0 0-1.5 1.5z"
-                                      clip-rule="evenodd"></path>
-                            </svg>
-                            <span class="truncate"><div>192.168.16.120</div></span></div>
-                    </li>
-                    <li>
-                        <div
-                            class="flex items-center justify-center sm:justify-start gap-x-2 w-48 mt-2.5 ml-2.5 px-4 py-3 rounded shadow-md bg-glass text-default dark:text-invert text-sm border border-transparent truncate">
-                            <svg class="shrink-0 w-12 h-12 text-green-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-                                <path fill-rule="evenodd"
-                                      d="M2.25 5.25a3 3 0 0 1 3-3h13.5a3 3 0 0 1 3 3V15a3 3 0 0 1-3 3h-3v.257c0 .597.237 1.17.659 1.591l.621.622a.75.75 0 0 1-.53 1.28h-9a.75.75 0 0 1-.53-1.28l.621-.622a2.25 2.25 0 0 0 .659-1.59V18h-3a3 3 0 0 1-3-3V5.25zm1.5 0v7.5a1.5 1.5 0 0 0 1.5 1.5h13.5a1.5 1.5 0 0 0 1.5-1.5v-7.5a1.5 1.5 0 0 0-1.5-1.5H5.25a1.5 1.5 0 0 0-1.5 1.5z"
-                                      clip-rule="evenodd"></path>
-                            </svg>
-                            <span class="truncate"><div>192.168.16.140</div></span></div>
-                    </li>
-                    <li>
-                        <div
-                            class="flex items-center justify-center sm:justify-start gap-x-2 w-48 mt-2.5 ml-2.5 px-4 py-3 rounded shadow-md bg-glass text-default dark:text-invert text-sm border border-transparent truncate">
-                            <svg class="shrink-0 w-12 h-12 text-green-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-                                <path fill-rule="evenodd"
-                                      d="M2.25 5.25a3 3 0 0 1 3-3h13.5a3 3 0 0 1 3 3V15a3 3 0 0 1-3 3h-3v.257c0 .597.237 1.17.659 1.591l.621.622a.75.75 0 0 1-.53 1.28h-9a.75.75 0 0 1-.53-1.28l.621-.622a2.25 2.25 0 0 0 .659-1.59V18h-3a3 3 0 0 1-3-3V5.25zm1.5 0v7.5a1.5 1.5 0 0 0 1.5 1.5h13.5a1.5 1.5 0 0 0 1.5-1.5v-7.5a1.5 1.5 0 0 0-1.5-1.5H5.25a1.5 1.5 0 0 0-1.5 1.5z"
-                                      clip-rule="evenodd"></path>
-                            </svg>
-                            <span class="truncate"><div>192.168.16.141</div></span></div>
-                    </li>
-                    <li>
-                        <div
-                            class="flex items-center justify-center sm:justify-start gap-x-2 w-48 mt-2.5 ml-2.5 px-4 py-3 rounded shadow-md bg-glass text-default dark:text-invert text-sm border border-transparent truncate">
-                            <svg class="shrink-0 w-12 h-12 text-green-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-                                <path fill-rule="evenodd"
-                                      d="M2.25 5.25a3 3 0 0 1 3-3h13.5a3 3 0 0 1 3 3V15a3 3 0 0 1-3 3h-3v.257c0 .597.237 1.17.659 1.591l.621.622a.75.75 0 0 1-.53 1.28h-9a.75.75 0 0 1-.53-1.28l.621-.622a2.25 2.25 0 0 0 .659-1.59V18h-3a3 3 0 0 1-3-3V5.25zm1.5 0v7.5a1.5 1.5 0 0 0 1.5 1.5h13.5a1.5 1.5 0 0 0 1.5-1.5v-7.5a1.5 1.5 0 0 0-1.5-1.5H5.25a1.5 1.5 0 0 0-1.5 1.5z"
-                                      clip-rule="evenodd"></path>
-                            </svg>
-                            <span class="truncate"><div>192.168.16.142</div></span></div>
-                    </li>
-                    <li>
-                        <div
-                            class="flex items-center justify-center sm:justify-start gap-x-2 w-48 mt-2.5 ml-2.5 px-4 py-3 rounded shadow-md bg-glass text-default dark:text-invert text-sm border border-transparent truncate">
-                            <svg class="shrink-0 w-12 h-12 text-green-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-                                <path fill-rule="evenodd"
-                                      d="M2.25 5.25a3 3 0 0 1 3-3h13.5a3 3 0 0 1 3 3V15a3 3 0 0 1-3 3h-3v.257c0 .597.237 1.17.659 1.591l.621.622a.75.75 0 0 1-.53 1.28h-9a.75.75 0 0 1-.53-1.28l.621-.622a2.25 2.25 0 0 0 .659-1.59V18h-3a3 3 0 0 1-3-3V5.25zm1.5 0v7.5a1.5 1.5 0 0 0 1.5 1.5h13.5a1.5 1.5 0 0 0 1.5-1.5v-7.5a1.5 1.5 0 0 0-1.5-1.5H5.25a1.5 1.5 0 0 0-1.5 1.5z"
-                                      clip-rule="evenodd"></path>
-                            </svg>
-                            <span class="truncate"><div>192.168.16.143</div></span></div>
-                    </li>
-                    <li>
-                        <div
-                            class="flex items-center justify-center sm:justify-start gap-x-2 w-48 mt-2.5 ml-2.5 px-4 py-3 rounded shadow-md bg-glass text-default dark:text-invert text-sm border border-transparent truncate">
-                            <svg class="shrink-0 w-12 h-12 text-green-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-                                <path fill-rule="evenodd"
-                                      d="M2.25 5.25a3 3 0 0 1 3-3h13.5a3 3 0 0 1 3 3V15a3 3 0 0 1-3 3h-3v.257c0 .597.237 1.17.659 1.591l.621.622a.75.75 0 0 1-.53 1.28h-9a.75.75 0 0 1-.53-1.28l.621-.622a2.25 2.25 0 0 0 .659-1.59V18h-3a3 3 0 0 1-3-3V5.25zm1.5 0v7.5a1.5 1.5 0 0 0 1.5 1.5h13.5a1.5 1.5 0 0 0 1.5-1.5v-7.5a1.5 1.5 0 0 0-1.5-1.5H5.25a1.5 1.5 0 0 0-1.5 1.5z"
-                                      clip-rule="evenodd"></path>
-                            </svg>
-                            <span class="truncate"><div>192.168.16.180</div></span></div>
-                    </li>
-                    <li>
-                        <div
-                            class="flex items-center justify-center sm:justify-start gap-x-2 w-48 mt-2.5 ml-2.5 px-4 py-3 rounded shadow-md bg-glass text-default dark:text-invert text-sm border border-transparent truncate">
-                            <svg class="shrink-0 w-12 h-12 text-green-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-                                <path fill-rule="evenodd"
-                                      d="M2.25 5.25a3 3 0 0 1 3-3h13.5a3 3 0 0 1 3 3V15a3 3 0 0 1-3 3h-3v.257c0 .597.237 1.17.659 1.591l.621.622a.75.75 0 0 1-.53 1.28h-9a.75.75 0 0 1-.53-1.28l.621-.622a2.25 2.25 0 0 0 .659-1.59V18h-3a3 3 0 0 1-3-3V5.25zm1.5 0v7.5a1.5 1.5 0 0 0 1.5 1.5h13.5a1.5 1.5 0 0 0 1.5-1.5v-7.5a1.5 1.5 0 0 0-1.5-1.5H5.25a1.5 1.5 0 0 0-1.5 1.5z"
-                                      clip-rule="evenodd"></path>
-                            </svg>
-                            <span class="truncate"><div>192.168.16.190</div></span></div>
-                    </li>
-                    <li>
-                        <div
-                            class="flex items-center justify-center sm:justify-start gap-x-2 w-48 mt-2.5 ml-2.5 px-4 py-3 rounded shadow-md bg-glass text-default dark:text-invert text-sm border border-transparent truncate">
-                            <svg class="shrink-0 w-12 h-12 text-green-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-                                <path fill-rule="evenodd"
-                                      d="M2.25 5.25a3 3 0 0 1 3-3h13.5a3 3 0 0 1 3 3V15a3 3 0 0 1-3 3h-3v.257c0 .597.237 1.17.659 1.591l.621.622a.75.75 0 0 1-.53 1.28h-9a.75.75 0 0 1-.53-1.28l.621-.622a2.25 2.25 0 0 0 .659-1.59V18h-3a3 3 0 0 1-3-3V5.25zm1.5 0v7.5a1.5 1.5 0 0 0 1.5 1.5h13.5a1.5 1.5 0 0 0 1.5-1.5v-7.5a1.5 1.5 0 0 0-1.5-1.5H5.25a1.5 1.5 0 0 0-1.5 1.5z"
-                                      clip-rule="evenodd"></path>
-                            </svg>
-                            <span class="truncate"><div>192.168.16.46</div></span></div>
-                    </li>
-                </ul>
-            </div>
-        </div>
-    </div>
-    <div class="space-y-5 py-4 sm:px-4 sm:rounded-xl bg-white/10 border border-white/20 grid grid-rows-[1fr_minmax(1px,100%)]">
-        <div class="flex items-center justify-center sm:justify-start gap-x-2">
-            <svg class="shrink-0 w-6 h-6" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-                <path
-                    d="M4.08 5.227A3 3 0 0 1 6.979 3H17.02a3 3 0 0 1 2.9 2.227l2.113 7.926A5.228 5.228 0 0 0 18.75 12H5.25a5.228 5.228 0 0 0-3.284 1.153L4.08 5.227z"></path>
-                <path fill-rule="evenodd"
-                      d="M5.25 13.5a3.75 3.75 0 1 0 0 7.5h13.5a3.75 3.75 0 1 0 0-7.5H5.25zm10.5 4.5a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5zm3.75-.75a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0z"
-                      clip-rule="evenodd"></path>
-            </svg>
-            <div class="text-xl font-bold">netmon</div>
-        </div>
-        <div class="overflow-y-auto">
-            <div>
-                <div class="mount-point" data-mount-point="">
-                    <dl class="flex text-xs font-semibold">
-                        <div class="flex m-1 border border-slate-500 rounded-full px-2 py-1 gap-2">
-                            <dt class="font-bold">CIDR</dt>
-                            <dd>192.168.16.46/24</dd>
-                        </div>
-                        <div class="flex m-1 border border-slate-500 rounded-full px-2 py-1 gap-2">
-                            <dt class="font-bold">Interface</dt>
-                            <dd>eth0</dd>
-                        </div>
-                        <div class="flex m-1 border border-slate-500 rounded-full px-2 py-1 gap-2">
-                            <dt class="font-bold">Scan</dt>
-                            <dd>2s ago</dd>
-                        </div>
-                    </dl>
-                </div>
-                <div class="mount-point" data-mount-point="">
-                    <div class="bg-gradient-to-r from-red-700 to-transparent shadow-xl">
-                        <svg class="shrink-0 w-12 h-12 text-red-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-                            <path fill-rule="evenodd"
-                                  d="M12 2.25c-5.385 0-9.75 4.365-9.75 9.75s4.365 9.75 9.75 9.75 9.75-4.365 9.75-9.75S17.385 2.25 12 2.25zm-.53 14.03a.75.75 0 0 0 1.06 0l3-3a.75.75 0 1 0-1.06-1.06l-1.72 1.72V8.25a.75.75 0 0 0-1.5 0v5.69l-1.72-1.72a.75.75 0 0 0-1.06 1.06l3 3z"
-                                  clip-rule="evenodd"></path>
-                        </svg>
-                        192.168.16.41 is down
-                    </div>
-                    <div class="bg-gradient-to-r from-green-700 to-transparent shadow-xl">
-                        <svg class="shrink-0 w-12 h-12 text-green-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-                            <path fill-rule="evenodd"
-                                  d="M12 2.25c-5.385 0-9.75 4.365-9.75 9.75s4.365 9.75 9.75 9.75 9.75-4.365 9.75-9.75S17.385 2.25 12 2.25zm.53 5.47a.75.75 0 0 0-1.06 0l-3 3a.75.75 0 1 0 1.06 1.06l1.72-1.72v5.69a.75.75 0 0 0 1.5 0v-5.69l1.72 1.72a.75.75 0 1 0 1.06-1.06l-3-3z"
-                                  clip-rule="evenodd"></path>
-                        </svg>
-                        192.168.16.38 is up
-                    </div>
-                    <div class="bg-gradient-to-r from-green-700 to-transparent shadow-xl">
-                        <svg class="shrink-0 w-12 h-12 text-green-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-                            <path fill-rule="evenodd"
-                                  d="M12 2.25c-5.385 0-9.75 4.365-9.75 9.75s4.365 9.75 9.75 9.75 9.75-4.365 9.75-9.75S17.385 2.25 12 2.25zm.53 5.47a.75.75 0 0 0-1.06 0l-3 3a.75.75 0 1 0 1.06 1.06l1.72-1.72v5.69a.75.75 0 0 0 1.5 0v-5.69l1.72 1.72a.75.75 0 1 0 1.06-1.06l-3-3z"
-                                  clip-rule="evenodd"></path>
-                        </svg>
-                        192.168.16.41 is up
-                    </div>
-                </div>
-                <ul class="px-4 py-2.5 overflow-x-hidden overflow-y-auto rounded-xl bg-default/60 text-default dark:bg-invert/60 dark:text-invert">
-                    <li>
-                        <div
-                            class="flex items-center justify-center sm:justify-start gap-x-2 w-48 mt-2.5 ml-2.5 px-4 py-3 rounded shadow-md bg-glass text-default dark:text-invert text-sm border border-transparent truncate">
-                            <svg class="shrink-0 w-12 h-12 text-green-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-                                <path fill-rule="evenodd"
-                                      d="M2.25 5.25a3 3 0 0 1 3-3h13.5a3 3 0 0 1 3 3V15a3 3 0 0 1-3 3h-3v.257c0 .597.237 1.17.659 1.591l.621.622a.75.75 0 0 1-.53 1.28h-9a.75.75 0 0 1-.53-1.28l.621-.622a2.25 2.25 0 0 0 .659-1.59V18h-3a3 3 0 0 1-3-3V5.25zm1.5 0v7.5a1.5 1.5 0 0 0 1.5 1.5h13.5a1.5 1.5 0 0 0 1.5-1.5v-7.5a1.5 1.5 0 0 0-1.5-1.5H5.25a1.5 1.5 0 0 0-1.5 1.5z"
-                                      clip-rule="evenodd"></path>
-                            </svg>
-                            <span class="truncate"><div>192.168.16.1</div></span></div>
-                    </li>
-                    <li>
-                        <div
-                            class="flex items-center justify-center sm:justify-start gap-x-2 w-48 mt-2.5 ml-2.5 px-4 py-3 rounded shadow-md bg-glass text-default dark:text-invert text-sm border border-transparent truncate">
-                            <svg class="shrink-0 w-12 h-12 text-green-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-                                <path fill-rule="evenodd"
-                                      d="M2.25 5.25a3 3 0 0 1 3-3h13.5a3 3 0 0 1 3 3V15a3 3 0 0 1-3 3h-3v.257c0 .597.237 1.17.659 1.591l.621.622a.75.75 0 0 1-.53 1.28h-9a.75.75 0 0 1-.53-1.28l.621-.622a2.25 2.25 0 0 0 .659-1.59V18h-3a3 3 0 0 1-3-3V5.25zm1.5 0v7.5a1.5 1.5 0 0 0 1.5 1.5h13.5a1.5 1.5 0 0 0 1.5-1.5v-7.5a1.5 1.5 0 0 0-1.5-1.5H5.25a1.5 1.5 0 0 0-1.5 1.5z"
-                                      clip-rule="evenodd"></path>
-                            </svg>
-                            <span class="truncate"><div>192.168.16.10</div></span></div>
-                    </li>
-                    <li>
-                        <div
-                            class="flex items-center justify-center sm:justify-start gap-x-2 w-48 mt-2.5 ml-2.5 px-4 py-3 rounded shadow-md bg-glass text-default dark:text-invert text-sm border border-transparent truncate">
-                            <svg class="shrink-0 w-12 h-12 text-green-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-                                <path fill-rule="evenodd"
-                                      d="M2.25 5.25a3 3 0 0 1 3-3h13.5a3 3 0 0 1 3 3V15a3 3 0 0 1-3 3h-3v.257c0 .597.237 1.17.659 1.591l.621.622a.75.75 0 0 1-.53 1.28h-9a.75.75 0 0 1-.53-1.28l.621-.622a2.25 2.25 0 0 0 .659-1.59V18h-3a3 3 0 0 1-3-3V5.25zm1.5 0v7.5a1.5 1.5 0 0 0 1.5 1.5h13.5a1.5 1.5 0 0 0 1.5-1.5v-7.5a1.5 1.5 0 0 0-1.5-1.5H5.25a1.5 1.5 0 0 0-1.5 1.5z"
-                                      clip-rule="evenodd"></path>
-                            </svg>
-                            <span class="truncate"><div>192.168.16.30</div></span></div>
-                    </li>
-                    <li>
-                        <div
-                            class="flex items-center justify-center sm:justify-start gap-x-2 w-48 mt-2.5 ml-2.5 px-4 py-3 rounded shadow-md bg-glass text-default dark:text-invert text-sm border border-transparent truncate">
-                            <svg class="shrink-0 w-12 h-12 text-green-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-                                <path fill-rule="evenodd"
-                                      d="M2.25 5.25a3 3 0 0 1 3-3h13.5a3 3 0 0 1 3 3V15a3 3 0 0 1-3 3h-3v.257c0 .597.237 1.17.659 1.591l.621.622a.75.75 0 0 1-.53 1.28h-9a.75.75 0 0 1-.53-1.28l.621-.622a2.25 2.25 0 0 0 .659-1.59V18h-3a3 3 0 0 1-3-3V5.25zm1.5 0v7.5a1.5 1.5 0 0 0 1.5 1.5h13.5a1.5 1.5 0 0 0 1.5-1.5v-7.5a1.5 1.5 0 0 0-1.5-1.5H5.25a1.5 1.5 0 0 0-1.5 1.5z"
-                                      clip-rule="evenodd"></path>
-                            </svg>
-                            <span class="truncate"><div>192.168.16.32</div></span></div>
-                    </li>
-                    <li>
-                        <div
-                            class="flex items-center justify-center sm:justify-start gap-x-2 w-48 mt-2.5 ml-2.5 px-4 py-3 rounded shadow-md bg-glass text-default dark:text-invert text-sm border border-transparent truncate">
-                            <svg class="shrink-0 w-12 h-12 text-green-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-                                <path fill-rule="evenodd"
-                                      d="M2.25 5.25a3 3 0 0 1 3-3h13.5a3 3 0 0 1 3 3V15a3 3 0 0 1-3 3h-3v.257c0 .597.237 1.17.659 1.591l.621.622a.75.75 0 0 1-.53 1.28h-9a.75.75 0 0 1-.53-1.28l.621-.622a2.25 2.25 0 0 0 .659-1.59V18h-3a3 3 0 0 1-3-3V5.25zm1.5 0v7.5a1.5 1.5 0 0 0 1.5 1.5h13.5a1.5 1.5 0 0 0 1.5-1.5v-7.5a1.5 1.5 0 0 0-1.5-1.5H5.25a1.5 1.5 0 0 0-1.5 1.5z"
-                                      clip-rule="evenodd"></path>
-                            </svg>
-                            <span class="truncate"><div>192.168.16.33</div></span></div>
-                    </li>
-                    <li>
-                        <div
-                            class="flex items-center justify-center sm:justify-start gap-x-2 w-48 mt-2.5 ml-2.5 px-4 py-3 rounded shadow-md bg-glass text-default dark:text-invert text-sm border border-transparent truncate">
-                            <svg class="shrink-0 w-12 h-12 text-green-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-                                <path fill-rule="evenodd"
-                                      d="M2.25 5.25a3 3 0 0 1 3-3h13.5a3 3 0 0 1 3 3V15a3 3 0 0 1-3 3h-3v.257c0 .597.237 1.17.659 1.591l.621.622a.75.75 0 0 1-.53 1.28h-9a.75.75 0 0 1-.53-1.28l.621-.622a2.25 2.25 0 0 0 .659-1.59V18h-3a3 3 0 0 1-3-3V5.25zm1.5 0v7.5a1.5 1.5 0 0 0 1.5 1.5h13.5a1.5 1.5 0 0 0 1.5-1.5v-7.5a1.5 1.5 0 0 0-1.5-1.5H5.25a1.5 1.5 0 0 0-1.5 1.5z"
-                                      clip-rule="evenodd"></path>
-                            </svg>
-                            <span class="truncate"><div>192.168.16.34</div></span></div>
-                    </li>
-                    <li>
-                        <div
-                            class="flex items-center justify-center sm:justify-start gap-x-2 w-48 mt-2.5 ml-2.5 px-4 py-3 rounded shadow-md bg-glass text-default dark:text-invert text-sm border border-transparent truncate">
-                            <svg class="shrink-0 w-12 h-12 text-green-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-                                <path fill-rule="evenodd"
-                                      d="M2.25 5.25a3 3 0 0 1 3-3h13.5a3 3 0 0 1 3 3V15a3 3 0 0 1-3 3h-3v.257c0 .597.237 1.17.659 1.591l.621.622a.75.75 0 0 1-.53 1.28h-9a.75.75 0 0 1-.53-1.28l.621-.622a2.25 2.25 0 0 0 .659-1.59V18h-3a3 3 0 0 1-3-3V5.25zm1.5 0v7.5a1.5 1.5 0 0 0 1.5 1.5h13.5a1.5 1.5 0 0 0 1.5-1.5v-7.5a1.5 1.5 0 0 0-1.5-1.5H5.25a1.5 1.5 0 0 0-1.5 1.5z"
-                                      clip-rule="evenodd"></path>
-                            </svg>
-                            <span class="truncate"><div>192.168.16.35</div></span></div>
-                    </li>
-                    <li>
-                        <div
-                            class="flex items-center justify-center sm:justify-start gap-x-2 w-48 mt-2.5 ml-2.5 px-4 py-3 rounded shadow-md bg-glass text-default dark:text-invert text-sm border border-transparent truncate">
-                            <svg class="shrink-0 w-12 h-12 text-green-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-                                <path fill-rule="evenodd"
-                                      d="M2.25 5.25a3 3 0 0 1 3-3h13.5a3 3 0 0 1 3 3V15a3 3 0 0 1-3 3h-3v.257c0 .597.237 1.17.659 1.591l.621.622a.75.75 0 0 1-.53 1.28h-9a.75.75 0 0 1-.53-1.28l.621-.622a2.25 2.25 0 0 0 .659-1.59V18h-3a3 3 0 0 1-3-3V5.25zm1.5 0v7.5a1.5 1.5 0 0 0 1.5 1.5h13.5a1.5 1.5 0 0 0 1.5-1.5v-7.5a1.5 1.5 0 0 0-1.5-1.5H5.25a1.5 1.5 0 0 0-1.5 1.5z"
-                                      clip-rule="evenodd"></path>
-                            </svg>
-                            <span class="truncate"><div>192.168.16.38</div></span></div>
-                    </li>
-                    <li>
-                        <div
-                            class="flex items-center justify-center sm:justify-start gap-x-2 w-48 mt-2.5 ml-2.5 px-4 py-3 rounded shadow-md bg-glass text-default dark:text-invert text-sm border border-transparent truncate">
-                            <svg class="shrink-0 w-12 h-12 text-green-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-                                <path fill-rule="evenodd"
-                                      d="M2.25 5.25a3 3 0 0 1 3-3h13.5a3 3 0 0 1 3 3V15a3 3 0 0 1-3 3h-3v.257c0 .597.237 1.17.659 1.591l.621.622a.75.75 0 0 1-.53 1.28h-9a.75.75 0 0 1-.53-1.28l.621-.622a2.25 2.25 0 0 0 .659-1.59V18h-3a3 3 0 0 1-3-3V5.25zm1.5 0v7.5a1.5 1.5 0 0 0 1.5 1.5h13.5a1.5 1.5 0 0 0 1.5-1.5v-7.5a1.5 1.5 0 0 0-1.5-1.5H5.25a1.5 1.5 0 0 0-1.5 1.5z"
-                                      clip-rule="evenodd"></path>
-                            </svg>
-                            <span class="truncate"><div>192.168.16.42</div></span></div>
-                    </li>
-                    <li>
-                        <div
-                            class="flex items-center justify-center sm:justify-start gap-x-2 w-48 mt-2.5 ml-2.5 px-4 py-3 rounded shadow-md bg-glass text-default dark:text-invert text-sm border border-transparent truncate">
-                            <svg class="shrink-0 w-12 h-12 text-green-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-                                <path fill-rule="evenodd"
-                                      d="M2.25 5.25a3 3 0 0 1 3-3h13.5a3 3 0 0 1 3 3V15a3 3 0 0 1-3 3h-3v.257c0 .597.237 1.17.659 1.591l.621.622a.75.75 0 0 1-.53 1.28h-9a.75.75 0 0 1-.53-1.28l.621-.622a2.25 2.25 0 0 0 .659-1.59V18h-3a3 3 0 0 1-3-3V5.25zm1.5 0v7.5a1.5 1.5 0 0 0 1.5 1.5h13.5a1.5 1.5 0 0 0 1.5-1.5v-7.5a1.5 1.5 0 0 0-1.5-1.5H5.25a1.5 1.5 0 0 0-1.5 1.5z"
-                                      clip-rule="evenodd"></path>
-                            </svg>
-                            <span class="truncate"><div>192.168.16.120</div></span></div>
-                    </li>
-                    <li>
-                        <div
-                            class="flex items-center justify-center sm:justify-start gap-x-2 w-48 mt-2.5 ml-2.5 px-4 py-3 rounded shadow-md bg-glass text-default dark:text-invert text-sm border border-transparent truncate">
-                            <svg class="shrink-0 w-12 h-12 text-green-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-                                <path fill-rule="evenodd"
-                                      d="M2.25 5.25a3 3 0 0 1 3-3h13.5a3 3 0 0 1 3 3V15a3 3 0 0 1-3 3h-3v.257c0 .597.237 1.17.659 1.591l.621.622a.75.75 0 0 1-.53 1.28h-9a.75.75 0 0 1-.53-1.28l.621-.622a2.25 2.25 0 0 0 .659-1.59V18h-3a3 3 0 0 1-3-3V5.25zm1.5 0v7.5a1.5 1.5 0 0 0 1.5 1.5h13.5a1.5 1.5 0 0 0 1.5-1.5v-7.5a1.5 1.5 0 0 0-1.5-1.5H5.25a1.5 1.5 0 0 0-1.5 1.5z"
-                                      clip-rule="evenodd"></path>
-                            </svg>
-                            <span class="truncate"><div>192.168.16.140</div></span></div>
-                    </li>
-                    <li>
-                        <div
-                            class="flex items-center justify-center sm:justify-start gap-x-2 w-48 mt-2.5 ml-2.5 px-4 py-3 rounded shadow-md bg-glass text-default dark:text-invert text-sm border border-transparent truncate">
-                            <svg class="shrink-0 w-12 h-12 text-green-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-                                <path fill-rule="evenodd"
-                                      d="M2.25 5.25a3 3 0 0 1 3-3h13.5a3 3 0 0 1 3 3V15a3 3 0 0 1-3 3h-3v.257c0 .597.237 1.17.659 1.591l.621.622a.75.75 0 0 1-.53 1.28h-9a.75.75 0 0 1-.53-1.28l.621-.622a2.25 2.25 0 0 0 .659-1.59V18h-3a3 3 0 0 1-3-3V5.25zm1.5 0v7.5a1.5 1.5 0 0 0 1.5 1.5h13.5a1.5 1.5 0 0 0 1.5-1.5v-7.5a1.5 1.5 0 0 0-1.5-1.5H5.25a1.5 1.5 0 0 0-1.5 1.5z"
-                                      clip-rule="evenodd"></path>
-                            </svg>
-                            <span class="truncate"><div>192.168.16.141</div></span></div>
-                    </li>
-                    <li>
-                        <div
-                            class="flex items-center justify-center sm:justify-start gap-x-2 w-48 mt-2.5 ml-2.5 px-4 py-3 rounded shadow-md bg-glass text-default dark:text-invert text-sm border border-transparent truncate">
-                            <svg class="shrink-0 w-12 h-12 text-green-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-                                <path fill-rule="evenodd"
-                                      d="M2.25 5.25a3 3 0 0 1 3-3h13.5a3 3 0 0 1 3 3V15a3 3 0 0 1-3 3h-3v.257c0 .597.237 1.17.659 1.591l.621.622a.75.75 0 0 1-.53 1.28h-9a.75.75 0 0 1-.53-1.28l.621-.622a2.25 2.25 0 0 0 .659-1.59V18h-3a3 3 0 0 1-3-3V5.25zm1.5 0v7.5a1.5 1.5 0 0 0 1.5 1.5h13.5a1.5 1.5 0 0 0 1.5-1.5v-7.5a1.5 1.5 0 0 0-1.5-1.5H5.25a1.5 1.5 0 0 0-1.5 1.5z"
-                                      clip-rule="evenodd"></path>
-                            </svg>
-                            <span class="truncate"><div>192.168.16.142</div></span></div>
-                    </li>
-                    <li>
-                        <div
-                            class="flex items-center justify-center sm:justify-start gap-x-2 w-48 mt-2.5 ml-2.5 px-4 py-3 rounded shadow-md bg-glass text-default dark:text-invert text-sm border border-transparent truncate">
-                            <svg class="shrink-0 w-12 h-12 text-green-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-                                <path fill-rule="evenodd"
-                                      d="M2.25 5.25a3 3 0 0 1 3-3h13.5a3 3 0 0 1 3 3V15a3 3 0 0 1-3 3h-3v.257c0 .597.237 1.17.659 1.591l.621.622a.75.75 0 0 1-.53 1.28h-9a.75.75 0 0 1-.53-1.28l.621-.622a2.25 2.25 0 0 0 .659-1.59V18h-3a3 3 0 0 1-3-3V5.25zm1.5 0v7.5a1.5 1.5 0 0 0 1.5 1.5h13.5a1.5 1.5 0 0 0 1.5-1.5v-7.5a1.5 1.5 0 0 0-1.5-1.5H5.25a1.5 1.5 0 0 0-1.5 1.5z"
-                                      clip-rule="evenodd"></path>
-                            </svg>
-                            <span class="truncate"><div>192.168.16.143</div></span></div>
-                    </li>
-                    <li>
-                        <div
-                            class="flex items-center justify-center sm:justify-start gap-x-2 w-48 mt-2.5 ml-2.5 px-4 py-3 rounded shadow-md bg-glass text-default dark:text-invert text-sm border border-transparent truncate">
-                            <svg class="shrink-0 w-12 h-12 text-green-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-                                <path fill-rule="evenodd"
-                                      d="M2.25 5.25a3 3 0 0 1 3-3h13.5a3 3 0 0 1 3 3V15a3 3 0 0 1-3 3h-3v.257c0 .597.237 1.17.659 1.591l.621.622a.75.75 0 0 1-.53 1.28h-9a.75.75 0 0 1-.53-1.28l.621-.622a2.25 2.25 0 0 0 .659-1.59V18h-3a3 3 0 0 1-3-3V5.25zm1.5 0v7.5a1.5 1.5 0 0 0 1.5 1.5h13.5a1.5 1.5 0 0 0 1.5-1.5v-7.5a1.5 1.5 0 0 0-1.5-1.5H5.25a1.5 1.5 0 0 0-1.5 1.5z"
-                                      clip-rule="evenodd"></path>
-                            </svg>
-                            <span class="truncate"><div>192.168.16.180</div></span></div>
-                    </li>
-                    <li>
-                        <div
-                            class="flex items-center justify-center sm:justify-start gap-x-2 w-48 mt-2.5 ml-2.5 px-4 py-3 rounded shadow-md bg-glass text-default dark:text-invert text-sm border border-transparent truncate">
-                            <svg class="shrink-0 w-12 h-12 text-green-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-                                <path fill-rule="evenodd"
-                                      d="M2.25 5.25a3 3 0 0 1 3-3h13.5a3 3 0 0 1 3 3V15a3 3 0 0 1-3 3h-3v.257c0 .597.237 1.17.659 1.591l.621.622a.75.75 0 0 1-.53 1.28h-9a.75.75 0 0 1-.53-1.28l.621-.622a2.25 2.25 0 0 0 .659-1.59V18h-3a3 3 0 0 1-3-3V5.25zm1.5 0v7.5a1.5 1.5 0 0 0 1.5 1.5h13.5a1.5 1.5 0 0 0 1.5-1.5v-7.5a1.5 1.5 0 0 0-1.5-1.5H5.25a1.5 1.5 0 0 0-1.5 1.5z"
-                                      clip-rule="evenodd"></path>
-                            </svg>
-                            <span class="truncate"><div>192.168.16.190</div></span></div>
-                    </li>
-                    <li>
-                        <div
-                            class="flex items-center justify-center sm:justify-start gap-x-2 w-48 mt-2.5 ml-2.5 px-4 py-3 rounded shadow-md bg-glass text-default dark:text-invert text-sm border border-transparent truncate">
-                            <svg class="shrink-0 w-12 h-12 text-green-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-                                <path fill-rule="evenodd"
-                                      d="M2.25 5.25a3 3 0 0 1 3-3h13.5a3 3 0 0 1 3 3V15a3 3 0 0 1-3 3h-3v.257c0 .597.237 1.17.659 1.591l.621.622a.75.75 0 0 1-.53 1.28h-9a.75.75 0 0 1-.53-1.28l.621-.622a2.25 2.25 0 0 0 .659-1.59V18h-3a3 3 0 0 1-3-3V5.25zm1.5 0v7.5a1.5 1.5 0 0 0 1.5 1.5h13.5a1.5 1.5 0 0 0 1.5-1.5v-7.5a1.5 1.5 0 0 0-1.5-1.5H5.25a1.5 1.5 0 0 0-1.5 1.5z"
-                                      clip-rule="evenodd"></path>
-                            </svg>
-                            <span class="truncate"><div>192.168.16.46</div></span></div>
-                    </li>
-                </ul>
-            </div>
-        </div>
-    </div>
-</div>
-<div class="container mx-auto sm:py-8">
-    <div class="space-y-5 py-4 sm:px-4 sm:rounded-xl bg-white/10 border border-white/20">
-        <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4">
-            <div class="sm:rounded-xl bg-white/10 border border-white/20">
-                <div class="flex justify-between items-center gap-x-8 sm:rounded-t-xl sm:last:rounded-b-xl px-4 py-2">prose-box</div>
-                <div class="prose-box">
-                    <h3>Lorem ipsum dolor</h3>
-                    <p>Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam</p>
-                </div>
-            </div>
-            <div class="sm:rounded-xl bg-white/10 border border-white/20">
-                <div class="flex justify-between items-center gap-x-8 sm:rounded-t-xl sm:last:rounded-b-xl px-4 py-2">prose-box.debug</div>
-                <div class="prose-box debug">
-                    <h3>Lorem ipsum dolor</h3>
-                    <p>Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam</p>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <hr>
-
-    <div class="space-y-5 py-4 sm:px-4 sm:rounded-xl bg-white/10 border border-white/20">
-        <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4">
-            <div class="sm:rounded-xl bg-white/10 border border-white/20">
-                <div class="flex justify-between items-center gap-x-8 sm:rounded-t-xl sm:last:rounded-b-xl px-4 py-2">pointer-coarse:hidden<br>pointer-fine:hidden
-                </div>
-                <div class="flex flex-col items-center justify-center gap-4">
-                    <button class="flex justify-center items-center px-4 py-2.5 border-2 rounded pointer-coarse:hidden" type="button">
-                        <svg class="shrink-0 w-6 h-6" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-                            <path fill-rule="evenodd"
-                                  d="M12 1.5a.75.75 0 0 1 .75.75V4.5a.75.75 0 0 1-1.5 0V2.25A.75.75 0 0 1 12 1.5zM5.636 4.136a.75.75 0 0 1 1.06 0l1.592 1.591a.75.75 0 0 1-1.061 1.06l-1.591-1.59a.75.75 0 0 1 0-1.061zm12.728 0a.75.75 0 0 1 0 1.06l-1.591 1.592a.75.75 0 0 1-1.06-1.061l1.59-1.591a.75.75 0 0 1 1.061 0zm-6.816 4.496a.75.75 0 0 1 .82.311l5.228 7.917a.75.75 0 0 1-.777 1.148l-2.097-.43 1.045 3.9a.75.75 0 0 1-1.45.388l-1.044-3.899-1.601 1.42a.75.75 0 0 1-1.247-.606l.569-9.47a.75.75 0 0 1 .554-.68zM3 10.5a.75.75 0 0 1 .75-.75H6a.75.75 0 0 1 0 1.5H3.75A.75.75 0 0 1 3 10.5zm14.25 0a.75.75 0 0 1 .75-.75h2.25a.75.75 0 0 1 0 1.5H18a.75.75 0 0 1-.75-.75zm-8.962 3.712a.75.75 0 0 1 0 1.061l-1.591 1.591a.75.75 0 1 1-1.061-1.06l1.591-1.592a.75.75 0 0 1 1.06 0z"
-                                  clip-rule="evenodd"></path>
-                        </svg>
-                        Click me
-                    </button>
-                    <button class="flex justify-center items-center px-4 py-2.5 border-2 rounded pointer-fine:hidden" type="button">
-                        <svg class="shrink-0 w-6 h-6" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-                            <path fill-rule="evenodd"
-                                  d="M12 3.75a6.715 6.715 0 0 0-3.722 1.118.75.75 0 1 1-.828-1.25 8.25 8.25 0 0 1 12.8 6.883 23.19 23.19 0 0 1-1.62 8.543.75.75 0 0 1-1.395-.551A21.69 21.69 0 0 0 18.75 10.5 6.75 6.75 0 0 0 12 3.75zM6.157 5.739a.75.75 0 0 1 .21 1.04A6.715 6.715 0 0 0 5.25 10.5c0 1.613-.463 3.12-1.265 4.393a.75.75 0 0 1-1.27-.8A6.715 6.715 0 0 0 3.75 10.5c0-1.68.503-3.246 1.367-4.55a.75.75 0 0 1 1.04-.211zM12 7.5a3 3 0 0 0-3 3c0 3.1-1.176 5.927-3.105 8.056a.75.75 0 1 1-1.112-1.008A10.459 10.459 0 0 0 7.5 10.5a4.5 4.5 0 1 1 9 0c0 .547-.022 1.09-.067 1.626a.75.75 0 0 1-1.495-.123A18.2 18.2 0 0 0 15 10.5a3 3 0 0 0-3-3zm0 2.25a.75.75 0 0 1 .75.75 15.69 15.69 0 0 1-3.78 10.238.75.75 0 0 1-1.14-.975 14.19 14.19 0 0 0 3.42-9.263.75.75 0 0 1 .75-.75zm3.239 5.183a.75.75 0 0 1 .515.927 19.415 19.415 0 0 1-2.585 5.544.75.75 0 1 1-1.243-.84 17.912 17.912 0 0 0 2.386-5.116.75.75 0 0 1 .927-.515z"
-                                  clip-rule="evenodd"></path>
-                        </svg>
-                        Tap me
-                    </button>
-                </div>
-            </div>
-            <div class="sm:rounded-xl bg-white/10 border border-white/20">
-                <div class="flex justify-between items-center gap-x-8 sm:rounded-t-xl sm:last:rounded-b-xl px-4 py-2">any-pointer-coarse:hidden<br>any-pointer-fine:hidden
-                </div>
-                <div class="flex flex-col items-center justify-center gap-4">
-                    <button class="flex justify-center items-center px-4 py-2.5 border-2 rounded any-pointer-coarse:hidden" type="button">
-                        <svg class="shrink-0 w-6 h-6" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-                            <path fill-rule="evenodd"
-                                  d="M12 1.5a.75.75 0 0 1 .75.75V4.5a.75.75 0 0 1-1.5 0V2.25A.75.75 0 0 1 12 1.5zM5.636 4.136a.75.75 0 0 1 1.06 0l1.592 1.591a.75.75 0 0 1-1.061 1.06l-1.591-1.59a.75.75 0 0 1 0-1.061zm12.728 0a.75.75 0 0 1 0 1.06l-1.591 1.592a.75.75 0 0 1-1.06-1.061l1.59-1.591a.75.75 0 0 1 1.061 0zm-6.816 4.496a.75.75 0 0 1 .82.311l5.228 7.917a.75.75 0 0 1-.777 1.148l-2.097-.43 1.045 3.9a.75.75 0 0 1-1.45.388l-1.044-3.899-1.601 1.42a.75.75 0 0 1-1.247-.606l.569-9.47a.75.75 0 0 1 .554-.68zM3 10.5a.75.75 0 0 1 .75-.75H6a.75.75 0 0 1 0 1.5H3.75A.75.75 0 0 1 3 10.5zm14.25 0a.75.75 0 0 1 .75-.75h2.25a.75.75 0 0 1 0 1.5H18a.75.75 0 0 1-.75-.75zm-8.962 3.712a.75.75 0 0 1 0 1.061l-1.591 1.591a.75.75 0 1 1-1.061-1.06l1.591-1.592a.75.75 0 0 1 1.06 0z"
-                                  clip-rule="evenodd"></path>
-                        </svg>
-                        Click me
-                    </button>
-                    <button class="flex justify-center items-center px-4 py-2.5 border-2 rounded any-pointer-fine:hidden" type="button">
-                        <svg class="shrink-0 w-6 h-6" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-                            <path fill-rule="evenodd"
-                                  d="M12 3.75a6.715 6.715 0 0 0-3.722 1.118.75.75 0 1 1-.828-1.25 8.25 8.25 0 0 1 12.8 6.883 23.19 23.19 0 0 1-1.62 8.543.75.75 0 0 1-1.395-.551A21.69 21.69 0 0 0 18.75 10.5 6.75 6.75 0 0 0 12 3.75zM6.157 5.739a.75.75 0 0 1 .21 1.04A6.715 6.715 0 0 0 5.25 10.5c0 1.613-.463 3.12-1.265 4.393a.75.75 0 0 1-1.27-.8A6.715 6.715 0 0 0 3.75 10.5c0-1.68.503-3.246 1.367-4.55a.75.75 0 0 1 1.04-.211zM12 7.5a3 3 0 0 0-3 3c0 3.1-1.176 5.927-3.105 8.056a.75.75 0 1 1-1.112-1.008A10.459 10.459 0 0 0 7.5 10.5a4.5 4.5 0 1 1 9 0c0 .547-.022 1.09-.067 1.626a.75.75 0 0 1-1.495-.123A18.2 18.2 0 0 0 15 10.5a3 3 0 0 0-3-3zm0 2.25a.75.75 0 0 1 .75.75 15.69 15.69 0 0 1-3.78 10.238.75.75 0 0 1-1.14-.975 14.19 14.19 0 0 0 3.42-9.263.75.75 0 0 1 .75-.75zm3.239 5.183a.75.75 0 0 1 .515.927 19.415 19.415 0 0 1-2.585 5.544.75.75 0 1 1-1.243-.84 17.912 17.912 0 0 0 2.386-5.116.75.75 0 0 1 .927-.515z"
-                                  clip-rule="evenodd"></path>
-                        </svg>
-                        Tap me
-                    </button>
                 </div>
             </div>
         </div>
