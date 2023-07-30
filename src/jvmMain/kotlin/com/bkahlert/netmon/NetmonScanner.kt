@@ -2,15 +2,23 @@ package com.bkahlert.netmon
 
 import com.bkahlert.kommons.logging.SLF4J
 import com.bkahlert.kommons.logging.logback.StructuredArguments.kv
+import com.bkahlert.kommons.time.Now
+import com.bkahlert.netmon.mdns.MulticastDnsResolver
+import com.bkahlert.netmon.nmap.NmapNetworkScanner
 import java.nio.file.Path
 import java.nio.file.Paths
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.seconds
 
+// TODO parameters should use interface types
 class NetmonScanner(
     val network: Cidr,
-    val scanner: NetworkScanner,
+    val scanner: NmapNetworkScanner,
+    val resolver: MulticastDnsResolver,
     val onScan: (ScanResult) -> Unit,
     val onChange: (Host) -> Unit,
     val scanResultFile: Path = Paths.get(".netmon.scan.${network.filenameString}.json"),
+    val scanInterval: Duration = 5.seconds,
 ) : Thread("netmon-scanner-$network") {
 
     private val logger by SLF4J
@@ -22,15 +30,40 @@ class NetmonScanner(
     override fun run() {
         var oldScan = ScanResult.load(scanResultFile) ?: run {
             logger.info("Performing initial scan...")
-            NmapNetworkScanner(timingTemplate = ScanResult.TimingTemplate.Aggressive).scan(network)
+            val aggressiveScanner = NmapNetworkScanner(timingTemplate = ScanResult.TimingTemplate.Aggressive)
+            ScanResult(
+                network = network,
+                hosts = aggressiveScanner.scan(network).map { (ip, name, status) ->
+                    Host(
+                        ip = ip,
+                        name = name,
+                        status = status,
+                        since = Now,
+                    )
+                },
+                timestamp = Now,
+            )
         }
 
         while (!interrupted()) {
-            val currentScan = scanner.scan(network).also { onScan(it) }
+            val currentScan = ScanResult(
+                network = network,
+                hosts = scanner.scan(network).map { (ip, name, status) ->
+                    Host(
+                        ip = ip,
+                        name = name ?: resolver.resolveHostname(ip),
+                        status = status,
+                        since = Now,
+                        model = resolver.resolveModel(ip),
+                        services = resolver.resolveServices(ip),
+                    )
+                },
+                timestamp = Now,
+            ).also { onScan(it) }
             oldScan = oldScan.merge(currentScan, onChange).also { it.save(scanResultFile) }
 
             try {
-                sleep(1000) // Sleep for 1 second
+                sleep(scanInterval.inWholeMilliseconds)
             } catch (e: InterruptedException) {
                 // Restore the interrupted status so we exit the loop
                 currentThread().interrupt()

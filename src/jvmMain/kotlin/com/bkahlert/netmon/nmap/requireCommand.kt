@@ -1,4 +1,4 @@
-package com.bkahlert.netmon
+package com.bkahlert.netmon.nmap
 
 import java.nio.file.Path
 import java.nio.file.Paths

@@ -12,7 +12,6 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.encodeToString
 import kotlin.test.Test
 
-
 class IPTest {
 
     @Test

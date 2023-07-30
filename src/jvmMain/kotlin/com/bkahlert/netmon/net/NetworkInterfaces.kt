@@ -1,5 +1,6 @@
-package com.bkahlert.netmon
+package com.bkahlert.netmon.net
 
+import com.bkahlert.netmon.Cidr
 import java.math.BigInteger
 import java.net.InterfaceAddress
 
@@ -13,4 +14,4 @@ val InterfaceAddress.maxHosts: BigInteger
 
 /** The CIDR representation of this [InterfaceAddress]. */
 val InterfaceAddress.cidr: Cidr
-    get() = Cidr("${address.toString().removePrefix("/")}/$networkPrefixLength")
+    get() = Cidr("${address.hostAddress}/$networkPrefixLength")

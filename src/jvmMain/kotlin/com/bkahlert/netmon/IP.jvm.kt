@@ -6,6 +6,7 @@ import java.net.InetAddress
 
 @Serializable(with = IPSerializer::class)
 actual class IP actual constructor(actual val value: String) : Comparable<IP> {
+    constructor(addr: InetAddress) : this(addr.hostAddress)
 
     actual val bytes: UByteArray by lazy { addr.address.toUByteArray() }
 

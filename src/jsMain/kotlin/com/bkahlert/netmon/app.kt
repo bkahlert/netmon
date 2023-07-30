@@ -110,7 +110,7 @@ suspend fun main() {
                     }
                 }
 
-                ul("grid grid-cols-[repeat(auto-fit,minmax(min-content,10rem))] gap-4") {
+                ul("grid grid-cols-[repeat(auto-fit,minmax(min-content,200px))] gap-4") {
                     hosts.forEach { host ->
                         li { host(host) }
                     }

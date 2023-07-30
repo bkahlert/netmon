@@ -1,9 +1,17 @@
 package com.bkahlert.netmon
 
+import com.bkahlert.kommons.logging.SLF4J
 import com.bkahlert.kommons.time.InstantAsEpochSecondsSerializer
 import kotlinx.datetime.Instant
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.StringFormat
+import kotlinx.serialization.decodeFromString
+import kotlinx.serialization.encodeToString
+import java.nio.file.Path
+import kotlin.io.path.exists
+import kotlin.io.path.readText
+import kotlin.io.path.writeText
 
 @Serializable
 data class ScanResult(
@@ -33,6 +41,7 @@ data class ScanResult(
                         name = if (scannedHost != null) scannedHost.name else recordedHost?.name,
                         status = newStatus,
                         since = if (newStatus != recordedHost?.status) currentResult.timestamp else recordedHost?.since,
+                        services = scannedHost?.services ?: (recordedHost?.services ?: emptyList()),
                     ).also {
                         if (it != recordedHost) onChange(it)
                     }
@@ -41,9 +50,30 @@ data class ScanResult(
         )
     }
 
-    companion object;
+    fun save(
+        file: Path,
+        format: StringFormat = JsonFormat,
+    ) = kotlin.runCatching {
+        file.writeText(format.encodeToString(this))
+    }.getOrElse { error ->
+        logger.error("Error saving scan result", error)
+    }
 
     enum class TimingTemplate(val value: Int) {
         Paranoid(0), Sneaky(1), Polite(2), Normal(3), Aggressive(4), Insane(5)
+    }
+
+    companion object {
+        private val logger by SLF4J
+
+        fun load(
+            file: Path,
+            format: StringFormat = JsonFormat,
+        ): ScanResult? = file.takeIf { it.exists() }?.runCatching {
+            format.decodeFromString<ScanResult>(readText())
+        }?.getOrElse { error ->
+            logger.error("Error loading scan result", error)
+            null
+        }
     }
 }

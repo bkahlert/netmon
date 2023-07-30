@@ -1,5 +1,6 @@
 package com.bkahlert.netmon
 
+import com.bkahlert.netmon.mqtt.MqttPublisher
 import io.kotest.matchers.shouldBe
 import kotlin.test.Test
 

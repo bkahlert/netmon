@@ -34,7 +34,7 @@ See [mqtt.js/README.md](mqtt.js/README.md) for details.
 #### Compile and push to Raspberry Pi
 
 ```shell
-./gradlew --no-daemon clean shadowJar \
+./gradlew --no-daemon clean shadowJar
 rsync -rvz --delete \
   build/libs/netmon-all.jar \
   pi@netmon.local:/home/pi/netmon/netmon-scanner.jar
