@@ -9,20 +9,16 @@ import com.bkahlert.kommons.uri.toUri
 import com.bkahlert.netmon.net.HostEventsStore
 import com.bkahlert.netmon.net.ScanEventsStore
 import com.bkahlert.netmon.net.decode
-import com.bkahlert.netmon.ui.HostNode
 import com.bkahlert.netmon.ui.heroicons.SolidHeroIcons
+import com.bkahlert.netmon.ui.host
 import com.bkahlert.netmon.ui.icon
+import com.bkahlert.netmon.ui.networks
 import com.bkahlert.netmon.ui.panel
-import com.bkahlert.netmon.ui.pills
-import com.bkahlert.netmon.ui.subPanel
-import com.bkahlert.netmon.ui.tree
 import dev.fritz2.core.handledBy
 import dev.fritz2.core.render
 import io.ktor.http.ParametersBuilder
 import kotlinx.browser.window
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.filter
-import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
 import mqtt.MQTT
@@ -32,7 +28,6 @@ import mqtt.onConnect
 import mqtt.onDisconnect
 import mqtt.onError
 import mqtt.subscribe
-import kotlin.time.Duration.Companion.seconds
 
 @JsModule("./loading.svg")
 @JsNonModule
@@ -84,38 +79,41 @@ suspend fun main() {
     }
 
     render("#root") {
-        panel(
-            name = "Networks",
-            icon = SolidHeroIcons.share
-        ) {
-            for (i in 1..3) scanEventsStore.data.renderEach({ "${it.network}-${it.timestamp}" }) { (_, network, hosts, timestamp) ->
-                subPanel(
-                    name = network.hostname,
-                    icon = SolidHeroIcons.server
-                ) {
-                    flow {
-                        while (true) {
-                            delay(1.seconds)
-                            emit(Unit)
+        networks(scanEventsStore) { (_, network, hosts, timestamp) ->
+            panel(
+                name = network.hostname,
+                icon = SolidHeroIcons.server,
+                extra = {
+                    ul("flex flex-col items-end text-xs") {
+                        li {
+                            span("font-semibold") { +network.cidr.toString() }
+                            +" on "
+                            span("font-semibold") { +network.`interface` }
                         }
-                    }.render {
-                        pills("CIDR" to network.cidr.toString(), "Interface" to network.`interface`, "Scan" to timestamp.toMomentString())
-                    }
-                    hostEventsStore.data.map { it.filter { it.network == network } }.renderEach(idProvider = { it.host }) { event ->
-                        when (event.type) {
-                            Event.HostEvent.Type.UP -> div("bg-gradient-to-r from-green-700 to-transparent shadow-xl") {
-                                icon("shrink-0 w-12 h-12 text-green-600", SolidHeroIcons.arrow_up_circle)
-                                +"${event.host.ip} is up"
-                            }
-
-                            Event.HostEvent.Type.DOWN -> div("bg-gradient-to-r from-red-700 to-transparent shadow-xl") {
-                                icon("shrink-0 w-12 h-12 text-red-600", SolidHeroIcons.arrow_down_circle)
-                                +"${event.host.ip} is down"
-                            }
+                        li {
+                            span("font-semibold") { ticks().render(into = this) { +timestamp.toMomentString() } }
                         }
                     }
+                },
+            ) {
+                hostEventsStore.data.map { it.filter { it.network == network } }.renderEach(idProvider = { it.host }) { event ->
+                    when (event.type) {
+                        Event.HostEvent.Type.UP -> div("bg-gradient-to-r from-green-700 to-transparent shadow-xl") {
+                            icon("shrink-0 w-12 h-12 text-green-600", SolidHeroIcons.arrow_up_circle)
+                            +"${event.host.ip} is up"
+                        }
 
-                    tree(hosts.map { host -> HostNode(host) })
+                        Event.HostEvent.Type.DOWN -> div("bg-gradient-to-r from-red-700 to-transparent shadow-xl") {
+                            icon("shrink-0 w-12 h-12 text-red-600", SolidHeroIcons.arrow_down_circle)
+                            +"${event.host.ip} is down"
+                        }
+                    }
+                }
+
+                ul("grid grid-cols-[repeat(auto-fit,minmax(min-content,10rem))] gap-4") {
+                    hosts.forEach { host ->
+                        li { host(host) }
+                    }
                 }
             }
         }
