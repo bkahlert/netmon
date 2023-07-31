@@ -7,6 +7,7 @@ import com.bkahlert.netmon.Host
 import com.bkahlert.netmon.Settings
 import com.bkahlert.netmon.Status
 import com.bkahlert.netmon.ticks
+import com.bkahlert.netmon.timePassed
 import com.bkahlert.netmon.ui.heroicons.SolidHeroIcons
 import dev.fritz2.core.RenderContext
 import dev.fritz2.core.Tag
@@ -37,6 +38,7 @@ fun RenderContext.scan(
                     span("font-semibold") { +network.`interface` }
                 }
                 li {
+                    +"scanned "
                     span("font-semibold") {
                         ticks(Settings.WebDisplay.REFRESH_INTERVAL).map {
                             timestamp.coerceAtMost(Now).toMomentString()
@@ -57,9 +59,7 @@ fun RenderContext.scan(
 }
 
 fun RenderContext.host(host: Host) {
-    val duration: Flow<Duration?> = ticks(Settings.WebDisplay.REFRESH_INTERVAL).map {
-        host.since?.let { (Now - it).takeIf { diff -> diff >= Duration.ZERO } ?: Duration.ZERO } // coerceAtLeast not working...
-    }
+    val duration: Flow<Duration?> = ticks(Settings.WebDisplay.REFRESH_INTERVAL).map { host.timePassed }
     div("flex justify-center sm:justify-start gap-x-2 truncate") {
         className(duration.map {
             when {

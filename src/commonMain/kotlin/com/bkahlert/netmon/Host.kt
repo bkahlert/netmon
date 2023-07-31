@@ -1,9 +1,11 @@
 package com.bkahlert.netmon
 
 import com.bkahlert.kommons.time.InstantAsEpochSecondsSerializer
+import com.bkahlert.kommons.time.Now
 import kotlinx.datetime.Instant
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlin.time.Duration
 
 @Serializable
 data class Host(
@@ -17,3 +19,6 @@ data class Host(
 ) {
     companion object
 }
+
+val Host.timePassed: Duration?
+    get() = since?.let { Now - it }?.coerceAtLeast(Duration.ZERO)

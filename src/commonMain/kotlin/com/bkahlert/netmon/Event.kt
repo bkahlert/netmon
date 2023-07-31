@@ -1,10 +1,12 @@
 package com.bkahlert.netmon
 
 import com.bkahlert.kommons.time.InstantAsEpochSecondsSerializer
+import com.bkahlert.kommons.time.Now
 import kotlinx.datetime.Instant
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonClassDiscriminator
+import kotlin.time.Duration
 
 /**
  * MQTT topic: `dt/netmon/${unqualifiedHostname}/${event}`
@@ -54,3 +56,6 @@ sealed interface Event {
 
     companion object
 }
+
+val Event.ScanEvent.timePassed: Duration
+    get() = (Now - timestamp).coerceAtLeast(Duration.ZERO)

@@ -1,7 +1,7 @@
 @import "fritz2.css";
 @import "../../src/jsMain/resources/styles.css";
 
-body::after {
+body:not(.no-draft)::after {
   @apply fixed top-0 right-0 content-['DRAFT'] font-black text-sm -z-10;
   @apply translate-x-1/2 -translate-y-1/2 rotate-45 px-8 pt-20 pb-2;
   @apply bg-white text-black mix-blend-screen;
