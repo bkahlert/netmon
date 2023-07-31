@@ -16,7 +16,7 @@ fun Any.tee(vararg functions: String, target: (String, Array<dynamic>) -> Unit) 
     val self = this
     functions.forEach { fn ->
         @Suppress("UnsafeCastFromDynamic")
-        js("self[fn] = (function(o) { return function() { target(fn, Array.from(arguments)); o.apply(this, Array.from(arguments)); }; })(self[fn]);")
+        js("self[fn] = (function(o,n) { return function() { target(n, Array.from(arguments)); o.apply(this, Array.from(arguments)); }; })(self[fn],fn);")
     }
 }
 

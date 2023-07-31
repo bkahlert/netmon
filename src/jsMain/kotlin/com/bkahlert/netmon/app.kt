@@ -1,9 +1,7 @@
 package com.bkahlert.netmon
 
-import com.bkahlert.kommons.js.DefaultConsoleLogFormatter
 import com.bkahlert.kommons.js.OnScreenConsole
 import com.bkahlert.kommons.js.console
-import com.bkahlert.kommons.js.format
 import com.bkahlert.kommons.time.Now
 import com.bkahlert.kommons.time.toMomentString
 import com.bkahlert.kommons.uri.queryParameters
@@ -25,6 +23,7 @@ import mqtt.onConnect
 import mqtt.onDisconnect
 import mqtt.onError
 import mqtt.subscribe
+import kotlin.random.Random
 
 @JsModule("./images/loading.svg")
 @JsNonModule
@@ -56,15 +55,14 @@ suspend fun main() {
         }
         div("flex-1 text-right truncate font-mono") {
             // Always show the last (relevant) log message at the top of the app.
-            consoleLogStore.data.render(this) { (fn, args) ->
-                className(
+            consoleLogStore.data.render(this) { (fn, message) ->
+                span(
                     when (fn) {
                         "error" -> "text-red-500"
                         "warn" -> "text-yellow-500 opacity-75"
                         else -> "opacity-50"
                     }
-                )
-                +DefaultConsoleLogFormatter.format(args)
+                ) { +message }
             }
         }
     }
@@ -76,9 +74,10 @@ suspend fun main() {
     val scanEventsStore = ScanEventsStore()
     render("#root.app .networks") {
         div("sm:grid grid-cols-[repeat(auto-fit,minmax(min(15rem,100%),1fr))] gap-4") {
-            scanEventsStore.data
-//                .map { emptyList<Event.ScanEvent>() }
-                .renderEach({ "${it.network}-${it.timestamp}" }, this) { scan(it) }
+            scanEventsStore.data.renderEach(
+                idProvider = { "${it.network}-${it.timestamp}" },
+                into = this,
+            ) { scan(it) }
         }
     }
 
@@ -108,8 +107,8 @@ suspend fun main() {
             .onEach { onScreenConsole.disable() } handledBy scanEventsStore.process
 
         onError { console.error("MQTT", it) }
-        onDisconnect { console.warn("MQTT", "Disconnection packet received from broker", it) }
-        onClose { console.warn("MQTT", "Disconnected") }
+        onDisconnect { console.warn("MQTT::Disconnection packet received from broker", it) }
+        onClose { console.warn("MQTT::Disconnected") }
     }
 
 }
