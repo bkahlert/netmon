@@ -57,7 +57,7 @@ suspend fun main() {
 
         onConnect { packet ->
             console.info("MQTT", "Connected", packet)
-            subscribe("dt/netmon/+/scan") { qos = 1 }
+            subscribe(Settings.scanTopic) { qos = 1 }
             console.info("MQTT", "Subscription initiated")
             console.info("Hiding on-screen console when as soon as first event was processed...")
         }

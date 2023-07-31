@@ -5,14 +5,17 @@ import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
 
 data object Settings {
-    val minHosts = "2"
-    val maxHosts = "16777216"
-    val privileged: Boolean = true
 
     val brokerHost: String = "test.mosquitto.org"
+    val scanTopic = "dt/netmon/+/scan"
+    val hostTopic = "dt/netmon/+/host"
 
     object Scanner {
         val brokerPort: Int = 1883
+
+        val minHosts = "2"
+        val maxHosts = "16777216"
+        val privileged: Boolean = true
     }
 
     object WebDisplay {

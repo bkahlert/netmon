@@ -4,6 +4,7 @@ import com.bkahlert.kommons.logging.logback.Logback
 import com.bkahlert.kommons.logging.logback.StructuredArguments.a
 import com.bkahlert.kommons.logging.logback.StructuredArguments.kv
 import com.bkahlert.kommons.logging.logback.StructuredArguments.o
+import com.bkahlert.kommons.text.checkNotBlank
 import com.bkahlert.netmon.Event
 import com.bkahlert.netmon.JsonFormat
 import com.bkahlert.netmon.NetmonScanner
@@ -41,9 +42,9 @@ fun main(args: Array<String>) {
     logger.info("Starting netmon: {}", a(*args, key = "args"))
     val localhost = runCatching { InetAddress.getLocalHost() }
         .getOrElse { throw IllegalStateException("Failed to determine localhost", it) }
-    val hostname = runCatching { localhost.hostName }
+    val hostname = runCatching { checkNotBlank(localhost.hostName) }
         .getOrElse { throw IllegalStateException("Failed to determine hostname", it) }
-    val unqualifiedHostname = runCatching { hostname.substringBefore('.') }
+    val unqualifiedHostname = hostname.substringBefore('.')
 
     logger.info("Hostname: {}", kv("hostname", hostname))
 
@@ -75,7 +76,7 @@ fun main(args: Array<String>) {
                 resolver = resolver,
                 onScan = { scan ->
                     publisher.publish(
-                        topic = "dt/netmon/$unqualifiedHostname/scan",
+                        topic = Settings.scanTopic.replaceFirst("+", unqualifiedHostname),
                         event = Event.ScanEvent(
                             network = network,
                             type = Event.ScanEvent.Type.COMPLETED,
@@ -86,7 +87,7 @@ fun main(args: Array<String>) {
                 },
                 onChange = { host ->
                     publisher.publish(
-                        topic = "dt/netmon/$unqualifiedHostname/host",
+                        topic = Settings.hostTopic.replaceFirst("+", unqualifiedHostname),
                         event = Event.HostEvent(
                             network = network,
                             type = if (host.status == Status.DOWN) Event.HostEvent.Type.DOWN else Event.HostEvent.Type.UP,
