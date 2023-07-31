@@ -38,7 +38,6 @@ class NetmonScanner(
                         ip = ip,
                         name = name,
                         status = status,
-                        since = Now,
                     )
                 },
                 timestamp = Now,
@@ -53,14 +52,15 @@ class NetmonScanner(
                         ip = ip,
                         name = name ?: resolver.resolveHostname(ip),
                         status = status,
-                        since = Now,
                         model = resolver.resolveModel(ip),
                         services = resolver.resolveServices(ip),
                     )
                 },
                 timestamp = Now,
-            ).also { onScan(it) }
-            oldScan = oldScan.merge(currentScan, onChange).also { it.save(scanResultFile) }
+            )
+            oldScan = oldScan.merge(currentScan, onChange)
+                .also { onScan(it) }
+                .also { it.save(scanResultFile) }
 
             try {
                 sleep(scanInterval.inWholeMilliseconds)

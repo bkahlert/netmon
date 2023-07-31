@@ -68,6 +68,7 @@ fun main(args: Array<String>) {
                 cidr = interfaceAddress.cidr,
             )
             val resolver = MulticastDnsResolver(JmDNS.create(interfaceAddress.address, hostname))
+
             NetmonScanner(
                 network = network.cidr,
                 scanner = nmapNetworkScanner,

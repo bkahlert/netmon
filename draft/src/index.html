@@ -10,7 +10,7 @@
 </head>
 <body>
 <div id="root" class="app">
-    <div data-mount-point="">Uptime: 7m</div>
+    <div data-mount-point="">Uptime: 2m</div>
     <div class="sm:grid grid-cols-[repeat(auto-fit,minmax(min(15rem,100%),1fr))] gap-4">
         <div class="mount-point" data-mount-point="">
             <div class="space-y-5 pt-4 sm:pb-4 sm:px-4 sm:rounded-xl bg-white/10 sm:border sm:border-white/20 grid grid-rows-[1fr_minmax(1px,100%)]">
@@ -26,198 +26,233 @@
                     <div class="flex-grow">
                         <ul class="flex flex-col items-end text-xs">
                             <li><span class="font-semibold">192.168.16.46/24</span> on <span class="font-semibold">eth0</span></li>
-                            <li><span class="font-semibold" data-mount-point="">10s ago</span></li>
+                            <li><span class="font-semibold" data-mount-point="">4s ago</span></li>
                         </ul>
                     </div>
                 </div>
                 <div class="overflow-y-auto">
                     <div>
-                        <div class="mount-point" data-mount-point="">
-                            <div class="bg-gradient-to-r from-green-700 to-transparent shadow-xl">
-                                <svg class="shrink-0 w-12 h-12 text-green-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-                                    <path fill-rule="evenodd"
-                                          d="M12 2.25c-5.385 0-9.75 4.365-9.75 9.75s4.365 9.75 9.75 9.75 9.75-4.365 9.75-9.75S17.385 2.25 12 2.25zm.53 5.47a.75.75 0 0 0-1.06 0l-3 3a.75.75 0 1 0 1.06 1.06l1.72-1.72v5.69a.75.75 0 0 0 1.5 0v-5.69l1.72 1.72a.75.75 0 1 0 1.06-1.06l-3-3z"
-                                          clip-rule="evenodd"></path>
-                                </svg>
-                                192.168.16.41 is up
-                            </div>
-                            <div class="bg-gradient-to-r from-green-700 to-transparent shadow-xl">
-                                <svg class="shrink-0 w-12 h-12 text-green-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-                                    <path fill-rule="evenodd"
-                                          d="M12 2.25c-5.385 0-9.75 4.365-9.75 9.75s4.365 9.75 9.75 9.75 9.75-4.365 9.75-9.75S17.385 2.25 12 2.25zm.53 5.47a.75.75 0 0 0-1.06 0l-3 3a.75.75 0 1 0 1.06 1.06l1.72-1.72v5.69a.75.75 0 0 0 1.5 0v-5.69l1.72 1.72a.75.75 0 1 0 1.06-1.06l-3-3z"
-                                          clip-rule="evenodd"></path>
-                                </svg>
-                                192.168.16.31 is up
-                            </div>
-                            <div class="bg-gradient-to-r from-red-700 to-transparent shadow-xl">
-                                <svg class="shrink-0 w-12 h-12 text-red-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-                                    <path fill-rule="evenodd"
-                                          d="M12 2.25c-5.385 0-9.75 4.365-9.75 9.75s4.365 9.75 9.75 9.75 9.75-4.365 9.75-9.75S17.385 2.25 12 2.25zm-.53 14.03a.75.75 0 0 0 1.06 0l3-3a.75.75 0 1 0-1.06-1.06l-1.72 1.72V8.25a.75.75 0 0 0-1.5 0v5.69l-1.72-1.72a.75.75 0 0 0-1.06 1.06l3 3z"
-                                          clip-rule="evenodd"></path>
-                                </svg>
-                                192.168.16.31 is down
-                            </div>
-                        </div>
-                        <div class="debug">Debug: <span class="font-semibold" data-mount-point="">2023-07-30T23:21:22.666Z</span></div>
-                        <ul class="grid grid-cols-[repeat(auto-fit,minmax(0,200px))] justify-between gap-4">
+                        <ul class="grid grid-cols-[repeat(auto-fit,minmax(0,150px))] justify-between gap-4">
                             <li>
-                                <div class="flex items-center justify-center sm:justify-start gap-x-2 truncate debug">
+                                <div class="flex justify-center sm:justify-start gap-x-2 truncate bg-gradient-to-r from-green-700 to-transparent shadow-xl">
                                     <svg class="shrink-0 w-10 h-10 text-green-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
                                         <path fill-rule="evenodd"
                                               d="M2.25 5.25a3 3 0 0 1 3-3h13.5a3 3 0 0 1 3 3V15a3 3 0 0 1-3 3h-3v.257c0 .597.237 1.17.659 1.591l.621.622a.75.75 0 0 1-.53 1.28h-9a.75.75 0 0 1-.53-1.28l.621-.622a2.25 2.25 0 0 0 .659-1.59V18h-3a3 3 0 0 1-3-3V5.25zm1.5 0v7.5a1.5 1.5 0 0 0 1.5 1.5h13.5a1.5 1.5 0 0 0 1.5-1.5v-7.5a1.5 1.5 0 0 0-1.5-1.5H5.25a1.5 1.5 0 0 0-1.5 1.5z"
                                               clip-rule="evenodd"></path>
                                     </svg>
-                                    <span class="truncate"><div class="text-sm">192.168.16.1</div><div class="text-xs">UP since now</div></span></div>
+                                    <span class="truncate"><div class="text-sm">192.168.16.1</div><div class="text-xs">UP<div class="mount-point"
+                                                                                                                              data-mount-point=""></div></div></span>
+                                </div>
                             </li>
                             <li>
-                                <div class="flex items-center justify-center sm:justify-start gap-x-2 truncate debug">
+                                <div class="flex justify-center sm:justify-start gap-x-2 truncate bg-gradient-to-r from-green-700 to-transparent shadow-xl">
                                     <svg class="shrink-0 w-10 h-10 text-green-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
                                         <path fill-rule="evenodd"
                                               d="M2.25 5.25a3 3 0 0 1 3-3h13.5a3 3 0 0 1 3 3V15a3 3 0 0 1-3 3h-3v.257c0 .597.237 1.17.659 1.591l.621.622a.75.75 0 0 1-.53 1.28h-9a.75.75 0 0 1-.53-1.28l.621-.622a2.25 2.25 0 0 0 .659-1.59V18h-3a3 3 0 0 1-3-3V5.25zm1.5 0v7.5a1.5 1.5 0 0 0 1.5 1.5h13.5a1.5 1.5 0 0 0 1.5-1.5v-7.5a1.5 1.5 0 0 0-1.5-1.5H5.25a1.5 1.5 0 0 0-1.5 1.5z"
                                               clip-rule="evenodd"></path>
                                     </svg>
-                                    <span class="truncate"><div class="text-sm font-bold">Anirul.local</div><div class="text-sm">192.168.16.10</div><div
-                                        class="text-xs">UP since now</div></span></div>
+                                    <span class="truncate"><div class="text-sm font-bold truncate">Anirul.local</div><div class="text-sm">192.168.16.10</div><div
+                                        class="text-xs">UP<div class="mount-point" data-mount-point=""></div></div></span></div>
                             </li>
                             <li>
-                                <div class="flex items-center justify-center sm:justify-start gap-x-2 truncate debug">
+                                <div class="flex justify-center sm:justify-start gap-x-2 truncate bg-gradient-to-r from-green-700 to-transparent shadow-xl">
                                     <svg class="shrink-0 w-10 h-10 text-green-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
                                         <path fill-rule="evenodd"
                                               d="M2.25 5.25a3 3 0 0 1 3-3h13.5a3 3 0 0 1 3 3V15a3 3 0 0 1-3 3h-3v.257c0 .597.237 1.17.659 1.591l.621.622a.75.75 0 0 1-.53 1.28h-9a.75.75 0 0 1-.53-1.28l.621-.622a2.25 2.25 0 0 0 .659-1.59V18h-3a3 3 0 0 1-3-3V5.25zm1.5 0v7.5a1.5 1.5 0 0 0 1.5 1.5h13.5a1.5 1.5 0 0 0 1.5-1.5v-7.5a1.5 1.5 0 0 0-1.5-1.5H5.25a1.5 1.5 0 0 0-1.5 1.5z"
                                               clip-rule="evenodd"></path>
                                     </svg>
-                                    <span class="truncate"><div class="text-sm">192.168.16.30</div><div class="text-xs">UP since now</div></span></div>
+                                    <span class="truncate"><div class="text-sm">192.168.16.30</div><div class="text-xs">UP<div class="mount-point"
+                                                                                                                               data-mount-point=""> since 11h</div></div></span>
+                                </div>
                             </li>
                             <li>
-                                <div class="flex items-center justify-center sm:justify-start gap-x-2 truncate debug">
+                                <div class="flex justify-center sm:justify-start gap-x-2 truncate bg-gradient-to-r from-green-700 to-transparent shadow-xl">
                                     <svg class="shrink-0 w-10 h-10 text-green-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
                                         <path fill-rule="evenodd"
                                               d="M2.25 5.25a3 3 0 0 1 3-3h13.5a3 3 0 0 1 3 3V15a3 3 0 0 1-3 3h-3v.257c0 .597.237 1.17.659 1.591l.621.622a.75.75 0 0 1-.53 1.28h-9a.75.75 0 0 1-.53-1.28l.621-.622a2.25 2.25 0 0 0 .659-1.59V18h-3a3 3 0 0 1-3-3V5.25zm1.5 0v7.5a1.5 1.5 0 0 0 1.5 1.5h13.5a1.5 1.5 0 0 0 1.5-1.5v-7.5a1.5 1.5 0 0 0-1.5-1.5H5.25a1.5 1.5 0 0 0-1.5 1.5z"
                                               clip-rule="evenodd"></path>
                                     </svg>
-                                    <span class="truncate"><div class="text-sm">192.168.16.31</div><div class="text-xs">UP since now</div></span></div>
+                                    <span class="truncate"><div class="text-sm">192.168.16.31</div><div class="text-xs">UP<div class="mount-point"
+                                                                                                                               data-mount-point=""> since 1m</div></div></span>
+                                </div>
                             </li>
                             <li>
-                                <div class="flex items-center justify-center sm:justify-start gap-x-2 truncate debug">
+                                <div class="flex justify-center sm:justify-start gap-x-2 truncate bg-gradient-to-r from-green-700 to-transparent shadow-xl">
                                     <svg class="shrink-0 w-10 h-10 text-green-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
                                         <path fill-rule="evenodd"
                                               d="M2.25 5.25a3 3 0 0 1 3-3h13.5a3 3 0 0 1 3 3V15a3 3 0 0 1-3 3h-3v.257c0 .597.237 1.17.659 1.591l.621.622a.75.75 0 0 1-.53 1.28h-9a.75.75 0 0 1-.53-1.28l.621-.622a2.25 2.25 0 0 0 .659-1.59V18h-3a3 3 0 0 1-3-3V5.25zm1.5 0v7.5a1.5 1.5 0 0 0 1.5 1.5h13.5a1.5 1.5 0 0 0 1.5-1.5v-7.5a1.5 1.5 0 0 0-1.5-1.5H5.25a1.5 1.5 0 0 0-1.5 1.5z"
                                               clip-rule="evenodd"></path>
                                     </svg>
-                                    <span class="truncate"><div class="text-sm font-bold">192-168-16-32.local</div><div class="text-sm">192.168.16.32</div><div
-                                        class="text-xs">UP since now</div></span></div>
+                                    <span class="truncate"><div class="text-sm font-bold truncate">192-168-16-32.local</div><div
+                                        class="text-sm">192.168.16.32</div><div class="text-xs">UP<div class="mount-point" data-mount-point=""> since 23h</div></div></span>
+                                </div>
                             </li>
                             <li>
-                                <div class="flex items-center justify-center sm:justify-start gap-x-2 truncate debug">
+                                <div class="flex justify-center sm:justify-start gap-x-2 truncate bg-gradient-to-r from-green-700 to-transparent shadow-xl">
                                     <svg class="shrink-0 w-10 h-10 text-green-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
                                         <path fill-rule="evenodd"
                                               d="M2.25 5.25a3 3 0 0 1 3-3h13.5a3 3 0 0 1 3 3V15a3 3 0 0 1-3 3h-3v.257c0 .597.237 1.17.659 1.591l.621.622a.75.75 0 0 1-.53 1.28h-9a.75.75 0 0 1-.53-1.28l.621-.622a2.25 2.25 0 0 0 .659-1.59V18h-3a3 3 0 0 1-3-3V5.25zm1.5 0v7.5a1.5 1.5 0 0 0 1.5 1.5h13.5a1.5 1.5 0 0 0 1.5-1.5v-7.5a1.5 1.5 0 0 0-1.5-1.5H5.25a1.5 1.5 0 0 0-1.5 1.5z"
                                               clip-rule="evenodd"></path>
                                     </svg>
-                                    <span class="truncate"><div class="text-sm font-bold">Paul.local</div><div class="text-sm">192.168.16.33</div><div
-                                        class="text-xs">UP since now</div></span></div>
+                                    <span class="truncate"><div class="text-sm font-bold truncate">Paul.local</div><div class="text-sm">192.168.16.33</div><div
+                                        class="text-xs">UP<div class="mount-point" data-mount-point=""> since 11h</div></div></span></div>
                             </li>
                             <li>
-                                <div class="flex items-center justify-center sm:justify-start gap-x-2 truncate debug">
+                                <div class="flex justify-center sm:justify-start gap-x-2 truncate bg-gradient-to-r from-green-700 to-transparent shadow-xl">
                                     <svg class="shrink-0 w-10 h-10 text-green-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
                                         <path fill-rule="evenodd"
                                               d="M2.25 5.25a3 3 0 0 1 3-3h13.5a3 3 0 0 1 3 3V15a3 3 0 0 1-3 3h-3v.257c0 .597.237 1.17.659 1.591l.621.622a.75.75 0 0 1-.53 1.28h-9a.75.75 0 0 1-.53-1.28l.621-.622a2.25 2.25 0 0 0 .659-1.59V18h-3a3 3 0 0 1-3-3V5.25zm1.5 0v7.5a1.5 1.5 0 0 0 1.5 1.5h13.5a1.5 1.5 0 0 0 1.5-1.5v-7.5a1.5 1.5 0 0 0-1.5-1.5H5.25a1.5 1.5 0 0 0-1.5 1.5z"
                                               clip-rule="evenodd"></path>
                                     </svg>
-                                    <span class="truncate"><div class="text-sm font-bold truncate">Alia-baba-baba-baba-baba-baba-baba.local</div><div
-                                        class="text-sm">192.168.16.34</div><div
-                                        class="text-xs">UP since now</div></span></div>
+                                    <span class="truncate"><div class="text-sm font-bold truncate">Alia.local</div><div class="text-sm">192.168.16.34</div><div
+                                        class="text-xs">UP<div class="mount-point" data-mount-point=""> since 1d 4h</div></div></span></div>
                             </li>
                             <li>
-                                <div class="flex items-center justify-center sm:justify-start gap-x-2 truncate debug">
-                                    <svg class="shrink-0 w-10 h-10 text-green-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-                                        <path fill-rule="evenodd"
-                                              d="M2.25 5.25a3 3 0 0 1 3-3h13.5a3 3 0 0 1 3 3V15a3 3 0 0 1-3 3h-3v.257c0 .597.237 1.17.659 1.591l.621.622a.75.75 0 0 1-.53 1.28h-9a.75.75 0 0 1-.53-1.28l.621-.622a2.25 2.25 0 0 0 .659-1.59V18h-3a3 3 0 0 1-3-3V5.25zm1.5 0v7.5a1.5 1.5 0 0 0 1.5 1.5h13.5a1.5 1.5 0 0 0 1.5-1.5v-7.5a1.5 1.5 0 0 0-1.5-1.5H5.25a1.5 1.5 0 0 0-1.5 1.5z"
-                                              clip-rule="evenodd"></path>
-                                    </svg>
-                                    <span class="truncate"><div class="text-sm">192.168.16.41</div><div class="text-xs">UP since now</div></span></div>
+                                <div
+                                    class="flex justify-center sm:justify-start gap-x-2 truncate bg-gradient-to-r from-green-700 to-transparent shadow-xl animate-pulse [animation-duration:1s]">
+                                    <div class="shrink-0 w-10">
+                                        <svg class="w-full text-green-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"
+                                             fill="currentColor">
+                                            <path fill-rule="evenodd"
+                                                  d="M2.25 5.25a3 3 0 0 1 3-3h13.5a3 3 0 0 1 3 3V15a3 3 0 0 1-3 3h-3v.257c0 .597.237 1.17.659 1.591l.621.622a.75.75 0 0 1-.53 1.28h-9a.75.75 0 0 1-.53-1.28l.621-.622a2.25 2.25 0 0 0 .659-1.59V18h-3a3 3 0 0 1-3-3V5.25zm1.5 0v7.5a1.5 1.5 0 0 0 1.5 1.5h13.5a1.5 1.5 0 0 0 1.5-1.5v-7.5a1.5 1.5 0 0 0-1.5-1.5H5.25a1.5 1.5 0 0 0-1.5 1.5z"
+                                                  clip-rule="evenodd"></path>
+                                        </svg>
+                                        <div class="opacity-60 text-[8px] leading-none text-center mt-0.5 truncate">Mac14,13xxxxxxxxxx</div>
+                                    </div>
+                                    <div class="truncate ">
+                                        <div class="text-sm">192.168.16.35</div>
+                                        <div class="text-sm truncate">dsssssssssssssssssssssssssssssssss</div>
+                                        <div class="text-xs">UP
+                                            <div class="mount-point" data-mount-point=""> since <span>4s</span></div>
+                                        </div>
+                                        <ul class="opacity-60 text-[8px] leading-none flex flex-wrap gap-1 mt-0.5 [&>*]:truncate">
+                                            <li>airplay</li>
+                                            <li>raop</li>
+                                            <li>spotify-connect</li>
+                                            <li>sonos</li>
+                                        </ul>
+                                    </div>
                             </li>
                             <li>
-                                <div class="flex items-center justify-center sm:justify-start gap-x-2 truncate debug">
-                                    <svg class="shrink-0 w-10 h-10 text-green-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+                                <div class="flex justify-center sm:justify-start gap-x-2 truncate bg-gradient-to-r from-green-700 to-transparent shadow-xl">
+                                    <svg class="shrink-0 w-10 h-10 text-red-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
                                         <path fill-rule="evenodd"
                                               d="M2.25 5.25a3 3 0 0 1 3-3h13.5a3 3 0 0 1 3 3V15a3 3 0 0 1-3 3h-3v.257c0 .597.237 1.17.659 1.591l.621.622a.75.75 0 0 1-.53 1.28h-9a.75.75 0 0 1-.53-1.28l.621-.622a2.25 2.25 0 0 0 .659-1.59V18h-3a3 3 0 0 1-3-3V5.25zm1.5 0v7.5a1.5 1.5 0 0 0 1.5 1.5h13.5a1.5 1.5 0 0 0 1.5-1.5v-7.5a1.5 1.5 0 0 0-1.5-1.5H5.25a1.5 1.5 0 0 0-1.5 1.5z"
                                               clip-rule="evenodd"></path>
                                     </svg>
-                                    <span class="truncate"><div class="text-sm font-bold">Sonos-48A6B8164118.local</div><div class="text-sm">192.168.16.42</div><div
-                                        class="text-xs">UP since now</div></span></div>
+                                    <span class="truncate"><div class="text-sm">192.168.16.38</div><div class="text-xs">DOWN<div class="mount-point"
+                                                                                                                                 data-mount-point=""> since 50s</div></div></span>
+                                </div>
                             </li>
                             <li>
-                                <div class="flex items-center justify-center sm:justify-start gap-x-2 truncate debug">
-                                    <svg class="shrink-0 w-10 h-10 text-green-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+                                <div
+                                    class="flex justify-center sm:justify-start gap-x-2 truncate bg-gradient-to-r from-green-700 to-transparent shadow-xl animate-pulse">
+                                    <svg class="shrink-0 w-10 h-10 text-red-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
                                         <path fill-rule="evenodd"
                                               d="M2.25 5.25a3 3 0 0 1 3-3h13.5a3 3 0 0 1 3 3V15a3 3 0 0 1-3 3h-3v.257c0 .597.237 1.17.659 1.591l.621.622a.75.75 0 0 1-.53 1.28h-9a.75.75 0 0 1-.53-1.28l.621-.622a2.25 2.25 0 0 0 .659-1.59V18h-3a3 3 0 0 1-3-3V5.25zm1.5 0v7.5a1.5 1.5 0 0 0 1.5 1.5h13.5a1.5 1.5 0 0 0 1.5-1.5v-7.5a1.5 1.5 0 0 0-1.5-1.5H5.25a1.5 1.5 0 0 0-1.5 1.5z"
                                               clip-rule="evenodd"></path>
                                     </svg>
-                                    <span class="truncate"><div class="text-sm">192.168.16.120</div><div class="text-xs">UP since now</div></span></div>
+                                    <span class="truncate"><div class="text-sm">192.168.16.41</div><div class="text-xs">DOWN<div class="mount-point"
+                                                                                                                                 data-mount-point=""> since 4s</div></div></span>
+                                </div>
                             </li>
                             <li>
-                                <div class="flex items-center justify-center sm:justify-start gap-x-2 truncate debug">
+                                <div class="flex justify-center sm:justify-start gap-x-2 truncate bg-gradient-to-r from-green-700 to-transparent shadow-xl">
                                     <svg class="shrink-0 w-10 h-10 text-green-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
                                         <path fill-rule="evenodd"
                                               d="M2.25 5.25a3 3 0 0 1 3-3h13.5a3 3 0 0 1 3 3V15a3 3 0 0 1-3 3h-3v.257c0 .597.237 1.17.659 1.591l.621.622a.75.75 0 0 1-.53 1.28h-9a.75.75 0 0 1-.53-1.28l.621-.622a2.25 2.25 0 0 0 .659-1.59V18h-3a3 3 0 0 1-3-3V5.25zm1.5 0v7.5a1.5 1.5 0 0 0 1.5 1.5h13.5a1.5 1.5 0 0 0 1.5-1.5v-7.5a1.5 1.5 0 0 0-1.5-1.5H5.25a1.5 1.5 0 0 0-1.5 1.5z"
                                               clip-rule="evenodd"></path>
                                     </svg>
-                                    <span class="truncate"><div class="text-sm">192.168.16.140</div><div class="text-xs">UP since now</div></span></div>
+                                    <span class="truncate"><div class="text-sm font-bold truncate">Sonos-48A6B8164118.local</div><div class="text-sm">192.168.16.42</div><div
+                                        class="text-xs">UP<div class="mount-point" data-mount-point=""> since 11h</div></div></span></div>
                             </li>
                             <li>
-                                <div class="flex items-center justify-center sm:justify-start gap-x-2 truncate debug">
+                                <div class="flex justify-center sm:justify-start gap-x-2 truncate bg-gradient-to-r from-green-700 to-transparent shadow-xl">
                                     <svg class="shrink-0 w-10 h-10 text-green-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
                                         <path fill-rule="evenodd"
                                               d="M2.25 5.25a3 3 0 0 1 3-3h13.5a3 3 0 0 1 3 3V15a3 3 0 0 1-3 3h-3v.257c0 .597.237 1.17.659 1.591l.621.622a.75.75 0 0 1-.53 1.28h-9a.75.75 0 0 1-.53-1.28l.621-.622a2.25 2.25 0 0 0 .659-1.59V18h-3a3 3 0 0 1-3-3V5.25zm1.5 0v7.5a1.5 1.5 0 0 0 1.5 1.5h13.5a1.5 1.5 0 0 0 1.5-1.5v-7.5a1.5 1.5 0 0 0-1.5-1.5H5.25a1.5 1.5 0 0 0-1.5 1.5z"
                                               clip-rule="evenodd"></path>
                                     </svg>
-                                    <span class="truncate"><div class="text-sm">192.168.16.141</div><div class="text-xs">UP since now</div></span></div>
+                                    <span class="truncate"><div class="text-sm">192.168.16.46</div><div class="text-xs">UP<div class="mount-point"
+                                                                                                                               data-mount-point=""></div></div></span>
+                                </div>
                             </li>
                             <li>
-                                <div class="flex items-center justify-center sm:justify-start gap-x-2 truncate debug">
+                                <div class="flex justify-center sm:justify-start gap-x-2 truncate bg-gradient-to-r from-green-700 to-transparent shadow-xl">
                                     <svg class="shrink-0 w-10 h-10 text-green-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
                                         <path fill-rule="evenodd"
                                               d="M2.25 5.25a3 3 0 0 1 3-3h13.5a3 3 0 0 1 3 3V15a3 3 0 0 1-3 3h-3v.257c0 .597.237 1.17.659 1.591l.621.622a.75.75 0 0 1-.53 1.28h-9a.75.75 0 0 1-.53-1.28l.621-.622a2.25 2.25 0 0 0 .659-1.59V18h-3a3 3 0 0 1-3-3V5.25zm1.5 0v7.5a1.5 1.5 0 0 0 1.5 1.5h13.5a1.5 1.5 0 0 0 1.5-1.5v-7.5a1.5 1.5 0 0 0-1.5-1.5H5.25a1.5 1.5 0 0 0-1.5 1.5z"
                                               clip-rule="evenodd"></path>
                                     </svg>
-                                    <span class="truncate"><div class="text-sm">192.168.16.142</div><div class="text-xs">UP since now</div></span></div>
+                                    <span class="truncate"><div class="text-sm">192.168.16.120</div><div class="text-xs">UP<div class="mount-point"
+                                                                                                                                data-mount-point=""> since 10h</div></div></span>
+                                </div>
                             </li>
                             <li>
-                                <div class="flex items-center justify-center sm:justify-start gap-x-2 truncate debug">
+                                <div class="flex justify-center sm:justify-start gap-x-2 truncate bg-gradient-to-r from-green-700 to-transparent shadow-xl">
                                     <svg class="shrink-0 w-10 h-10 text-green-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
                                         <path fill-rule="evenodd"
                                               d="M2.25 5.25a3 3 0 0 1 3-3h13.5a3 3 0 0 1 3 3V15a3 3 0 0 1-3 3h-3v.257c0 .597.237 1.17.659 1.591l.621.622a.75.75 0 0 1-.53 1.28h-9a.75.75 0 0 1-.53-1.28l.621-.622a2.25 2.25 0 0 0 .659-1.59V18h-3a3 3 0 0 1-3-3V5.25zm1.5 0v7.5a1.5 1.5 0 0 0 1.5 1.5h13.5a1.5 1.5 0 0 0 1.5-1.5v-7.5a1.5 1.5 0 0 0-1.5-1.5H5.25a1.5 1.5 0 0 0-1.5 1.5z"
                                               clip-rule="evenodd"></path>
                                     </svg>
-                                    <span class="truncate"><div class="text-sm">192.168.16.143</div><div class="text-xs">UP since now</div></span></div>
+                                    <span class="truncate"><div class="text-sm">192.168.16.140</div><div class="text-xs">UP<div class="mount-point"
+                                                                                                                                data-mount-point=""> since 1d 4h</div></div></span>
+                                </div>
                             </li>
                             <li>
-                                <div class="flex items-center justify-center sm:justify-start gap-x-2 truncate debug">
+                                <div class="flex justify-center sm:justify-start gap-x-2 truncate bg-gradient-to-r from-green-700 to-transparent shadow-xl">
                                     <svg class="shrink-0 w-10 h-10 text-green-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
                                         <path fill-rule="evenodd"
                                               d="M2.25 5.25a3 3 0 0 1 3-3h13.5a3 3 0 0 1 3 3V15a3 3 0 0 1-3 3h-3v.257c0 .597.237 1.17.659 1.591l.621.622a.75.75 0 0 1-.53 1.28h-9a.75.75 0 0 1-.53-1.28l.621-.622a2.25 2.25 0 0 0 .659-1.59V18h-3a3 3 0 0 1-3-3V5.25zm1.5 0v7.5a1.5 1.5 0 0 0 1.5 1.5h13.5a1.5 1.5 0 0 0 1.5-1.5v-7.5a1.5 1.5 0 0 0-1.5-1.5H5.25a1.5 1.5 0 0 0-1.5 1.5z"
                                               clip-rule="evenodd"></path>
                                     </svg>
-                                    <span class="truncate"><div class="text-sm">192.168.16.180</div><div class="text-xs">UP since now</div></span></div>
+                                    <span class="truncate"><div class="text-sm">192.168.16.141</div><div class="text-xs">UP<div class="mount-point"
+                                                                                                                                data-mount-point=""> since 1d</div></div></span>
+                                </div>
                             </li>
                             <li>
-                                <div class="flex items-center justify-center sm:justify-start gap-x-2 truncate debug">
+                                <div class="flex justify-center sm:justify-start gap-x-2 truncate bg-gradient-to-r from-green-700 to-transparent shadow-xl">
                                     <svg class="shrink-0 w-10 h-10 text-green-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
                                         <path fill-rule="evenodd"
                                               d="M2.25 5.25a3 3 0 0 1 3-3h13.5a3 3 0 0 1 3 3V15a3 3 0 0 1-3 3h-3v.257c0 .597.237 1.17.659 1.591l.621.622a.75.75 0 0 1-.53 1.28h-9a.75.75 0 0 1-.53-1.28l.621-.622a2.25 2.25 0 0 0 .659-1.59V18h-3a3 3 0 0 1-3-3V5.25zm1.5 0v7.5a1.5 1.5 0 0 0 1.5 1.5h13.5a1.5 1.5 0 0 0 1.5-1.5v-7.5a1.5 1.5 0 0 0-1.5-1.5H5.25a1.5 1.5 0 0 0-1.5 1.5z"
                                               clip-rule="evenodd"></path>
                                     </svg>
-                                    <span class="truncate"><div class="text-sm">192.168.16.190</div><div class="text-xs">UP since now</div></span></div>
+                                    <span class="truncate"><div class="text-sm">192.168.16.142</div><div class="text-xs">UP<div class="mount-point"
+                                                                                                                                data-mount-point=""> since 20h</div></div></span>
+                                </div>
                             </li>
                             <li>
-                                <div class="flex items-center justify-center sm:justify-start gap-x-2 truncate debug">
+                                <div class="flex justify-center sm:justify-start gap-x-2 truncate bg-gradient-to-r from-green-700 to-transparent shadow-xl">
                                     <svg class="shrink-0 w-10 h-10 text-green-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
                                         <path fill-rule="evenodd"
                                               d="M2.25 5.25a3 3 0 0 1 3-3h13.5a3 3 0 0 1 3 3V15a3 3 0 0 1-3 3h-3v.257c0 .597.237 1.17.659 1.591l.621.622a.75.75 0 0 1-.53 1.28h-9a.75.75 0 0 1-.53-1.28l.621-.622a2.25 2.25 0 0 0 .659-1.59V18h-3a3 3 0 0 1-3-3V5.25zm1.5 0v7.5a1.5 1.5 0 0 0 1.5 1.5h13.5a1.5 1.5 0 0 0 1.5-1.5v-7.5a1.5 1.5 0 0 0-1.5-1.5H5.25a1.5 1.5 0 0 0-1.5 1.5z"
                                               clip-rule="evenodd"></path>
                                     </svg>
-                                    <span class="truncate"><div class="text-sm">192.168.16.46</div><div class="text-xs">UP since now</div></span></div>
+                                    <span class="truncate"><div class="text-sm">192.168.16.143</div><div class="text-xs">UP<div class="mount-point"
+                                                                                                                                data-mount-point=""> since 19m</div></div></span>
+                                </div>
+                            </li>
+                            <li>
+                                <div class="flex justify-center sm:justify-start gap-x-2 truncate bg-gradient-to-r from-green-700 to-transparent shadow-xl">
+                                    <svg class="shrink-0 w-10 h-10 text-green-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+                                        <path fill-rule="evenodd"
+                                              d="M2.25 5.25a3 3 0 0 1 3-3h13.5a3 3 0 0 1 3 3V15a3 3 0 0 1-3 3h-3v.257c0 .597.237 1.17.659 1.591l.621.622a.75.75 0 0 1-.53 1.28h-9a.75.75 0 0 1-.53-1.28l.621-.622a2.25 2.25 0 0 0 .659-1.59V18h-3a3 3 0 0 1-3-3V5.25zm1.5 0v7.5a1.5 1.5 0 0 0 1.5 1.5h13.5a1.5 1.5 0 0 0 1.5-1.5v-7.5a1.5 1.5 0 0 0-1.5-1.5H5.25a1.5 1.5 0 0 0-1.5 1.5z"
+                                              clip-rule="evenodd"></path>
+                                    </svg>
+                                    <span class="truncate"><div class="text-sm">192.168.16.180</div><div class="text-xs">UP<div class="mount-point"
+                                                                                                                                data-mount-point=""> since 1d 2h</div></div></span>
+                                </div>
+                            </li>
+                            <li>
+                                <div class="flex justify-center sm:justify-start gap-x-2 truncate bg-gradient-to-r from-green-700 to-transparent shadow-xl">
+                                    <svg class="shrink-0 w-10 h-10 text-green-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+                                        <path fill-rule="evenodd"
+                                              d="M2.25 5.25a3 3 0 0 1 3-3h13.5a3 3 0 0 1 3 3V15a3 3 0 0 1-3 3h-3v.257c0 .597.237 1.17.659 1.591l.621.622a.75.75 0 0 1-.53 1.28h-9a.75.75 0 0 1-.53-1.28l.621-.622a2.25 2.25 0 0 0 .659-1.59V18h-3a3 3 0 0 1-3-3V5.25zm1.5 0v7.5a1.5 1.5 0 0 0 1.5 1.5h13.5a1.5 1.5 0 0 0 1.5-1.5v-7.5a1.5 1.5 0 0 0-1.5-1.5H5.25a1.5 1.5 0 0 0-1.5 1.5z"
+                                              clip-rule="evenodd"></path>
+                                    </svg>
+                                    <span class="truncate"><div class="text-sm">192.168.16.190</div><div class="text-xs">UP<div class="mount-point"
+                                                                                                                                data-mount-point=""> since 1d 11h</div></div></span>
+                                </div>
                             </li>
                         </ul>
                     </div>

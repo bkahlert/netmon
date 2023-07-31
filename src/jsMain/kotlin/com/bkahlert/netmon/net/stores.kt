@@ -11,16 +11,6 @@ import kotlinx.coroutines.plus
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 
-/** Store of host updates. */
-class HostEventsStore : RootStore<List<Event.HostEvent>>(emptyList()) {
-    val process = handle<Event.HostEvent> { events, event ->
-        buildList<Event.HostEvent> {
-            add(event)
-            events.take(2).forEach { add(it) }
-        }
-    }
-}
-
 /** Store of network scans. */
 class ScanEventsStore : RootStore<List<Event.ScanEvent>>(emptyList()) {
     val process = handle<Event.ScanEvent> { scans, scan ->

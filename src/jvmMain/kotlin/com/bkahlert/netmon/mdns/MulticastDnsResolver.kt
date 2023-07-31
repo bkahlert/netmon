@@ -101,6 +101,7 @@ class MulticastDnsResolver(
         ?.let { if (removeRoot) it.removeSuffix(".") else it }
 
     fun resolveModel(ip: IP): String? = ipAddressToServices[ip]?.firstNotNullOfOrNull { it.properties["model"] }
+
     fun resolveServices(ip: IP): List<String> = ipAddressToServices[ip].orEmpty().map { it.application }
 
     companion object {
