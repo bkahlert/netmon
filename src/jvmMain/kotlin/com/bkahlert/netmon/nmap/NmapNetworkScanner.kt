@@ -11,7 +11,7 @@ import com.bkahlert.netmon.Status
 import kotlin.io.path.pathString
 
 data class NmapNetworkScanner(
-    val privileged: Boolean = Settings.Scanner.privileged,
+    val privileged: Boolean = Settings.Scanner.PRIVILEGED_SCAN,
     val timingTemplate: ScanResult.TimingTemplate = ScanResult.TimingTemplate.Normal,
 ) {
 

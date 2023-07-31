@@ -7,14 +7,37 @@
     <title>Netmon Web Display</title>
     <link rel="shortcut icon"
           href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2OCA2OCI+PHBhdGggZmlsbD0iIzMzMzMzMyIgZD0iTTM0LDJjLTQyLDAuOC00Miw2My4zLDAsNjRDNzYuMSw2NS4zLDc2LDIuNywzNCwyeiBNNDksMTBjNC42LTAuNCwyLDExLjMsMi42LDEzLjdjMCwzLjYtNS41LDMuNS01LjQsMCBjLTQuOCwwLjEtOC45LTEuNC04LjEsNS40YzIuMS0wLjEsNS40LTAuMiw1LjQsMi44YzAsMS42LTEuMywyLjktMi45LDIuOGMwLDAtMTUuOCwwLTE1LjgsMHYwYy0zLjYsMC4yLTMuNy01LjYtMC4xLTUuNiBjMCwwLDIuNiwwLDIuNywwYy0xLjItMTQuNSw2LTE3LjUsMTktMTYuNEM0Ni4zLDExLjIsNDcuNSwxMCw0OSwxMHogTTI3LjIsMzYuMUwzOCwzNi4yYzAuOSwxMi45LTEuOCwyMC42LTE2LjMsMTkuMSBjMCwzLjYtNS41LDMuNS01LjQsMGMwLDAsMC4xLTExLDAuMS0xMWMwLTMuNiw1LjUtMy41LDUuNCwwQzI4LjcsNDUuMiwyNyw0MC45LDI3LjIsMzYuMXoiLz48cGF0aCBmaWxsPSIjRkZGRkZGIiBkPSJNMjMuOCwzNC41Yy0yLTAuNi0yLjUtMy42LTAuNy00LjljMC40LTAuNiwzLTAuNSw0LjItMC41Yy0wLjUtNy4yLDAuNy0xMy45LDcuOC0xNmMwLjMtMC41LDguNS0wLjQsMTEuMS0wLjQgYzAtMi42LDMuNC0zLjcsNC44LTEuNWMwLjUsMC43LDAuNSwwLjcsMC41LDUuMmMwLDMuNCwwLDUuNC0wLjEsOGMtMC45LDMtNS4zLDIuNC01LjMtMC43Yy0xLjUsMC00LjYsMC02LjEsMGMtMC45LDAuMy0xLjYsMS4xLTIsMiBjMCwwLjksMCwyLjYsMCwzLjVjMi42LDAsNS4zLTAuMiw1LjMsMi44YzAuMSwxLjQtMC44LDIuMi0xLjksMi43QzM4LjcsMzQuNiwyMi44LDM0LjcsMjMuOCwzNC41TDIzLjgsMzQuNXoiLz48cGF0aCBmaWxsPSIjRkZGRkZGIiBkPSJNMTguNSw1Ny45Yy0xLjctMC44LTIuMS0xLjItMi0zLjVjMC0wLjQsMC0xMS41LDAuMi0xMS4xYzEuMS0yLjgsNS4yLTEuOCw1LjEsMS4xYzYuNiwwLjYsNS40LTIuMyw1LjUtOC4yIGMyLjcsMCw4LjEsMCwxMC43LDBjMC43LDEzLjgtMS44LDIwLTE2LjMsMTkuMUMyMS44LDU3LDIwLDU4LjMsMTguNSw1Ny45eiIvPjwvc3ZnPgo="/>
+    <style>
+        /* styles for initial static content to avoid FOUC */
+        .app > .status {
+            display: flex;
+            align-items: baseline;
+            gap: .5rem;
+            font-size: .75rem;
+            line-height: 1rem;
+            transform: translateY(-50%);
+        }
+        .app > .status > h1 {
+            font-size: .75rem;
+            line-height: 1rem;
+            font-weight: 700;
+        }
+        .app > .networks:empty,
+        .app > .networks > :only-child:empty {
+            position: absolute;
+            top: 0;
+            right: 0;
+            bottom: 0;
+            left: 0;
+            background: black url("images/loading.svg") no-repeat center center / 100%;
+            z-index: -1;
+        }
+    </style>
 </head>
 <body>
 <div id="root" class="app">
-    <!-- inline styles to avoid FOUC -->
-    <div
-        style="position: absolute; top: 0; right: 0; bottom: 0; left: 0; display: flex; justify-content: center; align-items: center; background-color: black;">
-        <img src="images/loading.svg" alt="Loading Netmon..." style="display: block; vertical-align: center; height: auto; max-width: 100%;"/>
-    </div>
+    <div class="status"></div>
+    <div class="networks"></div>
 </div>
 <script src="netmon.js"></script>
 </body>

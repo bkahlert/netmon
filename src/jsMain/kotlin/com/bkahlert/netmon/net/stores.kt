@@ -1,15 +1,12 @@
 package com.bkahlert.netmon.net
 
+import com.bkahlert.kommons.js.Console
+import com.bkahlert.kommons.js.DefaultConsoleLogFormatter
+import com.bkahlert.kommons.js.format
+import com.bkahlert.kommons.js.tee
 import com.bkahlert.netmon.Event
 import dev.fritz2.core.RootStore
-import kotlinx.coroutines.MainScope
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.flow
-import kotlinx.coroutines.flow.launchIn
-import kotlinx.coroutines.flow.onEach
-import kotlinx.coroutines.plus
-import kotlin.time.Duration
-import kotlin.time.Duration.Companion.seconds
+import kotlinx.coroutines.flow.map
 
 /** Store of network scans. */
 class ScanEventsStore : RootStore<List<Event.ScanEvent>>(emptyList()) {
@@ -17,22 +14,18 @@ class ScanEventsStore : RootStore<List<Event.ScanEvent>>(emptyList()) {
         if (scans.none { it.network == scan.network }) scans + scan
         else scans.map { if (it.network == scan.network) scan else it }
     }
-
-    val outdated = handle<Event.ScanEvent> { scans, scan ->
-        scans.mapNotNull { if (it.network == scan.network) null else it }
-    }
 }
 
-/** Somewhat hacky store to keep track of the uptime, and to update UI elements that present relative time information. */
-class UptimeStore(val updateInterval: Duration = 1.seconds) : RootStore<Duration>(Duration.ZERO) {
+/** Store that is attached to the specified [console] storing log messages of the specified [levels]. */
+class ConsoleLogStore(
+    initial: Pair<String, String>,
+    private vararg val levels: String = arrayOf("error", "warn", "info"),
+    private val console: Console = com.bkahlert.kommons.js.console,
+) : RootStore<Pair<String, String>>(initial) {
+
     init {
-        flow {
-            while (true) {
-                delay(updateInterval)
-                emit(Unit)
-            }
-        }
-            .onEach { update(current + updateInterval) }
-            .launchIn(MainScope() + job)
+        console.asDynamic()[initial.first](initial.second)
+        console.tee(*levels)
+            .map { (fn, args) -> fn to DefaultConsoleLogFormatter.format(args) } handledBy update
     }
 }

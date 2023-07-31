@@ -35,7 +35,6 @@ fun main(args: Array<String>) {
         "com.bkahlert.netmon.net" to Level.INFO,
         "com.bkahlert.netmon.nmap" to Level.INFO,
         "com.bkahlert.netmon.mdns" to Level.INFO,
-        "com.bkahlert.netmon.mdns.DerivedValue" to Level.WARN,
         "com.bkahlert.netmon.mqtt" to Level.WARN,
     )
 
@@ -53,8 +52,8 @@ fun main(args: Array<String>) {
 
     val nmapNetworkScanner = NmapNetworkScanner()
     val publisher = MqttPublisher(
-        host = Settings.brokerHost,
-        port = Settings.Scanner.brokerPort,
+        host = Settings.BROKER_HOST,
+        port = Settings.Scanner.BROKER_PORT,
         stringFormat = JsonFormat,
         serializer = Event.serializer(),
     )
@@ -76,7 +75,7 @@ fun main(args: Array<String>) {
                 resolver = resolver,
                 onScan = { scan ->
                     publisher.publish(
-                        topic = Settings.scanTopic.replaceFirst("+", unqualifiedHostname),
+                        topic = Settings.SCAN_TOPIC.replaceFirst("+", unqualifiedHostname),
                         event = Event.ScanEvent(
                             network = network,
                             type = Event.ScanEvent.Type.COMPLETED,
@@ -87,7 +86,7 @@ fun main(args: Array<String>) {
                 },
                 onChange = { host ->
                     publisher.publish(
-                        topic = Settings.hostTopic.replaceFirst("+", unqualifiedHostname),
+                        topic = Settings.HOST_TOPIC.replaceFirst("+", unqualifiedHostname),
                         event = Event.HostEvent(
                             network = network,
                             type = if (host.status == Status.DOWN) Event.HostEvent.Type.DOWN else Event.HostEvent.Type.UP,

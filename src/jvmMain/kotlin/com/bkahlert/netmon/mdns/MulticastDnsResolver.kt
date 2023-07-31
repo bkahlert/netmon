@@ -3,17 +3,6 @@ package com.bkahlert.netmon.mdns
 import com.bkahlert.kommons.logging.SLF4J
 import com.bkahlert.kommons.logging.logback.StructuredArguments.entries
 import com.bkahlert.netmon.IP
-import com.bkahlert.netmon.mdns.DerivedValue.Companion.derived
-import kotlinx.serialization.KSerializer
-import kotlinx.serialization.descriptors.PrimitiveKind
-import kotlinx.serialization.descriptors.PrimitiveSerialDescriptor
-import kotlinx.serialization.descriptors.SerialDescriptor
-import kotlinx.serialization.encodeToString
-import kotlinx.serialization.encoding.Decoder
-import kotlinx.serialization.encoding.Encoder
-import kotlinx.serialization.json.Json
-import kotlinx.serialization.modules.SerializersModule
-import kotlinx.serialization.modules.contextual
 import java.util.concurrent.locks.ReentrantLock
 import javax.jmdns.JmDNS
 import javax.jmdns.ServiceEvent
@@ -29,16 +18,24 @@ class MulticastDnsResolver(
     private val logger by SLF4J
 
     private val servicesLock = ReentrantLock()
-    private val services = mutableMapOf<Pair<String, String>, ServiceInfo>()
+    private val services: MutableMap<Pair<String, String>, ServiceInfo> = mutableMapOf()
+    private var mappings: ResolveMappings = ResolveMappings(emptyList())
+
     private fun addService(event: ServiceEvent) {
         val info = event.info ?: return
         logger.info("Adding service: {}", entries("name" to event.name, "type" to event.type))
-        servicesLock.withLock { services[event.name to event.type] = info }
+        servicesLock.withLock {
+            services[event.name to event.type] = info
+            mappings = ResolveMappings(services.values.toList())
+        }
     }
 
     private fun removeService(event: ServiceEvent) {
         logger.info("Removing service: {}", entries("name" to event.name, "type" to event.type))
-        servicesLock.withLock { services.remove(event.name to event.type) }
+        servicesLock.withLock {
+            services.remove(event.name to event.type)
+            mappings = ResolveMappings(services.values.toList())
+        }
     }
 
     private val serviceListener = object : ServiceListener {
@@ -49,31 +46,6 @@ class MulticastDnsResolver(
 
         override fun serviceRemoved(event: ServiceEvent) {
             removeService(event)
-        }
-    }
-
-    private val serverToServices: Map<String, Set<ServiceInfo>> by { services } derived {
-        servicesLock.withLock { it.values.toList() }
-            .filter { it.hasServer() }
-            .groupBy { it.server }
-            .mapValues { (_, infos) -> buildSet { addAll(infos) } }
-    }
-
-    private val serverToIpAddresses: Map<String, Set<IP>> by { serverToServices } derived {
-        it.mapValues { (_, infos) ->
-            buildSet { infos.forEach { info -> addAll(info.ipAddresses) } }
-        }
-    }
-
-    private val ipAddressToServers: Map<IP, Set<String>> by { serverToIpAddresses } derived {
-        buildSet { it.values.forEach { addAll(it) } }
-            .associateWith { ip -> it.filterValues { it.contains(ip) }.keys }
-            .mapValues { (_, hostnames) -> hostnames.toSet() }
-    }
-
-    private val ipAddressToServices: Map<IP, Set<ServiceInfo>> by { ipAddressToServers to serverToServices } derived { (ipToSrv, srvToSrv) ->
-        ipToSrv.mapValues { (_, servers) ->
-            buildSet { servers.forEach { addAll(srvToSrv[it].orEmpty()) } }
         }
     }
 
@@ -89,64 +61,50 @@ class MulticastDnsResolver(
 
     override fun toString(): String = buildString {
         append("MulticastDnsResolver(")
-        ipAddressToServices.entries.joinTo(this, ", ") { (ip, services) ->
+        mappings.ipAddressToServices.entries.joinTo(this, ", ") { (ip, services) ->
             val servicePart = "[${services.joinToString(",") { it.application }}]"
-            val hostPart = "[${ipAddressToServers[ip].orEmpty().joinToString(",") { it }}]"
+            val hostPart = "[${mappings.ipAddressToServers[ip].orEmpty().joinToString(",") { it }}]"
             "$ip=$servicePart@$hostPart"
         }
         append(")")
     }
 
-    fun resolveHostname(ip: IP, removeRoot: Boolean = true): String? = ipAddressToServers[ip]?.firstOrNull()
+    fun resolveHostname(ip: IP, removeRoot: Boolean = true): String? = mappings.ipAddressToServers[ip]?.firstOrNull()
         ?.let { if (removeRoot) it.removeSuffix(".") else it }
 
-    fun resolveModel(ip: IP): String? = ipAddressToServices[ip]?.firstNotNullOfOrNull { it.properties["model"] }
+    fun resolveModel(ip: IP): String? = mappings.ipAddressToServices[ip]?.firstNotNullOfOrNull { it.properties["model"] }
 
-    fun resolveServices(ip: IP): List<String> = ipAddressToServices[ip].orEmpty().map { it.application }
+    fun resolveServices(ip: IP): List<String> = mappings.ipAddressToServices[ip].orEmpty().map { it.application }
 
-    companion object {
-
-        val logger by SLF4J
-        fun MulticastDnsResolver.debug() = runCatching {
-            val json = Json {
-                isLenient = true
-                ignoreUnknownKeys = true
-                explicitNulls = false
-                prettyPrint = true
-                serializersModule = SerializersModule {
-                    contextual(ServiceInfoSerializer)
-                }
-            }
-            println("serverToServices: ${json.encodeToString(serverToServices)}")
-            println("serverToIpAddresses: ${json.encodeToString(serverToIpAddresses)}")
-            println("ipAddressToServers: ${json.encodeToString(ipAddressToServers)}")
-            println("ipAddressToServices: ${json.encodeToString(ipAddressToServices)}")
-            println(toString())
-        }.onFailure { logger.error("Unexpected error", it) }
-
-    }
+    companion object
 }
 
-// currently only used for debugging as the toString of ServiceInfo is a nightmare
-data object ServiceInfoSerializer : KSerializer<ServiceInfo> {
-    override val descriptor: SerialDescriptor = PrimitiveSerialDescriptor("ServiceInfo", PrimitiveKind.STRING)
+private class ResolveMappings(
+    private val services: List<ServiceInfo>,
+) {
 
-    override fun serialize(encoder: Encoder, value: ServiceInfo) {
-        val str = listOf(
-            "name" to value.name,
-            "type" to value.type,
-            "subtype" to value.subtype,
-            "application" to value.application,
-            "server" to value.server,
-            "uRLs" to value.urLs.joinToString(", "),
-            "properties" to value.properties.toString(),
-        ).filter { (_, value) -> value != null && value.toString().isNotBlank() }
-            .joinToString("; ") { (key, value) ->
-                "$key: $value"
-            }
-        encoder.encodeString(str)
+    val serverToServices: Map<String, Set<ServiceInfo>> by lazy {
+        services
+            .filter { it.hasServer() }
+            .groupBy { it.server }
+            .mapValues { (_, infos) -> buildSet { addAll(infos) } }
     }
 
-    override fun deserialize(decoder: Decoder): ServiceInfo =
-        error("Deserialization not supported")
+    val serverToIpAddresses: Map<String, Set<IP>> by lazy {
+        serverToServices.mapValues { (_, infos) ->
+            buildSet { infos.forEach { info -> addAll(info.ipAddresses) } }
+        }
+    }
+
+    val ipAddressToServers: Map<IP, Set<String>> by lazy {
+        buildSet { serverToIpAddresses.values.forEach { addAll(it) } }
+            .associateWith { ip -> serverToIpAddresses.filterValues { it.contains(ip) }.keys }
+            .mapValues { (_, hostnames) -> hostnames.toSet() }
+    }
+
+    val ipAddressToServices: Map<IP, Set<ServiceInfo>> by lazy {
+        ipAddressToServers.mapValues { (_, servers) ->
+            buildSet { servers.forEach { addAll(serverToServices[it].orEmpty()) } }
+        }
+    }
 }
