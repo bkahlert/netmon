@@ -6,6 +6,7 @@ import com.bkahlert.netmon.Event
 import com.bkahlert.netmon.Host
 import com.bkahlert.netmon.Settings
 import com.bkahlert.netmon.Status
+import com.bkahlert.netmon.stable
 import com.bkahlert.netmon.ticks
 import com.bkahlert.netmon.timePassed
 import com.bkahlert.netmon.ui.heroicons.SolidHeroIcons
@@ -50,8 +51,15 @@ fun RenderContext.scan(
     }
 
     div("overflow-y-auto") {
+        val (stable, recent) = hosts.partition { it.stable }
         ul("grid grid-cols-[repeat(auto-fit,minmax(0,150px))] justify-between gap-4") {
-            hosts.forEach { host ->
+            recent.forEach { host ->
+                li { host(host) }
+            }
+        }
+        hr { }
+        ul("grid grid-cols-[repeat(auto-fit,minmax(0,150px))] justify-between gap-4 opacity-50") {
+            stable.forEach { host ->
                 li { host(host) }
             }
         }

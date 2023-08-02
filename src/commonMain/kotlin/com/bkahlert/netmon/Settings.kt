@@ -1,6 +1,7 @@
 package com.bkahlert.netmon
 
 import kotlin.time.Duration
+import kotlin.time.Duration.Companion.hours
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
 
@@ -15,6 +16,9 @@ data object Settings {
 
     /** The topic name for host events. */
     const val HOST_TOPIC: String = "dt/netmon/+/host"
+
+    /** The duration after which a host state is considered stable. */
+    val STATE_CHANGE_STABLE_DURATION: Duration = 1.hours
 
     /** Settings for the network monitor's scanner. */
     object Scanner {

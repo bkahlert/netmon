@@ -22,3 +22,6 @@ data class Host(
 
 val Host.timePassed: Duration?
     get() = since?.let { Now - it }?.coerceAtLeast(Duration.ZERO)
+
+val Host.stable: Boolean
+    get() = timePassed?.let { it > Settings.STATE_CHANGE_STABLE_DURATION } ?: true
