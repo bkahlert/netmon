@@ -1,0 +1,15 @@
+[Unit]
+Description=Netmon Web Display Service
+After=multi-user.target
+
+[Service]
+Type=simple
+WorkingDirectory=/home/pi
+#ExecStart=/home/pi/netmon/start-web-display.sh
+ExecStart=/home/pi/netmon/start-live-server.sh
+Restart=always
+TimeoutStopSec=10
+User=pi
+
+[Install]
+WantedBy=multi-user.target

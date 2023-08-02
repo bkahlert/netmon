@@ -1,0 +1,44 @@
+{
+  "name": "netmon-web-display",
+  "settings": {
+    "ticker": {
+      "enable": false,
+      "behavior": "scroll",
+      "textSpeed": 3,
+      "rss": {
+        "enable": false,
+        "link": null,
+        "feedDelay": 10
+      }
+    },
+    "ads": {
+      "adPlaylist": false,
+      "adCount": 1,
+      "adInterval": 60
+    },
+    "audio": {
+      "enable": false,
+      "random": false,
+      "volume": 50
+    }
+  },
+  "assets": [
+    {
+      "filename": "netmon-web-display.weblink",
+      "duration": 86400,
+      "selected": true,
+      "option": {
+        "main": false
+      },
+      "dragSelected": false,
+      "fullscreen": true
+    }
+  ],
+  "layout": "1",
+  "templateName": "custom_layout.html",
+  "schedule": {},
+  "version": 20,
+  "videoWindow": null,
+  "zoneVideoWindow": {},
+  "groupIds": null
+}

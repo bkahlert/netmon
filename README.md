@@ -18,6 +18,11 @@ The appliance consists of two parts:
 Got a spare Raspberry Pi?
 Both components + a Chromium browser to render the actual web interface run with no problem on a Raspberry Pi 1 or Zero.
 
+[![photo of Netmon running on a Raspberry Pi Zero](./docs/netmon-rpi0.jpg)
+Netmon on a Raspberry Pi Zero](./docs/netmon-rpi0.jpg)
+
+Find detailed installation instructions in [rpi/INSTALL.md](rpi/INSTALL.md).
+
 ## Development
 
 ### Network scanner
@@ -70,18 +75,6 @@ rsync -rvz --delete \
 ```
 
 See [mqtt.js/README.md](mqtt.js/README.md) for details.
-
-### Copy SSH key
-
-```shell
-sshpass -p raspberry \
-  ssh-copy-id \
-      -i ~/.ssh/id_rsa \
-      -o UserKnownHostsFile=/dev/null \
-      -o StrictHostKeyChecking=no \
-      -o PreferredAuthentications=password \
-      pi@10.0.0.2
-```
 
 ## Contributing
 

@@ -1,0 +1,14 @@
+[Unit]
+Description=Netmon Scanner Service
+After=multi-user.target
+
+[Service]
+Type=simple
+WorkingDirectory=/home/pi
+ExecStart=/home/pi/netmon/start-scanner.sh
+Restart=always
+TimeoutStopSec=10
+User=pi
+
+[Install]
+WantedBy=multi-user.target

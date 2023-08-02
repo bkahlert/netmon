@@ -1,0 +1,8 @@
+{
+    "name": "netmon-web-display",
+    "type": ".weblink",
+    "link": "http://localhost/?broker.port=8080",
+    "duration": null,
+    "hideTitle": "title",
+    "zoom": 1
+}

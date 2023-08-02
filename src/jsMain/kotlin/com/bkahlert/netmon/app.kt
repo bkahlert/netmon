@@ -23,7 +23,6 @@ import mqtt.onConnect
 import mqtt.onDisconnect
 import mqtt.onError
 import mqtt.subscribe
-import kotlin.random.Random
 
 @JsModule("./images/loading.svg")
 @JsNonModule
@@ -44,7 +43,7 @@ suspend fun main() {
     /*
      * Status
      */
-    val consoleLogStore = ConsoleLogStore("info" to "Starting Network Monitor...")
+    val consoleLogStore = ConsoleLogStore("info" to "Starting...")
     render("#root.app .status") {
         h1("font-bold") { +"Network Monitor" }
         div("opacity-50") {

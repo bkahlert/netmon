@@ -1,0 +1,46 @@
+
+⸺̲͞ (((ꎤ ✧曲✧)—̠͞o @ Network Monitor
+
+Application consists of two components:
+netmon-scanner:
+  Component that publishes scan events to an MQTT broker
+netmon-web-display:
+  Component that subscribes to scan events and renders them in a web UI
+  displayed by a browser on the HDMI output
+
+To check the system status, run:
+- systemctl status netmon-scanner.service
+  or
+  journalctl -f -u netmon-scanner.service
+- systemctl status netmon-web-display.service
+  or
+  journalctl -f -u netmon-web-display.service
+- cat /home/pi/.netmon.*
+
+To stop any of the services, run:
+- sudo systemctl stop netmon-scanner.service
+- sudo systemctl stop netmon-web-display.service
+
+To manually start components in the foreground, run:
+- /home/pi/netmon/start-scanner.sh
+- /home/pi/netmon/start-web-display.sh # as run by systemd
+  or
+  /home/pi/netmon/start-live-server.sh # alternative to reloads the UI on changes
+
+To start any of the services, run:
+- sudo systemctl start netmon-scanner.service
+- sudo systemctl start netmon-web-display.service
+
+PiSignage is responsible for displaying the browser:
+- API docs: https://piathome.com/apidocs
+- Web UI: http://pi:pi@netmon.local:8000
+- Logs:
+  tail -f forever_out.log & tail -f forever_err.log
+- Get status:
+  curl -s 'http://netmon.local:8000/api/status' -u pi:pi | jq
+- (Re-)start the browser:
+  curl -s 'http://netmon.local:8000/api/play/playlists/netmon-web-display' -u pi:pi \
+       -H 'Content-Type: application/json;charset=UTF-8' \
+       --data-raw '{"play":true}' | jq
+
+ 
