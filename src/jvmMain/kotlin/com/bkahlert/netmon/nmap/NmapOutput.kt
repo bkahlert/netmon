@@ -15,7 +15,7 @@ data class NmapOutput(
     @Serializable
     data class NmapRun(
         val target: List<Target>?,
-        val host: List<Host>?,
+        @Serializable(SingleElementUnwrappingJsonArraySerializer::class) val host: List<Host>?,
     )
 
     @Serializable
@@ -30,6 +30,7 @@ data class NmapOutput(
         val status: Status,
         @Serializable(SingleElementUnwrappingJsonArraySerializer::class) val address: List<Address>,
         val hostnames: Hostnames? = null,
+        val hostscript: Hostscript? = null,
     ) {
         @Serializable
         data class Status(
@@ -58,6 +59,15 @@ data class NmapOutput(
         data class Hostname(
             @SerialName("@name") val name: String? = null,
             @SerialName("@type") val type: String? = null,
+        )
+
+        @Serializable
+        data class Hostscript(val script: Script?)
+
+        @Serializable
+        data class Script(
+            @SerialName("@id") val id: String? = null,
+            @SerialName("@output") val output: String? = null,
         )
     }
 }

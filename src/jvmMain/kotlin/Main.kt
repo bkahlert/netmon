@@ -7,11 +7,13 @@ import com.bkahlert.kommons.logging.logback.StructuredArguments.o
 import com.bkahlert.kommons.text.checkNotBlank
 import com.bkahlert.netmon.Event
 import com.bkahlert.netmon.JsonFormat
+import com.bkahlert.netmon.LazyNameResolver
 import com.bkahlert.netmon.NetmonScanner
 import com.bkahlert.netmon.Settings
 import com.bkahlert.netmon.Status
 import com.bkahlert.netmon.levels
 import com.bkahlert.netmon.mdns.MulticastDnsResolver
+import com.bkahlert.netmon.mdns.MulticastDnsReverseNameResolver
 import com.bkahlert.netmon.mqtt.MqttPublisher
 import com.bkahlert.netmon.net.InterfaceFilter
 import com.bkahlert.netmon.net.cidr
@@ -32,10 +34,10 @@ fun main(args: Array<String>) {
         "io.netty" to Level.WARN,
         "javax.jmdns" to Level.WARN,
         "com.bkahlert.kommons.exec" to Level.WARN,
-        "com.bkahlert.netmon.net" to Level.INFO,
-        "com.bkahlert.netmon.nmap" to Level.INFO,
         "com.bkahlert.netmon.mdns" to Level.INFO,
         "com.bkahlert.netmon.mqtt" to Level.WARN,
+        "com.bkahlert.netmon.net" to Level.INFO,
+        "com.bkahlert.netmon.nmap" to Level.INFO,
     )
 
     logger.info("Starting netmon: {}", a(*args, key = "args"))
@@ -71,10 +73,14 @@ fun main(args: Array<String>) {
                 .replaceFirst("\${interface}", networkInterface.name)
                 .replaceFirst("\${cidr}", interfaceAddress.cidr.toString())
 
-            val resolver = MulticastDnsResolver(JmDNS.create(interfaceAddress.address, hostname))
+            val resolver = MulticastDnsResolver(
+                jmdns = JmDNS.create(interfaceAddress.address, hostname),
+                fallbackResolver = LazyNameResolver(MulticastDnsReverseNameResolver, nmapNetworkScanner),
+            )
 
             NetmonScanner(
-                network = interfaceAddress.cidr,
+                `interface` = networkInterface.name,
+                cidr = interfaceAddress.cidr,
                 scanner = nmapNetworkScanner,
                 resolver = resolver,
                 onScan = { scan ->
@@ -100,7 +106,7 @@ fun main(args: Array<String>) {
         }
     }
 
-    logger.info("Starting {} netmon(s) for {}", v("count", netmons.size), o("networks", netmons) { it.network })
+    logger.info("Starting {} netmon(s) for {}", v("count", netmons.size), o("networks", netmons) { it.cidr })
     netmons.forEach { it.start() }
 
     while (!interrupted() && netmons.any { it.isAlive }) {

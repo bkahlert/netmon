@@ -115,6 +115,7 @@ kotlin {
             languageSettings.optIn("kotlin.ExperimentalUnsignedTypes")
             languageSettings.optIn("kotlin.io.encoding.ExperimentalEncodingApi")
             languageSettings.optIn("kotlin.time.ExperimentalTime")
+            languageSettings.optIn("kotlinx.coroutines.ExperimentalCoroutinesApi")
             languageSettings.optIn("kotlinx.serialization.ExperimentalSerializationApi")
         }
     }

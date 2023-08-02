@@ -8,6 +8,7 @@ import com.bkahlert.kommons.uri.queryParameters
 import com.bkahlert.kommons.uri.toUri
 import com.bkahlert.netmon.ui.scan
 import dev.fritz2.core.handledBy
+import dev.fritz2.core.mapByKey
 import dev.fritz2.core.render
 import kotlinx.browser.window
 import kotlinx.coroutines.flow.filter
@@ -71,10 +72,12 @@ suspend fun main() {
     val scanEventsStore = ScanEventsStore()
     render("#root.app .networks") {
         div("sm:grid grid-cols-[repeat(auto-fit,minmax(min(15rem,100%),1fr))] gap-4") {
-            scanEventsStore.data.map { it.toList() }.renderEach(
-                idProvider = { (source, event) -> "${source}-${event.timestamp}" },
+            scanEventsStore.data.map { it.keys.toList() }.renderEach(
+                idProvider = { it.toString() },
                 into = this,
-            ) { (source, event) -> scan(source, event) }
+            ) { source ->
+                scan(source, scanEventsStore.mapByKey(source).data)
+            }
         }
     }
 

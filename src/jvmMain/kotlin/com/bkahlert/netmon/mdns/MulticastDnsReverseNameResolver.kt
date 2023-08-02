@@ -4,12 +4,13 @@ import com.bkahlert.kommons.exec.CommandLine
 import com.bkahlert.kommons.logging.SLF4J
 import com.bkahlert.kommons.logging.logback.StructuredArguments.v
 import com.bkahlert.netmon.IP
+import com.bkahlert.netmon.NameResolver
 import com.bkahlert.netmon.nmap.ProcessCleaner
 import com.bkahlert.netmon.nmap.requireCommand
 import kotlin.io.path.pathString
 
 /** Reverse name resolver bases on `dig`. */
-data object MulticastDnsReverseNameResolver {
+data object MulticastDnsReverseNameResolver : NameResolver {
 
     private val logger by SLF4J
     private val binary: String = requireCommand("dig", installationCommand = "dnsutils").pathString
@@ -20,7 +21,7 @@ data object MulticastDnsReverseNameResolver {
      *
      * Corresponds to `dig +time=2 +tries=1 @224.0.0.251 -p5353 -x [ip]`.
      */
-    fun resolve(ip: IP): String? {
+    override fun resolve(ip: IP): String? {
         logger.debug("Resolving {}", v("ip", ip))
 
         return CommandLine(binary, buildList {

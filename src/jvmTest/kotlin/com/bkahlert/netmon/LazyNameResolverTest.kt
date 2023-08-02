@@ -1,6 +1,8 @@
 package com.bkahlert.netmon
 
+import com.bkahlert.netmon.mdns.MulticastDnsReverseNameResolver
 import com.bkahlert.netmon.net.InterfaceFilter
+import com.bkahlert.netmon.nmap.NmapNetworkScanner
 import io.kotest.assertions.asClue
 import io.kotest.inspectors.forAll
 import io.kotest.matchers.shouldBe
@@ -20,7 +22,10 @@ class LazyNameResolverTest {
 
     @Test
     fun resolve() = runTest {
-        val resolver = LazyNameResolver()
+        val resolver = LazyNameResolver(
+            MulticastDnsReverseNameResolver,
+            NmapNetworkScanner(privileged = true),
+        )
         val names: MutableMap<IP, String?> = localIpAddresses.associateWith { null }.toMutableMap()
         while (names.values.any { it == null }) {
             names.keys.forEach { ip ->

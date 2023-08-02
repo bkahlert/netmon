@@ -12,19 +12,20 @@ import kotlin.time.Duration.Companion.seconds
 
 // TODO parameters should use interface types
 class NetmonScanner(
-    val network: Cidr,
+    val `interface`: String,
+    val cidr: Cidr,
     val scanner: NmapNetworkScanner,
     val resolver: MulticastDnsResolver,
     val onScan: (ScanResult) -> Unit,
     val onChange: (Host) -> Unit,
-    val scanResultFile: Path = Paths.get(".netmon.scan.${network.filenameString}.json"),
-    val scanInterval: Duration = 5.seconds,
-) : Thread("netmon-scanner-$network") {
+    val scanResultFile: Path = Paths.get(".netmon.scan.$`interface`.${cidr.filenameString}.json"),
+    val scanInterval: Duration = 10.seconds,
+) : Thread("netmon-scanner-$cidr") {
 
     private val logger by SLF4J
 
     init {
-        logger.info("Starting netmon-scanner {}, {}", kv("network", network), kv("scanner", scanner))
+        logger.info("Starting netmon-scanner {}, {}", kv("network", cidr), kv("scanner", scanner))
     }
 
     override fun run() {
@@ -32,8 +33,9 @@ class NetmonScanner(
             logger.info("Performing initial scan...")
             val aggressiveScanner = NmapNetworkScanner(timingTemplate = ScanResult.TimingTemplate.Aggressive)
             ScanResult(
-                network = network,
-                hosts = aggressiveScanner.scan(network).map { (ip, name, vendor, status) ->
+                `interface` = `interface`,
+                cidr = cidr,
+                hosts = aggressiveScanner.scan(cidr).map { (ip, name, vendor, status) ->
                     Host(
                         ip = ip,
                         name = name,
@@ -47,8 +49,9 @@ class NetmonScanner(
 
         while (!interrupted()) {
             val currentScan = ScanResult(
-                network = network,
-                hosts = scanner.scan(network).map { (ip, name, vendor, status) ->
+                `interface` = `interface`,
+                cidr = cidr,
+                hosts = scanner.scan(cidr).map { (ip, name, vendor, status) ->
                     Host(
                         ip = ip,
                         name = name ?: resolver.resolveHostname(ip),

@@ -15,7 +15,8 @@ import kotlin.io.path.writeText
 
 @Serializable
 data class ScanResult(
-    @SerialName("network") val network: Cidr,
+    @SerialName("interface") val `interface`: String,
+    @SerialName("cidr") val cidr: Cidr,
     @SerialName("hosts") val hosts: List<Host>,
     @SerialName("timestamp") @Serializable(InstantAsEpochSecondsSerializer::class) val timestamp: Instant,
 ) {
@@ -24,9 +25,11 @@ data class ScanResult(
         currentResult: ScanResult,
         onChange: (Host) -> Unit = {},
     ): ScanResult {
-        check(network == currentResult.network) { "Networks do not match: $network != ${currentResult.network}" }
+        check(`interface` == currentResult.`interface`) { "Interfaces do not match: $`interface` != ${currentResult.`interface`}" }
+        check(cidr == currentResult.cidr) { "Networks do not match: $cidr != ${currentResult.cidr}" }
         return ScanResult(
-            network = network,
+            `interface` = `interface`,
+            cidr = cidr,
             hosts = buildSet {
                 hosts.forEach { add(it.ip) }
                 currentResult.hosts.forEach { add(it.ip) }

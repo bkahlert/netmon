@@ -7,9 +7,11 @@ import kotlin.test.Test
 
 class ScanResultTest {
 
-    val network = Cidr("10.0.0.0/24")
+    val `interface` = "en0"
+    val cidr = Cidr("10.0.0.0/24")
     val old = ScanResult(
-        network = network,
+        `interface` = `interface`,
+        cidr = cidr,
         timestamp = Instant.fromEpochSeconds(100),
         hosts = listOf(
             Host(IP("10.0.0.1"), "host1", Status.UP, Instant.fromEpochSeconds(100), "Mac14,13", "Apple", listOf("smb", "airplay")),
@@ -19,7 +21,8 @@ class ScanResultTest {
         ),
     )
     val current = ScanResult(
-        network = network,
+        `interface` = `interface`,
+        cidr = cidr,
         timestamp = Instant.fromEpochSeconds(200),
         hosts = listOf(
             Host(IP("10.0.0.1"), "host1", Status.UP, model = "Mac14,13", vendor = "Apple", services = listOf("smb", "airplay")),
@@ -28,7 +31,8 @@ class ScanResultTest {
     )
 
     val new = ScanResult(
-        network = network,
+        `interface` = `interface`,
+        cidr = cidr,
         timestamp = Instant.fromEpochSeconds(200),
         hosts = listOf(
             Host(IP("10.0.0.1"), "host1", Status.UP, Instant.fromEpochSeconds(100), "Mac14,13", "Apple", listOf("smb", "airplay")),

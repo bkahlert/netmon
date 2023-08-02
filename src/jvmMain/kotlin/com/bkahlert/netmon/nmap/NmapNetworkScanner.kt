@@ -4,9 +4,11 @@ import com.bkahlert.kommons.exec.CommandLine
 import com.bkahlert.kommons.exec.ShellScript
 import com.bkahlert.kommons.logging.SLF4J
 import com.bkahlert.kommons.logging.logback.StructuredArguments.kv
+import com.bkahlert.kommons.logging.logback.StructuredArguments.v
 import com.bkahlert.netmon.Cidr
 import com.bkahlert.netmon.IP
 import com.bkahlert.netmon.JsonFormat
+import com.bkahlert.netmon.NameResolver
 import com.bkahlert.netmon.ScanResult
 import com.bkahlert.netmon.Settings
 import com.bkahlert.netmon.Status
@@ -17,10 +19,11 @@ import kotlin.io.path.pathString
 import kotlin.io.path.writeBytes
 
 // sudo nmap -sU -p137 --script nbstat 192.168.16.0/24
+//sudo nmap -sU -p137 --script nbstat 192.168.16.10 -oX -
 data class NmapNetworkScanner(
     val privileged: Boolean = Settings.Scanner.PRIVILEGED_SCAN,
     val timingTemplate: ScanResult.TimingTemplate = ScanResult.TimingTemplate.Normal,
-) {
+) : NameResolver {
 
     private val logger by SLF4J
     private val binary: String = requireCommand("nmap").pathString
@@ -37,7 +40,7 @@ data class NmapNetworkScanner(
     private val processCleaner = ProcessCleaner()
 
     fun scan(network: Cidr): List<NmapResult> {
-        logger.info("Scanning network $network")
+        logger.info("Scanning network {}", v("network", network))
 
         val nmapCommandLine = CommandLine(if (privileged) "sudo" else binary, buildList {
             if (privileged) add(binary)
@@ -57,6 +60,42 @@ data class NmapNetworkScanner(
                 output.nmapRun.host.orEmpty().mapNotNull(NmapResult::from)
             }
             .also { logger.info("Discovered {} in {}", kv("hosts", it), kv("network", network)) }
+    }
+
+    override fun resolve(ip: IP): String? {
+        logger.info("Resolving {}", v("ip", ip))
+
+        if (!privileged) {
+            logger.warn("Failed to resolve {} as that requires root privileges", v("ip", ip))
+            return null
+        }
+
+        val nmapCommandLine = CommandLine("sudo", buildList {
+            add(binary)
+            add("-sU")
+            add("--script")
+            add("nbstat")
+            add("-p")
+            add("137")
+            add("$ip")
+            add("-oX")
+            add("-")
+        })
+
+        return ShellScript("$nmapCommandLine | '$python' '$xml2json' -t xml2json")
+            .exec()
+            .also { processCleaner.register(it.process) }
+            .readTextOrThrow()
+            .let {
+                val output = JsonFormat.decodeFromString<NmapOutput>(it)
+                val hostscript = output.nmapRun.host.orEmpty().firstOrNull()?.hostscript
+                val result = hostscript?.script?.output?.lineSequence()?.firstOrNull { it.startsWith("NetBIOS name:") }
+                result?.substringAfter(":")?.substringBefore(",")?.trim()
+            }
+            .also {
+                if (it != null) logger.info("Resolved {} to {}", v("ip", ip), v("name", it))
+                else logger.info("Resolving {} timed out", v("ip", ip))
+            }
     }
 
     data class NmapResult(
