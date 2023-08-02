@@ -1,6 +1,8 @@
-package com.bkahlert.netmon
+package com.bkahlert.netmon.mqtt
 
-import com.bkahlert.netmon.mqtt.MqttPublisher
+import com.bkahlert.netmon.DOWN
+import com.bkahlert.netmon.Event
+import com.bkahlert.netmon.JsonFormat
 import io.kotest.matchers.shouldBe
 import kotlin.test.Test
 

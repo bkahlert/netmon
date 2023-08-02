@@ -4,6 +4,8 @@
 
 **Netmon** is a network monitor that detects and displays changes in your home network.
 
+It uses `nmap` to detect devices and additionally used mDNS and NetBIOS to resolve hostnames.
+
 [![screenshot of the loading showing a Kaomoji wizard](./docs/netmon-loading.gif)
 Loading screen](./docs/netmon-loading.gif)
 

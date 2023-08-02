@@ -27,7 +27,7 @@ printf "\033[32m✔︎\033[0m\n" >&2
 
 printf "Installing dependencies... \n" >&2
 ssh "$NETMON_USER"@"$NETMON_HOST" '
-PKGS=(nmap openjdk-8-jre)
+PKGS=(dnsutils nmap openjdk-8-jre)
 PKGS_COMPLETE=true
 for pkg in "${PKGS[@]}"; do
     if ! dpkg-query -W -f='\''${Status}'\'' "$pkg" 2>/dev/null | grep -q "ok installed"; then
@@ -37,7 +37,7 @@ done
 
 if ! "$PKGS_COMPLETE"; then
     sudo apt-get update --allow-releaseinfo-change
-    sudo apt-get install -y nmap openjdk-8-jre
+    sudo apt-get install -y "${PKGS[@]}"
 fi
 
 for npm_module in http-server live-server; do

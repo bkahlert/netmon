@@ -12,13 +12,16 @@ data object Settings {
     const val BROKER_HOST: String = "test.mosquitto.org"
 
     /** The topic name for scan events. */
-    const val SCAN_TOPIC: String = "dt/netmon/+/scan"
+    const val SCAN_TOPIC: String = "dt/netmon/\${node}/\${interface}/\${cidr}/scan"
 
     /** The topic name for host events. */
-    const val HOST_TOPIC: String = "dt/netmon/+/host"
+    const val HOST_TOPIC: String = "dt/netmon/\${node}/\${interface}/\${cidr}/host"
+
+    /** The duration after which scans are no longer displayed. */
+    val SCAN_OUTDATED_THRESHOLD: Duration = 5.minutes
 
     /** The duration after which a host state is considered stable. */
-    val STATE_CHANGE_STABLE_DURATION: Duration = 1.hours
+    val HOST_STATE_CHANGE_STABLE_DURATION: Duration = 1.hours
 
     /** Settings for the network monitor's scanner. */
     object Scanner {
@@ -43,13 +46,10 @@ data object Settings {
         /** The interval in which the time-relevant information in the UI are updated. */
         val REFRESH_INTERVAL: Duration = 1.seconds
 
-        /** The duration after which scans are no longer displayed. */
-        val SCAN_OUTDATED_THRESHOLD: Duration = 5.minutes
-
         /** The duration for which changes are strongly highlighted. */
-        val STATE_CHANGE_STRONG_HIGHLIGHT_DURATION: Duration = 10.seconds
+        val HOST_STATE_CHANGE_STRONG_HIGHLIGHT_DURATION: Duration = 10.seconds
 
         /** The duration for which changes are highlighted. */
-        val STATE_CHANGE_HIGHLIGHT_DURATION: Duration = 60.seconds
+        val HOST_STATE_CHANGE_HIGHLIGHT_DURATION: Duration = 60.seconds
     }
 }

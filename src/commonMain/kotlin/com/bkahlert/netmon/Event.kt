@@ -16,14 +16,10 @@ import kotlin.time.Duration
 @JsonClassDiscriminator("event")
 sealed interface Event {
 
-    @SerialName("network")
-    val network: Network
-
     @Serializable
     @SerialName("scan")
     data class ScanEvent(
         @SerialName("type") val type: Type,
-        override val network: Network,
         @SerialName("hosts") val hosts: List<Host>,
         @SerialName("timestamp") @Serializable(InstantAsEpochSecondsSerializer::class) val timestamp: Instant,
     ) : Event {
@@ -42,7 +38,6 @@ sealed interface Event {
     @SerialName("host")
     data class HostEvent(
         @SerialName("type") val type: Type,
-        override val network: Network,
         val host: Host,
     ) : Event {
         enum class Type {
@@ -57,5 +52,10 @@ sealed interface Event {
     companion object
 }
 
+/** The passed time since this scan was done. */
 val Event.ScanEvent.timePassed: Duration
     get() = (Now - timestamp).coerceAtLeast(Duration.ZERO)
+
+/** Whether this scan is no more current. */
+val Event.ScanEvent.outdated: Boolean
+    get() = timePassed > Settings.SCAN_OUTDATED_THRESHOLD

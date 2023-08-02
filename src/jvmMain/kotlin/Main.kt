@@ -8,7 +8,6 @@ import com.bkahlert.kommons.text.checkNotBlank
 import com.bkahlert.netmon.Event
 import com.bkahlert.netmon.JsonFormat
 import com.bkahlert.netmon.NetmonScanner
-import com.bkahlert.netmon.Network
 import com.bkahlert.netmon.Settings
 import com.bkahlert.netmon.Status
 import com.bkahlert.netmon.levels
@@ -22,6 +21,7 @@ import java.lang.Thread.interrupted
 import java.net.InetAddress
 import java.net.NetworkInterface
 import javax.jmdns.JmDNS
+
 
 val logger = SLF4J.getLogger("netmon")
 
@@ -43,7 +43,7 @@ fun main(args: Array<String>) {
         .getOrElse { throw IllegalStateException("Failed to determine localhost", it) }
     val hostname = runCatching { checkNotBlank(localhost.hostName) }
         .getOrElse { throw IllegalStateException("Failed to determine hostname", it) }
-    val unqualifiedHostname = hostname.substringBefore('.')
+    val node = hostname.substringBefore('.').lowercase()
 
     logger.info("Hostname: {}", kv("hostname", hostname))
 
@@ -62,22 +62,25 @@ fun main(args: Array<String>) {
         networkInterfaces = networkInterfaces,
     ).flatMap { (networkInterface, interfaceAddresses) ->
         interfaceAddresses.map { interfaceAddress ->
-            val network = Network(
-                hostname = hostname,
-                `interface` = networkInterface.name,
-                cidr = interfaceAddress.cidr,
-            )
+            val scanTopic = Settings.SCAN_TOPIC
+                .replaceFirst("\${node}", node)
+                .replaceFirst("\${interface}", networkInterface.name)
+                .replaceFirst("\${cidr}", interfaceAddress.cidr.toString())
+            val hostTopic = Settings.HOST_TOPIC
+                .replaceFirst("\${node}", node)
+                .replaceFirst("\${interface}", networkInterface.name)
+                .replaceFirst("\${cidr}", interfaceAddress.cidr.toString())
+
             val resolver = MulticastDnsResolver(JmDNS.create(interfaceAddress.address, hostname))
 
             NetmonScanner(
-                network = network.cidr,
+                network = interfaceAddress.cidr,
                 scanner = nmapNetworkScanner,
                 resolver = resolver,
                 onScan = { scan ->
                     publisher.publish(
-                        topic = Settings.SCAN_TOPIC.replaceFirst("+", unqualifiedHostname),
+                        topic = scanTopic,
                         event = Event.ScanEvent(
-                            network = network,
                             type = Event.ScanEvent.Type.COMPLETED,
                             hosts = scan.hosts,
                             timestamp = scan.timestamp,
@@ -86,9 +89,8 @@ fun main(args: Array<String>) {
                 },
                 onChange = { host ->
                     publisher.publish(
-                        topic = Settings.HOST_TOPIC.replaceFirst("+", unqualifiedHostname),
+                        topic = hostTopic,
                         event = Event.HostEvent(
-                            network = network,
                             type = if (host.status == Status.DOWN) Event.HostEvent.Type.DOWN else Event.HostEvent.Type.UP,
                             host = host,
                         ),

@@ -32,7 +32,7 @@ but finally always got stuck.
 9. [Build artifacts](#build-artifacts)
 10. [Install artifacts](#install-artifacts)
     - Be patient, the installation takes a couple of minutes.
-    - On your computer you can run `mqtt sub -t dt/netmon/+/scan -h test.mosquitto.org -p 1883` to check if the scanner already scans your network.
+    - On your computer [check if the scanner already scans your network](#mqqt-commands).
     - Try a reboot if it doesn't, although the installation script has completed.
 11. The device can now be accessed via:
     - SSH: `ssh pi@netmon.local`
@@ -106,6 +106,25 @@ NETMON_HOST=netmon.local ./patch-rpi.sh
 ## Cheat sheet
 
 **The most useful commands are shown when you log in to your device. They can also be found in [motd](rootfs/etc/motd).**
+
+### MQTT commands
+
+```shell
+BROKER_HOST=test.mosquitto.org
+BROKER_PORT=1883
+SCANNER_NODE=foo
+SCANNER_INTERFACE=en0
+SCANNER_CIDR=192.168.0.0/24
+
+# Subscribe to all scan events 
+mqtt sub -t dt/netmon/+/+/+/+/scan -h "$BROKER_HOST" -p "$BROKER_PORT"
+
+# Subscribe to scan events of a specific scanner 
+mqtt sub -t dt/netmon/"$SCANNER_NODE"/+/+/+/scan -h "$BROKER_HOST" -p "$BROKER_PORT"
+
+# Remove the retained scan event of a specific scanner
+mqtt pub -t dt/netmon/"$SCANNER_NODE"/"$SCANNER_INTERFACE"/"$SCANNER_CIDR"/scan -m '' -r -h "$BROKER_HOST" -p "$BROKER_PORT"
+```
 
 ### Updating artifacts
 

@@ -3,6 +3,7 @@ package com.bkahlert.netmon.ui
 import com.bkahlert.kommons.time.Now
 import com.bkahlert.kommons.time.toMomentString
 import com.bkahlert.netmon.Event
+import com.bkahlert.netmon.EventSource
 import com.bkahlert.netmon.Host
 import com.bkahlert.netmon.Settings
 import com.bkahlert.netmon.Status
@@ -19,7 +20,8 @@ import org.w3c.dom.HTMLElement
 import kotlin.time.Duration
 
 fun RenderContext.scan(
-    scan: Event.ScanEvent,
+    source: EventSource,
+    event: Event.ScanEvent,
 ): Tag<HTMLElement> = div(
     classes(
         "space-y-5 pt-4 sm:pb-4 sm:px-4 sm:rounded-xl",
@@ -27,16 +29,16 @@ fun RenderContext.scan(
         "grid grid-rows-[1fr_minmax(1px,100%)]",
     )
 ) {
-    val (_, network, hosts, timestamp) = scan
+    val (_, hosts, timestamp) = event
     div("flex items-center justify-center sm:justify-start gap-x-2") {
         icon("shrink-0 w-6 h-6", SolidHeroIcons.server)
-        div("text-xl font-bold") { +network.hostname }
+        div("text-xl font-bold") { +source.node }
         div("flex-grow") {
             ul("flex flex-col items-end text-xs") {
                 li {
-                    span("font-semibold") { +network.cidr.toString() }
+                    span("font-semibold") { +source.cidr.toString() }
                     +" on "
-                    span("font-semibold") { +network.`interface` }
+                    span("font-semibold") { +source.`interface` }
                 }
                 li {
                     +"scanned "
@@ -52,13 +54,13 @@ fun RenderContext.scan(
 
     div("overflow-y-auto") {
         val (stable, recent) = hosts.partition { it.stable }
-        ul("grid grid-cols-[repeat(auto-fit,minmax(0,150px))] justify-between gap-4") {
+        ul("grid grid-cols-[repeat(auto-fill,150px)] justify-between gap-4") {
             recent.forEach { host ->
                 li { host(host) }
             }
         }
-        hr { }
-        ul("grid grid-cols-[repeat(auto-fit,minmax(0,150px))] justify-between gap-4 opacity-50") {
+        div("divider-xs opacity-50") { +"${Settings.HOST_STATE_CHANGE_STABLE_DURATION}+ unchanged" }
+        ul("grid grid-cols-[repeat(auto-fill,150px)] justify-between gap-4 opacity-50") {
             stable.forEach { host ->
                 li { host(host) }
             }
@@ -72,8 +74,8 @@ fun RenderContext.host(host: Host) {
         className(duration.map {
             when {
                 it == null -> ""
-                it < Settings.WebDisplay.STATE_CHANGE_STRONG_HIGHLIGHT_DURATION -> "animate-pulse [animation-duration:1s]"
-                it < Settings.WebDisplay.STATE_CHANGE_HIGHLIGHT_DURATION -> "animate-pulse"
+                it < Settings.WebDisplay.HOST_STATE_CHANGE_STRONG_HIGHLIGHT_DURATION -> "animate-pulse [animation-duration:1s]"
+                it < Settings.WebDisplay.HOST_STATE_CHANGE_HIGHLIGHT_DURATION -> "animate-pulse"
                 else -> ""
             }
         })
@@ -89,6 +91,9 @@ fun RenderContext.host(host: Host) {
                 )
             }
             host.model?.also {
+                div("opacity-60 text-[8px] leading-none text-center mt-0.5 truncate") { +it }
+            }
+            host.vendor?.also {
                 div("opacity-60 text-[8px] leading-none text-center mt-0.5 truncate") { +it }
             }
         }

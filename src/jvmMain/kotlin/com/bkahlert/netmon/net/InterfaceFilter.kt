@@ -18,8 +18,8 @@ object InterfaceFilter {
      * return the [NetworkInterface]s and their [InterfaceAddress]es that match.
      */
     fun filter(
-        hostCountRange: ClosedRange<BigInteger> = BigInteger(Settings.Scanner.MIN_HOSTS)..BigInteger(Settings.Scanner.MAX_HOSTS),
         networkInterfaces: List<NetworkInterface> = NetworkInterface.getNetworkInterfaces().toList(),
+        hostCountRange: ClosedRange<BigInteger> = BigInteger(Settings.Scanner.MIN_HOSTS)..BigInteger(Settings.Scanner.MAX_HOSTS),
     ): Map<NetworkInterface, List<InterfaceAddress>> = networkInterfaces
         .filter { iface ->
             iface.isUp.also {

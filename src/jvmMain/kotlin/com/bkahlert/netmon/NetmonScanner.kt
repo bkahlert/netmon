@@ -33,11 +33,12 @@ class NetmonScanner(
             val aggressiveScanner = NmapNetworkScanner(timingTemplate = ScanResult.TimingTemplate.Aggressive)
             ScanResult(
                 network = network,
-                hosts = aggressiveScanner.scan(network).map { (ip, name, status) ->
+                hosts = aggressiveScanner.scan(network).map { (ip, name, vendor, status) ->
                     Host(
                         ip = ip,
                         name = name,
                         status = status,
+                        vendor = vendor,
                     )
                 },
                 timestamp = Now,
@@ -47,12 +48,13 @@ class NetmonScanner(
         while (!interrupted()) {
             val currentScan = ScanResult(
                 network = network,
-                hosts = scanner.scan(network).map { (ip, name, status) ->
+                hosts = scanner.scan(network).map { (ip, name, vendor, status) ->
                     Host(
                         ip = ip,
                         name = name ?: resolver.resolveHostname(ip),
                         status = status,
                         model = resolver.resolveModel(ip),
+                        vendor = vendor,
                         services = resolver.resolveServices(ip),
                     )
                 },
@@ -65,6 +67,7 @@ class NetmonScanner(
             try {
                 sleep(scanInterval.inWholeMilliseconds)
             } catch (e: InterruptedException) {
+                resolver.close()
                 // Restore the interrupted status so we exit the loop
                 currentThread().interrupt()
             }

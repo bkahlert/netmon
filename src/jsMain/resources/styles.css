@@ -4,7 +4,7 @@
 @tailwind components;
 @tailwind utilities;
 
-html { @apply h-full bg-black text-invert; }
+html { @apply h-full bg-default text-default; }
 body { @apply min-h-full overflow-y-auto; }
 
 /* pseudo-element to create a zero-height barrier at the top to avoid collapsing margins */
@@ -13,3 +13,13 @@ body::before { @apply content-[''] table h-0; }
 .app {
   @apply sm:p-4;
 }
+
+.divider { @apply flex items-center justify-center w-48 mx-auto my-4 md:my-10;}
+.divider::before, .divider::after { @apply flex-1 content-[''] h-1 border-0 bg-default dark:bg-invert;}
+.divider::before { @apply rounded-l;}
+.divider::after { @apply rounded-r;}
+.divider:not(:empty)::before { @apply rounded-r mr-2;}
+.divider:not(:empty)::after { @apply rounded-l ml-2;}
+
+.divider-xs { @apply divider my-4 md:my-4 min-w-[50%] text-xs;}
+.divider-xs::before, .divider-xs::after { @apply h-[1px];}

@@ -15,6 +15,7 @@ data class Host(
     @SerialName("since") @Serializable(InstantAsEpochSecondsSerializer::class) val since: Instant? = null,
     /** A string that identifies the device model. */
     @SerialName("model") val model: String? = null,
+    @SerialName("vendor") val vendor: String? = null,
     @SerialName("services") val services: List<String> = emptyList(),
 ) {
     companion object
@@ -24,4 +25,4 @@ val Host.timePassed: Duration?
     get() = since?.let { Now - it }?.coerceAtLeast(Duration.ZERO)
 
 val Host.stable: Boolean
-    get() = timePassed?.let { it > Settings.STATE_CHANGE_STABLE_DURATION } ?: true
+    get() = timePassed?.let { it > Settings.HOST_STATE_CHANGE_STABLE_DURATION } ?: true

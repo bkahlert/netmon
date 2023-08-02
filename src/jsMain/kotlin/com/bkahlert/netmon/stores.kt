@@ -1,30 +1,33 @@
-package com.bkahlert.netmon.net
+package com.bkahlert.netmon
 
 import com.bkahlert.kommons.js.Console
 import com.bkahlert.kommons.js.DefaultConsoleLogFormatter
+import com.bkahlert.kommons.js.console
 import com.bkahlert.kommons.js.format
 import com.bkahlert.kommons.js.tee
-import com.bkahlert.netmon.Event
-import com.bkahlert.netmon.Settings
-import com.bkahlert.netmon.ticks
-import com.bkahlert.netmon.timePassed
+import com.bkahlert.netmon.Event.ScanEvent
 import dev.fritz2.core.RootStore
 import kotlinx.coroutines.flow.map
 
 /** Store of network scans. */
-class ScanEventsStore : RootStore<List<Event.ScanEvent>>(emptyList()) {
-    val process = handle<Event.ScanEvent> { scans, scan ->
-        if (scans.none { it.network == scan.network }) scans + scan
-        else scans.map { if (it.network == scan.network) scan else it }
+class ScanEventsStore : RootStore<Map<EventSource, ScanEvent>>(emptyMap()) {
+    val process = handle<Pair<EventSource, ScanEvent>> { scans, scan ->
+        if (scan.second.outdated) {
+            console.debug("Ignoring outdated scan by ${scan.first} at ${scan.second.timestamp}")
+            scans
+        } else {
+            console.debug("Adding scan by ${scan.first} at ${scan.second.timestamp}")
+            scans + scan
+        }
     }
 
     val cleanUp = handle { scans ->
-        val outdated = scans.filter { it.timePassed > Settings.WebDisplay.SCAN_OUTDATED_THRESHOLD }.map { it.network }
+        val outdated = scans.filterValues { it.outdated }.map { it.key }
         if (outdated.isEmpty()) {
             scans
         } else {
-            com.bkahlert.kommons.js.console.debug("Removing outdated scans: $outdated")
-            scans.filterNot { it.network in outdated }
+            console.debug("Removing outdated scans: $outdated")
+            scans.filterNot { it.key in outdated }
         }
     }
 

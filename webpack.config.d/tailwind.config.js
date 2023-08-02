@@ -20,12 +20,12 @@ const tailwindConfig = {
     theme: {
       extend: {
         textColor: {
-          default: require('tailwindcss/colors').slate['900'],
-          invert: require('tailwindcss/colors').slate['100'],
+          default: require('tailwindcss/colors').slate['100'],
+          invert: require('tailwindcss/colors').slate['900'],
         },
         backgroundColor: {
-          default: require('tailwindcss/colors').slate['50'],
-          invert: require('tailwindcss/colors').slate['800'],
+          default: require('tailwindcss/colors').black,
+          invert: require('tailwindcss/colors').slate['50'],
         },
         // CSS device and capability media queries, https://css-tricks.com/touch-devices-not-judged-size/
         // Usage: `pointer-coarse:` to target touch devices, `hover-hover:` to target devices with hover capability

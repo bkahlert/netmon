@@ -71,6 +71,11 @@ kotlin {
                 implementation("com.bkahlert.kommons:kommons-logging-core")
                 implementation("com.bkahlert.kommons:kommons-logging-logback")
                 implementation("com.bkahlert.kommons:kommons-exec") { because("CommandLine, ShellScript") }
+
+                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-jdk8")
+                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-slf4j")
+                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-debug")
+
                 implementation("com.hivemq:hivemq-mqtt-client:1.3.0") { because("publish scans") }
                 implementation("org.jmdns:jmdns:3.5.8") { because("mDNS / Bonjour based hostname resolution") }
             }

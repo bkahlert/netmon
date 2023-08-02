@@ -6,9 +6,6 @@ import com.bkahlert.kommons.time.Now
 import com.bkahlert.kommons.time.toMomentString
 import com.bkahlert.kommons.uri.queryParameters
 import com.bkahlert.kommons.uri.toUri
-import com.bkahlert.netmon.net.ConsoleLogStore
-import com.bkahlert.netmon.net.ScanEventsStore
-import com.bkahlert.netmon.net.decode
 import com.bkahlert.netmon.ui.scan
 import dev.fritz2.core.handledBy
 import dev.fritz2.core.render
@@ -16,6 +13,7 @@ import kotlinx.browser.window
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.flow.transform
 import mqtt.MQTT
 import mqtt.messages
 import mqtt.onClose
@@ -73,10 +71,10 @@ suspend fun main() {
     val scanEventsStore = ScanEventsStore()
     render("#root.app .networks") {
         div("sm:grid grid-cols-[repeat(auto-fit,minmax(min(15rem,100%),1fr))] gap-4") {
-            scanEventsStore.data.renderEach(
-                idProvider = { "${it.network}-${it.timestamp}" },
+            scanEventsStore.data.map { it.toList() }.renderEach(
+                idProvider = { (source, event) -> "${source}-${event.timestamp}" },
                 into = this,
-            ) { scan(it) }
+            ) { (source, event) -> scan(source, event) }
         }
     }
 
@@ -88,20 +86,33 @@ suspend fun main() {
     val brokerHost = parameters["broker.host"] ?: Settings.BROKER_HOST
     val brokerPort = parameters["broker.port"] ?: Settings.WebDisplay.BROKER_PORT
     val brokerUrl = parameters["broker.url"] ?: "ws://$brokerHost:$brokerPort"
+    val scanTopic = (parameters["topic.scan"] ?: Settings.SCAN_TOPIC)
+        .replace("\${node}", "+")
+        .replace("\${interface}", "+")
+        .replace("\${cidr}", "+/+")
 
     MQTT.connect(brokerUrl).apply {
         console.info("MQTT::Connecting to [%s]...", brokerUrl)
 
         onConnect { packet ->
             console.info("MQTT::Connected", packet)
-            subscribe(Settings.SCAN_TOPIC) { qos = 1 }
-            console.info("MQTT::Subscribed on %s to %s", brokerUrl, Settings.SCAN_TOPIC)
+            subscribe(scanTopic) { qos = 1 }
+            console.info("MQTT::Subscribed on %s to %s", brokerUrl, scanTopic)
             console.debug("Hiding on-screen console when as soon as first event was processed...")
         }
 
         messages
             .filter { (topic, _, _) -> topic.endsWith("/scan") }
-            .decode<Event.ScanEvent>()
+            .transform { (topic, message, _) ->
+                runCatching {
+                    val source = EventSource.fromTopic(topic)
+                    val event = JsonFormat.decodeFromString<Event.ScanEvent>(message.decodeToString())
+                    source to event
+                }.fold(
+                    onSuccess = { emit(it) },
+                    onFailure = { console.error("Failed to decode MQTT message", it) }
+                )
+            }
             .onEach { console.debug("MQTT::Event received", it) }
             .onEach { onScreenConsole.disable() } handledBy scanEventsStore.process
 
