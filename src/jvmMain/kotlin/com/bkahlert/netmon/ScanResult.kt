@@ -46,7 +46,7 @@ data class ScanResult(
                         since = if (newStatus != recordedHost?.status) currentResult.timestamp else recordedHost?.since,
                         model = if (scannedHost != null) scannedHost.model else recordedHost?.model,
                         vendor = if (scannedHost != null) scannedHost.vendor else recordedHost?.vendor,
-                        services = scannedHost?.services ?: (recordedHost?.services ?: emptyList()),
+                        services = scannedHost?.services ?: (recordedHost?.services ?: emptySet()),
                     ).also {
                         if (it != recordedHost) onChange(it)
                     }

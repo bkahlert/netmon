@@ -115,9 +115,13 @@ BROKER_PORT=1883
 SCANNER_NODE=foo
 SCANNER_INTERFACE=en0
 SCANNER_CIDR=192.168.0.0/24
+mqtt sub -t dt/netmon/+/+/+/+/host -h "$BROKER_HOST" -p "$BROKER_PORT" | jq '$.host'
+osascript -e 'display notification "Hello world!" with title "Hi!"'
 
 # Subscribe to all scan events 
 mqtt sub -t dt/netmon/+/+/+/+/scan -h "$BROKER_HOST" -p "$BROKER_PORT"
+
+
 
 # Subscribe to scan events of a specific scanner 
 mqtt sub -t dt/netmon/"$SCANNER_NODE"/+/+/+/scan -h "$BROKER_HOST" -p "$BROKER_PORT"

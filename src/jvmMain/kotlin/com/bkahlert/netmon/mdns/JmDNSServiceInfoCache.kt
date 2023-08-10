@@ -1,14 +1,10 @@
 package com.bkahlert.netmon.mdns
 
 import com.bkahlert.kommons.logging.SLF4J
-import com.bkahlert.kommons.logging.logback.StructuredArguments
+import com.bkahlert.kommons.logging.logback.StructuredArguments.entries
 import com.bkahlert.netmon.IP
 import java.util.concurrent.locks.ReentrantLock
 import javax.jmdns.JmDNS
-import javax.jmdns.ServiceEvent
-import javax.jmdns.ServiceInfo
-import javax.jmdns.ServiceListener
-import javax.jmdns.ServiceTypeListener
 import kotlin.concurrent.withLock
 
 class JmDNSServiceInfoCache(
@@ -21,40 +17,36 @@ class JmDNSServiceInfoCache(
     private val services: MutableMap<Pair<String, String>, ServiceInfo> = mutableMapOf()
     private var mappings: ResolveMappings = ResolveMappings(emptyList())
 
-    private fun addService(event: ServiceEvent) {
-        val info = event.info ?: return
-        logger.info("Adding service: {}", StructuredArguments.entries("name" to event.name, "type" to event.type))
+    private fun addService(type: String, name: String, info: ServiceInfo) {
+        logger.info("Adding service: {}", entries("name" to name, "type" to type))
         servicesLock.withLock {
-            services[event.name to event.type] = info
+            services[name to type] = info
             mappings = ResolveMappings(services.values.toList())
         }
     }
 
-    private fun removeService(event: ServiceEvent) {
-        logger.info("Removing service: {}", StructuredArguments.entries("name" to event.name, "type" to event.type))
+    private fun removeService(type: String, name: String) {
+        logger.info("Removing service: {}", entries("name" to name, "type" to type))
         servicesLock.withLock {
-            services.remove(event.name to event.type)
+            services.remove(name to type)
             mappings = ResolveMappings(services.values.toList())
         }
     }
 
     private val serviceListener = object : ServiceListener {
-        override fun serviceAdded(event: ServiceEvent) {}
-        override fun serviceResolved(event: ServiceEvent) {
-            addService(event)
+        override fun serviceResolved(instance: JmDNS, type: String, name: String, info: ServiceInfo) {
+            addService(type, name, info)
         }
 
-        override fun serviceRemoved(event: ServiceEvent) {
-            removeService(event)
+        override fun serviceRemoved(instance: JmDNS, type: String, name: String) {
+            removeService(type, name)
         }
     }
 
     private val serviceTypeListener = object : ServiceTypeListener {
-        override fun serviceTypeAdded(event: ServiceEvent) {
-            jmdns.addServiceListener(event.type, serviceListener)
+        override fun serviceTypeAdded(instance: JmDNS, type: String) {
+            instance.addServiceListener(type, serviceListener)
         }
-
-        override fun subTypeForServiceTypeAdded(event: ServiceEvent) {}
     }
 
     init {
@@ -66,8 +58,8 @@ class JmDNSServiceInfoCache(
     }
 
     fun hostname(ip: IP): String? = mappings.ipAddressToServers[ip]?.firstOrNull()?.removeSuffix(".")
-    fun model(ip: IP): String? = mappings.ipAddressToServices[ip]?.firstNotNullOfOrNull { it.properties["model"] }
-    fun services(ip: IP): List<String> = mappings.ipAddressToServices[ip].orEmpty().map { it.application }
+    fun model(ip: IP): String? = mappings.ipAddressToServices[ip]?.firstNotNullOfOrNull { it.properties["model"]?.text }
+    fun services(ip: IP): Set<String> = buildSet { mappings.ipAddressToServices[ip]?.mapTo(this) { it.application } }
 
     override fun toString(): String = buildString {
         append(this::class.simpleName)
@@ -86,14 +78,18 @@ class JmDNSServiceInfoCache(
 
         val serverToServices: Map<String, Set<ServiceInfo>> by lazy {
             services
-                .filter { it.hasServer() }
-                .groupBy { it.server }
-                .mapValues { (_, infos) -> buildSet { addAll(infos) } }
+                .mapNotNull { service ->
+                    service.serviceRecord?.let { record -> record.target to service }
+                }
+                .groupBy { (server, _) -> server }
+                .mapValues { (_, infos) ->
+                    buildSet { infos.forEach { add(it.second) } }
+                }
         }
 
         val serverToIpAddresses: Map<String, Set<IP>> by lazy {
             serverToServices.mapValues { (_, infos) ->
-                buildSet { infos.forEach { info -> addAll(info.ipAddresses) } }
+                buildSet { infos.forEach { info -> info.inetAddresses.mapTo(this) { IP(it) } } }
             }
         }
 

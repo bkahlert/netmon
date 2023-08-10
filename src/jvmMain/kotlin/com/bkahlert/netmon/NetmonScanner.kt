@@ -2,6 +2,7 @@ package com.bkahlert.netmon
 
 import com.bkahlert.kommons.logging.SLF4J
 import com.bkahlert.kommons.logging.logback.StructuredArguments.kv
+import com.bkahlert.kommons.logging.logback.StructuredArguments.v
 import com.bkahlert.kommons.time.Now
 import com.bkahlert.netmon.mdns.MulticastDnsResolver
 import com.bkahlert.netmon.nmap.NmapNetworkScanner
@@ -35,13 +36,13 @@ class NetmonScanner(
             ScanResult(
                 `interface` = `interface`,
                 cidr = cidr,
-                hosts = aggressiveScanner.scan(cidr).map { (ip, name, vendor, status) ->
+                hosts = aggressiveScanner.scan(cidr).mapNotNull { (ip, name, vendor, status) ->
                     Host(
                         ip = ip,
                         name = name,
                         status = status,
                         vendor = vendor,
-                    )
+                    ).takeIf { it.ip != cidr.ip }
                 },
                 timestamp = Now,
             )
@@ -51,15 +52,17 @@ class NetmonScanner(
             val currentScan = ScanResult(
                 `interface` = `interface`,
                 cidr = cidr,
-                hosts = scanner.scan(cidr).map { (ip, name, vendor, status) ->
+                hosts = scanner.scan(cidr).mapNotNull { (ip, name, vendor, status) ->
                     Host(
                         ip = ip,
-                        name = name ?: resolver.resolveHostname(ip),
+                        name = name ?: resolver.resolveHostname(ip)?.also {
+                            logger.info("Missing name of {} resolved: {}", v("ip", ip), v("hostname", it))
+                        },
                         status = status,
                         model = resolver.resolveModel(ip),
                         vendor = vendor,
                         services = resolver.resolveServices(ip),
-                    )
+                    ).takeIf { it.ip != cidr.ip }
                 },
                 timestamp = Now,
             )

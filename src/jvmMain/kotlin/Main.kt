@@ -12,6 +12,7 @@ import com.bkahlert.netmon.NetmonScanner
 import com.bkahlert.netmon.Settings
 import com.bkahlert.netmon.Status
 import com.bkahlert.netmon.levels
+import com.bkahlert.netmon.mdns.JmDNS
 import com.bkahlert.netmon.mdns.MulticastDnsResolver
 import com.bkahlert.netmon.mdns.MulticastDnsReverseNameResolver
 import com.bkahlert.netmon.mqtt.MqttPublisher
@@ -22,8 +23,6 @@ import net.logstash.logback.argument.StructuredArguments.v
 import java.lang.Thread.interrupted
 import java.net.InetAddress
 import java.net.NetworkInterface
-import javax.jmdns.JmDNS
-
 
 val logger = SLF4J.getLogger("netmon")
 
@@ -74,7 +73,7 @@ fun main(args: Array<String>) {
                 .replaceFirst("\${cidr}", interfaceAddress.cidr.toString())
 
             val resolver = MulticastDnsResolver(
-                jmdns = JmDNS.create(interfaceAddress.address, hostname),
+                jmdns = JmDNS(addr = interfaceAddress.address, name = hostname),
                 fallbackResolver = LazyNameResolver(MulticastDnsReverseNameResolver, nmapNetworkScanner),
             )
 

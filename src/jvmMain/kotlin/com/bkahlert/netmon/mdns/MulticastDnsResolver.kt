@@ -20,7 +20,7 @@ class MulticastDnsResolver(
 
     fun resolveHostname(ip: IP): String? = serviceInfoCache.hostname(ip) ?: fallbackResolver?.resolve(ip)
     fun resolveModel(ip: IP): String? = serviceInfoCache.model(ip)
-    fun resolveServices(ip: IP): List<String> = serviceInfoCache.services(ip)
+    fun resolveServices(ip: IP): Set<String> = serviceInfoCache.services(ip)
 
     companion object
 }

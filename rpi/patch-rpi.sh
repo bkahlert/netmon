@@ -57,7 +57,7 @@ printf "\033[32m✔︎\033[0m\n" >&2
 #
 printf "Moving \033[3m%s\033[23m into place... " "/tmp/netmon$SYSTEMD_SYSTEM_DIR/" >&2
 # shellcheck disable=SC2029
-ssh "$NETMON_USER"@"$NETMON_HOST" "sudo chown -R root:root '/tmp/netmon$SYSTEMD_SYSTEM_DIR' && sudo chmod -R 0755 '/tmp/netmon$SYSTEMD_SYSTEM_DIR'" || {
+ssh "$NETMON_USER"@"$NETMON_HOST" "sudo chown -R root:root '/tmp/netmon$SYSTEMD_SYSTEM_DIR' && sudo chmod -R 0644 '/tmp/netmon$SYSTEMD_SYSTEM_DIR'" || {
     printf "\033[31mERROR: Failed to set permissions of \033[3m%s\033[23m" "/tmp/netmon$SYSTEMD_SYSTEM_DIR" >&2
     exit 1
 }

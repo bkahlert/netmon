@@ -16,7 +16,7 @@ data class Host(
     /** A string that identifies the device model. */
     @SerialName("model") val model: String? = null,
     @SerialName("vendor") val vendor: String? = null,
-    @SerialName("services") val services: List<String> = emptyList(),
+    @SerialName("services") val services: Set<String> = emptySet(),
 ) {
     companion object
 }
