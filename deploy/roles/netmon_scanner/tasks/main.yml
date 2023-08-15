@@ -1,6 +1,6 @@
 ---
-- name: update and upgrade apt packages
-  become: true
+# needed on outdated systems, for dependencies to be installable
+- name: update apt packages and allow release info changes
   block:
     - name: configure apt to allow release info change
       become: true
@@ -9,9 +9,9 @@
         state: present
         create: yes
         line: Acquire::AllowReleaseInfoChange::Suite "true";
-    - name: run apt
+    - name: update apt packages
+      become: true
       ansible.builtin.apt:
-        upgrade: full
         update_cache: true
         cache_valid_time: 86400
 

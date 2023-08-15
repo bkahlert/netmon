@@ -1,3 +1,2 @@
 ---
 netmon_web_display_build_artifact: "{{ build_dir }}/dist/js/productionExecutable"
-netmon_web_display_url: http://localhost/?broker.port=8080

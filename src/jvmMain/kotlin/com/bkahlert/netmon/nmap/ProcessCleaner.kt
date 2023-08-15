@@ -9,7 +9,7 @@ import kotlin.io.path.appendLines
 import kotlin.io.path.writeText
 
 class ProcessCleaner(
-    private val logFile: Path = Paths.get(".netmon.shutdown.log"),
+    private val logFile: Path = Paths.get("shutdown.log"),
 ) {
     private val lock = ReentrantLock()
     private var processes = emptyList<Process>()

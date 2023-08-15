@@ -30,3 +30,40 @@
       ansible.builtin.copy:
         content: "export PATH=$PATH:{{ package_dir }}/bin"
         dest: "/etc/profile.d/netmon_path.sh"
+
+    - name: explain netmon
+      become: true
+      vars:
+        marker_begin_latin1: "MARKER_BEGIN"
+        marker_begin_unicode: "(つ◕౪◕)つ─☆ﾟ․*･｡ﾟ"
+        marker_end_latin1: "MARKER_END"
+        marker_end_unicode: "​​​"
+        path: /etc/motd
+      block:
+        - name: convert markers to latin1
+          ansible.builtin.replace:
+            path: "{{ path }}"
+            regexp: "{{ item.regexp }}"
+            replace: "{{ item.replace }}"
+          loop:
+            - { regexp: "{{ marker_begin_unicode | regex_escape() }}", replace: "{{ marker_begin_latin1 }}" }
+            - { regexp: "{{ marker_end_unicode | regex_escape() }}", replace: "{{ marker_end_latin1 }}" }
+        - name: update block
+          ansible.builtin.blockinfile:
+            path: /etc/motd
+            create: true
+            mode: "0644"
+            marker: "{mark}"
+            marker_begin: "{{ marker_begin_latin1 }} Network Monitor"
+            block: |2
+                  GUI: A fullscreen web application should be running on the attached screen.
+                  HELP: netmon
+            marker_end: "{{ marker_end_latin1 }}"
+        - name: convert markers to unicode
+          ansible.builtin.replace:
+            path: "{{ path }}"
+            regexp: "{{ item.regexp }}"
+            replace: "{{ item.replace }}"
+          loop:
+            - { regexp: "{{ marker_begin_latin1 }}", replace: "{{ marker_begin_unicode }}" }
+            - { regexp: "{{ marker_end_latin1 }}", replace: "{{ marker_end_unicode }}" }

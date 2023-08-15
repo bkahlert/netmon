@@ -19,7 +19,7 @@ class NetmonScanner(
     val resolver: MulticastDnsResolver,
     val onScan: (ScanResult) -> Unit,
     val onChange: (Host) -> Unit,
-    val scanResultFile: Path = Paths.get(".netmon.scan.$`interface`.${cidr.filenameString}.json"),
+    val scanResultFile: Path = Paths.get("scan.$`interface`.${cidr.filenameString}.json"),
     val scanInterval: Duration = 10.seconds,
 ) : Thread("netmon-scanner-$cidr") {
 

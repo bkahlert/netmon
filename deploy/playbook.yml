@@ -1,18 +1,43 @@
 ---
 - hosts: "{{ inventory if inventory is defined else 'all' }}"
   gather_facts: false
+  vars:
+    services: [ netmon-scanner, netmon-web-display, lightdm ]
+  tags: [ always ]
+  tasks:
+    - name: make sure services {{ services | join(', ') }} are stopped
+      ansible.builtin.service: { name: "{{ item }}", state: stopped }
+      loop: "{{ services | reverse }}"
+      become: true
+      ignore_errors: true
+
+- name: run Pi Hero playbook, if --tags pihero is specified
+  ansible.builtin.import_playbook: ../../pihero/playbook.yml
+  tags: [ never, pihero ]
+
+- hosts: "{{ inventory if inventory is defined else 'all' }}"
+  gather_facts: false
   max_fail_percentage: 0
   vars:
+    services: [ netmon-scanner, netmon-web-display, lightdm ]
     package_dir: /opt/netmon
     project_dir: "{{ playbook_dir }}/.."
     build_dir: "{{ playbook_dir }}/../build"
+  tags: [ always ]
 
   pre_tasks:
     - name: gather user facts
       ansible.builtin.setup: { gather_subset: [ "!all", "!min", "user_dir", "user_id" ] }
 
+  post_tasks:
+    - name: make sure services {{ services | join(', ') }} are started
+      ansible.builtin.service: { name: "{{ item }}", state: started }
+      loop: "{{ services }}"
+      become: true
+
   roles:
     - hdmi               # configures Kernel HDMI settings
     - netmon             # installs the entrypoint
+    - netmon_kiosk       # configures lightdm-based kiosk mode
     - netmon_scanner     # installs the scan component
     - netmon_web_display # installs the HTML-based display component
