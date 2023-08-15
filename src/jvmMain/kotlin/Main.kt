@@ -33,7 +33,8 @@ fun main(args: Array<String>) {
         "io.netty" to Level.WARN,
         "javax.jmdns" to Level.WARN,
         "com.bkahlert.kommons.exec" to Level.WARN,
-        "com.bkahlert.netmon.mdns" to Level.INFO,
+        "com.bkahlert.netmon.mdns" to Level.DEBUG,
+        "com.bkahlert.netmon.mdns.MulticastDnsResolver" to Level.INFO,
         "com.bkahlert.netmon.mqtt" to Level.WARN,
         "com.bkahlert.netmon.net" to Level.INFO,
         "com.bkahlert.netmon.nmap" to Level.INFO,
@@ -61,49 +62,51 @@ fun main(args: Array<String>) {
 
     val netmons: List<NetmonScanner> = InterfaceFilter.filter(
         networkInterfaces = networkInterfaces,
-    ).flatMap { (networkInterface, interfaceAddresses) ->
-        interfaceAddresses.map { interfaceAddress ->
-            val scanTopic = Settings.SCAN_TOPIC
-                .replaceFirst("\${node}", node)
-                .replaceFirst("\${interface}", networkInterface.name)
-                .replaceFirst("\${cidr}", interfaceAddress.cidr.toString())
-            val hostTopic = Settings.HOST_TOPIC
-                .replaceFirst("\${node}", node)
-                .replaceFirst("\${interface}", networkInterface.name)
-                .replaceFirst("\${cidr}", interfaceAddress.cidr.toString())
+    )
+//        .filterKeys { it.name == "en16" }
+        .flatMap { (networkInterface, interfaceAddresses) ->
+            interfaceAddresses.map { interfaceAddress ->
+                val scanTopic = Settings.SCAN_TOPIC
+                    .replaceFirst("\${node}", node)
+                    .replaceFirst("\${interface}", networkInterface.name)
+                    .replaceFirst("\${cidr}", interfaceAddress.cidr.toString())
+                val hostTopic = Settings.HOST_TOPIC
+                    .replaceFirst("\${node}", node)
+                    .replaceFirst("\${interface}", networkInterface.name)
+                    .replaceFirst("\${cidr}", interfaceAddress.cidr.toString())
 
-            val resolver = MulticastDnsResolver(
-                jmdns = JmDNS(addr = interfaceAddress.address, name = hostname),
-                fallbackResolver = LazyNameResolver(MulticastDnsReverseNameResolver, nmapNetworkScanner),
-            )
+                val resolver = MulticastDnsResolver(
+                    jmdns = JmDNS(addr = interfaceAddress.address, name = hostname),
+                    fallbackResolver = LazyNameResolver(MulticastDnsReverseNameResolver, nmapNetworkScanner),
+                )
 
-            NetmonScanner(
-                `interface` = networkInterface.name,
-                cidr = interfaceAddress.cidr,
-                scanner = nmapNetworkScanner,
-                resolver = resolver,
-                onScan = { scan ->
-                    publisher.publish(
-                        topic = scanTopic,
-                        event = Event.ScanEvent(
-                            type = Event.ScanEvent.Type.COMPLETED,
-                            hosts = scan.hosts,
-                            timestamp = scan.timestamp,
-                        ),
-                    )
-                },
-                onChange = { host ->
-                    publisher.publish(
-                        topic = hostTopic,
-                        event = Event.HostEvent(
-                            type = if (host.status == Status.DOWN) Event.HostEvent.Type.DOWN else Event.HostEvent.Type.UP,
-                            host = host,
-                        ),
-                    )
-                },
-            )
+                NetmonScanner(
+                    `interface` = networkInterface.name,
+                    cidr = interfaceAddress.cidr,
+                    scanner = nmapNetworkScanner,
+                    resolver = resolver,
+                    onScan = { scan ->
+                        publisher.publish(
+                            topic = scanTopic,
+                            event = Event.ScanEvent(
+                                type = Event.ScanEvent.Type.COMPLETED,
+                                hosts = scan.hosts,
+                                timestamp = scan.timestamp,
+                            ),
+                        )
+                    },
+                    onChange = { host ->
+                        publisher.publish(
+                            topic = hostTopic,
+                            event = Event.HostEvent(
+                                type = if (host.status == Status.DOWN) Event.HostEvent.Type.DOWN else Event.HostEvent.Type.UP,
+                                host = host,
+                            ),
+                        )
+                    },
+                )
+            }
         }
-    }
 
     logger.info("Starting {} netmon(s) for {}", v("count", netmons.size), o("networks", netmons) { it.cidr })
     netmons.forEach { it.start() }

@@ -40,7 +40,7 @@ fun JmDNS(
 /**
  * Kotlin-friendly version of [javax.jmdns.ServiceTypeListener].
  */
-interface ServiceTypeListener : javax.jmdns.ServiceTypeListener {
+open class ServiceTypeListener : javax.jmdns.ServiceTypeListener {
     /**
      * A new service type was discovered.
      *
@@ -48,8 +48,8 @@ interface ServiceTypeListener : javax.jmdns.ServiceTypeListener {
      * @param type the service type in the format `_<application>._<protocol>.<domain>.`,
      *             for example `_googlecast._tcp.local.`
      */
-    fun serviceTypeAdded(instance: JmDNS, type: String): Unit = Unit
-    override fun serviceTypeAdded(event: ServiceEvent): Unit = serviceTypeAdded(event.dns, event.type)
+    open fun serviceTypeAdded(instance: JmDNS, type: String): Unit = Unit
+    final override fun serviceTypeAdded(event: ServiceEvent): Unit = serviceTypeAdded(event.dns, event.type)
 
     /**
      * A new subtype for the service type was discovered.
@@ -58,14 +58,16 @@ interface ServiceTypeListener : javax.jmdns.ServiceTypeListener {
      * @param typeWithSubtype the service type with subtype in the format `_<subtype>._sub._<application>._<protocol>.<domain>.`,
      *                        for example `_0F5096E8._sub._googlecast._tcp.local.`
      */
-    fun subTypeForServiceTypeAdded(instance: JmDNS, typeWithSubtype: String): Unit = Unit
-    override fun subTypeForServiceTypeAdded(event: ServiceEvent): Unit = subTypeForServiceTypeAdded(event.dns, event.type)
+    open fun subTypeForServiceTypeAdded(instance: JmDNS, typeWithSubtype: String): Unit = Unit
+    final override fun subTypeForServiceTypeAdded(event: ServiceEvent): Unit = subTypeForServiceTypeAdded(event.dns, event.type)
+
+    override fun toString(): String = this::class.simpleName ?: "ServiceTypeListener"
 }
 
 /**
  * Kotlin-friendly version of [javax.jmdns.ServiceTypeListener].
  */
-interface ServiceListener : javax.jmdns.ServiceListener {
+open class ServiceListener : javax.jmdns.ServiceListener {
     /**
      * A service has been removed.
      *
@@ -74,8 +76,8 @@ interface ServiceListener : javax.jmdns.ServiceListener {
      *             for example `_googlecast._tcp.local.`
      * @param name the service instance name, for example: `My Chromecast`
      */
-    fun serviceAdded(instance: JmDNS, type: String, name: String): Unit = Unit
-    override fun serviceAdded(event: ServiceEvent): Unit = serviceAdded(event.dns, event.type, event.name)
+    open fun serviceAdded(instance: JmDNS, type: String, name: String): Unit = Unit
+    final override fun serviceAdded(event: ServiceEvent): Unit = serviceAdded(event.dns, event.type, event.name)
 
     /**
      * A service has been removed.
@@ -86,8 +88,8 @@ interface ServiceListener : javax.jmdns.ServiceListener {
      * @param name the service instance name, for example: `My Chromecast`
      * @param info the service info record
      */
-    fun serviceResolved(instance: JmDNS, type: String, name: String, info: ServiceInfo): Unit = Unit
-    override fun serviceResolved(event: ServiceEvent): Unit = serviceResolved(event.dns, event.type, event.name, ServiceInfo(event.info))
+    open fun serviceResolved(instance: JmDNS, type: String, name: String, info: ServiceInfo): Unit = Unit
+    final override fun serviceResolved(event: ServiceEvent): Unit = serviceResolved(event.dns, event.type, event.name, ServiceInfo(event.info))
 
     /**
      * A service has been added.
@@ -97,8 +99,10 @@ interface ServiceListener : javax.jmdns.ServiceListener {
      *             for example `_googlecast._tcp.local.`
      * @param name the service instance name, for example: `My Chromecast`
      */
-    fun serviceRemoved(instance: JmDNS, type: String, name: String): Unit = Unit
-    override fun serviceRemoved(event: ServiceEvent): Unit = serviceRemoved(event.dns, event.type, event.name)
+    open fun serviceRemoved(instance: JmDNS, type: String, name: String): Unit = Unit
+    final override fun serviceRemoved(event: ServiceEvent): Unit = serviceRemoved(event.dns, event.type, event.name)
+
+    override fun toString(): String = this::class.simpleName ?: "ServiceListener"
 }
 
 /**

@@ -2,13 +2,19 @@
 - hosts: "{{ inventory if inventory is defined else 'all' }}"
   gather_facts: false
   max_fail_percentage: 0
+  vars:
+    package_dir: /opt/netmon
+    project_dir: "{{ playbook_dir }}/.."
+    build_dir: "{{ playbook_dir }}/../build"
 
   pre_tasks:
     - name: gather user facts
       ansible.builtin.setup: { gather_subset: [ "!all", "!min", "user_dir", "user_id" ] }
 
   roles:
-    - hdmi           # configures Kernel HDMI settings
-    #- netmon-display # installs Unicorn HAT HD
-    #- app_launcher   # installs app launcher, which launches {{ app.home }}/app.* at boot
-    #- app            # installs a script that starts random example scripts
+    - hdmi               # configures Kernel HDMI settings
+    - netmon             # installs the entrypoint
+    - netmon_scanner     # installs the scan component
+    - netmon_web_display # installs the HTML-based display component
+  #- app_launcher      # installs app launcher, which launches {{ app.home }}/app.* at boot
+  #- app               # installs a script that starts random example scripts

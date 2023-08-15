@@ -1,0 +1,98 @@
+---
+- name: cleanup FullPageOS
+  block:
+    - name: uninstall x11vnc
+      block:
+        - name: disable x11vnc.service
+          ansible.builtin.systemd:
+            name: x11vnc.service
+            state: stopped
+            enabled: no
+          become: true
+          failed_when: false
+          no_log: true
+        - name: remove x11vnc.service unit
+          ansible.builtin.file:
+            path: /etc/systemd/system/x11vnc.service
+            state: absent
+          become: true
+        - name: remove package
+          ansible.builtin.apt:
+            name: [ x11vnc ]
+            state: absent
+            autoremove: true
+          become: true
+        - name: remove .vnc directory
+          ansible.builtin.file:
+            path: /home/pi/.vnc
+            state: absent
+          become: true
+
+- name: fix FullPageOS
+  notify: "restart lightdm"
+  block:
+    - name: symlink the home directory of ansible_user to the home directory of pi
+      # this might be necessary if the username was changed
+      ansible.builtin.file:
+        src: "{{ ansible_facts.user_dir }}"
+        dest: /home/pi
+        state: link
+      become: true
+      when: ansible_facts.user_id != 'pi'
+
+- name: configure FullPageOS
+  notify: "restart lightdm"
+  block:
+    # alternative would be to replace /home/pi/scripts/get_url
+    - name: set URL
+      ansible.builtin.copy:
+        content: "{{ netmon_web_display_url }}"
+        dest: /boot/fullpageos.txt
+      become: true
+
+
+- name: update and upgrade apt packages
+  become: true
+  block:
+    - name: configure apt to allow release info change
+      become: true
+      ansible.builtin.lineinfile:
+        path: /etc/apt/apt.conf.d/99allow-release-info-change
+        state: present
+        create: yes
+        line: Acquire::AllowReleaseInfoChange::Suite "true";
+    - name: run apt
+      ansible.builtin.apt:
+        upgrade: full
+        update_cache: true
+        cache_valid_time: 86400
+
+- name: install dependencies
+  block:
+    - name: install apt dependencies
+      ansible.builtin.apt:
+        name: [ nodejs, npm ]
+        state: present
+      become: true
+
+    - name: install npm dependencies
+      community.general.npm:
+        name: "{{ item }}"
+        state: present
+        global: true
+      loop: [ http-server, live-server ]
+      become: true
+
+- name: build artifact if necessary
+  local_action:
+    module: ansible.builtin.shell
+    chdir: "{{ project_dir }}"
+    cmd: "./gradlew --no-daemon clean jsBrowserProductionWebpack"
+    creates: "{{ netmon_web_display_build_artifact }}"
+  run_once: True
+
+- name: copy artifact
+  become: true
+  ansible.builtin.copy:
+    src: "{{ netmon_web_display_build_artifact }}/"
+    dest: "{{ package_dir }}/netmon-web-display/"

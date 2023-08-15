@@ -12,12 +12,12 @@ RESOURCES_DIR=../src/jsMain/resources
     [ ! -d "$MQTT_BROWSER_BUILD_DIR" ] || rm -rf "$MQTT_BROWSER_BUILD_DIR"
     [ -d "$MQTT_BROWSER_BUILD_DIR" ] || mkdir -p "$MQTT_BROWSER_BUILD_DIR"
 
-    cd "$MQTT_BROWSER_BUILD_DIR" || { printf "\033[31mERROR: Failed to cd to \033[3m%s\033[23m.\033[0m\n" "$MQTT_BROWSER_BUILD_DIR" >&2 && exit 1; }
+    cd "$MQTT_BROWSER_BUILD_DIR" || { printf "\e[31mERROR: Failed to cd to \e[3m%s\e[23m.\e[0m\n" "$MQTT_BROWSER_BUILD_DIR" >&2 && exit 1; }
 
     npm install mqtt
     npm install tinyify
 
-    cd node_modules/mqtt || { printf "\033[31mERROR: Failed to cd to \033[3m%s\033[23m.\033[0m\n" node_modules/mqtt >&2 && exit 1; }
+    cd node_modules/mqtt || { printf "\e[31mERROR: Failed to cd to \e[3m%s\e[23m.\e[0m\n" node_modules/mqtt >&2 && exit 1; }
 
     # As of 2023-07-25, the following manual build does
     # neither seem to work (for example, missing tsconfig.build.json)
@@ -31,14 +31,14 @@ RESOURCES_DIR=../src/jsMain/resources
     printf "\n"
 )
 
-cd "$RESOURCES_DIR" || { printf "\033[31mERROR: Failed to cd to \033[3m%s\033[23m.\033[0m\n" "$RESOURCES_DIR" >&2 && exit 1; }
+cd "$RESOURCES_DIR" || { printf "\e[31mERROR: Failed to cd to \e[3m%s\e[23m.\e[0m\n" "$RESOURCES_DIR" >&2 && exit 1; }
 
-printf "Creating symbolic links in \033[3m%s\033[23m:\n" "$RESOURCES_DIR"
+printf "Creating symbolic links in \e[3m%s\e[23m:\n" "$RESOURCES_DIR"
 for f in ../../../mqtt.js/mqtt.js; do
-    printf -- "  - \033[3m%s\033[23m → \033[3m%s\033[23m... " "${f##*/}" "$f"
+    printf -- "  - \e[3m%s\e[23m → \e[3m%s\e[23m... " "${f##*/}" "$f"
     ln -sf "$f" "${f##*/}"
-    printf "\033[32m✔︎\033[0m\n"
+    printf "\e[32m✔︎\e[0m\n"
 done
 printf "\n"
 
-printf "Run \033[3m%s\033[23m to verify if the build is working.\n" "./test.sh"
+printf "Run \e[3m%s\e[23m to verify if the build is working.\n" "./test.sh"

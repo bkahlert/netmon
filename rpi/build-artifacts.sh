@@ -7,8 +7,8 @@ NETMON_PROJECT_DIR="$SELF_DIR/.."
 NETMON_DATA_DIR="$SELF_DIR/rootfs"
 NETMON_APP_DIR=/home/pi/netmon
 
-[ -d "$NETMON_PROJECT_DIR" ] || { printf "\033[31mERROR: \033[3m%s\033[23m not found.\033[0m\n" "$NETMON_PROJECT_DIR" >&2 && exit 1; }
-[ -d "$NETMON_DATA_DIR" ] || { printf "\033[31mERROR: \033[3m%s\033[23m not found.\033[0m\n" "$NETMON_DATA_DIR" >&2 && exit 1; }
+[ -d "$NETMON_PROJECT_DIR" ] || { printf "\e[31mERROR: \e[3m%s\e[23m not found.\e[0m\n" "$NETMON_PROJECT_DIR" >&2 && exit 1; }
+[ -d "$NETMON_DATA_DIR" ] || { printf "\e[31mERROR: \e[3m%s\e[23m not found.\e[0m\n" "$NETMON_DATA_DIR" >&2 && exit 1; }
 
 mkdir -p "$NETMON_DATA_DIR/$NETMON_APP_DIR"
 

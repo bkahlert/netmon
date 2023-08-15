@@ -33,17 +33,24 @@ class JmDNSServiceInfoCache(
         }
     }
 
-    private val serviceListener = object : ServiceListener {
+    private val serviceListener = object : ServiceListener() {
+        override fun serviceAdded(instance: JmDNS, type: String, name: String) {
+            logger.info("Service added: $name.$type")
+        }
+
         override fun serviceResolved(instance: JmDNS, type: String, name: String, info: ServiceInfo) {
+            logger.info("Service resolved: $name.$type: $info")
+            logger.info("Adding service: {}", entries("name" to name, "type" to type))
             addService(type, name, info)
         }
 
         override fun serviceRemoved(instance: JmDNS, type: String, name: String) {
+            logger.info("Service removed: $name.$type")
             removeService(type, name)
         }
     }
 
-    private val serviceTypeListener = object : ServiceTypeListener {
+    private val serviceTypeListener = object : ServiceTypeListener() {
         override fun serviceTypeAdded(instance: JmDNS, type: String) {
             instance.addServiceListener(type, serviceListener)
         }
@@ -62,9 +69,11 @@ class JmDNSServiceInfoCache(
     fun services(ip: IP): Set<String> = buildSet { mappings.ipAddressToServices[ip]?.mapTo(this) { it.application } }
 
     override fun toString(): String = buildString {
-        append(this::class.simpleName)
+        append(JmDNSServiceInfoCache::class.simpleName)
         append("(")
-        mappings.ipAddressToServices.entries.joinTo(this, ", ") { (ip, services) ->
+        append("jmdns=$jmdns")
+        append("; services=")
+        mappings.ipAddressToServices.entries.joinTo(this, ", ", "[", "]") { (ip, services) ->
             val servicePart = "[${services.joinToString(",") { it.application }}]"
             val hostPart = "[${mappings.ipAddressToServers[ip].orEmpty().joinToString(",") { it }}]"
             "$ip=$servicePart@$hostPart"

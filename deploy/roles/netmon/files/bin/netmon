@@ -1,0 +1,45 @@
+#!/bin/bash
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
+
+# shellcheck source=./../lib/lib.bash
+source "$SCRIPT_DIR/../lib/lib.bash"
+
+do_diag() {
+    checks_start "Netmon diagnostics"
+
+    printf "\e[1mNetmon Scanner \e[3m%s\e[23m...\e[0m\n" >&2
+    check "service is running" systemctl -q is-active netmon-scanner.service
+
+    printf "\e[1mNetmon Web Display...\e[0m\n" >&2
+    check "service is running" systemctl -q is-active netmon-web-display.service
+
+    check_summary
+
+    printf '\n\e[1mFurther debugging:\e[0m\n' >&2
+    printf '  - for HDMI related issues, see \e]8;;%s\e\\%s\e]8;;\e\\\n' \
+        'https://www.raspberrypi.com/documentation/computers/config_txt.html#which-values-are-valid-for-my-monitor' \
+        'www.raspberrypi.com/documentation/computers/config_txt.html#which-values-are-valid-for-my-monitor' >&2
+}
+
+main() {
+    local cmd
+    if [ $# -eq 0 ]; then
+        cmd=diag
+    else
+        cmd=$1
+        shift
+    fi
+
+    case "$cmd" in
+    diag)
+        do_diag "$@"
+        ;;
+    *)
+        printf "Usage: %s \e[3m%s\e[23m [\e[3m%s\e[23m]\n" "${0##*/}" "diag" "SUBCOMMANDS..." >&2
+        exit 1
+        ;;
+    esac
+}
+
+main "$@"
