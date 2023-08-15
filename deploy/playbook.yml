@@ -1,0 +1,14 @@
+---
+- hosts: "{{ inventory if inventory is defined else 'all' }}"
+  gather_facts: false
+  max_fail_percentage: 0
+
+  pre_tasks:
+    - name: gather user facts
+      ansible.builtin.setup: { gather_subset: [ "!all", "!min", "user_dir", "user_id" ] }
+
+  roles:
+    - hdmi           # configures Kernel HDMI settings
+    #- netmon-display # installs Unicorn HAT HD
+    #- app_launcher   # installs app launcher, which launches {{ app.home }}/app.* at boot
+    #- app            # installs a script that starts random example scripts
