@@ -6,13 +6,17 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
 source "$SCRIPT_DIR/../lib/lib.bash"
 
 do_diag() {
+    local -r services=(
+        netmon-scanner
+        netmon-web-display
+    )
+
     checks_start "Netmon diagnostics"
 
-    printf "\e[1mNetmon Scanner \e[3m%s\e[23m...\e[0m\n" >&2
-    check "service is running" systemctl -q is-active netmon-scanner.service
-
-    printf "\e[1mNetmon Web Display...\e[0m\n" >&2
-    check "service is running" systemctl -q is-active netmon-web-display.service
+    for service in "${services[@]}"; do
+        printf "\e[1m%s...\e[0m\n" "$service" >&2
+        check "service is running" systemctl -q is-active "$service.service"
+    done
 
     check_summary
 
@@ -20,6 +24,16 @@ do_diag() {
     printf '  - for HDMI related issues, see \e]8;;%s\e\\%s\e]8;;\e\\\n' \
         'https://www.raspberrypi.com/documentation/computers/config_txt.html#which-values-are-valid-for-my-monitor' \
         'www.raspberrypi.com/documentation/computers/config_txt.html#which-values-are-valid-for-my-monitor' >&2
+
+    for service in "${services[@]}"; do
+        printf "  \e[1m- regarding service \e[3m%s\e[23m:\e[0m\n" "$service" >&2
+        printf "    - check status: \e[3m%s\e[23m\n" "systemctl status $service.service" >&2
+        printf "    - check logs: \e[3m%s\e[23m\n" "journalctl -b -e -u $service.service" >&2
+        printf "    - stop service: \e[3m%s\e[23m\n" "sudo systemctl stop $service.service" >&2
+        printf "    - start service interactively: \e[3m%s\e[23m\n" "$(service_start_cmdline "$service.service")" >&2
+    done
+
+    printf '\n' >&2
 }
 
 main() {

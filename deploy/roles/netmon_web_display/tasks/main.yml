@@ -1,55 +1,5 @@
 ---
-- name: cleanup FullPageOS
-  block:
-    - name: uninstall x11vnc
-      block:
-        - name: disable x11vnc.service
-          ansible.builtin.systemd:
-            name: x11vnc.service
-            state: stopped
-            enabled: no
-          become: true
-          failed_when: false
-          no_log: true
-        - name: remove x11vnc.service unit
-          ansible.builtin.file:
-            path: /etc/systemd/system/x11vnc.service
-            state: absent
-          become: true
-        - name: remove package
-          ansible.builtin.apt:
-            name: [ x11vnc ]
-            state: absent
-            autoremove: true
-          become: true
-        - name: remove .vnc directory
-          ansible.builtin.file:
-            path: /home/pi/.vnc
-            state: absent
-          become: true
-
-- name: fix FullPageOS
-  notify: "restart lightdm"
-  block:
-    - name: symlink the home directory of ansible_user to the home directory of pi
-      # this might be necessary if the username was changed
-      ansible.builtin.file:
-        src: "{{ ansible_facts.user_dir }}"
-        dest: /home/pi
-        state: link
-      become: true
-      when: ansible_facts.user_id != 'pi'
-
-- name: configure FullPageOS
-  notify: "restart lightdm"
-  block:
-    # alternative would be to replace /home/pi/scripts/get_url
-    - name: set URL
-      ansible.builtin.copy:
-        content: "{{ netmon_web_display_url }}"
-        dest: /boot/fullpageos.txt
-      become: true
-
+- include_tasks: fullpageos.yml
 
 - name: update and upgrade apt packages
   become: true
@@ -83,6 +33,32 @@
       loop: [ http-server, live-server ]
       become: true
 
+
+- name: compute netmon_web_display_service defaults
+  set_fact:
+    netmon_web_display_service: >
+      {{
+      netmon_web_display_service | default({})
+      | combine({'user': ansible_facts.user_id})
+      | combine({'working_directory': ansible_facts.user_dir ~ '/netmon'})
+      }}
+  when: netmon_web_display_service is undefined
+
+- name: copy service
+  become: true
+  ansible.builtin.template:
+    src: templates/netmon-web-display.service.j2
+    dest: /etc/systemd/system/netmon-web-display.service
+    mode: "0644"
+    force: true
+
+- name: enable service
+  become: true
+  ansible.builtin.systemd_service:
+    name: netmon-web-display.service
+    daemon_reload: true
+    enabled: true
+
 - name: build artifact if necessary
   local_action:
     module: ansible.builtin.shell
@@ -96,3 +72,10 @@
   ansible.builtin.copy:
     src: "{{ netmon_web_display_build_artifact }}/"
     dest: "{{ package_dir }}/netmon-web-display/"
+
+- name: restart service
+  become: true
+  ansible.builtin.systemd_service:
+    name: netmon-web-display.service
+    state: restarted
+  notify: "restart lightdm"

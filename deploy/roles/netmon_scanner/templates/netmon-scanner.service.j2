@@ -1,0 +1,15 @@
+[Unit]
+Description=Netmon Scanner Service
+After=multi-user.target
+
+[Service]
+Type=simple
+WorkingDirectory=-{{ netmon_scanner_service.working_directory }}
+ExecStartPre=/bin/mkdir -p '{{ netmon_scanner_service.working_directory }}'
+ExecStart=/bin/sh -c 'java -jar "{{ package_dir }}/netmon-scanner/"*.jar'
+Restart=always
+TimeoutStopSec=10
+User={{ netmon_scanner_service.user }}
+
+[Install]
+WantedBy=multi-user.target

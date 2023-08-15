@@ -1,2 +1,2 @@
 ---
-netmon_scanner_build_artifact: "{{ build_dir }}/libs/netmon-all.jar"
+netmon_scanner_build_artifact: "{{ build_dir }}/libs"

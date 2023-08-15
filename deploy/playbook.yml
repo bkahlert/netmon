@@ -16,5 +16,3 @@
     - netmon             # installs the entrypoint
     - netmon_scanner     # installs the scan component
     - netmon_web_display # installs the HTML-based display component
-  #- app_launcher      # installs app launcher, which launches {{ app.home }}/app.* at boot
-  #- app               # installs a script that starts random example scripts

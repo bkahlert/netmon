@@ -23,6 +23,31 @@
         state: present
       become: true
 
+- name: compute netmon_scanner_service defaults
+  set_fact:
+    netmon_scanner_service: >
+      {{
+      netmon_scanner_service | default({})
+      | combine({'user': ansible_facts.user_id})
+      | combine({'working_directory': ansible_facts.user_dir ~ '/netmon'})
+      }}
+  when: netmon_scanner_service is undefined
+
+- name: copy service
+  become: true
+  ansible.builtin.template:
+    src: templates/netmon-scanner.service.j2
+    dest: /etc/systemd/system/netmon-scanner.service
+    mode: "0644"
+    force: true
+
+- name: enable service
+  become: true
+  ansible.builtin.systemd_service:
+    name: netmon-scanner.service
+    daemon_reload: true
+    enabled: true
+
 - name: build artifact if necessary
   local_action:
     module: ansible.builtin.shell
@@ -36,3 +61,9 @@
   ansible.builtin.copy:
     src: "{{ netmon_scanner_build_artifact }}/"
     dest: "{{ package_dir }}/netmon-scanner/"
+
+- name: restart service
+  become: true
+  ansible.builtin.systemd_service:
+    name: netmon-scanner.service
+    state: restarted
