@@ -1,0 +1,11 @@
+---
+- name: restart lightdm
+  ansible.builtin.service:
+    name: lightdm
+    state: restarted
+  become: true
+
+- name: reboot system
+  ansible.builtin.reboot:
+    msg: "Rebooting system to finalize netmon display setup."
+  become: true
