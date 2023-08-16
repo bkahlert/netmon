@@ -1,0 +1,69 @@
+---
+- name: install netmon
+  become: true
+  block:
+    - name: create package directory
+      ansible.builtin.file:
+        path: "{{ package_dir }}"
+        state: directory
+
+    - name: copy files
+      ansible.builtin.copy:
+        src: files/
+        dest: "{{ package_dir }}/"
+
+    - name: make executables executable
+      block:
+        - name: find files
+          find:
+            paths: "{{ package_dir }}/bin"
+            patterns: '*'
+          register: executables
+
+        - name: change mode of executables
+          file:
+            dest: "{{ item.path }}"
+            mode: "0755"
+          loop: "{{ executables.files }}"
+
+    - name: add package bin directory to PATH
+      ansible.builtin.copy:
+        content: "export PATH=$PATH:{{ package_dir }}/bin"
+        dest: "/etc/profile.d/netmon_path.sh"
+
+    - name: explain netmon
+      become: true
+      vars:
+        marker_begin_latin1: "MARKER_BEGIN"
+        marker_begin_unicode: "(つ◕౪◕)つ─☆ﾟ․*･｡ﾟ"
+        marker_end_latin1: "MARKER_END"
+        marker_end_unicode: "​​​"
+        path: /etc/motd
+      block:
+        - name: convert markers to latin1
+          ansible.builtin.replace:
+            path: "{{ path }}"
+            regexp: "{{ item.regexp }}"
+            replace: "{{ item.replace }}"
+          loop:
+            - { regexp: "{{ marker_begin_unicode | regex_escape() }}", replace: "{{ marker_begin_latin1 }}" }
+            - { regexp: "{{ marker_end_unicode | regex_escape() }}", replace: "{{ marker_end_latin1 }}" }
+        - name: update block
+          ansible.builtin.blockinfile:
+            path: /etc/motd
+            create: true
+            mode: "0644"
+            marker: "{mark}"
+            marker_begin: "{{ marker_begin_latin1 }} Network Monitor"
+            block: |2
+                  GUI: A kiosk-mode web application should be running on the attached screen.
+                  HELP: netmon
+            marker_end: "{{ marker_end_latin1 }}"
+        - name: convert markers to unicode
+          ansible.builtin.replace:
+            path: "{{ path }}"
+            regexp: "{{ item.regexp }}"
+            replace: "{{ item.replace }}"
+          loop:
+            - { regexp: "{{ marker_begin_latin1 }}", replace: "{{ marker_begin_unicode }}" }
+            - { regexp: "{{ marker_end_latin1 }}", replace: "{{ marker_end_unicode }}" }

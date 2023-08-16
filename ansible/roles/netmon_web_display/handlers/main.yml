@@ -1,0 +1,17 @@
+---
+- name: restart lighttpd
+  ansible.builtin.service:
+    name: lighttpd
+    state: restarted
+  become: true
+
+- name: restart lightdm
+  ansible.builtin.service:
+    name: lightdm
+    state: restarted
+  become: true
+
+- name: reboot system
+  ansible.builtin.reboot:
+    msg: "Rebooting system to finalize netmon web display setup."
+  become: true

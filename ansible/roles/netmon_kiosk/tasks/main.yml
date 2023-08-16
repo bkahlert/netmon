@@ -1,0 +1,51 @@
+---
+- include_tasks: fullpageos.yml
+
+# needed on outdated systems, for dependencies to be installable
+- name: update apt packages and allow release info changes
+  block:
+    - name: configure apt to allow release info change
+      become: true
+      ansible.builtin.lineinfile:
+        path: /etc/apt/apt.conf.d/99allow-release-info-change
+        state: present
+        create: yes
+        line: Acquire::AllowReleaseInfoChange::Suite "true";
+    - name: update apt packages
+      become: true
+      ansible.builtin.apt:
+        update_cache: true
+        cache_valid_time: 86400
+
+- name: install apt dependencies
+  ansible.builtin.apt:
+    name: [ unclutter, matchbox-window-manager ]
+    state: present
+  become: true
+
+- name: copy netmon-kiosk
+  become: true
+  ansible.builtin.copy:
+    src: files/netmon-kiosk
+    dest: "{{ package_dir }}/bin/netmon-kiosk"
+    mode: "0755"
+    force: true
+
+- name: copy netmon-kiosk.desktop
+  become: true
+  ansible.builtin.template:
+    src: templates/netmon-kiosk.desktop.j2
+    dest: "/usr/share/xsessions/{{ lightdm_user_session }}.desktop"
+    mode: "0644"
+    force: true
+
+- name: configure lightdm to use netmon session
+  become: true
+  community.general.ini_file:
+    path: /etc/lightdm/lightdm.conf
+    no_extra_spaces: true
+    section: "Seat:*"
+    option: "user-session"
+    value: "{{ lightdm_user_session }}"
+    # This effectively overrides the entrypoint
+    # of [FullPageOS 0.12.0](https://github.com/guysoft/FullPageOS/releases/tag/0.12.0)

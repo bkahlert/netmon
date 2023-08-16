@@ -12,65 +12,68 @@ Loading screen](./docs/netmon-loading.gif)
 [![screenshot of Netmon showing a recent network scan with 13 online and 2 offline hosts](docs/netmon-running.gif)
 Recent network scan](./docs/netmon-running.gif)
 
-The appliance consists of two parts:
+The application consists of three independent parts:
 
-- a JVM-based network scanner that publishes appearing and disappearing hosts using MQTT, and
-- a Kotlin/JS and [Fritz2](https://github.com/jwstegemann/fritz2) based web interface that display the results.
-
-Got a spare Raspberry Pi?
-Both components + a Chromium browser to render the actual web interface run with no problem on a Raspberry Pi 1 or Zero.
+- a JVM-based network scanner that publishes appearing and disappearing hosts using MQTT,
+- a Kotlin/JS and [Fritz2](https://github.com/jwstegemann/fritz2) based web interface that display the results, by subscribing to MQTT, and
+- a [Ansible-based installer](ansible/README.md) that installs everyone on a Raspberry Pi (including the Pi 1 and Zero).
 
 [![photo of Netmon running on a Raspberry Pi Zero](./docs/netmon-rpi0.jpg)
-Netmon on a Raspberry Pi Zero](./docs/netmon-rpi0.jpg)
+Netmon on a Raspberry Pi Zero with an 7-inch screen](./docs/netmon-rpi0.jpg)
 
-Find detailed installation instructions in [rpi/INSTALL.md](rpi/INSTALL.md).
+Find detailed installation instructions in [ansible/README.md](ansible/README.md).
 
 ## Development
 
-### Network scanner
+### Run locally
 
-#### Compile and run
+#### Run the scanner component locally
 
 ```shell
 ./gradlew runShadow
 ```
 
-#### Compile and push to Raspberry Pi
-
-```shell
-./gradlew --no-daemon clean shadowJar
-rsync -rvz --delete \
-  build/libs/netmon-all.jar \
-  pi@netmon.local:/home/pi/netmon/netmon-scanner.jar
-```
-
-### Web Display
-
-#### Compile and run
+#### Run the web display component locally
 
 ```shell
 ./gradlew jsBrowserDevelopmentRun --continuous
 ```
 
-#### Compile development distribution and push to Raspberry Pi
+### Run remotely
+
+If you [installed Netmon on a Raspberry Pi](ansible/README.md), you can use
+the handy [patch tool](ansible/patch).
+
+Just switch the directory, make [patch](ansible/patch) executable, and
+set the `HOST` to work with:
 
 ```shell
-./gradlew jsBrowserDevelopmentExecutableDistribution
-rsync -rvz --delete \
-  build/dist/js/developmentExecutable/ \
-  pi@netmon.local:/home/pi/netmon/netmon-web-display/
+cd ansible
+chmod +x patch
+export HOST=foo.local
 ```
 
-#### Compile production distribution and push to Raspberry Pi
+#### Build and update the remote scanner component
 
 ```shell
-./gradlew --no-daemon clean jsBrowserProductionWebpack
-rsync -rvz --delete \
-  build/dist/js/productionExecutable/ \
-  pi@netmon.local:/home/pi/netmon/netmon-web-display/
+SCANNER=1 ./patch
 ```
 
-#### Update MQTT.js
+#### Build and update the remote web display component
+
+```shell
+WEB_DISPLAY=1 ./patch
+```
+
+#### Build and update the remote scanner *and* web display component
+
+```shell
+SCANNER=1 WEB_DISPLAY=1 ./patch
+```
+
+> 💡 You can export your preferred settings, e.g. `export SCANNER=1 WEB_DISPLAY=1` to only have to type `./patch`.
+
+### Update MQTT.js
 
 ```shell
 (cd mqtt.js && ./build.sh)

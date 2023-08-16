@@ -1,0 +1,58 @@
+---
+# needed on outdated systems, for dependencies to be installable
+- name: update apt packages and allow release info changes
+  block:
+    - name: configure apt to allow release info change
+      become: true
+      ansible.builtin.lineinfile:
+        path: /etc/apt/apt.conf.d/99allow-release-info-change
+        state: present
+        create: yes
+        line: Acquire::AllowReleaseInfoChange::Suite "true";
+    - name: update apt packages
+      become: true
+      ansible.builtin.apt:
+        update_cache: true
+        cache_valid_time: 86400
+
+- name: install dependencies
+  ansible.builtin.apt:
+    name: [ lighttpd ]
+    state: present
+  become: true
+
+- name: change server.document-root in /etc/lighttpd/lighttpd.conf to {{ package_dir }}/netmon-web-display
+  ansible.builtin.lineinfile:
+    path: /etc/lighttpd/lighttpd.conf
+    regexp: '^server\.document-root\s*='
+    line: 'server.document-root        = "{{ package_dir }}/netmon-web-display"'
+  notify: "restart lighttpd"
+  become: true
+
+- name: enable lighttpd service
+  become: true
+  ansible.builtin.systemd_service:
+    name: lighttpd.service
+    daemon_reload: true
+    enabled: true
+
+- name: build artifact if necessary
+  local_action:
+    module: ansible.builtin.shell
+    chdir: "{{ project_dir }}"
+    cmd: "./gradlew --no-daemon clean jsBrowserProductionWebpack"
+    creates: "{{ netmon_web_display_build_artifact }}"
+  run_once: True
+
+- name: copy artifact
+  become: true
+  ansible.builtin.copy:
+    src: "{{ netmon_web_display_build_artifact }}/"
+    dest: "{{ package_dir }}/netmon-web-display/"
+
+- name: restart lighttpd service
+  become: true
+  ansible.builtin.systemd_service:
+    name: lighttpd.service
+    state: restarted
+  notify: "restart lightdm"

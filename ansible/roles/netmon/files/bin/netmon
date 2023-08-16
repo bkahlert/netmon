@@ -1,0 +1,80 @@
+#!/bin/bash
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
+
+# shellcheck source=./../lib/lib.bash
+source "$SCRIPT_DIR/../lib/lib.bash"
+
+declare -r netmon_services=(
+    netmon-scanner
+)
+declare -r system_services=(
+    lighttpd
+    lightdm
+)
+
+do_diag() {
+    checks_start "Netmon diagnostics"
+
+    for service in "${netmon_services[@]}" "${system_services[@]}"; do
+        printf "\e[1m%s...\e[0m\n" "$service" >&2
+        check "service is running" systemctl -q is-active "$service.service"
+        case "$service" in
+        lighttpd)
+            check "/var/www/html points to /opt/netmon/netmon-web-display" test "$(readlink -f /var/www/html)" = "/opt/netmon/netmon-web-display"
+            ;;
+        lightdm)
+            check "lightdm is configured to use user-session netmon-kiosk" grep -q '^user-session=netmon-kiosk$' /etc/lightdm/lightdm.conf
+            check "netmon-kiosk.desktop is installed" [ -f /usr/share/xsessions/netmon-kiosk.desktop ]
+            check "netmon-kiosk executable is installed" [ -f /opt/netmon/bin/netmon-kiosk ]
+            ;;
+        esac
+    done
+
+    check_summary
+
+    printf '\n\e[1mFurther debugging:\e[0m\n' >&2
+    printf '  - for HDMI related issues, see \e]8;;%s\e\\%s\e]8;;\e\\\n' \
+        'https://www.raspberrypi.com/documentation/computers/config_txt.html#which-values-are-valid-for-my-monitor' \
+        'www.raspberrypi.com/documentation/computers/config_txt.html#which-values-are-valid-for-my-monitor' >&2
+
+    for service in "${netmon_services[@]}"; do
+        printf "  \e[1m- regarding service \e[3m%s\e[23m:\e[0m\n" "$service" >&2
+        printf "    - check status: \e[3m%s\e[23m\n" "systemctl status $service.service" >&2
+        printf "    - check logs: \e[3m%s\e[23m\n" "journalctl -b -e -u $service.service" >&2
+        printf "    - stop service: \e[3m%s\e[23m\n" "sudo systemctl stop $service.service" >&2
+        printf "    - start service interactively: \e[3m%s\e[23m\n" "$(service_start_cmdline "$service.service")" >&2
+    done
+
+    printf "  \e[1m- regarding \e[3m%s\e[23m:\e[0m\n" "kiosk mode" >&2
+    printf "    - check logs: \e[3m%s\e[23m\n" "less -R /tmp/netmon-kiosk.log" >&2
+
+    printf '\n' >&2
+}
+
+main() {
+    local cmd
+    if [ $# -eq 0 ]; then
+        cmd=diag
+    else
+        cmd=$1
+        shift
+    fi
+
+    case "$cmd" in
+    diag)
+        do_diag "$@"
+        ;;
+    start | restart | stop)
+        for service in lightdm "${netmon_services[@]}"; do
+            sudo systemctl "$1" "$service.service"
+        done
+        ;;
+    *)
+        printf "Usage: %s \e[3m%s\e[23m [\e[3m%s\e[23m]\n" "${0##*/}" "diag|start|restart|stop" "SUBCOMMANDS..." >&2
+        exit 1
+        ;;
+    esac
+}
+
+main "$@"

@@ -1,0 +1,66 @@
+#!/usr/bin/env bash
+
+SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+
+PROJECT_DIR=${PROJECT_DIR:-$(cd "$SCRIPT_DIR/.." && pwd)}    # The project root directory (default: parent directory of this script)
+GRADLE_NO_DAEMON=${GRADLE_NO_DAEMON:-1}                      # Whether to run Gradle without daemon for building (default: yes)
+GRADLE_CLEAN=${GRADLE_CLEAN:-1}                              # Whether to clean Gradle build directory before building (default: yes)
+GRADLE_EXE=${GRADLE_EXE:-$PROJECT_DIR/gradlew}               # The Gradle executable to use for building (default: Gradle wrapper)
+GRADLE_WORKING_DIR=${GRADLE_WORKING_DIRECTORY:-$PROJECT_DIR} # The working directory for Gradle (default: project root)
+
+HOST=${HOST:-foo.local}                                       # The host to patch (default: foo.local)
+SCANNER=${SCANNER:-0}                                         # Whether to build und update the scanner component (default: no)
+WEB_DISPLAY=${WEB_DISPLAY:-0}                                 # Whether to build und update the web display component (default: no)
+KIOSK=${KIOSK:-0}                                             # Whether to update the kiosk component (default: no)
+KIOSK_EXE="$SCRIPT_DIR/roles/netmon_kiosk/files/netmon-kiosk" # The kiosk executable to deploy (default: netmon-kiosk used by Ansible role)
+
+# Ansible ad-hoc command wrapper which runs:
+# ansible $HOST --become -m $1 -a "$2 $3 $4 ..."
+m() {
+    local module=${1?module missing} && shift
+    local args="$*"
+    ansible "$HOST" --become -m "$module" -a "$args"
+}
+
+if [ "$SCANNER" = 0 ] && [ "$WEB_DISPLAY" = 0 ] && [ "$KIOSK" = 0 ]; then
+    printf '\e[1mUsage: SCANNER=1 WEB_DISPLAY=1 KIOSK=1 %s\e[0m\n' "${0##*/}"
+    printf ' Hint: Type \e[3m%s\e[23m to set the appropriate option or options for the remainder of your shell session.\n' 'export HOST=bar.local SCANNER=1 [...]'
+    printf '       Check the source code for more options.\n'
+    exit 1
+fi
+
+# build
+declare gradle_success=0
+if [ ! "$SCANNER" = 0 ] || [ ! "$WEB_DISPLAY" = 0 ]; then
+    gradle_args=()
+    [ "$GRADLE_NO_DAEMON" = 0 ] || gradle_args+=(--no-daemon)
+    [ "$GRADLE_CLEAN" = 0 ] || gradle_args+=(clean)
+    [ "$SCANNER" = 0 ] || gradle_args+=(shadowJar)
+    [ "$WEB_DISPLAY" = 0 ] || gradle_args+=(jsBrowserProductionWebpack)
+
+    if (
+        cd "$GRADLE_WORKING_DIR" || exit 1
+        "$GRADLE_EXE" "${gradle_args[@]}"
+    ); then
+        gradle_success=1
+    fi
+fi
+
+# deploy scanner component
+if [ "$gradle_success" = 1 ] && [ ! "$SCANNER" = 0 ]; then
+    m ansible.builtin.service name=netmon-scanner state=stopped
+    m ansible.builtin.copy src="$PROJECT_DIR/build/libs/" dest=/opt/netmon/netmon-scanner/
+    m ansible.builtin.service name=netmon-scanner state=restarted
+fi
+
+# deploy web display component
+if [ "$gradle_success" = 1 ] && [ ! "$WEB_DISPLAY" = 0 ]; then
+    m ansible.builtin.copy src="$PROJECT_DIR/build/dist/js/productionExecutable/" dest=/opt/netmon/netmon-web-display/
+    m ansible.builtin.shell 'export DISPLAY=:0 && wid=$(xdotool search --sync --onlyvisible --class chromium | head -1) && xdotool windowactivate "$wid" && xdotool key ctrl+F5 && xdotool key F11 || printf "Failed to find Chromium window\n"'
+fi
+
+# deploy kiosk component
+if [ ! "$KIOSK" = 0 ]; then
+    m ansible.builtin.copy src="$KIOSK_EXE" dest=/opt/netmon/bin/netmon-kiosk
+    m ansible.builtin.service name=lightdm state=restarted
+fi
