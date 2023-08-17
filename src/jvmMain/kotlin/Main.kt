@@ -5,11 +5,13 @@ import com.bkahlert.kommons.logging.logback.StructuredArguments.a
 import com.bkahlert.kommons.logging.logback.StructuredArguments.kv
 import com.bkahlert.kommons.logging.logback.StructuredArguments.o
 import com.bkahlert.kommons.text.checkNotBlank
+import com.bkahlert.netmon.BrokerSettings
 import com.bkahlert.netmon.Event
+import com.bkahlert.netmon.HostEventSettings
 import com.bkahlert.netmon.JsonFormat
 import com.bkahlert.netmon.LazyNameResolver
 import com.bkahlert.netmon.NetmonScanner
-import com.bkahlert.netmon.Settings
+import com.bkahlert.netmon.ScanEventSettings
 import com.bkahlert.netmon.Status
 import com.bkahlert.netmon.levels
 import com.bkahlert.netmon.mdns.JmDNS
@@ -54,8 +56,8 @@ fun main(args: Array<String>) {
 
     val nmapNetworkScanner = NmapNetworkScanner()
     val publisher = MqttPublisher(
-        host = Settings.BROKER_HOST,
-        port = Settings.Scanner.BROKER_PORT,
+        host = BrokerSettings.host,
+        port = BrokerSettings.port,
         stringFormat = JsonFormat,
         serializer = Event.serializer(),
     )
@@ -66,11 +68,11 @@ fun main(args: Array<String>) {
 //        .filterKeys { it.name == "en16" }
         .flatMap { (networkInterface, interfaceAddresses) ->
             interfaceAddresses.map { interfaceAddress ->
-                val scanTopic = Settings.SCAN_TOPIC
+                val scanTopic = ScanEventSettings.topic
                     .replaceFirst("\${node}", node)
                     .replaceFirst("\${interface}", networkInterface.name)
                     .replaceFirst("\${cidr}", interfaceAddress.cidr.toString())
-                val hostTopic = Settings.HOST_TOPIC
+                val hostTopic = HostEventSettings.topic
                     .replaceFirst("\${node}", node)
                     .replaceFirst("\${interface}", networkInterface.name)
                     .replaceFirst("\${cidr}", interfaceAddress.cidr.toString())

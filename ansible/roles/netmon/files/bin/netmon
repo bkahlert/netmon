@@ -21,12 +21,14 @@ do_diag() {
         check "service is running" systemctl -q is-active "$service.service"
         case "$service" in
         lighttpd)
-            check "/var/www/html points to /opt/netmon/netmon-web-display" test "$(readlink -f /var/www/html)" = "/opt/netmon/netmon-web-display"
+            check "lighttpd is configured to use /opt/netmon/netmon-web-display as document root" grep -q '^server.document-root\s\+=\s\+"/opt/netmon/netmon-web-display"$' /etc/lighttpd/lighttpd.conf
             ;;
         lightdm)
             check "lightdm is configured to use user-session netmon-kiosk" grep -q '^user-session=netmon-kiosk$' /etc/lightdm/lightdm.conf
             check "netmon-kiosk.desktop is installed" [ -f /usr/share/xsessions/netmon-kiosk.desktop ]
             check "netmon-kiosk executable is installed" [ -f /opt/netmon/bin/netmon-kiosk ]
+            check "NETMON_KIOSK_URL is set in /etc/environment" grep -q '^NETMON_KIOSK_URL=' /etc/environment
+            check "NETMON_KIOSK_URL is not empty" [ -n "$NETMON_KIOSK_URL" ]
             ;;
         esac
     done

@@ -31,6 +31,14 @@
       }}
   when: netmon_scanner_service is undefined
 
+- name: build java args
+  set_fact:
+    netmon_scanner_java_args: >
+      {{
+      (netmon_scanner_java_args | default([])) + ['-D' + (item.key|string) + '="' + (item.value|string) + '"']
+      }}
+  with_dict: "{{ netmon_scanner_args }}"
+
 - name: copy service
   become: true
   ansible.builtin.template:

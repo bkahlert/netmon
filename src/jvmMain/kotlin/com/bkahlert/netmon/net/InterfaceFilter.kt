@@ -2,7 +2,7 @@ package com.bkahlert.netmon.net
 
 import com.bkahlert.kommons.logging.SLF4J
 import com.bkahlert.kommons.logging.logback.StructuredArguments
-import com.bkahlert.netmon.Settings
+import com.bkahlert.netmon.NetworkFilterSettings
 import java.math.BigInteger
 import java.net.Inet4Address
 import java.net.Inet6Address
@@ -19,7 +19,7 @@ object InterfaceFilter {
      */
     fun filter(
         networkInterfaces: List<NetworkInterface> = NetworkInterface.getNetworkInterfaces().toList(),
-        hostCountRange: ClosedRange<BigInteger> = BigInteger(Settings.Scanner.MIN_HOSTS)..BigInteger(Settings.Scanner.MAX_HOSTS),
+        hostCountRange: ClosedRange<BigInteger> = NetworkFilterSettings.hostCountRange,
     ): Map<NetworkInterface, List<InterfaceAddress>> = networkInterfaces
         .filter { iface ->
             iface.isUp.also {

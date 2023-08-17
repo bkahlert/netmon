@@ -5,8 +5,9 @@ import com.bkahlert.kommons.time.toMomentString
 import com.bkahlert.netmon.Event
 import com.bkahlert.netmon.EventSource
 import com.bkahlert.netmon.Host
-import com.bkahlert.netmon.Settings
+import com.bkahlert.netmon.HostEventSettings
 import com.bkahlert.netmon.Status
+import com.bkahlert.netmon.UiSettings
 import com.bkahlert.netmon.stable
 import com.bkahlert.netmon.ticks
 import com.bkahlert.netmon.timePassed
@@ -46,7 +47,7 @@ fun RenderContext.scan(
                 li {
                     +"scanned "
                     span("font-semibold") {
-                        ticks(Settings.WebDisplay.REFRESH_INTERVAL)
+                        ticks(UiSettings.REFRESH_INTERVAL)
                             .combine(events.map { it.timestamp }) { _, timestamp -> timestamp.coerceAtMost(Now).toMomentString() }
                             .render(into = this) { +it }
                     }
@@ -62,7 +63,7 @@ fun RenderContext.scan(
                 li { host(host) }
             }
         }
-        div("divider-xs opacity-50") { +"${Settings.HOST_STATE_CHANGE_STABLE_DURATION}+ unchanged" }
+        div("divider-xs opacity-50") { +"${HostEventSettings.stabilizedThreshold}+ unchanged" }
         ul("grid grid-cols-[repeat(auto-fill,150px)] justify-between gap-4 opacity-50") {
             stable.renderEach(into = this) { host ->
                 li { host(host) }
@@ -72,13 +73,13 @@ fun RenderContext.scan(
 }
 
 fun RenderContext.host(host: Host) {
-    val duration: Flow<Duration?> = ticks(Settings.WebDisplay.REFRESH_INTERVAL).map { host.timePassed }
+    val duration: Flow<Duration?> = ticks(UiSettings.REFRESH_INTERVAL).map { host.timePassed }
     div("flex justify-center sm:justify-start gap-x-2 truncate") {
         className(duration.map {
             when {
                 it == null -> ""
-                it < Settings.WebDisplay.HOST_STATE_CHANGE_STRONG_HIGHLIGHT_DURATION -> "animate-pulse [animation-duration:1s]"
-                it < Settings.WebDisplay.HOST_STATE_CHANGE_HIGHLIGHT_DURATION -> "animate-pulse"
+                it < UiSettings.HOST_STATE_CHANGE_STRONG_HIGHLIGHT_DURATION -> "animate-pulse [animation-duration:1s]"
+                it < UiSettings.HOST_STATE_CHANGE_HIGHLIGHT_DURATION -> "animate-pulse"
                 else -> ""
             }
         })

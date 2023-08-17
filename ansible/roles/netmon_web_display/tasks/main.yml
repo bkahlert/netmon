@@ -29,6 +29,25 @@
   notify: "restart lighttpd"
   become: true
 
+- name: build query params
+  set_fact:
+    netmon_web_display_query_params: >
+      {{
+      (netmon_web_display_query_params | default([])) + [(item.key|string|urlencode) + '=' + (item.value|string|urlencode)]
+      }}
+  with_dict: "{{ netmon_web_display_args }}"
+
+- name: set NETMON_KIOSK_URL
+  become: true
+  ansible.builtin.lineinfile:
+    path: /etc/environment
+    state: present
+    create: yes
+    mode: "0644"
+    line: >
+      NETMON_KIOSK_URL='http://localhost/?{{ netmon_web_display_query_params | join('&') }}'
+  notify: "reboot system"
+
 - name: enable lighttpd service
   become: true
   ansible.builtin.systemd_service:

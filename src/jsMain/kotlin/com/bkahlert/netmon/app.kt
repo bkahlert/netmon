@@ -4,13 +4,10 @@ import com.bkahlert.kommons.js.OnScreenConsole
 import com.bkahlert.kommons.js.console
 import com.bkahlert.kommons.time.Now
 import com.bkahlert.kommons.time.toMomentString
-import com.bkahlert.kommons.uri.queryParameters
-import com.bkahlert.kommons.uri.toUri
 import com.bkahlert.netmon.ui.scan
 import dev.fritz2.core.handledBy
 import dev.fritz2.core.mapByKey
 import dev.fritz2.core.render
-import kotlinx.browser.window
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
@@ -47,7 +44,7 @@ suspend fun main() {
         h1("font-bold") { +"Network Monitor" }
         div("opacity-50") {
             val start = Now
-            ticks(Settings.WebDisplay.REFRESH_INTERVAL).map {
+            ticks(UiSettings.REFRESH_INTERVAL).map {
                 start.toMomentString()
             }.render(into = this) { +"started $it" }
         }
@@ -86,11 +83,10 @@ suspend fun main() {
     /*
      * MQTT
      */
-    val parameters = window.location.href.toUri().queryParameters
-    val brokerHost = parameters["broker.host"] ?: Settings.BROKER_HOST
-    val brokerPort = parameters["broker.port"] ?: Settings.WebDisplay.BROKER_PORT
-    val brokerUrl = parameters["broker.url"] ?: "ws://$brokerHost:$brokerPort"
-    val scanTopic = (parameters["topic.scan"] ?: Settings.SCAN_TOPIC)
+    val brokerHost = BrokerSettings.host
+    val brokerPort = BrokerSettings.port ?: 8081
+    val brokerUrl = "ws://$brokerHost:$brokerPort"
+    val scanTopic = ScanEventSettings.topic
         .replace("\${node}", "+")
         .replace("\${interface}", "+")
         .replace("\${cidr}", "+/+")

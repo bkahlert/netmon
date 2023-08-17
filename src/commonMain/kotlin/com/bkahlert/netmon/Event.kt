@@ -58,4 +58,4 @@ val Event.ScanEvent.timePassed: Duration
 
 /** Whether this scan is no more current. */
 val Event.ScanEvent.outdated: Boolean
-    get() = timePassed > Settings.SCAN_OUTDATED_THRESHOLD
+    get() = timePassed > ScanEventSettings.outdatedThreshold

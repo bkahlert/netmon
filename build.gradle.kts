@@ -155,42 +155,6 @@ tasks {
 }
 
 tasks {
-    val sshDefaultDestination = "10.0.0.2"
-    val sshDestination = project.findProperty("ssh.destination") as String? ?: run {
-        logger.warn("No ssh.destination specified. Using $sshDefaultDestination")
-        sshDefaultDestination
-    }
-
-    val shadowJarFile = shadowJar.get().outputs
-        .files
-        .single { it.name.endsWith(".jar") }
-
-    val cpTask = register<Exec>("copyShadowSsh") {
-        dependsOn(shadowJar)
-        outputs.upToDateWhen { false }
-        commandLine = listOf(
-            "rsync",
-            "-rvz",
-            "--delete",
-            shadowJarFile.absolutePath,
-            "$sshDestination:netmon/${shadowJarFile.name}",
-        )
-    }
-
-    register<Exec>("runShadowSsh") {
-        group = "application"
-        dependsOn(cpTask)
-        commandLine = listOf(
-            "ssh",
-            "-q",
-            sshDestination,
-            "java -jar './netmon/${shadowJarFile.name}'",
-        )
-    }
-}
-
-
-tasks {
     val removalPattern = listOf(
         Regex("\\.(jpe?g|png|gif|svg)\$"),
         Regex("\\.(woff|woff2|eot|ttf|otf)\$"),

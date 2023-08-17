@@ -25,4 +25,4 @@ val Host.timePassed: Duration?
     get() = since?.let { Now - it }?.coerceAtLeast(Duration.ZERO)
 
 val Host.stable: Boolean
-    get() = timePassed?.let { it > Settings.HOST_STATE_CHANGE_STABLE_DURATION } ?: true
+    get() = timePassed?.let { it > HostEventSettings.stabilizedThreshold } ?: true

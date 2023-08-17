@@ -9,8 +9,8 @@ import com.bkahlert.netmon.Cidr
 import com.bkahlert.netmon.IP
 import com.bkahlert.netmon.JsonFormat
 import com.bkahlert.netmon.NameResolver
+import com.bkahlert.netmon.NetworkScanSettings
 import com.bkahlert.netmon.ScanResult
-import com.bkahlert.netmon.Settings
 import com.bkahlert.netmon.Status
 import com.bkahlert.netmon.nmap.NmapOutput.Host.Address.AttrType
 import java.net.URL
@@ -21,7 +21,7 @@ import kotlin.io.path.writeBytes
 // sudo nmap -sU -p137 --script nbstat 192.168.16.0/24
 //sudo nmap -sU -p137 --script nbstat 192.168.16.10 -oX -
 data class NmapNetworkScanner(
-    val privileged: Boolean = Settings.Scanner.PRIVILEGED_SCAN,
+    val privileged: Boolean = NetworkScanSettings.privileged,
     val timingTemplate: ScanResult.TimingTemplate = ScanResult.TimingTemplate.Normal,
 ) : NameResolver {
 

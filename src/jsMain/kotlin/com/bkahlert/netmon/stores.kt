@@ -32,7 +32,7 @@ class ScanEventsStore : RootStore<Map<EventSource, ScanEvent>>(emptyMap()) {
     }
 
     init {
-        ticks(Settings.WebDisplay.REFRESH_INTERVAL) handledBy cleanUp
+        ticks(UiSettings.REFRESH_INTERVAL) handledBy cleanUp
     }
 }
 

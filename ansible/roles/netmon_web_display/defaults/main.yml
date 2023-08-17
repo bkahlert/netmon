@@ -1,2 +1,5 @@
 ---
 netmon_web_display_build_artifact: "{{ build_dir }}/dist/js/productionExecutable"
+netmon_web_display_args:
+  broker.host: test.mosquitto.org
+  broker.port: 8080
