@@ -1,27 +1,23 @@
 package com.bkahlert.netmon
 
-import kotlinx.serialization.KSerializer
-import kotlinx.serialization.descriptors.PrimitiveKind
-import kotlinx.serialization.descriptors.PrimitiveSerialDescriptor
-import kotlinx.serialization.descriptors.SerialDescriptor
-import kotlinx.serialization.encoding.Decoder
-import kotlinx.serialization.encoding.Encoder
-import java.math.BigInteger
-
 /** Settings for the network monitor's scanner. */
 object NetworkFilterSettings : Settings("network") {
 
-    /** The minimum number of hosts a network address's interface needs to cover to be used. */
-    val minHosts: BigInteger by setting(default = BigInteger("2"), deserializer = BigIntegerSerializer)
+    /**
+     * The minimum number of host bits, that is, the IP address length minus the prefix.
+     *
+     * The default is `4`, which corresponds to IPv4 networks with a `/28` prefix and IPv6 networks, with a `/124` prefix.
+     * Or differently put: networks with 2^4 = 16 IP addresses.
+     */
+    val minHostBits: UInt by setting(default = 4u)
 
-    /** The maximum number of hosts a network address's interface needs to cover to be used. */
-    val maxHosts: BigInteger by setting(default = BigInteger("16777216"), deserializer = BigIntegerSerializer)
+    /**
+     * The maximum number of host bits, that is, the IP address length minus the prefix.
+     *
+     * The default is `16`, which corresponds to IPv4 networks with a `/16` prefix and IPv6 networks, with a `/112` prefix.
+     * Or differently put: networks with 2^16 = 65536 IP addresses.
+     */
+    val maxHostBits: UInt by setting(default = 16u)
 
-    val hostCountRange: ClosedRange<BigInteger> get() = minHosts..maxHosts
-}
-
-private object BigIntegerSerializer : KSerializer<BigInteger> {
-    override val descriptor: SerialDescriptor = PrimitiveSerialDescriptor("BigInteger", PrimitiveKind.STRING)
-    override fun deserialize(decoder: Decoder): BigInteger = BigInteger(decoder.decodeString())
-    override fun serialize(encoder: Encoder, value: BigInteger) = encoder.encodeString(value.toString())
+    val hostBitsRange: IntRange get() = minHostBits.toInt()..maxHostBits.toInt()
 }

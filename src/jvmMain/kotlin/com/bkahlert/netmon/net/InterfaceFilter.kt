@@ -3,7 +3,6 @@ package com.bkahlert.netmon.net
 import com.bkahlert.kommons.logging.SLF4J
 import com.bkahlert.kommons.logging.logback.StructuredArguments
 import com.bkahlert.netmon.NetworkFilterSettings
-import java.math.BigInteger
 import java.net.Inet4Address
 import java.net.Inet6Address
 import java.net.InterfaceAddress
@@ -19,7 +18,7 @@ object InterfaceFilter {
      */
     fun filter(
         networkInterfaces: List<NetworkInterface> = NetworkInterface.getNetworkInterfaces().toList(),
-        hostCountRange: ClosedRange<BigInteger> = NetworkFilterSettings.hostCountRange,
+        hostBitsRange: IntRange = NetworkFilterSettings.hostBitsRange,
     ): Map<NetworkInterface, List<InterfaceAddress>> = networkInterfaces
         .filter { iface ->
             iface.isUp.also {
@@ -56,12 +55,12 @@ object InterfaceFilter {
                     }
                 }
                 .filter { ifaceAddress ->
-                    (ifaceAddress.maxHosts in hostCountRange).also {
+                    (ifaceAddress.hostBits in hostBitsRange).also {
                         if (!it) logger.debug(
                             "Skipping {} because it's {} is not in {}",
                             StructuredArguments.kv("interfaceAddress", ifaceAddress),
                             StructuredArguments.kv("max-host-count", ifaceAddress.maxHosts),
-                            StructuredArguments.kv("allowed-host-count-range", hostCountRange),
+                            StructuredArguments.kv("allowed-host-count-range", hostBitsRange),
                         )
                     }
                 }
