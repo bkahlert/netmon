@@ -11,7 +11,7 @@
     state: restarted
   become: true
 
-- name: reboot system
+- name: reboot
   ansible.builtin.reboot:
     msg: "Rebooting system to finalize netmon web display setup."
   become: true

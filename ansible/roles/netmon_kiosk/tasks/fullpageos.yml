@@ -54,6 +54,35 @@
         mode: '0600'
       when: wpa_supplicant_conf.stat.islnk and wpa_supplicant_conf_symlink_target.stdout != ''
 
+- name: remove service units referencing /home/pi/scripts
+  become: true
+  ansible.builtin.shell: >
+    grep --files-with-matches --recursive '^ExecStart=/home/pi/scripts/' /etc/systemd/system
+    | xargs --no-run-if-empty rm -f
+  failed_when: false
+
+- name: guard lines that work with the wlan0 interface in /etc/rc.local without checking if it exists
+  become: true
+  ansible.builtin.replace:
+    path: /etc/rc.local
+    regexp: '^(?!#)(?!! ip )(?P<line>.*\bwlan0\b.*)$'
+    # Matches lines containing 'wlan0' as a word (that is, it matches 'echo wlan0' but not 'echo wlan00'), but
+    # not lines that are commented out '#', or
+    # already contain a guard.
+    replace: '! ip link show wlan0 >/dev/null 2>&1 || \g<line>'
+    # The guard uses the "! ... || ..." to also return true if there's no wlan0.
+    # Otherwise, if this was the last line, the script would exit with a non-zero exit code,
+    # although it finished successfully.
+    # (That's a general shell script behavior, not specific to /etc/rc.local.)
+    backup: true
+  failed_when: false
+
 - name: remove FullPageOS config files
   become: true
   shell: "rm -rf /boot/fullpage*"
+
+- name: copy splash image
+  become: true
+  ansible.builtin.copy:
+    src: files/splash.png
+    dest: /boot/splash.png

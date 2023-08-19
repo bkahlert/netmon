@@ -7,23 +7,53 @@ source "$SCRIPT_DIR/../lib/lib.bash"
 
 declare -r netmon_services=(
     netmon-scanner
-)
-declare -r system_services=(
     lighttpd
+)
+declare -r kiosk_services=(
     lightdm
 )
 
-do_diag() {
+netmon_diag() {
+    local result
     checks_start "Netmon diagnostics"
 
-    for service in "${netmon_services[@]}" "${system_services[@]}"; do
+    for service in "${netmon_services[@]}"; do
         printf "\e[1m%s...\e[0m\n" "$service" >&2
         check "service is running" systemctl -q is-active "$service.service"
         case "$service" in
         lighttpd)
             check "lighttpd is configured to use /opt/netmon/netmon-web-display as document root" grep -q '^server.document-root\s\+=\s\+"/opt/netmon/netmon-web-display"$' /etc/lighttpd/lighttpd.conf
             ;;
+        esac
+    done
+
+    check_summary
+    result=$?
+
+    {
+        printf "\n\e[4mUseful commands:\e[0m\n"
+        for service in "${netmon_services[@]}"; do
+            printf -- "\e[1m- regarding service \e[3m%s\e[23m:\e[0m\n" "$service"
+            printf -- "  - check status: \e[3m%s\e[23m\n" "systemctl status $service.service"
+            printf -- "  - check logs: \e[3m%s\e[23m\n" "journalctl -b -e -u $service.service"
+            printf -- "  - stop service: \e[3m%s\e[23m\n" "sudo systemctl stop $service.service"
+            printf -- "  - start service interactively: \e[3m%s\e[23m\n" "$(service_start_cmdline "$service.service")"
+        done
+    } | sed 's/^/  /' >&2
+
+    return $result
+}
+
+kiosk_diag() {
+    local result
+    checks_start "Kiosk diagnostics"
+
+    for service in "${kiosk_services[@]}"; do
+        printf "\e[1m%s...\e[0m\n" "$service" >&2
+        check "service is running" systemctl -q is-active "$service.service"
+        case "$service" in
         lightdm)
+            check "X log contains no errors" ! grep -q '] (EE)' /var/log/Xorg.0.log
             check "lightdm is configured to use user-session netmon-kiosk" grep -q '^user-session=netmon-kiosk$' /etc/lightdm/lightdm.conf
             check "netmon-kiosk.desktop is installed" [ -f /usr/share/xsessions/netmon-kiosk.desktop ]
             check "netmon-kiosk executable is installed" [ -f /opt/netmon/bin/netmon-kiosk ]
@@ -34,24 +64,56 @@ do_diag() {
     done
 
     check_summary
+    result=$?
 
-    printf '\n\e[1mFurther debugging:\e[0m\n' >&2
-    printf '  - for HDMI related issues, see \e]8;;%s\e\\%s\e]8;;\e\\\n' \
-        'https://www.raspberrypi.com/documentation/computers/config_txt.html#which-values-are-valid-for-my-monitor' \
-        'www.raspberrypi.com/documentation/computers/config_txt.html#which-values-are-valid-for-my-monitor' >&2
+    {
+        printf "\n\e[4mUseful commands:\e[0m\n"
+        printf -- '- for HDMI related issues, see \e]8;;%s\e\\%s\e]8;;\e\\\n' \
+            'https://www.raspberrypi.com/documentation/computers/config_txt.html#which-values-are-valid-for-my-monitor' \
+            'www.raspberrypi.com/documentation/computers/config_txt.html#which-values-are-valid-for-my-monitor'
 
-    for service in "${netmon_services[@]}"; do
-        printf "  \e[1m- regarding service \e[3m%s\e[23m:\e[0m\n" "$service" >&2
-        printf "    - check status: \e[3m%s\e[23m\n" "systemctl status $service.service" >&2
-        printf "    - check logs: \e[3m%s\e[23m\n" "journalctl -b -e -u $service.service" >&2
-        printf "    - stop service: \e[3m%s\e[23m\n" "sudo systemctl stop $service.service" >&2
-        printf "    - start service interactively: \e[3m%s\e[23m\n" "$(service_start_cmdline "$service.service")" >&2
-    done
+        for service in "${kiosk_services[@]}"; do
+            printf -- "\e[1m- regarding service \e[3m%s\e[23m:\e[0m\n" "$service"
+            printf -- "  - check status: \e[3m%s\e[23m\n" "systemctl status $service.service"
+            printf -- "  - check logs: \e[3m%s\e[23m\n" "journalctl -b -e -u $service.service"
+            printf -- "  - stop service: \e[3m%s\e[23m\n" "sudo systemctl stop $service.service"
+            printf -- "  - start service interactively: \e[3m%s\e[23m\n" "$(service_start_cmdline "$service.service")"
+            case "$service" in
+            lightdm)
+                printf -- "  - check lightdm logs: \e[3m%s\e[23m\n" "sudo cat /var/log/lightdm/lightdm.log"
+                printf -- "  - check lightdm x logs: \e[3m%s\e[23m\n" "sudo cat /var/log/lightdm/x-0.log"
+                printf -- "  - check X logs: \e[3m%s\e[23m\n" "sudo cat /var/log/Xorg.0.log"
+                printf -- "  - check X logs for missing values and install them: \e[3m%s\e[23m\n" "sudo apt-get install xserver-xorg-video-fbturbo"
+                ;;
+            esac
+        done
+    } | sed 's/^/  /' >&2
 
-    printf "  \e[1m- regarding \e[3m%s\e[23m:\e[0m\n" "kiosk mode" >&2
-    printf "    - check logs: \e[3m%s\e[23m\n" "less -R /tmp/netmon-kiosk.log" >&2
+    printf "  \e[1m- \e[3m%s\e[23m logs \e[3m%s\e[23m:\e[0m\n" "kiosk mode" "/tmp/netmon-kiosk.log" >&2
+    run_indented cat /tmp/netmon-kiosk.log # >&2
 
-    printf '\n' >&2
+    return $result
+}
+
+pihero_diag() {
+    local result
+    checks_start "Pi Hero diagnostics"
+
+    check "Pi Hero diagnostics succeed" pihero_workaround diag
+
+    check_summary
+    result=$?
+
+    {
+        printf "\n\e[4mUseful commands:\e[0m\n"
+        printf -- "- check diagnostics output: \e[3m%s\e[23m\n" "pihero diag"
+    } | sed 's/^/  /' >&2
+
+    return $result
+}
+
+pihero_workaround() {
+    run_optional pihero "$@" >/dev/null 2>&1
 }
 
 main() {
@@ -65,7 +127,36 @@ main() {
 
     case "$cmd" in
     diag)
-        do_diag "$@"
+        local result=0 diagnostics=()
+
+        netmon_diag
+        diagnostics+=("Netmon" "$?")
+        printf '\n' >&2
+
+        kiosk_diag
+        diagnostics+=("Kiosk" "$?")
+        printf '\n' >&2
+
+        pihero_diag
+        diagnostics+=("Pi Hero" "$?")
+        printf '\n' >&2
+
+        local summary=''
+        while ((${#diagnostics[@]} > 0)); do
+            local icon
+            if [ "${diagnostics[1]}" -eq 0 ]; then
+                printf -v icon '\e[32m✔︎\e[0m'
+            else
+                printf -v icon '\e[31m✘︎\e[0m'
+                result=1
+            fi
+            printf -v summary '%s   \e[1m%s %s\e[0m' "$summary" "${diagnostics[0]}" "$icon"
+            diagnostics=("${diagnostics[@]:2}")
+        done
+        printf ' %s%s\n' "Summary" "$summary" >&2
+        printf '\n' >&2
+
+        return "$result"
         ;;
     start | restart | stop)
         for service in lightdm "${netmon_services[@]}"; do

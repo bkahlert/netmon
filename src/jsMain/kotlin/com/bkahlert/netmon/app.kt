@@ -92,7 +92,7 @@ suspend fun main() {
      * MQTT
      */
     val brokerHost = BrokerSettings.host
-    val brokerPort = BrokerSettings.port ?: 8081
+    val brokerPort = BrokerSettings.port
     val brokerUrl = "ws://$brokerHost:$brokerPort"
     val scanTopic = ScanEventSettings.topic
         .replace("\${node}", "+")

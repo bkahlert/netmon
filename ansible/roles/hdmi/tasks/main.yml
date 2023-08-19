@@ -7,7 +7,7 @@
     section: ''
     option: disable_overscan
     value: '1'
-  notify: "reboot system"
+  notify: reboot
 
 - name: configure HDMI
   become: true
@@ -20,7 +20,7 @@
     mode: "0644"
   loop: "{{ hdmi | dict2items }}"
   when: hdmi is defined
-  notify: "reboot system"
+  notify: reboot
 
 - name: remove gpu_mem setting
   become: true
@@ -30,7 +30,7 @@
     section: 'all'
     option: gpu_mem
     state: absent
-  notify: "reboot system"
+  notify: reboot
 
 - name: disable vc4-kms-v3d overlay for custom resolution
   # this overlay causes problems together with custom resolution
@@ -41,7 +41,7 @@
     state: absent
   become: true
   when: hdmi is defined and hdmi.group|string == '2' and hdmi.mode|string == '87'
-  notify: "reboot system"
+  notify: reboot
 
 - name: enable display_auto_detect
   become: true
@@ -51,4 +51,4 @@
     section: 'all'
     option: display_auto_detect
     value: '1'
-  notify: "reboot system"
+  notify: reboot

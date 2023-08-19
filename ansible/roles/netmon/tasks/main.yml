@@ -11,6 +11,7 @@
       ansible.builtin.copy:
         src: files/
         dest: "{{ package_dir }}/"
+        force: true
 
     - name: make executables executable
       block:
@@ -30,6 +31,7 @@
       ansible.builtin.copy:
         content: "export PATH=$PATH:{{ package_dir }}/bin"
         dest: "/etc/profile.d/netmon_path.sh"
+        force: true
 
     - name: explain netmon
       become: true

@@ -8,11 +8,42 @@ GRADLE_CLEAN=${GRADLE_CLEAN:-1}                              # Whether to clean 
 GRADLE_EXE=${GRADLE_EXE:-$PROJECT_DIR/gradlew}               # The Gradle executable to use for building (default: Gradle wrapper)
 GRADLE_WORKING_DIR=${GRADLE_WORKING_DIRECTORY:-$PROJECT_DIR} # The working directory for Gradle (default: project root)
 
-HOST=${HOST:-foo.local}                                       # The host to patch (default: foo.local)
-SCANNER=${SCANNER:-0}                                         # Whether to build und update the scanner component (default: no)
-WEB_DISPLAY=${WEB_DISPLAY:-0}                                 # Whether to build und update the web display component (default: no)
-KIOSK=${KIOSK:-0}                                             # Whether to update the kiosk component (default: no)
-KIOSK_EXE="$SCRIPT_DIR/roles/netmon_kiosk/files/netmon-kiosk" # The kiosk executable to deploy (default: netmon-kiosk used by Ansible role)
+PREFIX=${PATCH_PREFIX-NETMON_}
+# Sets variable with name $1 to the value of variable $PREFIX_$1 if it exists.
+# If it doesn't, uses $2 as the default value or exits with an error message.
+p() {
+    local var=${1?var missing} && shift
+    local default=$1
+    local prefixed=$PREFIX$var
+    local resolved=${!prefixed}
+    if [ "$resolved" ]; then
+        printf -v "$var" '%s' "$resolved"
+    elif [ "$default" ]; then
+        printf -v "$var" '%s' "$default"
+    else
+        printf '\e[31mRequired parameter \e[3m%s\e[23m is missing.\e[0m\n' "$prefixed" >&2
+        printf 'Either use \e[3m%s\e[23m or run \e[3m%s\e[23m to provide it.\n' "export $prefixed=..." "$prefixed=... ${0##*/}"
+        exit 1
+    fi
+    printf -v "$var" '%s' "${!prefixed:-$default}"
+}
+
+# Parameters
+p HOST                                               # The host to patch
+p MAIN 1                                             # Whether to update the netmon entrypoint
+p MAIN_FILES "$SCRIPT_DIR/roles/netmon/files"        # The directory containing the bin and lib directory of the netmon entrypoint
+p SCANNER 0                                          # Whether to build und update the scanner component
+p WEB_DISPLAY 0                                      # Whether to build und update the web display component
+p KIOSK 0                                            # Whether to update the kiosk component
+p KIOSK_FILES "$SCRIPT_DIR/roles/netmon_kiosk/files" # The directory containing the files of the kiosk component
+
+if [ "$MAIN" = 0 ] && [ "$SCANNER" = 0 ] && [ "$WEB_DISPLAY" = 0 ] && [ "$KIOSK" = 0 ]; then
+    printf -v params '\e[3m%s\e[23m ' "${PREFIX}HOST=foo.local" "$PREFIX...=..."
+    printf '\e[1mUsage: %s %s\e[0m\n' "$params" "${0##*/}"
+    printf ' Hint: Type export %sto set a different host and the appropriate option or options for the remainder of your shell session.\n' "$params"
+    printf '       Check the source code for more options.\n'
+    exit 1
+fi
 
 # Ansible ad-hoc command wrapper which runs:
 # ansible $HOST --become -m $1 -a "$2 $3 $4 ..."
@@ -23,24 +54,21 @@ m() {
 }
 
 # rsync command wrapper which runs:
-# rsync -rz --delete --rsync-path='sudo rsync' "$1" "$HOST:$2"
+# rsync --recursive --compress --delete --rsh='ssh -o ConnectTimeout=120' --rsync-path='sudo rsync' "${@:1:$#-1}" "$HOST:${@: -1}"
 r() {
-    local src=${1?source missing} && shift
-    local dst="$HOST:${1?destination missing}" && shift
-    printf "Copying \e[3m%s\e[23m to \e[3m%s\e[23m... " "$src" "$dst"
-    rsync -rz --delete --rsync-path='sudo rsync' "$src" "$dst" || {
+    [ "$#" -ge 2 ] || {
+        printf '\e[31mAt least two parameters—the files to copy, and the destination—are required\n'
+        exit 1
+    }
+    local src=("${@:1:$#-1}")
+    local dst="$HOST:${@: -1}"
+    printf "Copying \e[3m%s\e[23m to \e[3m%s\e[23m... " "${src[*]}" "$dst"
+    rsync --recursive --compress --delete --rsh='ssh -o ConnectTimeout=10' --rsync-path='sudo rsync' "${src[@]}" "$dst" || {
         printf '\e[31Failed to copy \e[3m%s\e[23m to \e[3m%s\e[23m\n' "$src" "$dst"
         exit 1
     }
     printf '\e[32m✔︎\e[0m\n'
 }
-
-if [ "$SCANNER" = 0 ] && [ "$WEB_DISPLAY" = 0 ] && [ "$KIOSK" = 0 ]; then
-    printf '\e[1mUsage: SCANNER=1 WEB_DISPLAY=1 KIOSK=1 %s\e[0m\n' "${0##*/}"
-    printf ' Hint: Type \e[3m%s\e[23m to set the appropriate option or options for the remainder of your shell session.\n' 'export HOST=bar.local SCANNER=1 [...]'
-    printf '       Check the source code for more options.\n'
-    exit 1
-fi
 
 # build
 declare gradle_success=0
@@ -72,8 +100,14 @@ if [ "$gradle_success" = 1 ] && [ ! "$WEB_DISPLAY" = 0 ]; then
     m ansible.builtin.shell 'export DISPLAY=:0 && wid=$(xdotool search --sync --onlyvisible --class chromium | head -1) && xdotool windowactivate "$wid" && xdotool key ctrl+F5 && xdotool key F11 || printf "Failed to find Chromium window\n"'
 fi
 
+# deploy netmon entrypoint
+if [ ! "$MAIN" = 0 ]; then
+    r "$MAIN_FILES/bin/netmon" /opt/netmon/bin/netmon
+    r "$MAIN_FILES/lib/" /opt/netmon/lib/
+fi
+
 # deploy kiosk component
 if [ ! "$KIOSK" = 0 ]; then
-    r "$KIOSK_EXE" /opt/netmon/bin/netmon-kiosk
+    r "$KIOSK_FILES/netmon-kiosk" /opt/netmon/bin/netmon-kiosk
     m ansible.builtin.service name=lightdm state=restarted
 fi

@@ -1,9 +1,11 @@
 # Shared functions
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
+SCRIPT_BASENAME="$(basename "${BASH_SOURCE[0]}")"
 
-# shellcheck source=./services.bash
-source "$SCRIPT_DIR/services.bash"
-
-# shellcheck source=./checks.bash
-source "$SCRIPT_DIR/checks.bash"
+for lib in "$SCRIPT_DIR"/*.bash; do
+    # shellcheck source=./runs.bash
+    # shellcheck source=./services.bash
+    # shellcheck source=./checks.bash
+    [ "$lib" = "$SCRIPT_DIR/$SCRIPT_BASENAME" ] || source "$lib"
+done

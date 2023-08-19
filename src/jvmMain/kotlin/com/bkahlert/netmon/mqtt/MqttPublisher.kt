@@ -4,8 +4,11 @@ import com.bkahlert.kommons.logging.SLF4J
 import com.bkahlert.kommons.orNull
 import com.bkahlert.netmon.JsonFormat
 import com.hivemq.client.mqtt.MqttClient
+import com.hivemq.client.mqtt.MqttWebSocketConfig
 import com.hivemq.client.mqtt.datatypes.MqttQos
 import com.hivemq.client.mqtt.mqtt5.message.publish.Mqtt5PayloadFormatIndicator
+import com.hivemq.client.mqtt.mqtt5.message.publish.Mqtt5PublishBuilder
+import com.hivemq.client.mqtt.mqtt5.message.publish.Mqtt5PublishResult
 import kotlinx.serialization.SerializationStrategy
 import kotlinx.serialization.StringFormat
 import kotlinx.serialization.json.Json
@@ -13,7 +16,7 @@ import java.util.UUID
 
 data class MqttPublisher<T>(
     val host: String,
-    val port: Int? = null,
+    val port: Int,
     val stringFormat: StringFormat = JsonFormat,
     val serializer: SerializationStrategy<T>,
     val identifier: String? = null,
@@ -24,8 +27,10 @@ data class MqttPublisher<T>(
     private val client = MqttClient.builder()
         .identifier(identifier ?: UUID.randomUUID().toString())
         .serverHost(host)
-        .serverPort(port ?: 1883)
-        .useMqttVersion5()
+        .serverPort(port)
+        .webSocketConfig(MqttWebSocketConfig.builder().build())
+        .useMqttVersion3()
+//        .useMqttVersion5()
         .automaticReconnectWithDefaultConfig()
         .buildBlocking()
         .apply { connect() }
@@ -40,12 +45,16 @@ data class MqttPublisher<T>(
             .topic(topic)
             .qos(MqttQos.AT_LEAST_ONCE)
             .retain(true)
-            .payloadFormatIndicator(Mqtt5PayloadFormatIndicator.UTF_8)
-            .apply { if (stringFormat is Json) contentType("application/json") }
+            .also {
+                if (it is Mqtt5PublishBuilder.Send.Complete<*>) {
+                    it.payloadFormatIndicator(Mqtt5PayloadFormatIndicator.UTF_8)
+                    if (stringFormat is Json) it.contentType("application/json")
+                }
+            }
             .payload(bytes)
             .send()
 
-        return when (val error = result.error.orNull()) {
+        return when (val error = (result as? Mqtt5PublishResult)?.error.orNull()) {
             null -> {
                 logger.debug("Published to {}: {}", topic, result)
                 true

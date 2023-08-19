@@ -1,5 +1,5 @@
 ---
 netmon_scanner_build_artifact: "{{ build_dir }}/libs"
 netmon_scanner_args:
-  broker.host: test.mosquitto.org
-  broker.port: 1883
+  broker.host: "{{ broker.host }}"
+  broker.port: "{{ broker.port }}"

@@ -1,13 +1,11 @@
 ---
 - hosts: "{{ inventory if inventory is defined else 'all' }}"
   gather_facts: false
-  vars:
-    services: [ netmon-scanner, lightdm ]
   tags: [ always ]
   tasks:
-    - name: make sure services {{ services | join(', ') }} are stopped
+    - name: make sure services {{ temporarily_disabled_services | join(', ') }} are stopped
       ansible.builtin.service: { name: "{{ item }}", state: stopped }
-      loop: "{{ services | reverse }}"
+      loop: "{{ temporarily_disabled_services | reverse }}"
       become: true
       failed_when: false
       no_log: true
@@ -19,25 +17,23 @@
 - hosts: "{{ inventory if inventory is defined else 'all' }}"
   gather_facts: false
   max_fail_percentage: 0
-  vars:
-    services: [ netmon-scanner, lightdm ]
-    package_dir: /opt/netmon
-    project_dir: "{{ playbook_dir }}/.."
-    build_dir: "{{ playbook_dir }}/../build"
   tags: [ always ]
 
   pre_tasks:
     - name: gather user facts
       ansible.builtin.setup: { gather_subset: [ "!all", "!min", "user_dir", "user_id" ] }
+    - name: update apt packages and allow release info changes
+      import_tasks: tasks/apt-update.yml
 
   post_tasks:
-    - name: make sure services {{ services | join(', ') }} are started
+    - name: make sure services {{ temporarily_disabled_services | join(', ') }} are started
       ansible.builtin.service: { name: "{{ item }}", state: started }
-      loop: "{{ services }}"
+      loop: "{{ temporarily_disabled_services }}"
       become: true
 
   roles:
     - hdmi               # configures Kernel HDMI settings
+    - mosquitto          # installs the MQTT broker Eclipse Mosquitto
     - netmon             # installs the entrypoint
     - netmon_kiosk       # configures lightdm-based kiosk mode
     - netmon_scanner     # installs the scan component

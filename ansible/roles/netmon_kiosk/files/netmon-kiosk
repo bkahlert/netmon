@@ -4,6 +4,7 @@
 # Ctrl+Alt+F2 (Ctrl+Alt+Fn+F2 on some keyboards)
 
 LOG_FILE=/tmp/netmon-kiosk.log
+START_CHROME=1
 printf 'LOG STARTED %s\n' "$(date)" >"$LOG_FILE"
 
 tweak_ui() {
@@ -45,15 +46,18 @@ open_chromium() {
     local chromium_args=(
         --app="$URL"
         --autoplay-policy=no-user-gesture-required
+        --disable-component-update
+        --disable-features='AudioServiceOutOfProcess,TranslateUI'
+        --disable-gpu
         --disable-pinch
         --disable-session-crashed-bubble
-        --disable-component-update
-        --disable-features=TranslateUI
         --kiosk
+        --log-level=2 # 0=INFO, 1=WARNING, 2=ERROR, 3=FATAL, see https://stackoverflow.com/questions/46744968/how-to-suppress-console-error-warning-info-messages-when-executing-selenium-pyth
         --noerrdialogs
         --overscroll-history-navigation=0
         --simulate-outdated-no-au='Tue, 31 Dec 2099 23:59:59 GMT'
         --touch-events=enabled
+        --v=2 # 0-3, 3 → suppress all other logging, see https://www.chromium.org/for-testers/enable-logging/
     )
     set -x
     chromium-browser "${chromium_args[@]}"
@@ -61,33 +65,34 @@ open_chromium() {
 
 finalize_chromium() {
     local visible_wid visible_wname
-    printf "Waiting for the Chromium window to become visible... "
+    printf "Waiting for the Chromium window to become visible...\n"
     while ! visible_wid=$(xdotool search --sync --onlyvisible --class chromium 2>/dev/null); do
         sleep 1
     done
     visible_wname=$(xdotool getwindowname "$visible_wid")
-    printf '\e[32m✔︎\e[0m wid: %s, name: %s\n' "$visible_wid" "$visible_wname"
+    printf 'Successfully waited for the Chromium window \e[3m%s\e[23m (name: \e[3m%s\e[23m) to become visible \e[32m✔︎\e[0m\n' "$visible_wid" "$visible_wname"
 
+    printf "Enumerating all Chromium windows...\n"
     while read -r wid; do
-        if [ "$wid" = "$visible_wid" ]; then
-            # printf 'Hiding Chromium window %s...' "$wid"
-            # xdotool windowunmap "$wid" && printf '\e[32m✔︎\e[0m\n'
-            printf "Activating Chromium window %s... " "$visible_wid"
-            xdotool windowactivate "$visible_wid" && printf '\e[32m✔︎\e[0m\n'
-            #        else
-            #            printf 'Closing invisible Chromium window %s...' "$wid"
-            #            xdotool windowclose "$wid" && printf '\e[32m✔︎\e[0m\n'
-        fi
+        printf 'Found Chromium window %s: ' "$wid"
+        xdotool getwindowname "$wid"
     done < <(xdotool search --class chromium)
+
+    printf "Waiting for Chromium window %s to update its title... " "$visible_wid"
+    local current_wname
+    while true; do
+        current_wname="$(xdotool getwindowname "$visible_wid")"
+        [ "$visible_wname" = "$current_wname" ] || break
+        printf '\nwaiting... '
+        sleep 1
+    done
+    printf '\e[3m%s\e[23m \e[32m✔︎\e[0m\n' "$current_wname"
+
+    printf "Activating Chromium window %s... " "$visible_wid"
+    xdotool windowactivate "$visible_wid" && printf '\e[32m✔︎\e[0m\n'
 
     printf "Sending F11 key to switch Chromium window %s to full-screen mode... " "$visible_wid"
     xdotool key F11 && printf '\e[32m✔︎\e[0m\n'
-
-    printf "Waiting for Chromium window %s to update its title... " "$visible_wid"
-    while [ "$(xdotool getwindowname "$visible_wid")" = "$visible_wname" ]; do
-        sleep 1
-    done
-    printf '\e[32m✔︎\e[0m\n'
 
     # printf "Un-hiding Chromium window %s... " "$visible_wid"
     # xdotool windowmap "$visible_wid" && printf '\e[32m✔︎\e[0m\n'
@@ -98,6 +103,10 @@ export DISPLAY=:0
 
 tweak_ui >>"$LOG_FILE" 2>&1
 enhance_visual_rendering
-open_chromium "${NETMON_KIOSK_URL:-http://localhost/}" >>"$LOG_FILE" 2>&1 &
-finalize_chromium >>"$LOG_FILE" 2>&1 &
+if [ "$START_CHROME" = 0 ]; then
+    printf "Opening Chromium skipped because \e[3m%s\e[23m is \e[3m%s\e[23m\n" START_CHROME "$START_CHROME"
+else
+    open_chromium "${NETMON_KIOSK_URL:-http://localhost/}" &
+    finalize_chromium &
+fi >>"$LOG_FILE" 2>&1
 exec matchbox-window-manager -use_titlebar no

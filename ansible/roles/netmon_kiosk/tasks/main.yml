@@ -1,25 +1,15 @@
 ---
 - include_tasks: fullpageos.yml
 
-# needed on outdated systems, for dependencies to be installable
-- name: update apt packages and allow release info changes
-  block:
-    - name: configure apt to allow release info change
-      become: true
-      ansible.builtin.lineinfile:
-        path: /etc/apt/apt.conf.d/99allow-release-info-change
-        state: present
-        create: yes
-        line: Acquire::AllowReleaseInfoChange::Suite "true";
-    - name: update apt packages
-      become: true
-      ansible.builtin.apt:
-        update_cache: true
-        cache_valid_time: 86400
-
 - name: install apt dependencies
   ansible.builtin.apt:
-    name: [ unclutter, matchbox-window-manager ]
+    name:
+      - unclutter               # hides the mouse cursor
+      - matchbox-window-manager # window manager
+      - upower                  # if missing, causes error messages like the following when running Chromium:
+      # Failed to call method: org.freedesktop.DBus.Properties.Get: ↵
+      # object_path= /org/freedesktop/UPower: org.freedesktop.DBus.Error.ServiceUnknown: ↵
+      # The name org.freedesktop.UPower was not provided by any .service files
     state: present
   become: true
 

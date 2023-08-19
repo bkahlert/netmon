@@ -1,0 +1,11 @@
+temporarily_disabled_services:
+  - netmon-scanner
+  - lightdm
+
+package_dir: /opt/netmon
+project_dir: "{{ playbook_dir }}/.."
+build_dir: "{{ playbook_dir }}/../build"
+
+broker:
+  host: test.mosquitto.org
+  port: 8080

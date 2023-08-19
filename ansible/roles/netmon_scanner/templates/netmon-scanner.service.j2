@@ -1,12 +1,13 @@
 [Unit]
 Description=Netmon Scanner Service
 After=multi-user.target
+After=mosquitto.service
 
 [Service]
 Type=simple
 WorkingDirectory=-{{ netmon_scanner_service.working_directory }}
 ExecStartPre=/bin/mkdir -p '{{ netmon_scanner_service.working_directory }}'
-ExecStart=/bin/sh -c 'java -jar "{{ package_dir }}/netmon-scanner/"*.jar {{ netmon_scanner_java_args | join(' ') }}'
+ExecStart=/bin/sh -c 'java {{ netmon_scanner_java_args | join(' ') }} -jar "{{ package_dir }}/netmon-scanner/"*.jar'
 Restart=always
 TimeoutStopSec=10
 User={{ netmon_scanner_service.user }}
