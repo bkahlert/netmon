@@ -29,10 +29,3 @@ public fun Element.observedMutations(mutations: MutationObserverInit): Flow<Arra
             observer.disconnect()
         }
     }
-
-/**
- * A number in the range [0..1], that describes what percentage of the element's scroll height can be displayed.
- * A value of `1` signifies that no vertical scrolling is needed.
- */
-public val Element.verticalScrollCoverageRatio: Double
-    get() = (clientHeight / scrollHeight.toDouble()).coerceIn(0.0, 1.0)

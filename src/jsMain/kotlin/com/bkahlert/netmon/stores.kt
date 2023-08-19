@@ -6,12 +6,16 @@ import com.bkahlert.kommons.js.console
 import com.bkahlert.kommons.js.format
 import com.bkahlert.kommons.js.tee
 import com.bkahlert.netmon.Event.ScanEvent
+import dev.fritz2.core.Handler
 import dev.fritz2.core.RootStore
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 
 /** Store of network scans. */
 class ScanEventsStore : RootStore<Map<EventSource, ScanEvent>>(emptyMap()) {
-    val process = handle<Pair<EventSource, ScanEvent>> { scans, scan ->
+
+    val process: Handler<Pair<EventSource, ScanEvent>> = handle { scans, scan ->
         if (scan.second.outdated) {
             console.debug("Ignoring outdated scan by ${scan.first} at ${scan.second.timestamp}")
             scans
@@ -21,7 +25,7 @@ class ScanEventsStore : RootStore<Map<EventSource, ScanEvent>>(emptyMap()) {
         }
     }
 
-    val cleanUp = handle { scans ->
+    val cleanUp: Handler<Unit> = handle { scans ->
         val outdated = scans.filterValues { it.outdated }.map { it.key }
         if (outdated.isEmpty()) {
             scans
@@ -30,6 +34,9 @@ class ScanEventsStore : RootStore<Map<EventSource, ScanEvent>>(emptyMap()) {
             scans.filterNot { it.key in outdated }
         }
     }
+
+    /** Emits when the number of scans changes. */
+    val countChanges: Flow<Int> = data.map { it.keys.size }.distinctUntilChanged()
 
     init {
         ticks(UiSettings.REFRESH_INTERVAL) handledBy cleanUp

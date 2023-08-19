@@ -4,12 +4,17 @@ import com.bkahlert.kommons.js.OnScreenConsole
 import com.bkahlert.kommons.js.console
 import com.bkahlert.kommons.time.Now
 import com.bkahlert.kommons.time.toMomentString
+import com.bkahlert.netmon.fritz2.resizes
+import com.bkahlert.netmon.ui.resetZoomed
 import com.bkahlert.netmon.ui.scan
 import dev.fritz2.core.handledBy
 import dev.fritz2.core.mapByKey
 import dev.fritz2.core.render
+import kotlinx.browser.window
+import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.merge
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.transform
 import mqtt.MQTT
@@ -19,6 +24,7 @@ import mqtt.onConnect
 import mqtt.onDisconnect
 import mqtt.onError
 import mqtt.subscribe
+import kotlin.time.Duration.Companion.seconds
 
 @JsModule("./images/loading.svg")
 @JsNonModule
@@ -69,6 +75,9 @@ suspend fun main() {
     val scanEventsStore = ScanEventsStore()
     render("#root.app .networks") {
         div("h-full overflow-y-hidden sm:grid grid-cols-[repeat(auto-fit,minmax(min(15rem,100%),1fr))] gap-4") {
+            merge(window.resizes, scanEventsStore.countChanges).debounce(.5.seconds) handledBy {
+                resetZoomed()
+            }
             scanEventsStore.data.map { it.keys.toList() }.renderEach(
                 idProvider = { it.toString() },
                 into = this,
@@ -119,5 +128,4 @@ suspend fun main() {
         onDisconnect { console.warn("MQTT::Disconnection packet received from broker", it) }
         onClose { console.warn("MQTT::Disconnected") }
     }
-
 }
