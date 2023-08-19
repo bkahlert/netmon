@@ -22,6 +22,19 @@ m() {
     ansible "$HOST" --become -m "$module" -a "$args"
 }
 
+# rsync command wrapper which runs:
+# rsync -rz --delete --rsync-path='sudo rsync' "$1" "$HOST:$2"
+r() {
+    local src=${1?source missing} && shift
+    local dst="$HOST:${1?destination missing}" && shift
+    printf "Copying \e[3m%s\e[23m to \e[3m%s\e[23m... " "$src" "$dst"
+    rsync -rz --delete --rsync-path='sudo rsync' "$src" "$dst" || {
+        printf '\e[31Failed to copy \e[3m%s\e[23m to \e[3m%s\e[23m\n' "$src" "$dst"
+        exit 1
+    }
+    printf '\e[32m✔︎\e[0m\n'
+}
+
 if [ "$SCANNER" = 0 ] && [ "$WEB_DISPLAY" = 0 ] && [ "$KIOSK" = 0 ]; then
     printf '\e[1mUsage: SCANNER=1 WEB_DISPLAY=1 KIOSK=1 %s\e[0m\n' "${0##*/}"
     printf ' Hint: Type \e[3m%s\e[23m to set the appropriate option or options for the remainder of your shell session.\n' 'export HOST=bar.local SCANNER=1 [...]'
@@ -49,18 +62,18 @@ fi
 # deploy scanner component
 if [ "$gradle_success" = 1 ] && [ ! "$SCANNER" = 0 ]; then
     m ansible.builtin.service name=netmon-scanner state=stopped
-    m ansible.builtin.copy src="$PROJECT_DIR/build/libs/" dest=/opt/netmon/netmon-scanner/
+    r "$PROJECT_DIR/build/libs/" /opt/netmon/netmon-scanner/
     m ansible.builtin.service name=netmon-scanner state=restarted
 fi
 
 # deploy web display component
 if [ "$gradle_success" = 1 ] && [ ! "$WEB_DISPLAY" = 0 ]; then
-    m ansible.builtin.copy src="$PROJECT_DIR/build/dist/js/productionExecutable/" dest=/opt/netmon/netmon-web-display/
+    r "$PROJECT_DIR/build/dist/js/productionExecutable/" /opt/netmon/netmon-web-display/
     m ansible.builtin.shell 'export DISPLAY=:0 && wid=$(xdotool search --sync --onlyvisible --class chromium | head -1) && xdotool windowactivate "$wid" && xdotool key ctrl+F5 && xdotool key F11 || printf "Failed to find Chromium window\n"'
 fi
 
 # deploy kiosk component
 if [ ! "$KIOSK" = 0 ]; then
-    m ansible.builtin.copy src="$KIOSK_EXE" dest=/opt/netmon/bin/netmon-kiosk
+    r "$KIOSK_EXE" /opt/netmon/bin/netmon-kiosk
     m ansible.builtin.service name=lightdm state=restarted
 fi

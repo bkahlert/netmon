@@ -8,6 +8,8 @@ import com.bkahlert.netmon.Host
 import com.bkahlert.netmon.HostEventSettings
 import com.bkahlert.netmon.Status
 import com.bkahlert.netmon.UiSettings
+import com.bkahlert.netmon.fritz2.observedMutations
+import com.bkahlert.netmon.fritz2.verticalScrollCoverageRatio
 import com.bkahlert.netmon.stable
 import com.bkahlert.netmon.ticks
 import com.bkahlert.netmon.timePassed
@@ -18,9 +20,13 @@ import dev.fritz2.core.classes
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.conflate
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.mapLatest
 import org.w3c.dom.HTMLElement
+import org.w3c.dom.MutationObserverInit
+import kotlin.math.sqrt
 import kotlin.time.Duration
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -32,6 +38,7 @@ fun RenderContext.scan(
         "space-y-5 pt-4 sm:pb-4 sm:px-4 sm:rounded-xl",
         "bg-white/10 sm:border sm:border-white/20",
         "grid grid-rows-[1fr_minmax(1px,100%)]",
+        "overflow-y-hidden",
     )
 ) {
     div("flex items-center justify-center sm:justify-start gap-x-2") {
@@ -57,6 +64,26 @@ fun RenderContext.scan(
     }
 
     div("overflow-y-auto") {
+
+        // Zooms out until no vertical scrolling is required.
+        // Downside: Currently only zooms out, but never back in.
+        inlineStyle(
+            observedMutations(MutationObserverInit(childList = true, subtree = true, attributes = false, characterData = false))
+                .conflate()
+                .map { domNode.verticalScrollCoverageRatio }
+                .distinctUntilChanged()
+                .map { coverageRatio ->
+                    val zoom = domNode.style.getPropertyValue("zoom").toDoubleOrNull() ?: 1.0
+                    when {
+                        // square because changing the zoom factor changes width and height
+                        coverageRatio < 0.9 -> sqrt(coverageRatio) * zoom
+                        coverageRatio < 1.0 -> 0.95 * zoom
+                        else -> zoom
+                    }
+                }
+                .distinctUntilChanged()
+                .map { "zoom: $it" })
+
         val (stable, recent) = events.mapLatest { it.hosts.partition { it.stable } }.let { it.map { it.first } to it.map { it.second } }
         ul("grid grid-cols-[repeat(auto-fill,150px)] justify-between gap-4") {
             recent.renderEach(into = this) { host ->
