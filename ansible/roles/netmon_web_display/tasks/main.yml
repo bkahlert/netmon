@@ -28,8 +28,8 @@
     state: present
     create: yes
     mode: "0644"
-    line: >
-      NETMON_KIOSK_URL='http://localhost/?{{ netmon_web_display_query_params | join('&') }}'
+    regexp: '^NETMON_KIOSK_URL='
+    line: "NETMON_KIOSK_URL='http://localhost/?{{ netmon_web_display_query_params | join('&') }}'"
   notify: reboot
 
 - name: enable lighttpd service
@@ -59,4 +59,4 @@
   ansible.builtin.systemd_service:
     name: lighttpd.service
     state: restarted
-  notify: "restart lightdm"
+  notify: "restart display-manager"

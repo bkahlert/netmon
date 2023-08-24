@@ -5,9 +5,9 @@
     state: restarted
   become: true
 
-- name: restart lightdm
+- name: restart display-manager
   ansible.builtin.service:
-    name: lightdm
+    name: display-manager
     state: restarted
   become: true
 

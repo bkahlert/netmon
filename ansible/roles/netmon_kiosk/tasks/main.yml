@@ -1,9 +1,10 @@
 ---
 - include_tasks: fullpageos.yml
 
-- name: install apt dependencies
+- name: install dependencies
   ansible.builtin.apt:
     name:
+      - lightdm                 # display manager
       - unclutter               # hides the mouse cursor
       - matchbox-window-manager # window manager
       - upower                  # if missing, causes error messages like the following when running Chromium:
@@ -12,6 +13,15 @@
       # The name org.freedesktop.UPower was not provided by any .service files
     state: present
   become: true
+
+- name: compute netmon_kiosk defaults
+  set_fact:
+    netmon_kiosk: >
+      {{
+      netmon_kiosk | default({})
+      | combine({'user': ansible_facts.user_id})
+      }}
+  when: netmon_kiosk is undefined
 
 - name: copy netmon-kiosk
   become: true
@@ -39,3 +49,12 @@
     value: "{{ lightdm_user_session }}"
     # This effectively overrides the entrypoint
     # of [FullPageOS 0.12.0](https://github.com/guysoft/FullPageOS/releases/tag/0.12.0)
+
+- name: configure lightdm to use auto-login {{ netmon_kiosk.user }}
+  become: true
+  community.general.ini_file:
+    path: /etc/lightdm/lightdm.conf
+    no_extra_spaces: true
+    section: "Seat:*"
+    option: "autologin-user"
+    value: "{{ netmon_kiosk.user }}"

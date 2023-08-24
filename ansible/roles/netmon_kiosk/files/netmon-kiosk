@@ -4,15 +4,18 @@
 # Ctrl+Alt+F2 (Ctrl+Alt+Fn+F2 on some keyboards)
 
 LOG_FILE=/tmp/netmon-kiosk.log
-START_CHROME=1
 printf 'LOG STARTED %s\n' "$(date)" >"$LOG_FILE"
 
 tweak_ui() {
+
     printf "Setting background... "
     xsetroot -solid black && printf '\e[32m✔︎\e[0m\n'
 
     printf "Disabling screensaver... "
     xset s off && printf '\e[32m✔︎\e[0m\n'
+
+    printf "Disabling DPMS modes standby, suspend, and off modes... "
+    xset dpms 0 0 0 && printf '\e[32m✔︎\e[0m\n'
 
     printf "Disabling DPMS / Energy Star features... "
     xset -dpms && printf '\e[32m✔︎\e[0m\n'
@@ -29,7 +32,11 @@ tweak_ui() {
 
 enhance_visual_rendering() {
     local compton_args=(
-        -d "$DISPLAY"                # display to be managed
+        -d "$DISPLAY" # display to be managed
+        --fading
+        --fade-in-step=0.01
+        --fade-out-step=0.01
+        --fade-delta=1
         --daemon                     # fork to background after initialization
         --unredir-if-possible        # un-redirect all windows if a full-screen opaque window is detected, to maximize performance for full-screen windows
         --paint-on-overlay           # painting on X Composite overlay window instead of on root window
@@ -42,15 +49,21 @@ enhance_visual_rendering() {
 }
 
 open_chromium() {
-    local URL=${1?URL missing}
+    local URL=${1?URL missing} launch_html
+
+    launch_html=$(mktemp --suffix '.html')
+    printf '<html><head><title>Redirection to %s</title><meta http-equiv="refresh" content="10; url=%s" /></head><body style="background: black;">Hello World</body></html>' "$URL" "$URL" >"$launch_html"
+
     local chromium_args=(
-        --app="$URL"
+        --app="file://$launch_html"
         --autoplay-policy=no-user-gesture-required
         --disable-component-update
         --disable-features='AudioServiceOutOfProcess,TranslateUI'
         --disable-gpu
         --disable-pinch
         --disable-session-crashed-bubble
+        --enable-features=WebUIDarkMode
+        --force-dark-mode
         --kiosk
         --log-level=2 # 0=INFO, 1=WARNING, 2=ERROR, 3=FATAL, see https://stackoverflow.com/questions/46744968/how-to-suppress-console-error-warning-info-messages-when-executing-selenium-pyth
         --noerrdialogs
@@ -93,20 +106,12 @@ finalize_chromium() {
 
     printf "Sending F11 key to switch Chromium window %s to full-screen mode... " "$visible_wid"
     xdotool key F11 && printf '\e[32m✔︎\e[0m\n'
-
-    # printf "Un-hiding Chromium window %s... " "$visible_wid"
-    # xdotool windowmap "$visible_wid" && printf '\e[32m✔︎\e[0m\n'
-
 }
 
 export DISPLAY=:0
 
 tweak_ui >>"$LOG_FILE" 2>&1
 enhance_visual_rendering
-if [ "$START_CHROME" = 0 ]; then
-    printf "Opening Chromium skipped because \e[3m%s\e[23m is \e[3m%s\e[23m\n" START_CHROME "$START_CHROME"
-else
-    open_chromium "${NETMON_KIOSK_URL:-http://localhost/}" &
-    finalize_chromium &
-fi >>"$LOG_FILE" 2>&1
+open_chromium "${NETMON_KIOSK_URL:-http://localhost/}" >>"$LOG_FILE" 2>&1 &
+finalize_chromium >>"$LOG_FILE" 2>&1 &
 exec matchbox-window-manager -use_titlebar no

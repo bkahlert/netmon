@@ -80,9 +80,3 @@
 - name: remove FullPageOS config files
   become: true
   shell: "rm -rf /boot/fullpage*"
-
-- name: copy splash image
-  become: true
-  ansible.builtin.copy:
-    src: files/splash.png
-    dest: /boot/splash.png

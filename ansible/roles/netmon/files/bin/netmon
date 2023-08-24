@@ -10,7 +10,7 @@ declare -r netmon_services=(
     lighttpd
 )
 declare -r kiosk_services=(
-    lightdm
+    display-manager
 )
 
 netmon_diag() {
@@ -52,8 +52,10 @@ kiosk_diag() {
         printf "\e[1m%s...\e[0m\n" "$service" >&2
         check "service is running" systemctl -q is-active "$service.service"
         case "$service" in
-        lightdm)
-            check "X log contains no errors" ! grep -q '] (EE)' /var/log/Xorg.0.log
+        display-manager)
+            if ! check "X log contains no errors" ! grep -q '] (EE)' /var/log/Xorg.0.log; then
+                grep '] (EE)' /var/log/Xorg.0.log
+            fi
             check "lightdm is configured to use user-session netmon-kiosk" grep -q '^user-session=netmon-kiosk$' /etc/lightdm/lightdm.conf
             check "netmon-kiosk.desktop is installed" [ -f /usr/share/xsessions/netmon-kiosk.desktop ]
             check "netmon-kiosk executable is installed" [ -f /opt/netmon/bin/netmon-kiosk ]
@@ -79,11 +81,9 @@ kiosk_diag() {
             printf -- "  - stop service: \e[3m%s\e[23m\n" "sudo systemctl stop $service.service"
             printf -- "  - start service interactively: \e[3m%s\e[23m\n" "$(service_start_cmdline "$service.service")"
             case "$service" in
-            lightdm)
-                printf -- "  - check lightdm logs: \e[3m%s\e[23m\n" "sudo cat /var/log/lightdm/lightdm.log"
-                printf -- "  - check lightdm x logs: \e[3m%s\e[23m\n" "sudo cat /var/log/lightdm/x-0.log"
-                printf -- "  - check X logs: \e[3m%s\e[23m\n" "sudo cat /var/log/Xorg.0.log"
-                printf -- "  - check X logs for missing values and install them: \e[3m%s\e[23m\n" "sudo apt-get install xserver-xorg-video-fbturbo"
+            display-manager)
+                printf -- "  - check Xorg logs: \e[3m%s\e[23m\n" "sudo cat /var/log/Xorg.0.log"
+                printf -- "  - check kiosk logs: \e[3m%s\e[23m\n" "cat /tmp/netmon-kiosk.log"
                 ;;
             esac
         done
@@ -159,7 +159,7 @@ main() {
         return "$result"
         ;;
     start | restart | stop)
-        for service in lightdm "${netmon_services[@]}"; do
+        for service in display-manager "${netmon_services[@]}"; do
             sudo systemctl "$1" "$service.service"
         done
         ;;

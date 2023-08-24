@@ -35,6 +35,6 @@
     - hdmi               # configures Kernel HDMI settings
     - mosquitto          # installs the MQTT broker Eclipse Mosquitto
     - netmon             # installs the entrypoint
-    - netmon_kiosk       # configures lightdm-based kiosk mode
+    - netmon_kiosk       # configures X11-based kiosk mode
     - netmon_scanner     # installs the scan component
     - netmon_web_display # installs the HTML-based display component

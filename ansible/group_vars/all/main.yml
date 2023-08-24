@@ -1,6 +1,6 @@
 temporarily_disabled_services:
   - netmon-scanner
-  - lightdm
+  - display-manager
 
 package_dir: /opt/netmon
 project_dir: "{{ playbook_dir }}/.."

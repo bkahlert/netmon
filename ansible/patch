@@ -109,5 +109,5 @@ fi
 # deploy kiosk component
 if [ ! "$KIOSK" = 0 ]; then
     r "$KIOSK_FILES/netmon-kiosk" /opt/netmon/bin/netmon-kiosk
-    m ansible.builtin.service name=lightdm state=restarted
+    m ansible.builtin.service name=display-manager state=restarted
 fi
