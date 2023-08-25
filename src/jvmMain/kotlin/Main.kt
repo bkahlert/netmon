@@ -33,18 +33,21 @@ fun main(args: Array<String>) {
     when (args.mapNotNull { it.takeIf { it.startsWith("-v") } }.sumOf { it.length - 1 }) {
         0 -> Logback.levels(
             "root" to Level.WARN,
+            "javax.jmdns.impl.DNSIncoming" to Level.ERROR, // Suppresses "There was an OPT answer. Not currently handled. Option code: 10"
         )
 
         1 -> Logback.levels(
             "root" to Level.INFO,
             "io.netty" to Level.WARN,
             "javax.jmdns" to Level.WARN,
+            "javax.jmdns.impl.DNSIncoming" to Level.ERROR, // Suppresses "There was an OPT answer. Not currently handled. Option code: 10"
         )
 
         2 -> Logback.levels(
             "root" to Level.DEBUG,
             "io.netty" to Level.WARN,
             "javax.jmdns" to Level.WARN,
+            "javax.jmdns.impl.DNSIncoming" to Level.ERROR, // Suppresses "There was an OPT answer. Not currently handled. Option code: 10"
             "com.bkahlert.kommons.exec" to Level.WARN,
             "com.bkahlert.netmon.mdns" to Level.DEBUG,
             "com.bkahlert.netmon.mdns.JmDNSServiceInfoCache" to Level.WARN,

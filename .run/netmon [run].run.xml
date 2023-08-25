@@ -3,6 +3,7 @@
     <ExternalSystemSettings>
       <option name="env">
         <map>
+          <entry key="BROKER_HOST" value="foo.local" />
           <entry key="CONSOLE_LOG_PRESET" value="minimal" />
         </map>
       </option>
@@ -16,6 +17,7 @@
       <option name="taskNames">
         <list>
           <option value="jvmRun" />
+          <option value="--args='-vv'" />
         </list>
       </option>
       <option name="vmOptions" />

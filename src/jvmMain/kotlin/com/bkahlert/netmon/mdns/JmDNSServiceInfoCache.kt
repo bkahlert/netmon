@@ -57,11 +57,17 @@ class JmDNSServiceInfoCache(
     }
 
     init {
-        jmdns.addServiceTypeListener(serviceTypeListener)
+        // possibly jmDNS keeps announced crap by others alive with the consequence of
+        // polluting the network with corrupted zombie service types
+        // jmdns.addServiceTypeListener(serviceTypeListener)
+
+        // For now, only register well-known service types
+        wellKnownServiceTypes.forEach { jmdns.addServiceListener(it, serviceListener) }
     }
 
     override fun close() {
-        jmdns.removeServiceTypeListener(serviceTypeListener)
+        wellKnownServiceTypes.asReversed().forEach { jmdns.removeServiceListener(it, serviceListener) }
+        // jmdns.removeServiceTypeListener(serviceTypeListener)
     }
 
     fun hostname(ip: IP): String? = mappings.ipAddressToServers[ip]?.firstOrNull()?.removeSuffix(".")
@@ -115,5 +121,24 @@ class JmDNSServiceInfoCache(
         }
     }
 
-    companion object
+    companion object {
+        private val wellKnownServiceTypes: List<String> = listOf(
+            "_adisk._tcp.local.",
+            "_afpovertcp._tcp.local.",
+            "_airport._tcp.local.",
+            "_companion-link._tcp.local.",
+            "_dacp._tcp.local.",
+            "_device-info._tcp.local.",
+            "_hap._tcp.local.",
+            "_homekit._tcp.local.",
+            "_raop._tcp.local.",
+            "_rdlink._tcp.local.",
+            "_sftp-ssh._tcp.local.",
+            "_sleep-proxy._udp.local.",
+            "_smb._tcp.local.",
+            "_sonos._tcp.local.",
+            "_spotify-connect._tcp.local.",
+            "_ssh._tcp.local.",
+        )
+    }
 }
