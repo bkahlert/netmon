@@ -30,18 +30,36 @@ val logger = SLF4J.getLogger("netmon")
 
 fun main(args: Array<String>) {
 
-    Logback.levels(
-        "root" to Level.DEBUG,
-        "io.netty" to Level.WARN,
-        "javax.jmdns" to Level.WARN,
-        "com.bkahlert.kommons.exec" to Level.WARN,
-        "com.bkahlert.netmon.mdns" to Level.DEBUG,
-        "com.bkahlert.netmon.mdns.JmDNSServiceInfoCache" to Level.WARN,
-        "com.bkahlert.netmon.mdns.MulticastDnsResolver" to Level.WARN,
-        "com.bkahlert.netmon.mqtt" to Level.WARN,
-        "com.bkahlert.netmon.net" to Level.INFO,
-        "com.bkahlert.netmon.nmap" to Level.INFO,
-    )
+    when (args.mapNotNull { it.takeIf { it.startsWith("-v") } }.sumOf { it.length - 1 }) {
+        0 -> Logback.levels(
+            "root" to Level.WARN,
+        )
+
+        1 -> Logback.levels(
+            "root" to Level.INFO,
+            "io.netty" to Level.WARN,
+            "javax.jmdns" to Level.WARN,
+        )
+
+        2 -> Logback.levels(
+            "root" to Level.DEBUG,
+            "io.netty" to Level.WARN,
+            "javax.jmdns" to Level.WARN,
+            "com.bkahlert.kommons.exec" to Level.WARN,
+            "com.bkahlert.netmon.mdns" to Level.DEBUG,
+            "com.bkahlert.netmon.mdns.JmDNSServiceInfoCache" to Level.WARN,
+            "com.bkahlert.netmon.mdns.MulticastDnsResolver" to Level.WARN,
+            "com.bkahlert.netmon.mqtt" to Level.WARN,
+            "com.bkahlert.netmon.net" to Level.INFO,
+            "com.bkahlert.netmon.nmap" to Level.INFO,
+        )
+
+        else -> Logback.levels(
+            "root" to Level.DEBUG,
+            "io.netty" to Level.INFO,
+            "javax.jmdns" to Level.INFO,
+        )
+    }
 
     logger.info("Starting netmon: {}", a(*args, key = "args"))
     val localhost = runCatching { InetAddress.getLocalHost() }

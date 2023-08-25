@@ -75,9 +75,10 @@ SCANNER=1 WEB_DISPLAY=1 ./patch
 
 ### MQTT
 
+#### Publish a host event
+
 ```shell
 BROKER_HOST=test.mosquitto.org BROKER_PORT=1883
-
 mqtt pub -t "dt/netmon/test/en0/10.10.10.0/24/host" -m '{
     "event": "host",
     "type": "up",
@@ -88,16 +89,20 @@ mqtt pub -t "dt/netmon/test/en0/10.10.10.0/24/host" -m '{
       "since": 1692455344
     }
 }' -r -h "$BROKER_HOST" -p "$BROKER_PORT"
+```
 
+#### Subscribe to host events
+
+```shell
+BROKER_HOST=test.mosquitto.org BROKER_PORT=1883
 mqtt sub -t dt/netmon/+/+/+/+/host -h "$BROKER_HOST" -p "$BROKER_PORT" -J
-for node in clear foo netmon paul; do
-  for interface in pan0 usb0 wlan0 eth0 en0 en12 en14 en16; do
-  for cidr in 10.10.10.0/24 10.10.10.21/29 10.10.10.28/29 10.10.10.41/29 10.10.20.22/29 10.11.10.20/29 10.11.10.41/29 192.168.16.33/24 192.168.16.46/24 192.168.16.48/24 192.168.16.55/24; do
-    mqtt pub -t "dt/netmon/$node/$interface/$cidr/scan" -m '' -r -h "$BROKER_HOST" -p "$BROKER_PORT"
-    mqtt pub -t "dt/netmon/$node/$interface/$cidr/host" -m '' -r -h "$BROKER_HOST" -p "$BROKER_PORT"
-  done
-  done
-done
+```
+
+#### Delete a retained host event
+
+```shell
+BROKER_HOST=test.mosquitto.org BROKER_PORT=1883
+mqtt pub -t "dt/netmon/test/en0/10.10.10.0/24/host" -m '' -r -h "$BROKER_HOST" -p "$BROKER_PORT"
 ```
 
 ### Update MQTT.js

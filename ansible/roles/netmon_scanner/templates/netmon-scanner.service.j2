@@ -1,7 +1,10 @@
 [Unit]
 Description=Netmon Scanner Service
 After=multi-user.target
+{% if broker.install | default(false) %}
 After=mosquitto.service
+BindsTo=mosquitto.service
+{% endif %}
 
 [Service]
 Type=simple
