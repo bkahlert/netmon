@@ -12,14 +12,15 @@ import com.bkahlert.netmon.NameResolver
 import com.bkahlert.netmon.NetworkScanSettings
 import com.bkahlert.netmon.ScanResult
 import com.bkahlert.netmon.Status
+import com.bkahlert.netmon.exec.autoKilling
 import com.bkahlert.netmon.nmap.NmapOutput.Host.Address.AttrType
 import java.net.URL
 import kotlin.io.path.createTempFile
 import kotlin.io.path.pathString
 import kotlin.io.path.writeBytes
 
-// sudo nmap -sU -p137 --script nbstat 192.168.16.0/24
-//sudo nmap -sU -p137 --script nbstat 192.168.16.10 -oX -
+//nmap --privileged -sU -p137 --script nbstat 192.168.16.0/24
+//nmap --privileged -sU -p137 --script nbstat 192.168.16.10 -oX -
 data class NmapNetworkScanner(
     val privileged: Boolean = NetworkScanSettings.privileged,
     val timingTemplate: ScanResult.TimingTemplate = ScanResult.TimingTemplate.Normal,
@@ -37,13 +38,12 @@ data class NmapNetworkScanner(
             tempFile.pathString
         }
     }
-    private val processCleaner = ProcessCleaner()
 
     fun scan(network: Cidr): List<NmapResult> {
         logger.info("Scanning network {}", v("network", network))
 
-        val nmapCommandLine = CommandLine(if (privileged) "sudo" else binary, buildList {
-            if (privileged) add(binary)
+        val nmapCommandLine = CommandLine(binary, buildList {
+            if (privileged) add("--privileged")
             add("-sn")
             add("$network")
             add("-T${timingTemplate.value}")
@@ -52,8 +52,8 @@ data class NmapNetworkScanner(
         })
 
         return ShellScript("$nmapCommandLine | '$python' '$xml2json' -t xml2json")
+            .autoKilling
             .exec()
-            .also { processCleaner.register(it.process) }
             .readTextOrThrow()
             .let {
                 val output = JsonFormat.decodeFromString<NmapOutput>(it)
@@ -70,8 +70,8 @@ data class NmapNetworkScanner(
             return null
         }
 
-        val nmapCommandLine = CommandLine("sudo", buildList {
-            add(binary)
+        val nmapCommandLine = CommandLine(binary, buildList {
+            add("--privileged")
             add("-sU")
             add("--script")
             add("nbstat")
@@ -83,8 +83,8 @@ data class NmapNetworkScanner(
         })
 
         return ShellScript("$nmapCommandLine | '$python' '$xml2json' -t xml2json")
+            .autoKilling
             .exec()
-            .also { processCleaner.register(it.process) }
             .readTextOrThrow()
             .let {
                 val output = JsonFormat.decodeFromString<NmapOutput>(it)

@@ -5,6 +5,9 @@
     state: present
   become: true
 
+- name: add capabilities to nmap to allow rootless scanning
+  import_tasks: nmap-capabilities.yml
+
 - name: compute netmon_scanner_service defaults
   set_fact:
     netmon_scanner_service: >

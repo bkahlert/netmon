@@ -43,6 +43,19 @@
   when: hdmi is defined and hdmi.group|string == '2' and hdmi.mode|string == '87'
   notify: reboot
 
+- name: enable vc4-fkms-v3d for custom resolution
+  community.general.ini_file:
+    path: /boot/config.txt
+    no_extra_spaces: true
+    section: 'all'
+    option: dtoverlay
+    value: 'vc4-fkms-v3d'
+    exclusive: false
+    state: present
+  become: true
+  when: hdmi is defined and hdmi.group|string == '2' and hdmi.mode|string == '87'
+  notify: reboot
+
 - name: enable display_auto_detect
   become: true
   community.general.ini_file:

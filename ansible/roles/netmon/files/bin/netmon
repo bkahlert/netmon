@@ -13,6 +13,36 @@ declare -r kiosk_services=(
     display-manager
 )
 
+wizard() {
+    local mood=neutral face
+    while (($# > 0)); do
+        case "$1" in
+        --mood=*)
+            mood="${1#*=}" && shift
+            ;;
+        *)
+            break
+            ;;
+        esac
+    done
+
+    case "$mood" in
+    neutral)
+        face=('' 'つ' '◕' '౪' '◕' '')
+        ;;
+    0 | happy)
+        face=('' '' '＾' '∀' '＾' '')
+        ;;
+    1 | 2 | sad)
+        face=(' ' '' '◕' '︿' '◕' '')
+        ;;
+    *)
+        face=('' ' ' '⊙' '﹏' '⊙' '')
+        ;;
+    esac
+    printf '\e[37m(\e[97m%s%s%s%s%s%s\e[37m)\e[97mつ\e[37m─\e[91m☆\e[96mﾟ\e[93m․\e[91m*\e[93m･\e[92m｡\e[94mﾟ\e[0m' "${face[@]}"
+}
+
 netmon_diag() {
     local result
     checks_start "Netmon diagnostics"
@@ -153,10 +183,10 @@ main() {
             printf -v summary '%s   \e[1m%s %s\e[0m' "$summary" "${diagnostics[0]}" "$icon"
             diagnostics=("${diagnostics[@]:2}")
         done
-        printf ' %s%s\n' "Summary" "$summary" >&2
+        printf ' %s%s\n' "$(wizard --mood="$result")" "$summary" >&2
         printf '\n' >&2
 
-        return "$result"
+        exit "$result"
         ;;
     start | restart | stop)
         for service in display-manager "${netmon_services[@]}"; do

@@ -1,5 +1,5 @@
 <component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="netmon [run]" type="GradleRunConfiguration" factoryName="Gradle">
+  <configuration default="false" name="netmon [run] -vv" type="GradleRunConfiguration" factoryName="Gradle">
     <ExternalSystemSettings>
       <option name="env">
         <map>
@@ -17,7 +17,7 @@
       <option name="taskNames">
         <list>
           <option value="jvmRun" />
-          <option value="--args='something'" />
+          <option value="--args='-vv'" />
         </list>
       </option>
       <option name="vmOptions" />

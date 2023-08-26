@@ -21,15 +21,12 @@ class NetmonScanner(
     val onChange: (Host) -> Unit,
     val scanResultFile: Path = Paths.get("scan.$`interface`.${cidr.filenameString}.json"),
     val scanInterval: Duration = 10.seconds,
-) : Thread("netmon-scanner-$cidr") {
+) : Thread("scnr-$`interface`-$cidr") {
 
     private val logger by SLF4J
 
-    init {
-        logger.info("Starting netmon-scanner {}, {}", kv("network", cidr), kv("scanner", scanner))
-    }
-
     override fun run() {
+        logger.info("Starting netmon-scanner on {} for {}, {}", kv("interface", `interface`), kv("cidr", cidr), kv("scanner", scanner))
         var oldScan = ScanResult.load(scanResultFile) ?: run {
             logger.info("Performing initial scan...")
             val aggressiveScanner = NmapNetworkScanner(timingTemplate = ScanResult.TimingTemplate.Aggressive)

@@ -1,0 +1,12 @@
+---
+- name: get path of nmap
+  command: which nmap
+  register: nmap_path_result
+  changed_when: false
+
+- name: add net capabilities to nmap
+  become: true
+  community.general.capabilities:
+    capability: cap_net_raw,cap_net_admin,cap_net_bind_service+eip
+    path: "{{ nmap_path_result.stdout }}"
+    state: present

@@ -26,7 +26,7 @@ import java.lang.Thread.interrupted
 import java.net.InetAddress
 import java.net.NetworkInterface
 
-val logger = SLF4J.getLogger("netmon")
+val logger = SLF4J.getLogger("com.bkahlert.netmon.startup")
 
 fun main(args: Array<String>) {
 
@@ -34,6 +34,7 @@ fun main(args: Array<String>) {
         0 -> Logback.levels(
             "root" to Level.WARN,
             "javax.jmdns.impl.DNSIncoming" to Level.ERROR, // Suppresses "There was an OPT answer. Not currently handled. Option code: 10"
+            "com.bkahlert.netmon.startup" to Level.INFO,
         )
 
         1 -> Logback.levels(
@@ -41,6 +42,7 @@ fun main(args: Array<String>) {
             "io.netty" to Level.WARN,
             "javax.jmdns" to Level.WARN,
             "javax.jmdns.impl.DNSIncoming" to Level.ERROR, // Suppresses "There was an OPT answer. Not currently handled. Option code: 10"
+            "com.bkahlert.netmon.startup" to Level.INFO,
         )
 
         2 -> Logback.levels(
@@ -49,6 +51,7 @@ fun main(args: Array<String>) {
             "javax.jmdns" to Level.WARN,
             "javax.jmdns.impl.DNSIncoming" to Level.ERROR, // Suppresses "There was an OPT answer. Not currently handled. Option code: 10"
             "com.bkahlert.kommons.exec" to Level.WARN,
+            "com.bkahlert.netmon.startup" to Level.INFO,
             "com.bkahlert.netmon.mdns" to Level.DEBUG,
             "com.bkahlert.netmon.mdns.JmDNSServiceInfoCache" to Level.WARN,
             "com.bkahlert.netmon.mdns.MulticastDnsResolver" to Level.WARN,
@@ -87,7 +90,6 @@ fun main(args: Array<String>) {
     val netmons: List<NetmonScanner> = InterfaceFilter.filter(
         networkInterfaces = networkInterfaces,
     )
-//        .filterKeys { it.name == "en16" }
         .flatMap { (networkInterface, interfaceAddresses) ->
             interfaceAddresses.map { interfaceAddress ->
                 val scanTopic = ScanEventSettings.topic
@@ -104,6 +106,9 @@ fun main(args: Array<String>) {
                     fallbackResolver = LazyNameResolver(MulticastDnsReverseNameResolver, nmapNetworkScanner),
                 )
 
+                var firstScanPublished = true
+                var firstHostPublished = true
+
                 NetmonScanner(
                     `interface` = networkInterface.name,
                     cidr = interfaceAddress.cidr,
@@ -117,7 +122,28 @@ fun main(args: Array<String>) {
                                 hosts = scan.hosts,
                                 timestamp = scan.timestamp,
                             ),
-                        )
+                        ).also { success ->
+                            if (firstScanPublished) {
+                                firstScanPublished = false
+                                if (success) {
+                                    logger.info(
+                                        "First scan on {} of {} with {} hosts successfully published to {}",
+                                        v("interface", networkInterface.name),
+                                        v("cidr", interfaceAddress.cidr),
+                                        v("count", scan.hosts.size),
+                                        v("topic", scanTopic)
+                                    )
+                                } else {
+                                    logger.error(
+                                        "First scan on {} of {} with {} hosts failed to publish to {}",
+                                        v("interface", networkInterface.name),
+                                        v("cidr", interfaceAddress.cidr),
+                                        v("count", scan.hosts.size),
+                                        v("topic", scanTopic)
+                                    )
+                                }
+                            }
+                        }
                     },
                     onChange = { host ->
                         publisher.publish(
@@ -126,7 +152,28 @@ fun main(args: Array<String>) {
                                 type = if (host.status == Status.DOWN) Event.HostEvent.Type.DOWN else Event.HostEvent.Type.UP,
                                 host = host,
                             ),
-                        )
+                        ).also { success ->
+                            if (firstHostPublished) {
+                                firstHostPublished = false
+                                if (success) {
+                                    logger.info(
+                                        "First host state change on {} of {} successfully published to {}: {}",
+                                        v("interface", networkInterface.name),
+                                        v("cidr", interfaceAddress.cidr),
+                                        v("topic", scanTopic),
+                                        v("host", host),
+                                    )
+                                } else {
+                                    logger.error(
+                                        "First host state change on {} of {} failed to publish to {}: {}",
+                                        v("interface", networkInterface.name),
+                                        v("cidr", interfaceAddress.cidr),
+                                        v("topic", scanTopic),
+                                        v("host", host),
+                                    )
+                                }
+                            }
+                        }
                     },
                 )
             }
