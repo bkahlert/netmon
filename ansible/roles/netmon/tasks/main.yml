@@ -8,31 +8,29 @@
         state: directory
 
     - name: copy files
-      ansible.builtin.copy:
+      ansible.posix.synchronize:
         src: files/
         dest: "{{ package_dir }}/"
-        force: true
 
-    - name: make executables executable
-      block:
-        - name: find files
-          find:
-            paths: "{{ package_dir }}/bin"
-            patterns: '*'
-          register: executables
+    - name: make netmon executable
+      file:
+        dest: "{{ package_dir }}/bin/netmon"
+        mode: "0755"
+      become: true
 
-        - name: change mode of executables
-          file:
-            dest: "{{ item.path }}"
-            mode: "0755"
-          loop: "{{ executables.files }}"
+    - name: symlink netmon
+      ansible.builtin.file:
+        src: "{{ package_dir }}/bin/netmon"
+        dest: /usr/local/bin/netmon
+        state: link
+      become: true
 
-    - name: add package bin directory to PATH
-      ansible.builtin.copy:
-        content: >
-          export PATH=$PATH:{{ package_dir }}/bin
-        dest: "/etc/profile.d/netmon_path.sh"
-        force: true
+    - name: remove outdated artifacts
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: absent
+      loop:
+        - /etc/profile.d/netmon_path.sh
 
     - name: explain netmon
       become: true
@@ -57,7 +55,7 @@
             create: true
             mode: "0644"
             marker: "{mark}"
-            marker_begin: "{{ marker_begin_latin1 }} Network Monitor"
+            marker_begin: "{{ marker_begin_latin1 }}Network Monitor"
             block: |2
                   GUI: A kiosk-mode web application should be running on the attached screen.
                   HELP: netmon

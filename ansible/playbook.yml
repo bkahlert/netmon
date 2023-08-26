@@ -8,7 +8,6 @@
       loop: "{{ temporarily_disabled_services | reverse }}"
       become: true
       failed_when: false
-      no_log: true
 
 - name: run Pi Hero playbook, if --tags pihero is specified
   ansible.builtin.import_playbook: ../../pihero/playbook.yml
@@ -32,9 +31,10 @@
       become: true
 
   roles:
-    - hdmi               # configures Kernel HDMI settings
-    - mosquitto          # installs the MQTT broker Eclipse Mosquitto
-    - netmon             # installs the entrypoint
-    - netmon_kiosk       # configures X11-based kiosk mode
-    - netmon_scanner     # installs the scan component
-    - netmon_web_display # installs the HTML-based display component
+    - { role: hdmi }                             # configures Kernel HDMI settings
+    - { role: mosquitto }                        # installs the MQTT broker Eclipse Mosquitto
+    - { role: netmon }                           # installs the main component
+    - { role: netmon_scanner }                   # installs the scan component
+    - { role: netmon_kiosk }                     # configures X11-based kiosk mode
+    - { role: netmon_web_display }               # installs the HTML-based display component
+    - { role: geerlingguy.swap, become: true }   # increases swap for Chromium

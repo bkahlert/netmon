@@ -12,7 +12,6 @@ import com.bkahlert.netmon.NameResolver
 import com.bkahlert.netmon.NetworkScanSettings
 import com.bkahlert.netmon.ScanResult
 import com.bkahlert.netmon.Status
-import com.bkahlert.netmon.exec.autoKilling
 import com.bkahlert.netmon.nmap.NmapOutput.Host.Address.AttrType
 import java.net.URL
 import kotlin.io.path.createTempFile
@@ -52,10 +51,10 @@ data class NmapNetworkScanner(
         })
 
         return ShellScript("$nmapCommandLine | '$python' '$xml2json' -t xml2json")
-            .autoKilling
             .exec()
             .readTextOrThrow()
             .let {
+                logger.debug("Decoding nmap output: {}", kv("output", it))
                 val output = JsonFormat.decodeFromString<NmapOutput>(it)
                 output.nmapRun.host.orEmpty().mapNotNull(NmapResult::from)
             }
@@ -83,7 +82,6 @@ data class NmapNetworkScanner(
         })
 
         return ShellScript("$nmapCommandLine | '$python' '$xml2json' -t xml2json")
-            .autoKilling
             .exec()
             .readTextOrThrow()
             .let {

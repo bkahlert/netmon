@@ -1,7 +1,22 @@
 ---
+- name: copy bash files
+  become: true
+  ansible.builtin.copy:
+    src: "{{ item }}"
+    dest: "{{ package_dir }}/{{ item | basename }}"
+    force: true
+  with_fileglob:
+    - files/*.bash
+
+- name: gather distribution_release
+  ansible.builtin.setup: { gather_subset: [ "!all", "!min", "distribution_release" ] }
+
 - name: install dependencies
   ansible.builtin.apt:
-    name: [ dnsutils, nmap, openjdk-8-jre ]
+    name:
+      - dnsutils
+      - nmap
+      - "{{ 'openjdk-8-jre' if 'buster' in ansible_distribution_release else 'default-jdk' }}"
     state: present
   become: true
 
@@ -51,10 +66,9 @@
 
 - name: copy artifact
   become: true
-  ansible.builtin.copy:
+  ansible.posix.synchronize:
     src: "{{ netmon_scanner_build_artifact }}/"
     dest: "{{ package_dir }}/netmon-scanner/"
-    force: true
 
 - name: restart service
   become: true

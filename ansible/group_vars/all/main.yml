@@ -2,6 +2,8 @@ temporarily_disabled_services:
   - netmon-scanner
   - display-manager
 
+swap_file_size_mb: '1024'
+
 package_dir: /opt/netmon
 project_dir: "{{ playbook_dir }}/.."
 build_dir: "{{ playbook_dir }}/../build"

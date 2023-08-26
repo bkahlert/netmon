@@ -13,17 +13,19 @@ Netmon on a Raspberry Pi Zero](../docs/netmon-rpi0.jpg)
 - Checkout this repository:
   ```shell
   git clone https://github.com/bkahlert/netmon.git
-  cd netmon
+  cd netmon/ansible
+  ```
+- Install Ansible requirements:
+  ```shell
+  ansible-galaxy install -r requirements.yml
   ```
 - Copy the [sample inventory](inventory/sample) to `inventory/berries` and adapt it to your needs:
   ```shell
   cp -r inventory/sample inventory/berries
   ```
 
-Flash either
-[FullPageOS 0.12.0](https://github.com/guysoft/FullPageOS/releases/tag/0.12.0) *(**recommended**, in particular on old devices)*, or
-[Raspberry Pi OS Lite image](https://downloads.raspberrypi.org/raspios_lite_armhf/images/raspios_lite_armhf-2023-05-03/2023-05-03-raspios-bullseye-armhf-lite.img.xz)
-*(requires that you install Chromium yourself)* to your SD card.
+Flash [Raspberry Pi OS Lite image](https://downloads.raspberrypi.org/raspios_lite_armhf/images/raspios_lite_armhf-2023-05-03/2023-05-03-raspios-bullseye-armhf-lite.img.xz)
+to your SD card.
 
 - Boot your Raspberry Pi and connect it to your network.
 - Start the installation using:

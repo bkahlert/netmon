@@ -1,4 +1,13 @@
 ---
+- name: copy bash files
+  become: true
+  ansible.builtin.copy:
+    src: "{{ item }}"
+    dest: "{{ package_dir }}/{{ item | basename }}"
+    force: true
+  with_fileglob:
+    - files/*.bash
+
 - name: install dependencies
   ansible.builtin.apt:
     name: [ lighttpd ]
@@ -49,10 +58,9 @@
 
 - name: copy artifact
   become: true
-  ansible.builtin.copy:
+  ansible.posix.synchronize:
     src: "{{ netmon_web_display_build_artifact }}/"
     dest: "{{ package_dir }}/netmon-web-display/"
-    force: true
 
 - name: restart lighttpd service
   become: true

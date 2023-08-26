@@ -1,203 +1,201 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
+SCRIPT_DIR="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}" || true)")" >/dev/null 2>&1 && pwd)"
 
 # shellcheck source=./../lib/lib.bash
 source "$SCRIPT_DIR/../lib/lib.bash"
 
-declare -r netmon_services=(
-    netmon-scanner
-    lighttpd
-)
-declare -r kiosk_services=(
-    display-manager
-)
-
-wizard() {
-    local mood=neutral face
-    while (($# > 0)); do
-        case "$1" in
-        --mood=*)
-            mood="${1#*=}" && shift
-            ;;
-        *)
-            break
-            ;;
-        esac
-    done
-
-    case "$mood" in
-    neutral)
-        face=('' 'つ' '◕' '౪' '◕' '')
-        ;;
-    0 | happy)
-        face=('' '' '＾' '∀' '＾' '')
-        ;;
-    1 | 2 | sad)
-        face=(' ' '' '◕' '︿' '◕' '')
-        ;;
-    *)
-        face=('' ' ' '⊙' '﹏' '⊙' '')
-        ;;
-    esac
-    printf '\e[37m(\e[97m%s%s%s%s%s%s\e[37m)\e[97mつ\e[37m─\e[91m☆\e[96mﾟ\e[93m․\e[91m*\e[93m･\e[92m｡\e[94mﾟ\e[0m' "${face[@]}"
-}
-
-netmon_diag() {
-    local result
-    checks_start "Netmon diagnostics"
-
-    for service in "${netmon_services[@]}"; do
-        printf "\e[1m%s...\e[0m\n" "$service" >&2
-        check "service is running" systemctl -q is-active "$service.service"
-        case "$service" in
-        lighttpd)
-            check "lighttpd is configured to use /opt/netmon/netmon-web-display as document root" grep -q '^server.document-root\s\+=\s\+"/opt/netmon/netmon-web-display"$' /etc/lighttpd/lighttpd.conf
-            ;;
-        esac
-    done
-
-    check_summary
-    result=$?
-
-    {
-        printf "\n\e[4mUseful commands:\e[0m\n"
-        for service in "${netmon_services[@]}"; do
-            printf -- "\e[1m- regarding service \e[3m%s\e[23m:\e[0m\n" "$service"
-            printf -- "  - check status: \e[3m%s\e[23m\n" "systemctl status $service.service"
-            printf -- "  - check logs: \e[3m%s\e[23m\n" "journalctl -b -e -u $service.service"
-            printf -- "  - stop service: \e[3m%s\e[23m\n" "sudo systemctl stop $service.service"
-            printf -- "  - start service interactively: \e[3m%s\e[23m\n" "$(service_start_cmdline "$service.service")"
-        done
-    } | sed 's/^/  /' >&2
-
-    return $result
-}
-
-kiosk_diag() {
-    local result
-    checks_start "Kiosk diagnostics"
-
-    for service in "${kiosk_services[@]}"; do
-        printf "\e[1m%s...\e[0m\n" "$service" >&2
-        check "service is running" systemctl -q is-active "$service.service"
-        case "$service" in
-        display-manager)
-            if ! check "X log contains no errors" ! grep -q '] (EE)' /var/log/Xorg.0.log; then
-                grep '] (EE)' /var/log/Xorg.0.log
-            fi
-            check "lightdm is configured to use user-session netmon-kiosk" grep -q '^user-session=netmon-kiosk$' /etc/lightdm/lightdm.conf
-            check "netmon-kiosk.desktop is installed" [ -f /usr/share/xsessions/netmon-kiosk.desktop ]
-            check "netmon-kiosk executable is installed" [ -f /opt/netmon/bin/netmon-kiosk ]
-            check "NETMON_KIOSK_URL is set in /etc/environment" grep -q '^NETMON_KIOSK_URL=' /etc/environment
-            check "NETMON_KIOSK_URL is not empty" [ -n "$NETMON_KIOSK_URL" ]
-            ;;
-        esac
-    done
-
-    check_summary
-    result=$?
-
-    {
-        printf "\n\e[4mUseful commands:\e[0m\n"
-        printf -- '- for HDMI related issues, see \e]8;;%s\e\\%s\e]8;;\e\\\n' \
-            'https://www.raspberrypi.com/documentation/computers/config_txt.html#which-values-are-valid-for-my-monitor' \
-            'www.raspberrypi.com/documentation/computers/config_txt.html#which-values-are-valid-for-my-monitor'
-
-        for service in "${kiosk_services[@]}"; do
-            printf -- "\e[1m- regarding service \e[3m%s\e[23m:\e[0m\n" "$service"
-            printf -- "  - check status: \e[3m%s\e[23m\n" "systemctl status $service.service"
-            printf -- "  - check logs: \e[3m%s\e[23m\n" "journalctl -b -e -u $service.service"
-            printf -- "  - stop service: \e[3m%s\e[23m\n" "sudo systemctl stop $service.service"
-            printf -- "  - start service interactively: \e[3m%s\e[23m\n" "$(service_start_cmdline "$service.service")"
-            case "$service" in
-            display-manager)
-                printf -- "  - check Xorg logs: \e[3m%s\e[23m\n" "sudo cat /var/log/Xorg.0.log"
-                printf -- "  - check kiosk logs: \e[3m%s\e[23m\n" "cat /tmp/netmon-kiosk.log"
-                ;;
-            esac
-        done
-    } | sed 's/^/  /' >&2
-
-    printf "  \e[1m- \e[3m%s\e[23m logs \e[3m%s\e[23m:\e[0m\n" "kiosk mode" "/tmp/netmon-kiosk.log" >&2
-    run_indented cat /tmp/netmon-kiosk.log # >&2
-
-    return $result
-}
-
-pihero_diag() {
-    local result
-    checks_start "Pi Hero diagnostics"
-
-    check "Pi Hero diagnostics succeed" pihero_workaround diag
-
-    check_summary
-    result=$?
-
-    {
-        printf "\n\e[4mUseful commands:\e[0m\n"
-        printf -- "- check diagnostics output: \e[3m%s\e[23m\n" "pihero diag"
-    } | sed 's/^/  /' >&2
-
-    return $result
-}
-
-pihero_workaround() {
-    run_optional pihero "$@" >/dev/null 2>&1
-}
-
 main() {
-    local cmd
-    if [ $# -eq 0 ]; then
-        cmd=diag
+    init_gum
+    exec_deeplink "$@"
+
+    local extension_dirs=("$SCRIPT_DIR/..") extensions
+    extensions=$(run_caching find_extensions "${extension_dirs[@]}") || die '%s: loading extensions failed' "${extension_dirs[*]}"
+
+    local extension_names=() _ en
+    while IFS=: read -r _ _ en; do extension_names+=("$en"); done <<<"$extensions"
+
+    while [ $# -gt 0 ]; do
+        case $1 in
+        --help | -h)
+            usage --header "Network monitor companion tool" \
+                --arg=command "${extension_names[@]}"
+            return 0
+            ;;
+        *) break ;;
+        esac
+    done
+
+    while [ $# -gt 0 ]; do
+        case $1 in
+        --) shift && break ;;
+        --*) die --code 2 "%s: invalid option" "$1" ;;
+        -*) die --code 2 "%s: invalid flag" "$1" ;;
+        *) break ;;
+        esac
+    done
+
+    local command
+    if [ $# -gt 0 ]; then
+        local extension_name
+        for extension_name in "${extension_names[@]}"; do
+            if [ "$extension_name" = "$1" ]; then
+                command=$1 && shift
+                break
+            fi
+        done
+        if [ -z "$command" ]; then
+            "${FUNCNAME[0]}" --help
+            die --code 2 '%s: invalid command' "$1"
+        fi
+    elif is_interactive; then
+        interactive "$@"
+        return
     else
-        cmd=$1
-        shift
+        "${FUNCNAME[0]}" --help
+        die --code 2 'command missing'
     fi
 
-    case "$cmd" in
-    diag)
-        local result=0 diagnostics=()
+    local exit_code
+    run_extension --extensions "$extensions" --extension "$command" -- "$@"
+    exit_code=$?
+    return "$exit_code"
+}
 
-        netmon_diag
-        diagnostics+=("Netmon" "$?")
-        printf '\n' >&2
-
-        kiosk_diag
-        diagnostics+=("Kiosk" "$?")
-        printf '\n' >&2
-
-        pihero_diag
-        diagnostics+=("Pi Hero" "$?")
-        printf '\n' >&2
-
-        local summary=''
-        while ((${#diagnostics[@]} > 0)); do
-            local icon
-            if [ "${diagnostics[1]}" -eq 0 ]; then
-                printf -v icon '\e[32m✔︎\e[0m'
+interactive() {
+    local extension
+    trap 'tput cnorm' EXIT
+    while true; do
+        set_gum_choose_header 'Netmon'
+        if [ -z "$extension" ]; then
+            if extension=$(
+                # Loading title must be less or equal the shortest extension name to make sure its overwritten by gum
+                print_loading_screen "..." >&2
+                gum choose --selected="${extension_names[0]}" "${extension_names[@]}"
+            ); then
+                tput civis >&2
             else
-                printf -v icon '\e[31m✘︎\e[0m'
-                result=1
+                return 130
             fi
-            printf -v summary '%s   \e[1m%s %s\e[0m' "$summary" "${diagnostics[0]}" "$icon"
-            diagnostics=("${diagnostics[@]:2}")
-        done
-        printf ' %s%s\n' "$(wizard --mood="$result")" "$summary" >&2
-        printf '\n' >&2
+        fi
 
-        exit "$result"
-        ;;
-    start | restart | stop)
-        for service in display-manager "${netmon_services[@]}"; do
-            sudo systemctl "$1" "$service.service"
-        done
-        ;;
-    *)
-        printf "Usage: %s \e[3m%s\e[23m [\e[3m%s\e[23m]\n" "${0##*/}" "diag|start|restart|stop" "SUBCOMMANDS..." >&2
-        exit 1
-        ;;
-    esac
+        set_gum_choose_header 'Netmon' "$extension"
+        local -a extension_commands=()
+        local _ loop_extension_commands loop_extension_command loop_extension_name
+        while IFS=: read -r _ loop_extension_commands loop_extension_name; do
+            if [ "$loop_extension_name" = "$extension" ]; then
+                for loop_extension_command in $loop_extension_commands; do extension_commands+=("$loop_extension_command"); done
+                break
+            fi
+        done <<<"$extensions"
+
+        if [ "${#extension_commands[@]}" -eq 1 ] && [ "${extension_commands[0]}" = "main" ]; then
+            run_extension --extensions "$extensions" --extension "$extension"
+            extension=''
+        else
+            local extension_command
+            if extension_command=$(
+                print_loading_screen "..." >&2
+                gum choose --selected="${extension_commands[0]}" "${extension_commands[@]}"
+            ); then
+                tput civis >&2
+            else
+                extension=''
+                continue
+            fi
+
+            run_extension --extensions "$extensions" --extension "$extension" -- "$extension_command"
+            extension_command=''
+        fi
+    done
+}
+# Sets various environment variables that are used by the command line interface.
+# bashsupport disable=BP2001
+init_gum() {
+    local neutral_wizard_template && neutral_wizard_template=$(wizard_template --mood=neutral --magic=0 || true)
+    local sad_wizard_template && sad_wizard_template=$(wizard_template --mood=sad --magic=0 || true)
+
+    export DIE_TEMPLATE
+    printf -v DIE_TEMPLATE '\n %s {{ Foreground "%s" "%%s" }}\n' "$sad_wizard_template" "$WIZARD_PINK"
+
+    export CHECKS_HEADER_FOREGROUND=$WIZARD_GRAY
+    export CHECKS_HORIZONTAL_LINE_FOREGROUND=$WIZARD_GRAY
+    export CHECKS_CODE_FOREGROUND=$WIZARD_GRAY
+
+    export GUM_CONFIRM_SELECTED_BACKGROUND=$WIZARD_BLUE
+    export GUM_CONFIRM_SELECTED_FOREGROUND=0
+    export GUM_CONFIRM_SELECTED_BOLD=1
+    export GUM_CONFIRM_UNSELECTED_BACKGROUND=$WIZARD_BLUE
+    export GUM_CONFIRM_UNSELECTED_FOREGROUND=0
+    export GUM_CONFIRM_UNSELECTED_BOLD=0
+    export GUM_CONFIRM_UNSELECTED_FAINT=1
+
+    export GUM_CHOOSE_CURSOR
+    printf -v GUM_CHOOSE_CURSOR ' %s ' "$(run_caching --tty gum format --type template "$neutral_wizard_template" || true)"
+    export GUM_CHOOSE_CURSOR_LENGTH=12
+    export GUM_CHOOSE_HEADER_FOREGROUND=$WIZARD_BLUE
+    export GUM_CHOOSE_CURSOR_FOREGROUND=$WIZARD_YELLOW
+    export GUM_CHOOSE_ITEM_FOREGROUND=''
+
+    export GUM_PAGER_BORDER_FOREGROUND=$WIZARD_BLUE
+    export GUM_PAGER_HELP_FOREGROUND=$WIZARD_YELLOW
+    export GUM_PAGER_HELP_FAINT=1
+    export GUM_PAGER_LINE_NUMBER_FOREGROUND=$WIZARD_YELLOW
+    export GUM_PAGER_LINE_NUMBER_FAINT=true
+    export GUM_PAGER_MATCH_FOREGROUND=$WIZARD_PINK
+    export GUM_PAGER_MATCH_BACKGROUND=''
+    export GUM_PAGER_MATCH_HIGH_FOREGROUND=''
+    export GUM_PAGER_MATCH_HIGH_BACKGROUND=$WIZARD_PINK
+
+    export GUM_SPIN_SPINNER=pulse
+    export GUM_SPIN_SPINNER_FOREGROUND=$WIZARD_YELLOW
+    export GUM_SPIN_TITLE_BOLD=1
+}
+
+# Prints a loading screen that is overwritten once "gum" prints
+# its choose menu.
+# The loading screen can be used to provide feedback to the user,
+# for the time the app itself and the gum menu take to load.
+print_loading_screen() {
+    local title=$1
+
+    tput civis
+
+    # Escape sequence that clears the area of the loading screen
+    # without restoring the cursor.
+    local clear_sequence
+    clear_sequence=${_WIZARD_ANIMATE_PRE_RENDERED[*]: -1:1}
+    clear_sequence=${clear_sequence#*:}
+    clear_sequence=${clear_sequence%%"$(tput cnorm)"*}
+    printf %s "$clear_sequence"
+
+    # screen is something like \n\nXXX\n\n
+    # optional title goes here        ↑
+    local last_screen=${_WIZARD_ANIMATE_PRE_RENDERED[*]: -2:1}
+    last_screen=${last_screen#*:}
+    {
+        printf %s "${last_screen%$'\n'$'\n'*}"
+        [ -z "$title" ] || printf ' %s' "$title"
+        printf '\n\n'
+        printf %s "${last_screen##*$'\n'$'\n'}"
+    } >&2
+}
+
+# Sets the header used by the gum choose menu.
+set_gum_choose_header() {
+    local fields=()
+    while [ $# -gt 0 ]; do
+        if [ $# -gt 1 ]; then
+            fields+=('' "$1" '')
+        else
+            fields+=('' "$1" 'Esc ⤴')
+        fi
+        shift
+    done
+
+    # bashsupport disable=BP2001
+    export GUM_CHOOSE_HEADER
+    printf -v GUM_CHOOSE_HEADER "\n%$((${GUM_CHOOSE_CURSOR_LENGTH:-2} - 1))s %-10s %8s" "${fields[@]}"
 }
 
 main "$@"

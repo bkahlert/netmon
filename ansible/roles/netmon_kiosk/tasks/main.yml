@@ -1,16 +1,31 @@
 ---
-- include_tasks: fullpageos.yml
+- name: copy bash files
+  become: true
+  ansible.builtin.copy:
+    src: "{{ item }}"
+    dest: "{{ package_dir }}/{{ item | basename }}"
+    force: true
+  with_fileglob:
+    - files/*.bash
 
 - name: install dependencies
   ansible.builtin.apt:
     name:
-      - lightdm                 # display manager
-      - unclutter               # hides the mouse cursor
-      - matchbox-window-manager # window manager
-      - upower                  # if missing, causes error messages like the following when running Chromium:
+      - fonts-dejavu              # font family with good unicode support; lowers the chance of seeing boxes instead of characters
+      - fonts-dejavu-extra        # font family with good unicode support; lowers the chance of seeing boxes instead of characters even more
+      - fonts-noto                # coverage bazooka; covers a lot of unicode characters
+      - ttf-mscorefonts-installer # font like Times and Verdana
+      - lightdm                   # display manager
+      - accountsservice           # lightdm dependency
+      - x11-xserver-utils         # xset and xsetroot
+      - xdotool                   # for mouse manipulation
+      - unclutter                 # hides the mouse cursor
+      - matchbox-window-manager   # window manager
+      - upower                    # if missing, causes error messages like the following when running Chromium:
       # Failed to call method: org.freedesktop.DBus.Properties.Get: ↵
       # object_path= /org/freedesktop/UPower: org.freedesktop.DBus.Error.ServiceUnknown: ↵
       # The name org.freedesktop.UPower was not provided by any .service files
+      - chromium-browser          # displays the web application
     state: present
   become: true
 
@@ -47,8 +62,6 @@
     section: "Seat:*"
     option: "user-session"
     value: "{{ lightdm_user_session }}"
-    # This effectively overrides the entrypoint
-    # of [FullPageOS 0.12.0](https://github.com/guysoft/FullPageOS/releases/tag/0.12.0)
 
 - name: configure lightdm to use auto-login {{ netmon_kiosk.user }}
   become: true
@@ -58,3 +71,14 @@
     section: "Seat:*"
     option: "autologin-user"
     value: "{{ netmon_kiosk.user }}"
+
+- name: enable lightdm service
+  become: true
+  ansible.builtin.systemd_service:
+    name: lightdm.service
+    daemon_reload: true
+    enabled: true
+
+- name: set default target to graphical
+  become: true
+  ansible.builtin.shell: systemctl set-default graphical.target

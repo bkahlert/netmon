@@ -37,7 +37,7 @@ printf "Creating symbolic links in \e[3m%s\e[23m:\n" "$RESOURCES_DIR"
 for f in ../../../mqtt.js/mqtt.js; do
     printf -- "  - \e[3m%s\e[23m → \e[3m%s\e[23m... " "${f##*/}" "$f"
     ln -sf "$f" "${f##*/}"
-    printf "\e[32m✔︎\e[0m\n"
+    printf "\e[32;1m✔\e[0m\n"
 done
 printf "\n"
 

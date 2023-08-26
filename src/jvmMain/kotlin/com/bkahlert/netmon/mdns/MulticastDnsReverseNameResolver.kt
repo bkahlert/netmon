@@ -5,7 +5,6 @@ import com.bkahlert.kommons.logging.SLF4J
 import com.bkahlert.kommons.logging.logback.StructuredArguments.v
 import com.bkahlert.netmon.IP
 import com.bkahlert.netmon.NameResolver
-import com.bkahlert.netmon.exec.autoKilling
 import com.bkahlert.netmon.nmap.requireCommand
 import kotlin.io.path.pathString
 
@@ -31,7 +30,6 @@ data object MulticastDnsReverseNameResolver : NameResolver {
             add("-x")
             add(ip.toString())
         })
-            .autoKilling
             .exec()
             .runCatching {
                 readLinesOrThrow()

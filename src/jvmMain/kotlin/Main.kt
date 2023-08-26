@@ -25,6 +25,8 @@ import net.logstash.logback.argument.StructuredArguments.v
 import java.lang.Thread.interrupted
 import java.net.InetAddress
 import java.net.NetworkInterface
+import java.util.Collections
+import kotlin.system.exitProcess
 
 val logger = SLF4J.getLogger("com.bkahlert.netmon.startup")
 
@@ -180,9 +182,19 @@ fun main(args: Array<String>) {
         }
 
     logger.info("Starting {} netmon(s) for {}", v("count", netmons.size), o("networks", netmons) { it.cidr })
-    netmons.forEach { it.start() }
 
-    while (!interrupted() && netmons.any { it.isAlive }) {
+    val failed = Collections.synchronizedList<NetmonScanner>(mutableListOf())
+    val h = Thread.UncaughtExceptionHandler { th, ex ->
+        logger.error("Uncaught exception in thread ${th.name}", ex)
+        failed.add(th as NetmonScanner)
+        Thread.currentThread().interrupt()
+    }
+    netmons.forEach {
+        it.setUncaughtExceptionHandler(h)
+        it.start()
+    }
+
+    while (!interrupted() && netmons.all { it.isAlive }) {
         try {
             Thread.sleep(1000) // Sleep for 1 second
         } catch (e: InterruptedException) {
@@ -191,5 +203,13 @@ fun main(args: Array<String>) {
         }
     }
 
-    logger.info("Done.")
+    netmons.filter { it.isAlive }.forEach { it.interrupt() }
+
+    if (failed.isEmpty()) {
+        logger.info("All {} netmon(s) for {} stopped", v("count", netmons.size), o("networks", netmons) { it.cidr })
+        exitProcess(0)
+    } else {
+        logger.error("Failed to start {} netmon(s) for {}", v("count", failed.size), o("networks", failed) { it.cidr })
+        exitProcess(1)
+    }
 }
