@@ -1,11 +1,11 @@
-package com.bkahlert.netmon
+package com.bkahlert.netmon.logging
 
 import ch.qos.logback.classic.Logger
 import com.bkahlert.kommons.logging.SLF4J
 import com.bkahlert.kommons.logging.logback.Logback
 
 operator fun Logback.get(name: String): Logger = when (name) {
-    "root" -> Logback.rootLogger
+    "root" -> rootLogger
     else -> SLF4J.getLogger(name) as? Logger ?: error("Cannot get logger $name")
 }
 

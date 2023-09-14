@@ -1,6 +1,4 @@
-import ch.qos.logback.classic.Level
 import com.bkahlert.kommons.logging.SLF4J
-import com.bkahlert.kommons.logging.logback.Logback
 import com.bkahlert.kommons.logging.logback.StructuredArguments.a
 import com.bkahlert.kommons.logging.logback.StructuredArguments.kv
 import com.bkahlert.kommons.logging.logback.StructuredArguments.o
@@ -13,7 +11,7 @@ import com.bkahlert.netmon.LazyNameResolver
 import com.bkahlert.netmon.NetmonScanner
 import com.bkahlert.netmon.ScanEventSettings
 import com.bkahlert.netmon.Status
-import com.bkahlert.netmon.levels
+import com.bkahlert.netmon.logging.Verbosity
 import com.bkahlert.netmon.mdns.JmDNS
 import com.bkahlert.netmon.mdns.MulticastDnsResolver
 import com.bkahlert.netmon.mdns.MulticastDnsReverseNameResolver
@@ -31,43 +29,7 @@ import kotlin.system.exitProcess
 val logger = SLF4J.getLogger("com.bkahlert.netmon.startup")
 
 fun main(args: Array<String>) {
-
-    when (args.mapNotNull { it.takeIf { it.startsWith("-v") } }.sumOf { it.length - 1 }) {
-        0 -> Logback.levels(
-            "root" to Level.WARN,
-            "javax.jmdns.impl.DNSIncoming" to Level.ERROR, // Suppresses "There was an OPT answer. Not currently handled. Option code: 10"
-            "com.bkahlert.netmon.startup" to Level.INFO,
-        )
-
-        1 -> Logback.levels(
-            "root" to Level.INFO,
-            "io.netty" to Level.WARN,
-            "javax.jmdns" to Level.WARN,
-            "javax.jmdns.impl.DNSIncoming" to Level.ERROR, // Suppresses "There was an OPT answer. Not currently handled. Option code: 10"
-            "com.bkahlert.netmon.startup" to Level.INFO,
-        )
-
-        2 -> Logback.levels(
-            "root" to Level.DEBUG,
-            "io.netty" to Level.WARN,
-            "javax.jmdns" to Level.WARN,
-            "javax.jmdns.impl.DNSIncoming" to Level.ERROR, // Suppresses "There was an OPT answer. Not currently handled. Option code: 10"
-            "com.bkahlert.kommons.exec" to Level.WARN,
-            "com.bkahlert.netmon.startup" to Level.INFO,
-            "com.bkahlert.netmon.mdns" to Level.DEBUG,
-            "com.bkahlert.netmon.mdns.JmDNSServiceInfoCache" to Level.WARN,
-            "com.bkahlert.netmon.mdns.MulticastDnsResolver" to Level.WARN,
-            "com.bkahlert.netmon.mqtt" to Level.WARN,
-            "com.bkahlert.netmon.net" to Level.INFO,
-            "com.bkahlert.netmon.nmap" to Level.INFO,
-        )
-
-        else -> Logback.levels(
-            "root" to Level.DEBUG,
-            "io.netty" to Level.INFO,
-            "javax.jmdns" to Level.INFO,
-        )
-    }
+    Verbosity.from(*args).apply()
 
     logger.info("Starting netmon: {}", a(*args, key = "args"))
     val localhost = runCatching { InetAddress.getLocalHost() }
