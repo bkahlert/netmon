@@ -1,12 +1,19 @@
 ---
-- name: copy bash files
+- name: stop display-manager service
+  ansible.builtin.service:
+    name: display-manager
+    state: stopped
+  failed_when: false
   become: true
+
+- name: copy bash files
   ansible.builtin.copy:
     src: "{{ item }}"
     dest: "{{ package_dir }}/{{ item | basename }}"
     force: true
   with_fileglob:
     - files/*.bash
+  become: true
 
 - name: install dependencies
   ansible.builtin.apt:
@@ -39,46 +46,52 @@
   when: netmon_kiosk is undefined
 
 - name: copy netmon-kiosk
-  become: true
   ansible.builtin.copy:
     src: files/netmon-kiosk
     dest: "{{ package_dir }}/bin/netmon-kiosk"
     mode: "0755"
     force: true
+  become: true
 
 - name: copy netmon-kiosk.desktop
-  become: true
   ansible.builtin.template:
     src: templates/netmon-kiosk.desktop.j2
     dest: "/usr/share/xsessions/{{ lightdm_user_session }}.desktop"
     mode: "0644"
     force: true
+  become: true
 
 - name: configure lightdm to use netmon session
-  become: true
   community.general.ini_file:
     path: /etc/lightdm/lightdm.conf
     no_extra_spaces: true
     section: "Seat:*"
     option: "user-session"
     value: "{{ lightdm_user_session }}"
+  become: true
 
 - name: configure lightdm to use auto-login {{ netmon_kiosk.user }}
-  become: true
   community.general.ini_file:
     path: /etc/lightdm/lightdm.conf
     no_extra_spaces: true
     section: "Seat:*"
     option: "autologin-user"
     value: "{{ netmon_kiosk.user }}"
-
-- name: enable lightdm service
   become: true
-  ansible.builtin.systemd_service:
-    name: lightdm.service
+
+- name: enable display-manager service
+  ansible.builtin.systemd:
+    name: display-manager.service
     daemon_reload: true
     enabled: true
+  become: true
 
 - name: set default target to graphical
-  become: true
   ansible.builtin.shell: systemctl set-default graphical.target
+  become: true
+
+- name: restart display-manager service
+  ansible.builtin.systemd:
+    name: display-manager.service
+    state: restarted
+  become: true

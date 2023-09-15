@@ -41,10 +41,10 @@ to your SD card.
   or in combination with [Pi Hero](https://github.com/bkahlert/pihero):
   ```shell
   # Setup only the device foo.local
-  ansible-playbook playbook.yml --tags pihero -l foo.local
+  ansible-playbook playbook.yml --tags netmon,pihero -l foo.local
   
   # Setup only the device foo.local declared in the given inventory, and use the specified IP address to connect
-  ansible-playbook playbook.yml --tags pihero -l foo.local \
+  ansible-playbook playbook.yml --tags netmon,pihero -l foo.local \
       -e "ansible_host=10.10.10.99" \
       -i inventory/other/hosts.yml
   ```

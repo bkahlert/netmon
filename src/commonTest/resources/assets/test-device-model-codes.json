@@ -1,0 +1,14 @@
+{
+  "code-identifier-mappings": {
+    "FooPro6,1": "com.example.foopro-cylinder",
+    "Bar10,6": "com.example.bar-x-1"
+  },
+  "identifier-description-mappings": {
+    "com.example.foopro-cylinder": "Foo Pro",
+    "com.example.bar-x-1": "Bar X (Model A1865, A1901, A1902, A1903)"
+  },
+  "identifier-icon-mappings": {
+    "com.example.foopro-cylinder": "com.example.foopro-cylinder.icns",
+    "com.example.bar-x-1": "com.example.bar-x-1.icns"
+  }
+}

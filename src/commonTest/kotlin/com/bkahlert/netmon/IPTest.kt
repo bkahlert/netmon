@@ -1,5 +1,6 @@
 package com.bkahlert.netmon
 
+import com.bkahlert.netmon.serialization.JsonFormat
 import io.kotest.data.forAll
 import io.kotest.data.row
 import io.kotest.matchers.comparables.shouldBeEqualComparingTo
@@ -7,7 +8,6 @@ import io.kotest.matchers.comparables.shouldBeLessThan
 import io.kotest.matchers.equals.shouldBeEqual
 import io.kotest.matchers.equals.shouldNotBeEqual
 import io.kotest.matchers.shouldBe
-import io.ktor.http.quote
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.encodeToString
 import kotlin.test.Test
@@ -86,8 +86,8 @@ class IPTest {
             row(IP("10.0.0.1")),
             row(IP("2001:db8::")),
         ) { ip ->
-            JsonFormat.encodeToString(ip) shouldBe ip.value.quote()
-            JsonFormat.encodeToString(IPSerializer, ip) shouldBe ip.value.quote()
+            JsonFormat.encodeToString(ip) shouldBe ip.value.let { "\"$it\"" }
+            JsonFormat.encodeToString(IPSerializer, ip) shouldBe ip.value.let { "\"$it\"" }
         }
     }
 
@@ -99,8 +99,8 @@ class IPTest {
             row(IP("10.0.0.1")),
             row(IP("2001:db8::")),
         ) { ip ->
-            JsonFormat.decodeFromString<IP>(ip.value.quote()) shouldBe ip
-            JsonFormat.decodeFromString(IPSerializer, ip.value.quote()) shouldBe ip
+            JsonFormat.decodeFromString<IP>(ip.value.let { "\"$it\"" }) shouldBe ip
+            JsonFormat.decodeFromString(IPSerializer, ip.value.let { "\"$it\"" }) shouldBe ip
         }
     }
 }

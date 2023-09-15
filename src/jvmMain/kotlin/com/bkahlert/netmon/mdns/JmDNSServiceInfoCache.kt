@@ -7,8 +7,15 @@ import java.util.concurrent.locks.ReentrantLock
 import javax.jmdns.JmDNS
 import kotlin.concurrent.withLock
 
+/**
+ * A cache for [ServiceInfo] instances discovered by the specified [JmDNS].
+ *
+ * By default, only well-known service types are cached.
+ * To cache all services, [serviceTypes] must be empty.
+ */
 class JmDNSServiceInfoCache(
     private val jmdns: JmDNS,
+    private vararg val serviceTypes: String = WELL_KNOWN_SERVICE_TYPES,
 ) : AutoCloseable {
 
     private val logger by SLF4J
@@ -57,22 +64,29 @@ class JmDNSServiceInfoCache(
     }
 
     init {
-        // possibly jmDNS keeps announced crap by others alive with the consequence of
-        // polluting the network with corrupted zombie service types
-        // jmdns.addServiceTypeListener(serviceTypeListener)
-
-        // For now, only register well-known service types
-        wellKnownServiceTypes.forEach { jmdns.addServiceListener(it, serviceListener) }
+        if (serviceTypes.isEmpty()) {
+            jmdns.addServiceTypeListener(serviceTypeListener)
+        } else {
+            serviceTypes.forEach { jmdns.addServiceListener(it, serviceListener) }
+        }
     }
 
     override fun close() {
-        wellKnownServiceTypes.asReversed().forEach { jmdns.removeServiceListener(it, serviceListener) }
-        // jmdns.removeServiceTypeListener(serviceTypeListener)
+        if (serviceTypes.isEmpty()) {
+            services.keys.forEach { (_, type) ->
+                jmdns.removeServiceListener(type, serviceListener)
+            }
+            jmdns.removeServiceTypeListener(serviceTypeListener)
+        } else {
+            serviceTypes.forEach { jmdns.removeServiceListener(it, serviceListener) }
+        }
     }
 
-    fun hostname(ip: IP): String? = mappings.ipAddressToServers[ip]?.firstOrNull()?.removeSuffix(".")
-    fun model(ip: IP): String? = mappings.ipAddressToServices[ip]?.firstNotNullOfOrNull { it.properties["model"]?.text }
-    fun services(ip: IP): Set<String> = buildSet { mappings.ipAddressToServices[ip]?.mapTo(this) { it.application } }
+    /** Returns the servers that are associated with the given [ip]. */
+    fun servers(ip: IP): Set<String>? = mappings.ipAddressToServers[ip]
+
+    /** Returns the services that are associated with the given [ip]. */
+    fun services(ip: IP): Set<ServiceInfo>? = mappings.ipAddressToServices[ip]
 
     override fun toString(): String = buildString {
         append(JmDNSServiceInfoCache::class.simpleName)
@@ -122,7 +136,7 @@ class JmDNSServiceInfoCache(
     }
 
     companion object {
-        private val wellKnownServiceTypes: List<String> = listOf(
+        private val WELL_KNOWN_SERVICE_TYPES: Array<String> = arrayOf(
             "_adisk._tcp.local.",
             "_afpovertcp._tcp.local.",
             "_airport._tcp.local.",

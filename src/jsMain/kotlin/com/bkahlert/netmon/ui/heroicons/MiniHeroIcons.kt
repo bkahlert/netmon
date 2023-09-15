@@ -3,6 +3,7 @@
 package com.bkahlert.netmon.ui.heroicons
 
 import com.bkahlert.kommons.uri.DataUri
+import com.bkahlert.netmon.ui.LazyNamedEntriesList
 import io.ktor.http.ContentType.Image
 
 /**

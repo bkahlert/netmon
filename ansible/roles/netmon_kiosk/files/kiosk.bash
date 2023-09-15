@@ -54,3 +54,11 @@ SCRIPT_DIR="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}" || true)")" >/dev
     }
     check_summary
 }
+
++refresh() {
+    export DISPLAY=:0
+    local wid
+    wid=$(xdotool search --sync --onlyvisible --class chromium | head -1) || die "failed to find Chromium window"
+    xdotool windowactivate "$wid" || die "%s: failed to activate Chromium window" "$wid"
+    xdotool key ctrl+F5 || die "%s: failed to send Ctrl+F5 to Chromium window" "$wid"
+}

@@ -31,14 +31,14 @@ p() {
 }
 
 # Ansible ad-hoc command wrapper which runs:
-# ansible $HOST --become -m $1 -a "$2 $3 $4 ..."
+# ansible $HOST -v --become -m $1 -a "$2 $3 $4 ..."
 m() {
     local module=${1?module missing} && shift
     local args="$*"
     local host
     # shellcheck disable=SC2153
     for host in $HOST; do
-        ansible "$host" --become -m "$module" -a "$args"
+        ansible "$host" -v --become -m "$module" -a "$args"
     done
 }
 
@@ -62,10 +62,20 @@ r() {
     done
 }
 
+# ssh command wrapper which runs:
+# ssh -t $HOST "$@"
+s() {
+    local host
+    # shellcheck disable=SC2153
+    for host in $HOST; do
+        ssh -t "$host" "$@"
+    done
+}
+
 # Runs this patch command with the same parameters as the current execution,
 # but:
 # - if parameter is 1, sets it to 0
-# - given parameters, for example, MAIN=1, overrides the corresponding parameter
+# - given parameters, for example, CLI=1, overrides the corresponding parameter
 continuous() {
     local env_args=("${params_disabled[@]}") paths=()
     while [ $# -gt 0 ]; do
@@ -87,10 +97,10 @@ continuous() {
     fswatch --print0 "${fswatch_args[@]}" | xargs -0 -n 1 -I {} env "${env_args[@]}" "$0"
 }
 
-deploy_main() {
-    r "$MAIN_FILES/bin/netmon" /opt/netmon/bin/netmon
-    r "$MAIN_FILES/lib/" /opt/netmon/lib/
-    r "$MAIN_FILES/"*.bash /opt/netmon
+deploy_cli() {
+    r "$CLI_FILES/bin/netmon" /opt/netmon/bin/netmon
+    r "$CLI_FILES/lib/" /opt/netmon/lib/
+    r "$CLI_FILES/"*.bash /opt/netmon
 }
 
 deploy_gradle() {
@@ -116,7 +126,7 @@ deploy_gradle() {
         if [ ! "$WEB_DISPLAY" = 0 ]; then
             r "$WEB_DISPLAY_FILES/"*.bash /opt/netmon
             r "$PROJECT_DIR/build/dist/js/productionExecutable/" /opt/netmon/netmon-web-display/
-            m ansible.builtin.shell 'export DISPLAY=:0 && wid=$(xdotool search --sync --onlyvisible --class chromium | head -1) && xdotool windowactivate "$wid" && xdotool key ctrl+F5 && xdotool key F11 || printf "Failed to find Chromium window\n"'
+            s 'export DISPLAY=:0 && wid=$(xdotool search --sync --onlyvisible --class chromium | head -1) && xdotool windowactivate "$wid" && xdotool key ctrl+F5 || printf "Failed to find Chromium window\n"'
         fi
     fi
 }
@@ -136,16 +146,16 @@ main() {
     p GRADLE_CLEAN 1                                                 # Whether to clean Gradle build directory before building (default: yes)
     p GRADLE_EXE "$PROJECT_DIR/gradlew"                              # The Gradle executable to use for building (default: Gradle wrapper)
     p GRADLE_WORKING_DIR "$PROJECT_DIR"                              # The working directory for Gradle (default: project root)
-    p MAIN 1                                                         # Whether to update the netmon main component
-    p MAIN_FILES "$SCRIPT_DIR/roles/netmon/files"                    # The directory containing the netmon main component files
+    p CLI 1                                                          # Whether to update the netmon CLI component
+    p CLI_FILES "$SCRIPT_DIR/roles/netmon/files"                     # The directory containing the netmon CLI component files
     p SCANNER 0                                                      # Whether to build und update the scanner component
     p SCANNER_FILES "$SCRIPT_DIR/roles/netmon_scanner/files"         # The directory containing the scanner component files
     p WEB_DISPLAY 0                                                  # Whether to build und update the web display component
     p WEB_DISPLAY_FILES "$SCRIPT_DIR/roles/netmon_web_display/files" # The directory containing the web display component files
-    p KIOSK 1                                                        # Whether to update the kiosk component
+    p KIOSK 0                                                        # Whether to update the kiosk component
     p KIOSK_FILES "$SCRIPT_DIR/roles/netmon_kiosk/files"             # The directory containing the kiosk component files
 
-    if [ "$MAIN" = 0 ] && [ "$SCANNER" = 0 ] && [ "$WEB_DISPLAY" = 0 ] && [ "$KIOSK" = 0 ]; then
+    if [ "$CLI" = 0 ] && [ "$SCANNER" = 0 ] && [ "$WEB_DISPLAY" = 0 ] && [ "$KIOSK" = 0 ]; then
         local params
         printf -v params '\e[3m%s\e[23m ' "${PREFIX}HOST=foo.local" "$PREFIX...=..."
         printf '\e[1mUsage: %s %s\e[0m\n' "$params" "${0##*/}"
@@ -156,7 +166,7 @@ main() {
     fi
 
     if [ "$CONTINUOUS" = 0 ]; then
-        [ "$MAIN" = 0 ] || deploy_main
+        [ "$CLI" = 0 ] || deploy_cli
         if [ ! "$SCANNER" = 0 ] || [ ! "$WEB_DISPLAY" = 0 ]; then deploy_gradle; fi
         [ "$KIOSK" = 0 ] || deploy_kiosk
     else
@@ -165,7 +175,7 @@ main() {
         printf 'Watching for changes... '
         printf '\e[2m%s\e[22m' 'Press Ctrl+C to stop'
         printf '\n'
-        [ "$MAIN" = 0 ] || continuous MAIN=1 "$MAIN_FILES" &
+        [ "$CLI" = 0 ] || continuous CLI=1 "$CLI_FILES" &
         if [ ! "$SCANNER" = 0 ] || [ ! "$WEB_DISPLAY" = 0 ]; then
             continuous SCANNER="$SCANNER" WEB_DISPLAY="$WEB_DISPLAY" "$SCANNER_FILES" "$WEB_DISPLAY_FILES" &
         fi

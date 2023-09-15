@@ -25,6 +25,7 @@
     <ExternalSystemSettings>
       <option name="env">
         <map>
+          <entry key="BROKER_HOST" value="foo.local" />
           <entry key="CONSOLE_LOG_PRESET" value="minimal" />
         </map>
       </option>

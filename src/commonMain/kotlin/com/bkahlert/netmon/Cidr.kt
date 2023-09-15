@@ -5,7 +5,7 @@ import kotlin.jvm.JvmInline
 
 @JvmInline
 @Serializable
-value class Cidr(val value: String) {
+value class Cidr(val value: String) : CharSequence by value {
 
     init {
         require(value.matches(Regex("""[^/]+/\d+"""))) { "Invalid CIDR: $value" }

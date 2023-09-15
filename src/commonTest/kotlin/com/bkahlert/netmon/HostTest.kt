@@ -1,6 +1,7 @@
 package com.bkahlert.netmon
 
 import com.bkahlert.kommons.time.Now
+import com.bkahlert.netmon.serialization.JsonFormat
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldContain
 import io.kotest.matchers.string.shouldNotContain

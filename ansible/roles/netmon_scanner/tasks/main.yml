@@ -1,12 +1,19 @@
 ---
-- name: copy bash files
+- name: stop netmon-scanner service
+  ansible.builtin.service:
+    name: netmon-scanner.service
+    state: stopped
+  failed_when: false
   become: true
+
+- name: copy bash files
   ansible.builtin.copy:
     src: "{{ item }}"
     dest: "{{ package_dir }}/{{ item | basename }}"
     force: true
   with_fileglob:
     - files/*.bash
+  become: true
 
 - name: gather distribution_release
   ansible.builtin.setup: { gather_subset: [ "!all", "!min", "distribution_release" ] }
@@ -42,19 +49,19 @@
   with_dict: "{{ netmon_scanner_args }}"
 
 - name: copy service
-  become: true
   ansible.builtin.template:
     src: templates/netmon-scanner.service.j2
     dest: /etc/systemd/system/netmon-scanner.service
     mode: "0644"
     force: true
-
-- name: enable service
   become: true
-  ansible.builtin.systemd_service:
+
+- name: enable netmon-scanner service
+  ansible.builtin.systemd:
     name: netmon-scanner.service
     daemon_reload: true
     enabled: true
+  become: true
 
 - name: build artifact if necessary
   local_action:
@@ -65,13 +72,13 @@
   run_once: True
 
 - name: copy artifact
-  become: true
   ansible.posix.synchronize:
     src: "{{ netmon_scanner_build_artifact }}/"
     dest: "{{ package_dir }}/netmon-scanner/"
-
-- name: restart service
   become: true
-  ansible.builtin.systemd_service:
+
+- name: restart netmon-scanner service
+  ansible.builtin.systemd:
     name: netmon-scanner.service
     state: restarted
+  become: true

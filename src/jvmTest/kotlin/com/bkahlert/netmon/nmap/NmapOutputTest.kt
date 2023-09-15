@@ -1,7 +1,7 @@
 package com.bkahlert.netmon.nmap
 
-import com.bkahlert.netmon.JsonFormat
 import com.bkahlert.netmon.nmap.NmapOutput.NmapRun
+import com.bkahlert.netmon.serialization.JsonFormat
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.should
 import io.kotest.matchers.shouldBe

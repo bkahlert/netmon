@@ -1,5 +1,0 @@
----
-- name: reboot
-  ansible.builtin.reboot:
-    msg: "Rebooting system to finalize netmon scanner setup."
-  become: true

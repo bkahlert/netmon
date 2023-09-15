@@ -1,41 +1,48 @@
 package com.bkahlert.netmon.nmap
 
-import ch.qos.logback.classic.Level
-import com.bkahlert.kommons.logging.logback.Logback
-import com.bkahlert.netmon.IP
-import com.bkahlert.netmon.logging.get
-import com.bkahlert.netmon.net.InterfaceFilter
+import com.bkahlert.kommons.FileCache
+import com.bkahlert.kommons.test.createTempDirectory
+import com.bkahlert.netmon.logging.LoggingSettings
+import com.bkahlert.netmon.net.InterfaceResolver
 import com.bkahlert.netmon.net.cidr
-import com.bkahlert.netmon.net.ipRange
+import io.kotest.inspectors.forAll
+import io.kotest.inspectors.forAtLeastOne
 import io.kotest.matchers.collections.shouldNotBeEmpty
 import io.kotest.matchers.nulls.shouldBeNull
 import io.kotest.matchers.nulls.shouldNotBeNull
 import kotlinx.coroutines.test.runTest
 import org.junit.Test
+import kotlin.io.path.createFile
 
 class NmapNetworkScannerTest {
 
+    val cidr = InterfaceResolver().resolve().first().cidr
+
     @Test
     fun scan() = runTest {
-        val cidr = InterfaceFilter.filter().values.first().first().cidr
         NmapNetworkScanner().scan(cidr).shouldNotBeEmpty()
     }
 
     @Test
-    fun resolve_success() = runTest {
-        Logback["com.bkahlert.kommons.exec"].level = Level.WARN
-        val scanner = NmapNetworkScanner(privileged = false)
-        val ipRange = InterfaceFilter.filter().values.first().first().ipRange
-        val resolvedName: String? = ipRange.firstNotNullOfOrNull { ip ->
-            scanner.resolve(ip)
+    fun scan_with_empty_mac_prefixes() = runTest {
+        val dataDir = createTempDirectory("nmap-data").apply {
+            resolve("nmap-mac-prefixes").createFile()
         }
-        resolvedName.shouldNotBeNull()
+        val scanner = NmapNetworkScanner(dataDir = dataDir)
+        scanner.scan(cidr).forAll {
+            it.vendor.shouldBeNull()
+        }
     }
 
     @Test
-    fun resolve_failure() = runTest {
-        Logback["com.bkahlert.kommons.exec"].level = Level.WARN
-        val scanner = NmapNetworkScanner(privileged = false)
-        scanner.resolve(IP("8.8.8.8")).shouldBeNull()
+    fun scan_with_updated_mac_prefixes() = runTest {
+        LoggingSettings.apply("-vvv")
+        val dataDir = createTempDirectory("nmap-data").also {
+            NmapMacPrefixesProvisioner(FileCache.of("netmon-test")).provisionIn(it)
+        }
+        val scanner = NmapNetworkScanner(dataDir = dataDir)
+        scanner.scan(cidr).forAtLeastOne {
+            it.vendor.shouldNotBeNull()
+        }
     }
 }

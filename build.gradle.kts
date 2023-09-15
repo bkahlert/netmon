@@ -45,7 +45,6 @@ kotlin {
             dependencies {
                 implementation(platform("com.bkahlert.kommons:kommons-bom:2.8.0"))
                 implementation("com.bkahlert.kommons:kommons-time")
-                implementation("com.bkahlert.kommons:kommons-uri")
 
                 implementation(platform("org.jetbrains.kotlinx:kotlinx-coroutines-bom:1.7.1"))
                 implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core")
@@ -80,15 +79,19 @@ kotlin {
                 implementation(platform("com.hivemq:hivemq-mqtt-client-websocket:1.3.0"))
                 implementation("org.jmdns:jmdns:3.5.8") { because("mDNS / Bonjour based hostname resolution") }
             }
+            languageSettings.optIn("kotlin.io.path.ExperimentalPathApi")
         }
         val jvmTest by getting {
             dependencies {
                 implementation("io.kotest:kotest-assertions-json")
             }
+            languageSettings.optIn("kotlin.io.path.ExperimentalPathApi")
         }
 
         val jsMain by getting {
             dependencies {
+                implementation("com.bkahlert.kommons:kommons-uri")
+
                 val fritz2Version = "1.0-RC6"
                 implementation("dev.fritz2:core:$fritz2Version")
                 implementation("dev.fritz2:headless:$fritz2Version")
@@ -158,6 +161,7 @@ tasks {
 
 tasks {
     val removalPattern = listOf(
+        Regex("\\.(json)\$"),
         Regex("\\.(jpe?g|png|gif|svg)\$"),
         Regex("\\.(woff|woff2|eot|ttf|otf)\$"),
         Regex("mqtt(\\.min)?\\.js\$"),

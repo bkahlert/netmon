@@ -1,9 +1,11 @@
 package com.bkahlert.netmon.ui
 
+import com.bkahlert.kommons.js.console
 import com.bkahlert.netmon.fritz2.observedMutations
 import com.bkahlert.netmon.fritz2.verticalScrollCoverageRatio
 import dev.fritz2.core.Tag
 import dev.fritz2.core.WithDomNode
+import dev.fritz2.core.afterMount
 import dev.fritz2.core.asElementList
 import kotlinx.coroutines.flow.conflate
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -15,13 +17,45 @@ import org.w3c.dom.MutationObserverInit
 import kotlin.math.sqrt
 
 /**
- * Guarantees no vertical scrollbars by zooming out iteratively
- * whenever the content changes.
+ * Eliminates the need for horizontal scrolling respectively
+ * avoids clipping by reducing the zoom factor just enough
+ * to fit the content into the available space.
+ *
+ * ***Note:** the zoom level is set only once,
+ * either right after the [Tag] is mounted, or
+ * immediately if it's already mounted.*
+ */
+fun Tag<HTMLElement>.zoomToFitClientWidth() {
+    if (domNode.isConnected) {
+        domNode.decreaseZoomToFitClientWidth()
+    } else {
+        val visibility = domNode.style.visibility
+        domNode.style.visibility = "hidden"
+        afterMount { _, _ ->
+            domNode.decreaseZoomToFitClientWidth()
+            domNode.style.visibility = visibility
+        }
+    }
+}
+
+private fun HTMLElement.decreaseZoomToFitClientWidth() {
+    val clientWidth = clientWidth
+    val scrollWidth = scrollWidth
+    if (scrollWidth > clientWidth) {
+        val zoom = clientWidth.toDouble() / scrollWidth
+        console.debug("Setting zoom to %f of %o", zoom, this)
+        style.setProperty("zoom", zoom.toString())
+    }
+}
+
+/**
+ * Eliminates the need for vertical scrolling by decreasing the zoom factor iteratively
+ * whenever the content changes until the content fits into the available vertical space.
  *
  * ***Important:** zooming back in requires [resetZoomed] to be called
  * on an ancestor [Element] when space becomes available again.*
  */
-fun Tag<HTMLElement>.zoomOut() {
+fun Tag<HTMLElement>.zoomedToFitClientHeight() {
     className("overflow-y-hidden")
     inlineStyle(
         observedMutations(MutationObserverInit(childList = true, subtree = true, attributes = false, characterData = false))

@@ -1,4 +1,5 @@
 @import url("./utils.css");
+@import url("./sfsymbols.css");
 @import url("./onscreen-console.css");
 @tailwind base;
 @tailwind components;

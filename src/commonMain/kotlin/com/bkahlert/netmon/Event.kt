@@ -56,6 +56,10 @@ sealed interface Event {
 val Event.ScanEvent.timePassed: Duration
     get() = (Now - timestamp).coerceAtLeast(Duration.ZERO)
 
-/** Whether this scan is no more current. */
+/** Whether this scan is considered dated / lacking behind. */
+val Event.ScanEvent.dated: Boolean
+    get() = timePassed > ScanEventSettings.datedThreshold
+
+/** Whether this scan should no longer be displayed. */
 val Event.ScanEvent.outdated: Boolean
     get() = timePassed > ScanEventSettings.outdatedThreshold

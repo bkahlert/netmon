@@ -2,11 +2,10 @@ package com.bkahlert.netmon.mdns
 
 import com.bkahlert.kommons.Program
 import com.bkahlert.kommons.text.takeUnlessBlank
-import com.bkahlert.kommons.uri.Authority
-import com.bkahlert.kommons.uri.Uri
 import java.net.Inet4Address
 import java.net.Inet6Address
 import java.net.InetAddress
+import java.net.URI
 import javax.jmdns.JmDNS
 import javax.jmdns.ServiceEvent
 import javax.jmdns.impl.util.ByteWrangler
@@ -188,16 +187,16 @@ data class ServiceInfo(
         }
     }
 
-    val urls: List<Uri> by lazy {
+    val urls: List<URI> by lazy {
         inetAddresses.map { address ->
-            Uri(
-                scheme = application,
-                authority = Authority(
-                    userInfo = null,
-                    host = if (address is Inet6Address) "[${address.hostAddress}]" else address.hostAddress,
-                    port = serviceRecord?.port ?: 80,
-                ),
-                path = properties["path"]?.text.orEmpty(),
+            URI(
+                application,
+                null,
+                if (address is Inet6Address) "[${address.hostAddress}]" else address.hostAddress,
+                serviceRecord?.port ?: 80,
+                properties["path"]?.text.orEmpty(),
+                null,
+                null,
             )
         }
     }
@@ -243,6 +242,10 @@ data class ServiceInfo(
         val text: String
     }
 }
+
+/** Contains the [ServiceInfo] of the `device-info` application. */
+val Iterable<ServiceInfo>.deviceInfo: ServiceInfo?
+    get() = firstOrNull { it.application == "device-info" }
 
 /**
  * Kotlin-idiomatic [javax.jmdns.ServiceInfo.create] variant.

@@ -1,0 +1,17 @@
+svg.animate-variable-color > path {
+  --sf-animate-variable-color-duration: 1.2s;
+  --sf-animate-variable-color-opacity-from: 0.15;
+  --sf-animate-variable-color-opacity-to: 1.0;
+  opacity: var(--sf-animate-variable-color-opacity-from);
+  animation: variable-color var(--sf-animate-variable-color-duration) steps(4) infinite alternate;
+  @apply [&:nth-last-child(2)]:[animation-delay:calc(var(--sf-animate-variable-color-duration)/3)];
+  @apply [&:nth-last-child(3)]:[animation-delay:calc(var(--sf-animate-variable-color-duration)/2)];
+  @apply [&:nth-last-child(4)]:[animation-delay:calc(var(--sf-animate-variable-color-duration)/1.5)];
+}
+
+@keyframes variable-color {
+  0% { opacity: var(--sf-animate-variable-color-opacity-from); }
+  20% { opacity: var(--sf-animate-variable-color-opacity-from); }
+  80% { opacity: var(--sf-animate-variable-color-opacity-to); }
+  100% { opacity: var(--sf-animate-variable-color-opacity-to); }
+}

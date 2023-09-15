@@ -2,23 +2,25 @@ package com.bkahlert.netmon
 
 import com.bkahlert.kommons.logging.SLF4J
 import com.bkahlert.kommons.logging.logback.StructuredArguments.kv
-import com.bkahlert.kommons.logging.logback.StructuredArguments.v
 import com.bkahlert.kommons.time.Now
-import com.bkahlert.netmon.mdns.MulticastDnsResolver
+import com.bkahlert.netmon.enrichment.Enricher
+import com.bkahlert.netmon.net.InterfaceResolver.Companion.networkInterface
+import com.bkahlert.netmon.net.cidr
 import com.bkahlert.netmon.nmap.NmapNetworkScanner
+import java.net.InterfaceAddress
 import java.nio.file.Path
 import java.nio.file.Paths
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 
-// TODO parameters should use interface types
 class NetmonScanner(
-    val `interface`: String,
-    val cidr: Cidr,
+    val interfaceAddress: InterfaceAddress,
     val scanner: NmapNetworkScanner,
-    val resolver: MulticastDnsResolver,
+    vararg val enrichers: Enricher<Host>,
     val onScan: (ScanResult) -> Unit,
     val onChange: (Host) -> Unit,
+    val `interface`: String = checkNotNull(interfaceAddress.networkInterface).name,
+    val cidr: Cidr = interfaceAddress.cidr,
     val scanResultFile: Path = Paths.get("scan.$`interface`.${cidr.filenameString}.json"),
     val scanInterval: Duration = 10.seconds,
 ) : Thread("scnr-$`interface`-$cidr") {
@@ -26,20 +28,13 @@ class NetmonScanner(
     private val logger by SLF4J
 
     override fun run() {
-        logger.info("Starting netmon-scanner on {} for {}, {}", kv("interface", `interface`), kv("cidr", cidr), kv("scanner", scanner))
+        logger.info("Starting netmon-scanner on {}, {}", kv(interfaceAddress), kv("scanner", scanner))
         var oldScan = ScanResult.load(scanResultFile) ?: run {
             logger.info("Performing initial scan...")
             ScanResult(
                 `interface` = `interface`,
                 cidr = cidr,
-                hosts = scanner.scan(cidr, timingTemplate = TimingTemplate.Insane).map { (ip, name, vendor, status) ->
-                    Host(
-                        ip = ip,
-                        name = name,
-                        status = status,
-                        vendor = vendor,
-                    )
-                },
+                hosts = scanner.scan(cidr, timingTemplate = TimingTemplate.Insane),
                 timestamp = Now,
             )
         }
@@ -48,18 +43,7 @@ class NetmonScanner(
             val currentScan = ScanResult(
                 `interface` = `interface`,
                 cidr = cidr,
-                hosts = scanner.scan(cidr).map { (ip, name, vendor, status) ->
-                    Host(
-                        ip = ip,
-                        name = if (ip == cidr.ip) "-scanner-" else name ?: resolver.resolveHostname(ip)?.also {
-                            logger.info("Missing name of {} resolved: {}", v("ip", ip), v("hostname", it))
-                        },
-                        status = status,
-                        model = resolver.resolveModel(ip),
-                        vendor = vendor,
-                        services = resolver.resolveServices(ip),
-                    )
-                },
+                hosts = scanner.scan(cidr).map { host -> enrichers.fold(host) { acc, enricher -> enricher.enrich(acc) ?: acc } },
                 timestamp = Now,
             )
             oldScan = oldScan.merge(currentScan, onChange)
@@ -69,7 +53,6 @@ class NetmonScanner(
             try {
                 sleep(scanInterval.inWholeMilliseconds)
             } catch (e: InterruptedException) {
-                resolver.close()
                 // Restore the interrupted status so we exit the loop
                 currentThread().interrupt()
             }

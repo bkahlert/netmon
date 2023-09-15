@@ -6,11 +6,11 @@
   become: true
 
 - name: copy configuration
-  become: true
   ansible.builtin.template:
     src: "{{ item }}"
     dest: "/etc/mosquitto/conf.d/{{ item | basename | regex_replace('.j2$', '') }}"
     force: true
   with_fileglob:
     - templates/*.conf.j2
+  become: true
   notify: "restart mosquitto"

@@ -14,6 +14,10 @@ val InterfaceAddress.hostBits: Int
 val InterfaceAddress.maxHosts: BigInteger
     get() = hostBits.toBigInteger().pow(8).minus(BigInteger.ONE).minus(BigInteger.ONE)
 
+/** The [IP] of this [InterfaceAddress]. */
+val InterfaceAddress.ip: IP
+    get() = IP(address.hostAddress)
+
 /** The CIDR representation of this [InterfaceAddress]. */
 val InterfaceAddress.cidr: Cidr
     get() = Cidr("${address.hostAddress}/$networkPrefixLength")

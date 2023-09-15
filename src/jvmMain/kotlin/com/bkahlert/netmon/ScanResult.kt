@@ -2,6 +2,7 @@ package com.bkahlert.netmon
 
 import com.bkahlert.kommons.logging.SLF4J
 import com.bkahlert.kommons.time.InstantAsEpochSecondsSerializer
+import com.bkahlert.netmon.serialization.JsonFormat
 import kotlinx.datetime.Instant
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -46,7 +47,7 @@ data class ScanResult(
                         since = if (newStatus != recordedHost?.status) currentResult.timestamp else recordedHost?.since,
                         model = if (scannedHost != null) scannedHost.model else recordedHost?.model,
                         vendor = if (scannedHost != null) scannedHost.vendor else recordedHost?.vendor,
-                        services = scannedHost?.services ?: (recordedHost?.services ?: emptySet()),
+                        services = scannedHost?.services ?: recordedHost?.services,
                     ).also {
                         if (it != recordedHost) onChange(it)
                     }

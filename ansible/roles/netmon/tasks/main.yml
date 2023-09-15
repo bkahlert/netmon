@@ -1,16 +1,17 @@
 ---
 - name: install netmon
-  become: true
   block:
     - name: create package directory
       ansible.builtin.file:
         path: "{{ package_dir }}"
         state: directory
+      become: true
 
     - name: copy files
       ansible.posix.synchronize:
         src: files/
         dest: "{{ package_dir }}/"
+      become: true
 
     - name: make netmon executable
       file:
@@ -31,9 +32,9 @@
         state: absent
       loop:
         - /etc/profile.d/netmon_path.sh
+      become: true
 
     - name: explain netmon
-      become: true
       vars:
         marker_begin_latin1: "MARKER_BEGIN"
         marker_begin_unicode: "(つ◕౪◕)つ─☆ﾟ․*･｡ﾟ"
@@ -68,3 +69,4 @@
           loop:
             - { regexp: "{{ marker_begin_latin1 }}", replace: "{{ marker_begin_unicode }}" }
             - { regexp: "{{ marker_end_latin1 }}", replace: "{{ marker_end_unicode }}" }
+      become: true

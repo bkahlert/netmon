@@ -1,5 +1,6 @@
 package com.bkahlert.netmon
 
+import com.bkahlert.kommons.config.Settings
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 

@@ -1,35 +1,46 @@
+import com.bkahlert.kommons.FileCache
+import com.bkahlert.kommons.Program
 import com.bkahlert.kommons.logging.SLF4J
 import com.bkahlert.kommons.logging.logback.StructuredArguments.a
 import com.bkahlert.kommons.logging.logback.StructuredArguments.kv
 import com.bkahlert.kommons.logging.logback.StructuredArguments.o
+import com.bkahlert.kommons.logging.logback.StructuredArguments.v
 import com.bkahlert.kommons.text.checkNotBlank
 import com.bkahlert.netmon.BrokerSettings
 import com.bkahlert.netmon.Event
 import com.bkahlert.netmon.HostEventSettings
-import com.bkahlert.netmon.JsonFormat
-import com.bkahlert.netmon.LazyNameResolver
 import com.bkahlert.netmon.NetmonScanner
 import com.bkahlert.netmon.ScanEventSettings
 import com.bkahlert.netmon.Status
-import com.bkahlert.netmon.logging.Verbosity
+import com.bkahlert.netmon.enrichment.AmazonHostEnricher
+import com.bkahlert.netmon.enrichment.AppleHostEnricher
+import com.bkahlert.netmon.enrichment.DeviceInfoHostEnricher
+import com.bkahlert.netmon.enrichment.HostNameEnricher
+import com.bkahlert.netmon.enrichment.HostServicesEnricher
+import com.bkahlert.netmon.enrichment.SonosHostEnricher
+import com.bkahlert.netmon.logging.LoggingSettings
 import com.bkahlert.netmon.mdns.JmDNS
-import com.bkahlert.netmon.mdns.MulticastDnsResolver
-import com.bkahlert.netmon.mdns.MulticastDnsReverseNameResolver
+import com.bkahlert.netmon.mdns.JmDNSServiceInfoCache
+import com.bkahlert.netmon.model_identification.DeviceModelCodes
+import com.bkahlert.netmon.model_identification.load
+import com.bkahlert.netmon.model_identification.resource
 import com.bkahlert.netmon.mqtt.MqttPublisher
-import com.bkahlert.netmon.net.InterfaceFilter
+import com.bkahlert.netmon.net.InterfaceResolver
+import com.bkahlert.netmon.net.InterfaceResolver.Companion.networkInterface
 import com.bkahlert.netmon.net.cidr
+import com.bkahlert.netmon.nmap.NmapMacPrefixesProvisioner
 import com.bkahlert.netmon.nmap.NmapNetworkScanner
-import net.logstash.logback.argument.StructuredArguments.v
+import com.bkahlert.netmon.serialization.JsonFormat
 import java.lang.Thread.interrupted
 import java.net.InetAddress
-import java.net.NetworkInterface
 import java.util.Collections
 import kotlin.system.exitProcess
 
 val logger = SLF4J.getLogger("com.bkahlert.netmon.startup")
+val cache: FileCache by lazy { FileCache.of("netmon") }
 
-fun main(args: Array<String>) {
-    Verbosity.from(*args).apply()
+fun main(args: Array<out String>) {
+    LoggingSettings.apply(*args)
 
     logger.info("Starting netmon: {}", a(*args, key = "args"))
     val localhost = runCatching { InetAddress.getLocalHost() }
@@ -40,10 +51,10 @@ fun main(args: Array<String>) {
 
     logger.info("Hostname: {}", kv("hostname", hostname))
 
-    val networkInterfaces: List<NetworkInterface> = NetworkInterface.getNetworkInterfaces().toList()
-    logger.info("Found {} network {}", v("count", networkInterfaces.size), o("interfaces", networkInterfaces) { it.name })
-
-    val nmapNetworkScanner = NmapNetworkScanner()
+    val nmapMacPrefixesProvisioner = NmapMacPrefixesProvisioner(cache)
+    val nmapNetworkScanner = NmapNetworkScanner().apply {
+        dataDir?.let(nmapMacPrefixesProvisioner::provisionIn)
+    }
     val publisher = MqttPublisher(
         host = BrokerSettings.host,
         port = BrokerSettings.port,
@@ -51,96 +62,53 @@ fun main(args: Array<String>) {
         serializer = Event.serializer(),
     )
 
-    val netmons: List<NetmonScanner> = InterfaceFilter.filter(
-        networkInterfaces = networkInterfaces,
-    )
-        .flatMap { (networkInterface, interfaceAddresses) ->
-            interfaceAddresses.map { interfaceAddress ->
-                val scanTopic = ScanEventSettings.topic
-                    .replaceFirst("\${node}", node)
-                    .replaceFirst("\${interface}", networkInterface.name)
-                    .replaceFirst("\${cidr}", interfaceAddress.cidr.toString())
-                val hostTopic = HostEventSettings.topic
-                    .replaceFirst("\${node}", node)
-                    .replaceFirst("\${interface}", networkInterface.name)
-                    .replaceFirst("\${cidr}", interfaceAddress.cidr.toString())
+    val netmons: List<NetmonScanner> = InterfaceResolver().resolve()
+        .mapNotNull { interfaceAddress ->
+            interfaceAddress.networkInterface?.let { interfaceAddress to it }
+        }
+        .map { (interfaceAddress, networkInterface) ->
+            val topicSubstitutions = mapOf("node" to node, "interface" to networkInterface.name, "cidr" to interfaceAddress.cidr.toString())
+            val scanTopic = ScanEventSettings.topic.toString(topicSubstitutions)
+            val hostTopic = HostEventSettings.topic.toString(topicSubstitutions)
 
-                val resolver = MulticastDnsResolver(
-                    jmdns = JmDNS(addr = interfaceAddress.address, name = hostname),
-                    fallbackResolver = LazyNameResolver(MulticastDnsReverseNameResolver, nmapNetworkScanner),
-                )
-
-                var firstScanPublished = true
-                var firstHostPublished = true
-
-                NetmonScanner(
-                    `interface` = networkInterface.name,
-                    cidr = interfaceAddress.cidr,
-                    scanner = nmapNetworkScanner,
-                    resolver = resolver,
-                    onScan = { scan ->
-                        publisher.publish(
-                            topic = scanTopic,
-                            event = Event.ScanEvent(
-                                type = Event.ScanEvent.Type.COMPLETED,
-                                hosts = scan.hosts,
-                                timestamp = scan.timestamp,
-                            ),
-                        ).also { success ->
-                            if (firstScanPublished) {
-                                firstScanPublished = false
-                                if (success) {
-                                    logger.info(
-                                        "First scan on {} of {} with {} hosts successfully published to {}",
-                                        v("interface", networkInterface.name),
-                                        v("cidr", interfaceAddress.cidr),
-                                        v("count", scan.hosts.size),
-                                        v("topic", scanTopic)
-                                    )
-                                } else {
-                                    logger.error(
-                                        "First scan on {} of {} with {} hosts failed to publish to {}",
-                                        v("interface", networkInterface.name),
-                                        v("cidr", interfaceAddress.cidr),
-                                        v("count", scan.hosts.size),
-                                        v("topic", scanTopic)
-                                    )
-                                }
-                            }
-                        }
-                    },
-                    onChange = { host ->
-                        publisher.publish(
-                            topic = hostTopic,
-                            event = Event.HostEvent(
-                                type = if (host.status == Status.DOWN) Event.HostEvent.Type.DOWN else Event.HostEvent.Type.UP,
-                                host = host,
-                            ),
-                        ).also { success ->
-                            if (firstHostPublished) {
-                                firstHostPublished = false
-                                if (success) {
-                                    logger.info(
-                                        "First host state change on {} of {} successfully published to {}: {}",
-                                        v("interface", networkInterface.name),
-                                        v("cidr", interfaceAddress.cidr),
-                                        v("topic", scanTopic),
-                                        v("host", host),
-                                    )
-                                } else {
-                                    logger.error(
-                                        "First host state change on {} of {} failed to publish to {}: {}",
-                                        v("interface", networkInterface.name),
-                                        v("cidr", interfaceAddress.cidr),
-                                        v("topic", scanTopic),
-                                        v("host", host),
-                                    )
-                                }
-                            }
-                        }
-                    },
-                )
+            val jmDns = JmDNS(interfaceAddress.address, hostname)
+            val serviceInfoCache = JmDNSServiceInfoCache(jmDns, serviceTypes = emptyArray())
+            Program.onExit {
+                serviceInfoCache.close()
+                jmDns.close()
             }
+
+            NetmonScanner(
+                interfaceAddress = interfaceAddress,
+                scanner = nmapNetworkScanner,
+                enrichers = arrayOf(
+                    HostNameEnricher(serviceInfoCache),
+                    DeviceInfoHostEnricher(serviceInfoCache),
+                    AmazonHostEnricher(serviceInfoCache),
+                    SonosHostEnricher(serviceInfoCache),
+                    AppleHostEnricher(serviceInfoCache, DeviceModelCodes.load(DeviceModelCodes.resource)),
+                    HostServicesEnricher(serviceInfoCache),
+                ),
+                onScan = { scan ->
+                    publisher.publish(
+                        topic = scanTopic,
+                        event = Event.ScanEvent(
+                            type = Event.ScanEvent.Type.COMPLETED,
+                            hosts = scan.hosts,
+                            timestamp = scan.timestamp,
+                        ),
+                    )
+                },
+                onChange = { host ->
+                    publisher.publish(
+                        topic = hostTopic,
+                        event = Event.HostEvent(
+                            type = if (host.status == Status.DOWN) Event.HostEvent.Type.DOWN else Event.HostEvent.Type.UP,
+                            host = host,
+                        ),
+                    )
+                },
+            )
         }
 
     logger.info("Starting {} netmon(s) for {}", v("count", netmons.size), o("networks", netmons) { it.cidr })

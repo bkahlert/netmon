@@ -1,12 +1,12 @@
 ---
 - name: copy bash files
-  become: true
   ansible.builtin.copy:
     src: "{{ item }}"
     dest: "{{ package_dir }}/{{ item | basename }}"
     force: true
   with_fileglob:
     - files/*.bash
+  become: true
 
 - name: install dependencies
   ansible.builtin.apt:
@@ -31,7 +31,6 @@
   with_dict: "{{ netmon_web_display_args }}"
 
 - name: set NETMON_KIOSK_URL
-  become: true
   ansible.builtin.lineinfile:
     path: /etc/environment
     state: present
@@ -39,14 +38,15 @@
     mode: "0644"
     regexp: '^NETMON_KIOSK_URL='
     line: "NETMON_KIOSK_URL='http://localhost/?{{ netmon_web_display_query_params | join('&') }}'"
+  become: true
   notify: reboot
 
 - name: enable lighttpd service
-  become: true
-  ansible.builtin.systemd_service:
+  ansible.builtin.systemd:
     name: lighttpd.service
     daemon_reload: true
     enabled: true
+  become: true
 
 - name: build artifact if necessary
   local_action:
@@ -57,14 +57,20 @@
   run_once: True
 
 - name: copy artifact
-  become: true
   ansible.posix.synchronize:
     src: "{{ netmon_web_display_build_artifact }}/"
     dest: "{{ package_dir }}/netmon-web-display/"
+  become: true
 
 - name: restart lighttpd service
-  become: true
-  ansible.builtin.systemd_service:
+  ansible.builtin.systemd:
     name: lighttpd.service
     state: restarted
+  become: true
   notify: "restart display-manager"
+
+- name: restart display-manager service
+  ansible.builtin.systemd:
+    name: display-manager.service
+    state: restarted
+  become: true

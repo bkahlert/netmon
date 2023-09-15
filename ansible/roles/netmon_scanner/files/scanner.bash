@@ -34,22 +34,36 @@ declare scanner_services=(netmon-scanner)
     check_summary
 }
 
-sctl() {
-    local action="${1?}"
-    shift
++start() {
     for service in "${scanner_services[@]}"; do
-        sudo systemctl "$action" "$service.service"
+        sudo systemctl start "$service.service"
     done
 }
 
-+start() {
-    sctl start
-}
-
 +restart() {
-    sctl restart
+    sudo systemctl daemon-reload
+    for service in "${scanner_services[@]}"; do
+        sudo systemctl restart "$service.service"
+    done
 }
 
 +stop() {
-    sctl stop
+    for service in "${scanner_services[@]}"; do
+        sudo systemctl stop "$service.service"
+    done
+}
+
++debug() {
+    +stop
+    local cmdline=(
+        java
+        -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005
+        -Xdebug
+        -Dbroker.host="localhost"
+        -Dbroker.port="8080"
+        -jar "/opt/netmon/netmon-scanner/"*.jar
+        "$@"
+    )
+    printf "Starting the scanner in debug mode using the following command line (including the provided arguments):\n%s\n" "${cmdline[*]}"
+    sudo "${cmdline[@]}"
 }

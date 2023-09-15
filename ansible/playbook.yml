@@ -1,14 +1,4 @@
 ---
-- hosts: "{{ inventory if inventory is defined else 'all' }}"
-  gather_facts: false
-  tags: [ always ]
-  tasks:
-    - name: make sure services {{ temporarily_disabled_services | join(', ') }} are stopped
-      ansible.builtin.service: { name: "{{ item }}", state: stopped }
-      loop: "{{ temporarily_disabled_services | reverse }}"
-      become: true
-      failed_when: false
-
 - name: run Pi Hero playbook, if --tags pihero is specified
   ansible.builtin.import_playbook: ../../pihero/playbook.yml
   tags: [ never, pihero ]
@@ -16,7 +6,7 @@
 - hosts: "{{ inventory if inventory is defined else 'all' }}"
   gather_facts: false
   max_fail_percentage: 0
-  tags: [ always ]
+  tags: [ netmon ]
 
   pre_tasks:
     - name: gather user facts
@@ -24,17 +14,23 @@
     - name: update apt packages and allow release info changes
       import_tasks: tasks/apt-update.yml
 
-  post_tasks:
-    - name: make sure services {{ temporarily_disabled_services | join(', ') }} are started
-      ansible.builtin.service: { name: "{{ item }}", state: started }
-      loop: "{{ temporarily_disabled_services }}"
-      become: true
-
   roles:
-    - { role: hdmi }                             # configures Kernel HDMI settings
-    - { role: mosquitto }                        # installs the MQTT broker Eclipse Mosquitto
-    - { role: netmon }                           # installs the main component
-    - { role: netmon_scanner }                   # installs the scan component
-    - { role: netmon_kiosk }                     # configures X11-based kiosk mode
-    - { role: netmon_web_display }               # installs the HTML-based display component
-    - { role: geerlingguy.swap, become: true }   # increases swap for Chromium
+    # installs the MQTT broker Eclipse Mosquitto
+    - role: mosquitto
+      tags: [ mosquitto ]
+    # installs the CLI component
+    - role: netmon
+      tags: [ netmon-cli ]
+    # installs the scan component
+    - role: netmon_scanner
+      tags: [ netmon-scanner ]
+    # configures X11-based kiosk mode
+    - role: netmon_kiosk
+      tags: [ netmon-kiosk ]
+    # installs the HTML-based display component
+    - role: netmon_web_display
+      tags: [ netmon-web-display ]
+    # increases swap for Chromium
+    - role: geerlingguy.swap
+      become: true
+      tags: [ swap ]

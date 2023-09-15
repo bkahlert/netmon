@@ -1,7 +1,6 @@
 package com.bkahlert.netmon.logging
 
 import com.bkahlert.kommons.logging.logback.Logback
-import io.kotest.assertions.throwables.shouldNotThrowAny
 import io.kotest.data.forAll
 import io.kotest.data.row
 import io.kotest.matchers.shouldBe
@@ -46,7 +45,7 @@ class VerbosityTest {
             row(Verbosity.VERY_VERBOSE, ch.qos.logback.classic.Level.INFO),
             row(Verbosity.EXTREMELY_VERBOSE, ch.qos.logback.classic.Level.DEBUG),
         ) { verbosity, expected ->
-            shouldNotThrowAny { verbosity.apply() }
+            Logback.levels(verbosity.levels)
             Logback["com.bkahlert.netmon"].effectiveLevel shouldBe expected
         }
     }

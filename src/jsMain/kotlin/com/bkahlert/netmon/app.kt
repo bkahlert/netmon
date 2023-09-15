@@ -5,6 +5,10 @@ import com.bkahlert.kommons.js.console
 import com.bkahlert.kommons.time.Now
 import com.bkahlert.kommons.time.toMomentString
 import com.bkahlert.netmon.fritz2.resizes
+import com.bkahlert.netmon.model_identification.DeviceModelCodes
+import com.bkahlert.netmon.model_identification.load
+import com.bkahlert.netmon.model_identification.resource
+import com.bkahlert.netmon.serialization.JsonFormat
 import com.bkahlert.netmon.ui.resetZoomed
 import com.bkahlert.netmon.ui.scan
 import dev.fritz2.core.handledBy
@@ -41,6 +45,13 @@ suspend fun main() {
         console.info("On-screen console enabled")
     }
 
+    runCatching {
+        DeviceModelCodes.set(DeviceModelCodes.load(DeviceModelCodes.resource))
+    }.onFailure {
+        console.error("Device model codes %s failed to load", it)
+    }.onSuccess {
+        console.info("Device model codes %s loaded", it)
+    }
 
     /*
      * Status
@@ -94,10 +105,7 @@ suspend fun main() {
     val brokerHost = BrokerSettings.host
     val brokerPort = BrokerSettings.port
     val brokerUrl = "ws://$brokerHost:$brokerPort"
-    val scanTopic = ScanEventSettings.topic
-        .replace("\${node}", "+")
-        .replace("\${interface}", "+")
-        .replace("\${cidr}", "+/+")
+    val scanTopic = ScanEventSettings.topic.toString("node" to "+", "interface" to "+", "cidr" to "+/+")
 
     MQTT.connect(brokerUrl).apply {
         console.info("MQTT::Connecting to [%s]...", brokerUrl)

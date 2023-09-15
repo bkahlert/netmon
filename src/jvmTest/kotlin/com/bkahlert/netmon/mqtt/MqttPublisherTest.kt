@@ -2,7 +2,7 @@ package com.bkahlert.netmon.mqtt
 
 import com.bkahlert.netmon.DOWN
 import com.bkahlert.netmon.Event
-import com.bkahlert.netmon.JsonFormat
+import com.bkahlert.netmon.serialization.JsonFormat
 import io.kotest.matchers.shouldBe
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
