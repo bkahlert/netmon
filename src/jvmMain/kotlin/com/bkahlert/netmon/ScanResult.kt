@@ -64,10 +64,6 @@ data class ScanResult(
         logger.error("Error saving scan result", error)
     }
 
-    enum class TimingTemplate(val value: Int) {
-        Paranoid(0), Sneaky(1), Polite(2), Normal(3), Aggressive(4), Insane(5)
-    }
-
     companion object {
         private val logger by SLF4J
 

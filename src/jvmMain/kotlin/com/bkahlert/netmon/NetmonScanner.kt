@@ -29,11 +29,10 @@ class NetmonScanner(
         logger.info("Starting netmon-scanner on {} for {}, {}", kv("interface", `interface`), kv("cidr", cidr), kv("scanner", scanner))
         var oldScan = ScanResult.load(scanResultFile) ?: run {
             logger.info("Performing initial scan...")
-            val aggressiveScanner = NmapNetworkScanner(timingTemplate = ScanResult.TimingTemplate.Aggressive)
             ScanResult(
                 `interface` = `interface`,
                 cidr = cidr,
-                hosts = aggressiveScanner.scan(cidr).map { (ip, name, vendor, status) ->
+                hosts = scanner.scan(cidr, timingTemplate = TimingTemplate.Insane).map { (ip, name, vendor, status) ->
                     Host(
                         ip = ip,
                         name = name,

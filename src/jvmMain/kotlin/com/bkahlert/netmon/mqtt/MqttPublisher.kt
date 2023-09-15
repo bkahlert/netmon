@@ -17,6 +17,7 @@ import java.util.UUID
 data class MqttPublisher<T>(
     val host: String,
     val port: Int,
+    val path: String? = null,
     val stringFormat: StringFormat = JsonFormat,
     val serializer: SerializationStrategy<T>,
     val identifier: String? = null,
@@ -28,7 +29,15 @@ data class MqttPublisher<T>(
         .identifier(identifier ?: UUID.randomUUID().toString())
         .serverHost(host)
         .serverPort(port)
-        .webSocketConfig(MqttWebSocketConfig.builder().build())
+        .apply {
+            if (port == 8080 || port == 8081) {
+                webSocketConfig(
+                    MqttWebSocketConfig.builder()
+                        .serverPath(path ?: "")
+                        .build()
+                )
+            }
+        }
         .useMqttVersion3()
 //        .useMqttVersion5()
         .automaticReconnectWithDefaultConfig()
@@ -56,7 +65,10 @@ data class MqttPublisher<T>(
 
         return when (val error = (result as? Mqtt5PublishResult)?.error.orNull()) {
             null -> {
-                logger.debug("Published to {}: {}", topic, result)
+                when (result) {
+                    Unit -> logger.info("Published message ({} bytes) to {}", bytes.size, topic)
+                    else -> logger.info("Published message ({} bytes) to {}: {}", bytes.size, topic, result)
+                }
                 true
             }
 
