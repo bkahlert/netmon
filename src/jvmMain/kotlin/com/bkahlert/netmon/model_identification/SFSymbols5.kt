@@ -40,7 +40,18 @@ open class SFSymbols5(
     companion object : SFSymbols5(
         AttributesRemovalPatch(),
         ColorReplacementPatch(),
-        FillRemovalPatch(),
+        FillRemovalPatch(
+            index = 0,
+            "applewatch",
+            "desktopcomputer", "display",
+            "ipad.gen1", "ipad.gen2", "ipad", "iphone.gen1", "iphone.gen2", "iphone.gen3", "iphone", "ipodtouch",
+            "macbook.gen1", "macbook.gen2", "macbook",
+            "tv",
+        ),
+        FillRemovalPatch(
+            index = 1,
+            "visionpro",
+        ),
         DefaultAttributeRemovalPatch("fill-opacity" to "0.85"),
     ) {
         private const val RESOURCE_NAME = "sfsymbols5"
@@ -176,36 +187,24 @@ fun AttributesRemovalPatch(vararg attributes: String = arrayOf("width", "height"
 }
 
 /** Replaces the [oldColor] (default: `black`) with the specified [newColor] (default: `currentColor`). */
-fun ColorReplacementPatch(oldColor: String = "black", newColor: String = "currentColor"): (String, String) -> String = Patch { _, content ->
+fun ColorReplacementPatch(
+    oldColor: String = "black",
+    newColor: String = "currentColor",
+): (String, String) -> String = Patch { _, content ->
     content.replace(oldColor, newColor)
 }
 
 /** Removes the `fill-opacity` attribute from the first SVG element of all symbols specified by their [names]. */
 fun FillRemovalPatch(
-    vararg names: String = arrayOf(
-        "applewatch",
-        "desktopcomputer",
-        "display",
-        "ipad.gen1",
-        "ipad.gen2",
-        "ipad",
-        "iphone.gen1",
-        "iphone.gen2",
-        "iphone.gen3",
-        "iphone",
-        "ipodtouch",
-        "macbook.gen1",
-        "macbook.gen2",
-        "macbook",
-        "tv",
-    )
+    index: Int,
+    vararg names: String,
 ): (String, String) -> String {
     val fillOpacityAttributeRegex = attributeRegex("fill-opacity")
     return Patch { name, content ->
         if (name in names) {
             val fillOpacityAttributes = fillOpacityAttributeRegex.findAll(content).toList()
-            if (fillOpacityAttributes.size > 1) {
-                val range = fillOpacityAttributes[0].range
+            if (fillOpacityAttributes.size > index) {
+                val range = fillOpacityAttributes[index].range
                 content.substring(0, range.first) + """ fill-opacity="0"""" + content.substring(range.last + 1)
             } else {
                 content

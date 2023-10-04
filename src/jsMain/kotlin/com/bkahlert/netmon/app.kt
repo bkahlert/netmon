@@ -1,5 +1,6 @@
 package com.bkahlert.netmon
 
+import com.bkahlert.kommons.browser.AutoRefreshers
 import com.bkahlert.kommons.js.OnScreenConsole
 import com.bkahlert.kommons.js.console
 import com.bkahlert.kommons.time.Now
@@ -18,7 +19,6 @@ import kotlinx.browser.window
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.merge
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.transform
 import mqtt.MQTT
@@ -40,10 +40,11 @@ suspend fun main() {
 
     // When running on an embedded device, the console log is practically inaccessible.
     // Therefore, an on-screen console is used for the first log messages to be readable.
-    val onScreenConsole = OnScreenConsole(console).apply {
-        enable()
-        console.info("On-screen console enabled")
-    }
+    val onScreenConsole = OnScreenConsole(console)
+        .apply { enable() }
+        .also { console.info("On-screen console enabled") }
+
+    AutoRefreshers().also { console.info("Auto refresh enabled for %O", it.uris) }
 
     runCatching {
         DeviceModelCodes.set(DeviceModelCodes.load(DeviceModelCodes.resource))
@@ -86,9 +87,7 @@ suspend fun main() {
     val scanEventsStore = ScanEventsStore()
     render("#root.app .networks") {
         div("h-full overflow-y-hidden sm:grid grid-cols-[repeat(auto-fit,minmax(min(15rem,100%),1fr))] gap-4") {
-            merge(window.resizes, scanEventsStore.countChanges).debounce(.5.seconds) handledBy {
-                resetZoomed()
-            }
+            window.resizes.debounce(.5.seconds) handledBy { resetZoomed() }
             scanEventsStore.data.map { it.keys.toList() }.renderEach(
                 idProvider = { it.toString() },
                 into = this,

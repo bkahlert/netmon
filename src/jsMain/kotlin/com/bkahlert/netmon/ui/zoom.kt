@@ -5,7 +5,6 @@ import com.bkahlert.netmon.fritz2.observedMutations
 import com.bkahlert.netmon.fritz2.verticalScrollCoverageRatio
 import dev.fritz2.core.Tag
 import dev.fritz2.core.WithDomNode
-import dev.fritz2.core.afterMount
 import dev.fritz2.core.asElementList
 import kotlinx.coroutines.flow.conflate
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -14,37 +13,49 @@ import kotlinx.coroutines.flow.onEach
 import org.w3c.dom.Element
 import org.w3c.dom.HTMLElement
 import org.w3c.dom.MutationObserverInit
+import org.w3c.dom.css.CSSStyleDeclaration
 import kotlin.math.sqrt
+
+/** The zoom factor of the [Tag], or `null` if not set. */
+private inline var Tag<HTMLElement>.zoom: Double?
+    get() = domNode.zoom
+    set(value) = kotlin.run { domNode.zoom = value }
+
+/** The zoom factor of the [HTMLElement], or `null` if not set. */
+private inline var HTMLElement.zoom: Double?
+    get() = style.zoom
+    set(value) = kotlin.run { style.zoom = value }
+
+/** The zoom factor property of the [CSSStyleDeclaration], or `null` if not set. */
+private inline var CSSStyleDeclaration.zoom: Double?
+    get() = getPropertyValue("zoom").takeUnless { it.isEmpty() }?.toDoubleOrNull()
+    set(value) = setProperty("zoom", value?.toString().orEmpty())
 
 /**
  * Eliminates the need for horizontal scrolling respectively
  * avoids clipping by reducing the zoom factor just enough
  * to fit the content into the available space.
  *
- * ***Note:** the zoom level is set only once,
- * either right after the [Tag] is mounted, or
- * immediately if it's already mounted.*
+ * ***Note:** this function is one shot.*
  */
-fun Tag<HTMLElement>.zoomToFitClientWidth() {
-    if (domNode.isConnected) {
-        domNode.decreaseZoomToFitClientWidth()
-    } else {
-        val visibility = domNode.style.visibility
-        domNode.style.visibility = "hidden"
-        afterMount { _, _ ->
-            domNode.decreaseZoomToFitClientWidth()
-            domNode.style.visibility = visibility
-        }
-    }
-}
+fun Tag<HTMLElement>.zoomToFitClientWidth(): Int? = domNode.zoomToFitClientWidth()
 
-private fun HTMLElement.decreaseZoomToFitClientWidth() {
+/**
+ * Eliminates the need for horizontal scrolling respectively
+ * avoids clipping by reducing the zoom factor just enough
+ * to fit the content into the available space.
+ *
+ * ***Note:** this function is one shot.*
+ *
+ * @return the request id returned by [org.w3c.dom.Window.requestAnimationFrame]
+ */
+fun HTMLElement.zoomToFitClientWidth(): Int? = ownerDocument?.defaultView?.requestAnimationFrame {
     val clientWidth = clientWidth
     val scrollWidth = scrollWidth
     if (scrollWidth > clientWidth) {
-        val zoom = clientWidth.toDouble() / scrollWidth
-        console.debug("Setting zoom to %f of %o", zoom, this)
-        style.setProperty("zoom", zoom.toString())
+        val decreasedZoom = clientWidth.toDouble() / scrollWidth
+        console.debug("Setting zoom to %f of %o", decreasedZoom, this)
+        zoom = decreasedZoom
     }
 }
 
@@ -63,7 +74,7 @@ fun Tag<HTMLElement>.zoomedToFitClientHeight() {
             .map { domNode.verticalScrollCoverageRatio }
             .distinctUntilChanged()
             .map { coverageRatio ->
-                val zoom = domNode.style.getPropertyValue("zoom").toDoubleOrNull() ?: 1.0
+                val zoom = zoom ?: 1.0
                 when {
                     // square because changing the zoom factor changes width and height
                     coverageRatio < 0.9 -> sqrt(coverageRatio) * zoom
@@ -91,6 +102,6 @@ fun WithDomNode<Element>.markZoomed(zoom: Double) {
 fun WithDomNode<Element>.resetZoomed() {
     domNode.querySelectorAll("[data-zoomed]").asElementList().forEach {
         it.removeAttribute("data-zoomed")
-        it.style.setProperty("zoom", "1")
+        it.zoom = null
     }
 }

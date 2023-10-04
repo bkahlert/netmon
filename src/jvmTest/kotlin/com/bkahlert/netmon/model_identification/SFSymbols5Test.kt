@@ -81,19 +81,11 @@ class SFSymbols5Test {
     fun non_fill_variants_fixed() {
         listOf(
             "applewatch",
-            "desktopcomputer",
-            "display",
-            "ipad.gen1",
-            "ipad.gen2",
-            "ipad",
-            "iphone.gen1",
-            "iphone.gen2",
-            "iphone.gen3",
-            "iphone",
-            "ipodtouch",
-            "macbook.gen1",
-            "macbook.gen2",
-            "macbook",
+            "desktopcomputer", "display",
+            "ipad.gen1", "ipad.gen2", "ipad", "iphone.gen1", "iphone.gen2", "iphone.gen3", "iphone", "ipodtouch",
+            "macbook.gen1", "macbook.gen2", "macbook",
+            "visionpro",
+            "tv",
         ).forAll { name ->
             SFSymbols5[name].shouldContain("""fill-opacity="0"""")
         }

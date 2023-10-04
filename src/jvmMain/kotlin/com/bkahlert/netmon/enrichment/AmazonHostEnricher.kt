@@ -10,7 +10,7 @@ class AmazonHostEnricher(
     override fun enrich(entity: Host): Host? = serviceInfoCache.services(entity.ip)?.firstOrNull { it.application == "amzn-wplay" }?.let {
         entity.copy(
             name = it.properties["n"]?.text ?: entity.name,
-            model = "Amazon Fire TV",
+            model = "FireTV",
         )
     }
 

@@ -17,10 +17,10 @@ value class Icons(val icons: List<Icon>) : List<Icon> by icons {
 
     fun toIconSets(
         path: Path,
-        bundles: List<Bundle> = CoreTypes().bundle.allBundles,
+        iconResolver: IconResolver,
     ): Map<String, Path?> = path.let {
         icons.associate { icon ->
-            icon.name to kotlin.runCatching { icon.toIconSet(path, bundles) }
+            icon.name to kotlin.runCatching { icon.toIconSet(path, iconResolver) }
                 .onFailure { logger.warn("Iconset creation failed: {}, {}", kv("icon", icon), kv("cause", it.message)) }
                 .getOrNull()
         }
@@ -45,8 +45,8 @@ sealed interface Icon {
     /** The name of the image resource. */
     val name: String
 
-    /** Searches the icon in the specified [bundles] and exports it as icon set to the specified [path]. */
-    fun toIconSet(path: Path, bundles: List<Bundle> = CoreTypes().bundle.allBundles): Path
+    /** Searches the icon using the specified [iconResolver] and exports it as icon set to the specified [path]. */
+    fun toIconSet(path: Path, iconResolver: IconResolver = { null }): Path
 
     /** An [Icon] based on a set of image files. */
     data class IconFiles(
@@ -66,10 +66,10 @@ sealed interface Icon {
             },
         )
 
-        override fun toIconSet(path: Path, bundles: List<Bundle>): Path = path.resolve("$name.iconset").also { iconset ->
+        override fun toIconSet(path: Path, iconResolver: IconResolver): Path = path.resolve("$name.iconset").also { iconset ->
             val filePaths = variants.mapNotNull { variant ->
                 val file = "${name}_$variant.$extension"
-                bundles.firstNotNullOfOrNull { it.iconPath(file) }
+                iconResolver.invoke(file)
                     .also { if (it == null) logger.warn("File not found: {}", kv("file", file)) }
             }
             require(filePaths.isNotEmpty()) { "Icon ${toString()} not found" }
@@ -96,9 +96,9 @@ sealed interface Icon {
             check(extension == "icns") { "Icon $name is not an icns but an $extension file." }
         }
 
-        override fun toIconSet(path: Path, bundles: List<Bundle>): Path = path.resolve("$name.iconset").also { iconset ->
+        override fun toIconSet(path: Path, iconResolver: IconResolver): Path = path.resolve("$name.iconset").also { iconset ->
             val file = "$name.${extension}"
-            val filePath = requireNotNull(bundles.firstNotNullOfOrNull { it.iconPath(file) }) { "Icon $file not found" }
+            val filePath = requireNotNull(iconResolver.invoke(file)) { "Icon $file not found" }
             CommandLine(
                 "iconutil",
                 "--convert",
@@ -128,7 +128,7 @@ sealed interface Icon {
     /** An [Icon] based on [SF Symbols](https://developer.apple.com/sf-symbols/). */
     data class Symbol(override val name: String) : Icon {
 
-        override fun toIconSet(path: Path, bundles: List<Bundle>): Path {
+        override fun toIconSet(path: Path, iconResolver: IconResolver): Path {
             val content = requireNotNull(SFSymbols5[name]) { "Icon $name not found" }
             val fileName = "$name.svg"
             return path.resolve(fileName).also {
@@ -140,3 +140,5 @@ sealed interface Icon {
 
     }
 }
+
+typealias IconResolver = (String) -> Path?

@@ -28,6 +28,7 @@ class DeviceModelCodesTestJvm {
     @BeforeTest
     fun setUp() {
         Logback["com.bkahlert.kommons.exec"].level = Level.WARN
+        Logback["com.bkahlert.netmon.model_identification"].level = Level.DEBUG
     }
 
     @Test
@@ -40,9 +41,9 @@ class DeviceModelCodesTestJvm {
 
     @Test
     fun export_to_resources() = runTest {
-        if (!Paths.get(CoreTypes.CORE_TYPES_BUNDLE_PATH).exists()) return@runTest
+        if (!BundleTypes.CoreTypes.bundle.path.exists()) return@runTest
 
-        val coreTypes = CoreTypes(transform = CoreTypesSymbolPatch)
+        val types = BundleTypes.CoreTypes + CustomTypes + AmazonTypes + SonosTypes
 
         val outputDir = DeviceModelCodes::class.getBuildDirectory().resolve("tmp").resolve("device-model-codes").apply {
             createParentDirectories()
@@ -51,7 +52,7 @@ class DeviceModelCodesTestJvm {
         }
 
         DeviceModelCodesExporter.exportTo(
-            coreTypes = coreTypes,
+            types = types,
             directory = outputDir,
         )
 

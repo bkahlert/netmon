@@ -7,6 +7,7 @@ import com.bkahlert.kommons.logging.logback.StructuredArguments.v
 import com.bkahlert.netmon.serialization.DataUrl
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.encodeToStream
+import java.nio.charset.Charset
 import java.nio.file.Path
 import kotlin.io.encoding.Base64
 import kotlin.io.path.appendLines
@@ -30,7 +31,7 @@ object DeviceModelCodesExporter {
     private val logger by SLF4J
 
     /**
-     * Creates a [DeviceModelCodes] instance from the given [coreTypes],
+     * Creates a [DeviceModelCodes] instance from the given [types],
      * and export it, and accompanied by the referenced icons to the specified [directory].
      *
      * If a [cache] is given, the icons are created with it.
@@ -45,16 +46,16 @@ object DeviceModelCodesExporter {
      * - all referenced icons, for example `SidebarFooProCylinder.png`
      */
     fun exportTo(
-        coreTypes: CoreTypes,
+        types: Types,
         directory: Path,
         cache: FileCache? = null,
     ): DeviceModelCodes {
         require(directory.isDirectory()) { "Assets directory $directory must be a directory." }
 
         val deviceModelCodeToIdentifier: Map<String, String> = buildMap {
-            coreTypes.keys
+            types.keys
                 .forEach { identifier ->
-                    val conformingTypes = coreTypes.conformingTypes(identifier)
+                    val conformingTypes = types.conformingTypes(identifier)
                     conformingTypes.first().tagSpecification?.deviceModelCodes?.forEach { deviceModelCode ->
                         this@buildMap.compute(deviceModelCode) { _, commonType ->
                             if (commonType == null) identifier
@@ -71,26 +72,26 @@ object DeviceModelCodesExporter {
 
         val iconSymbols by lazy {
             temp.resolve("symbols").createDirectory().also { directory ->
-                coreTypes.allIcons(directory, iconCache = iconCache) { it.firstOrNull { it is Icon.Symbol } }
+                types.allIcons(directory, iconCache = iconCache) { it.firstOrNull { it is Icon.Symbol } }
             }
         }
 
         val iconImageTemplates by lazy {
             temp.resolve("image-templates").createDirectory().also { directory ->
-                coreTypes.allIcons(directory, iconCache = iconCache) { it.firstOrNull { it is Icon.IconImageTemplate } }
+                types.allIcons(directory, iconCache = iconCache) { it.firstOrNull { it is Icon.IconImageTemplate } }
 
             }
         }
 
         val iconImages by lazy {
             temp.resolve("images").createDirectory().also { directory ->
-                coreTypes.allIcons(directory, iconCache = iconCache) { it.firstOrNull { it is Icon.IconImage } }
+                types.allIcons(directory, iconCache = iconCache) { it.firstOrNull { it is Icon.IconImage } }
             }
         }
 
 
         val identifierToDescription: Map<String, String?> = identifiers.associateWith { identifier ->
-            coreTypes.description(identifier).also {
+            types.description(identifier).also {
                 if (it == null) logger.warn("No description found for {}", v("identifier", identifier))
                 else logger.debug("Description found for {}: {}", v("identifier", identifier), v("description", it))
             }
@@ -129,7 +130,7 @@ object DeviceModelCodesExporter {
             "device-model-codes.external-assets.json" to deviceModelCodes,
             "device-model-codes.embedded-assets.json" to deviceModelCodes.copy(
                 embeddedIcons = identifierToIcon.values.filterNotNull().associateWith { name ->
-                    directory.resolve(name)?.takeIf { it.exists() }?.toDataUrl()
+                    directory.resolve(name).takeIf { it.exists() }?.toDataUrl()
                 }
             ),
         ).forEach { (fileName, instance) ->
@@ -151,59 +152,55 @@ object DeviceModelCodesExporter {
         if (exists()) deleteExisting()
         createFile()
         appendLines(
-            listOf(
-                "<!DOCTYPE html>",
-                """<html lang="en">""",
-                "<head>",
-                "<style>",
-                // language=css
-                """
-                    html {
-                        font-family: ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Helvetica Neue,Arial,Noto Sans,sans-serif,Apple Color Emoji,Segoe UI Emoji,Segoe UI Symbol,Noto Color Emoji;
-                        line-height: 1.5;
-                    }
+            "<!DOCTYPE html>",
+            """<html lang="en">""",
+            "<head>",
+            "<style>",
+            // language=css
+            """
+                html {
+                    font-family: ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Helvetica Neue,Arial,Noto Sans,sans-serif,Apple Color Emoji,Segoe UI Emoji,Segoe UI Symbol,Noto Color Emoji;
+                    line-height: 1.5;
+                }
 
-                    table { border-collapse: collapse; border-spacing: 0; }
-                    td,th { padding: .5rem; line-height: 1.15; }
-                    thead th { text-align: left; font-weight: bold; }
-                    thead tr:last-child { border-bottom: 2px solid rgb(0 0 0 / 0.85); }
-                    tr + tr { border-top: 1px solid rgb(0 0 0 / 0.85);}
-                    tbody tr:nth-child(odd) { background-color: rgb(0 0 0 / 0.05); }
-                    td:has(img,svg) { text-align: center; max-width: 6rem; line-height: .5rem; }
-                    td:has(img,svg) small { font-size: .55rem; overflow-wrap: break-word; }
+                table { border-collapse: collapse; border-spacing: 0; }
+                td,th { padding: .5rem; line-height: 1.15; }
+                thead th { text-align: left; font-weight: bold; }
+                thead tr:last-child { border-bottom: 2px solid rgb(0 0 0 / 0.85); }
+                tr + tr { border-top: 1px solid rgb(0 0 0 / 0.85);}
+                tbody tr:nth-child(odd) { background-color: rgb(0 0 0 / 0.05); }
+                td:has(img,svg) { text-align: center; max-width: 6rem; line-height: .5rem; }
+                td:has(img,svg) small { font-size: .55rem; overflow-wrap: break-word; }
 
-                    img, svg { width: 100%; display: block; }
-                    svg { animation: color-rotate 50s infinite linear; }
+                img, svg { width: 100%; display: block; }
+                svg { animation: color-rotate 50s infinite linear; }
 
-                    @keyframes color-rotate {
-                        0% { color: oklch(69.85% 0.133 0.0); }
-                        25% { color: oklch(69.85% 0.133 90.0); }
-                        50% { color: oklch(69.85% 0.133 180.0); }
-                        75% { color: oklch(69.85% 0.133 270.0); }
-                        100% { color: oklch(69.85% 0.133 360.0); }
-                    }
-                    """.trimIndent(),
-                "</style>",
-                "</head>",
-                "<body>",
-                "<h1>Device Model Codes</h1>",
-            )
+                @keyframes color-rotate {
+                    0% { color: oklch(69.85% 0.133 0.0); }
+                    25% { color: oklch(69.85% 0.133 90.0); }
+                    50% { color: oklch(69.85% 0.133 180.0); }
+                    75% { color: oklch(69.85% 0.133 270.0); }
+                    100% { color: oklch(69.85% 0.133 360.0); }
+                }
+                """.trimIndent(),
+            "</style>",
+            "</head>",
+            "<body>",
+            "<h1>Device Model Codes</h1>",
         )
 
         appendLines(
-            listOf(
-                """<table>""",
-                """<thead>""",
-                """<tr>""",
-                """<th>Device Mode Codes</th>""",
-                """<th>Type Identifier</th>""",
-                """<th>Description</th>""",
-                """<th>Icon</th>""",
-                """<th>Inlined</th>""",
-                """</tr>""",
-                """</thead>""",
-                """<tbody>""",
-            )
+            "<table>",
+            "<thead>",
+            "<tr>",
+            "<th>Device Mode Codes</th>",
+            "<th>Type Identifier</th>",
+            "<th>Description</th>",
+            "<th>Icon</th>",
+            "<th>Inlined</th>",
+            "</tr>",
+            "</thead>",
+            "<tbody>",
         )
 
         val identifiers: Map<String?, List<String>> = deviceModelCodes.groupBy { deviceModelCodes.identifier(it) }
@@ -237,15 +234,16 @@ object DeviceModelCodesExporter {
         }
 
         appendLines(
-            listOf(
-                "</tbody>",
-                "</table>",
-                "</body>",
-                "</html>",
-            )
+            "</tbody>",
+            "</table>",
+            "</body>",
+            "</html>",
         )
     }
 }
+
+@Suppress("RedundantVisibilityModifier", "NOTHING_TO_INLINE")
+public inline fun Path.appendLines(vararg lines: CharSequence, charset: Charset = Charsets.UTF_8): Path = appendLines(lines.asIterable(), charset)
 
 fun Path.toDataUrl(): DataUrl = when (val extension = extension) {
     "svg" -> DataUrl("image/svg+xml", readBytes())

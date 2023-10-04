@@ -41,11 +41,11 @@ class IconsTest {
     @Test
     fun to_iconset() = runTest {
         val assets = createTempDirectory()
-        Icon.IconImage("SidebarBar.icns").toIconSet(assets, CoreTypesTest.CORE_TYPES.bundle.allBundles) should {
+        Icon.IconImage("SidebarBar.icns").toIconSet(assets, Bundle(BundleTest.TEST_BUNDLE_DIR)::iconPath) should {
             it.shouldBeADirectory()
             it.shouldContainFiles("icon_16x16.png", "icon_[selected]32x32@2x.png")
         }
-        Icon.Symbol("doc").toIconSet(assets, CoreTypesTest.CORE_TYPES.bundle.allBundles) should {
+        Icon.Symbol("doc").toIconSet(assets) should {
             it.shouldBeAFile()
             it.fileName.pathString shouldBe "doc.svg"
         }
@@ -60,7 +60,7 @@ class IconsTest {
             row(Icon.IconImageTemplate("SidebarFoo", "icns")),
             row(Icon.Symbol("foo.bar")),
         ) { icon ->
-            shouldThrow<IllegalArgumentException> { icon.toIconSet(assets, CoreTypesTest.CORE_TYPES.bundle.allBundles) }
+            shouldThrow<IllegalArgumentException> { icon.toIconSet(assets) }
         }
         assets.listDirectoryEntries().shouldBeEmpty()
     }

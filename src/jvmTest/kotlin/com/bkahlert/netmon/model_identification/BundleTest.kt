@@ -21,7 +21,8 @@ import kotlin.test.Test
 class BundleTest {
 
     companion object {
-        val BUNDLES_DIR = checkNotNull(BundleTest::class.java.classLoader.getResource("bundles")) { "Failed to find test bundles" }.toPath()
+        val TEST_BUNDLES_DIR = checkNotNull(BundleTest::class.java.classLoader.getResource("bundles")) { "Failed to find test bundles" }.toPath()
+        val TEST_BUNDLE_DIR = TEST_BUNDLES_DIR / "CoreTypes.bundle"
     }
 
     @BeforeTest
@@ -31,13 +32,13 @@ class BundleTest {
 
     @Test
     fun find() = runTest {
-        Bundle.find(BUNDLES_DIR) shouldHaveSize 1
-        Bundle.find(BUNDLES_DIR / "CoreTypes.bundle" / "Contents") shouldHaveSize 1
+        Bundle.find(TEST_BUNDLES_DIR) shouldHaveSize 1
+        Bundle.find(TEST_BUNDLE_DIR / "Contents") shouldHaveSize 1
     }
 
     @Test
     fun info() = runTest {
-        Bundle(BUNDLES_DIR / "CoreTypes.bundle") should {
+        Bundle(TEST_BUNDLE_DIR) should {
             it.packageType shouldBe Bundle.PackageType.BNDL
             it.identifier shouldBe "com.example.coretypes"
             it.name shouldBe "CoreTypes"
@@ -50,11 +51,11 @@ class BundleTest {
 
     @Test
     fun all_bundles() = runTest {
-        Bundle(BUNDLES_DIR / "CoreTypes.bundle").allBundles should {
+        Bundle(TEST_BUNDLE_DIR).allBundles should {
             it shouldHaveAtLeastSize 2
             it.map(Bundle::path).shouldContainExactly(
-                BUNDLES_DIR / "CoreTypes.bundle",
-                BUNDLES_DIR / "CoreTypes.bundle" / "Contents" / "Library" / "MobileDevices.bundle",
+                TEST_BUNDLE_DIR,
+                TEST_BUNDLE_DIR / "Contents" / "Library" / "MobileDevices.bundle",
             )
         }
     }

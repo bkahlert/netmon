@@ -28,7 +28,7 @@ class DeviceModelCodesExporterTest {
     @Test
     fun export_to() = runTest(timeout = 2.minutes) {
         val assets = createTempDirectory("assets")
-        val deviceModelCodes = DeviceModelCodesExporter.exportTo(CoreTypesTest.CORE_TYPES, assets)
+        val deviceModelCodes = DeviceModelCodesExporter.exportTo(TypesTest.TestTypes, assets)
         deviceModelCodes.description("FooPro6,1") shouldBe "Foo Pro"
         deviceModelCodes.icon("FooPro6,1") shouldBe Image("SidebarFooProCylinder.png", assets.resolve("SidebarFooProCylinder.png").toDataUrl().url)
         deviceModelCodes.description("Bar10,6") shouldBe "Bar X (Model A1865, A1901, A1902, A1903)"

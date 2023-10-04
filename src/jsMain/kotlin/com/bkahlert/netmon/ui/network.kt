@@ -19,8 +19,11 @@ import dev.fritz2.core.Tag
 import dev.fritz2.core.classes
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.mapLatest
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
 import org.w3c.dom.HTMLElement
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.ZERO
@@ -67,13 +70,11 @@ fun RenderContext.scan(
         }
     }
 
-    div("overflow-y-auto") {
-        zoomedToFitClientHeight()
+    val hostsFlows: Flow<Pair<List<Host>, List<Host>>> = events.mapLatest { it.hosts.partition(Host::stable) }
+    val stableHostsFlow: Flow<List<Host>> = hostsFlows.map { it.first }
+    val recentHostsFlow: Flow<List<Host>> = hostsFlows.map { it.second }
 
-        val hostsFlows: Flow<Pair<List<Host>, List<Host>>> = events.mapLatest { it.hosts.partition(Host::stable) }
-        val stableHostsFlow: Flow<List<Host>> = hostsFlows.map { it.first }
-        val recentHostsFlow: Flow<List<Host>> = hostsFlows.map { it.second }
-
+    div("flex flex-col") {
         hostGrid(recentHostsFlow)
         recentHostsFlow.combine(stableHostsFlow) { r, s -> r.isNotEmpty() && s.isNotEmpty() }.render {
             if (it) {
@@ -87,9 +88,13 @@ fun RenderContext.scan(
 }
 
 fun RenderContext.hostGrid(hosts: Flow<List<Host>>, classes: String? = null) {
-    ul(classes("grid grid-cols-[repeat(auto-fill,150px)] justify-around gap-4", classes)) {
-        hosts.renderEach(into = this) { host ->
-            li { host(host) }
+    div("overflow-y-auto") {
+        zoomedToFitClientHeight()
+        hosts.map { it.size }.distinctUntilChanged() handledBy { resetZoomed() }
+        ul(classes("grid grid-cols-[repeat(auto-fill,150px)] justify-around gap-4", classes)) {
+            hosts.renderEach(into = this) { host ->
+                li { host(host) }
+            }
         }
     }
 }
@@ -125,11 +130,11 @@ fun RenderContext.host(host: Host) {
         span("truncate") {
             val caption = host.name?.substringBefore(".") ?: modelName
             if (caption != null) {
-                div("text-sm font-bold truncate") { +caption }
+                div("text-sm font-bold") { +caption }.zoomToFitClientWidth()
                 host.vendor?.also { div("text-sm") { +it }.zoomToFitClientWidth() }
-                div("text-xs font-mono truncate") { +host.ip.toString() }.zoomToFitClientWidth()
+                div("text-xs font-mono") { +host.ip.toString() }.zoomToFitClientWidth()
             } else {
-                div("text-sm font-mono truncate") { +host.ip.toString() }.zoomToFitClientWidth()
+                div("text-sm font-mono") { +host.ip.toString() }.zoomToFitClientWidth()
                 host.vendor?.also { div("text-xs") { +it }.zoomToFitClientWidth() }
             }
             host.status?.also { status ->

@@ -1,6 +1,5 @@
 package com.bkahlert.kommons.browser
 
-import com.bkahlert.kommons.js.console
 import com.bkahlert.kommons.uri.Uri
 import com.bkahlert.kommons.uri.toUriOrNull
 import org.w3c.dom.Element
@@ -56,7 +55,6 @@ class AutoRefresher(
     }
 
     fun refresh() {
-        console.debug("Checking for ETag for %s", uri)
         uri.getEtagOrNull(window = window)
             .then {
                 if (it != null) {
@@ -64,7 +62,6 @@ class AutoRefresher(
                     if (prevEtag == null) {
                         etag = it
                     } else if (prevEtag != it) {
-                        console.info("Etag changed for %s: %s -> %s", uri, prevEtag, it)
                         window.location.reload()
                     }
                 }
