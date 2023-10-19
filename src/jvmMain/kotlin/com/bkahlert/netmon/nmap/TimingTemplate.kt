@@ -1,4 +1,4 @@
-package com.bkahlert.netmon
+package com.bkahlert.netmon.nmap
 
 enum class TimingTemplate(val value: Int) {
     /** For IDS evasion. */

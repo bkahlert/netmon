@@ -1,4 +1,4 @@
-package com.bkahlert.netmon.net
+package com.bkahlert.netmon.scanner
 
 import io.kotest.inspectors.forAtLeastOne
 import io.kotest.matchers.collections.shouldNotBeEmpty

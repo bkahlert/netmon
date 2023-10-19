@@ -1,4 +1,4 @@
-package com.bkahlert.netmon.net
+package com.bkahlert.netmon.scanner
 
 import com.bkahlert.netmon.Cidr
 import com.bkahlert.netmon.IP

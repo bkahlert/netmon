@@ -147,7 +147,16 @@ fun RenderContext.host(host: Host) {
                         }
                     }
                 }
+                pre("text-xs") { // TODO remove
+                    inlineStyle("zoom:0.75")
+                    +prettyJson.encodeToString(host)
+                }
             }
         }
     }
+}
+
+private val prettyJson = Json {
+    prettyPrint = true
+    prettyPrintIndent = ""
 }

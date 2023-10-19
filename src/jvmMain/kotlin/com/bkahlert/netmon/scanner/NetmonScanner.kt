@@ -1,12 +1,14 @@
-package com.bkahlert.netmon
+package com.bkahlert.netmon.scanner
 
 import com.bkahlert.kommons.logging.SLF4J
 import com.bkahlert.kommons.logging.logback.StructuredArguments.kv
 import com.bkahlert.kommons.time.Now
+import com.bkahlert.netmon.Cidr
+import com.bkahlert.netmon.Host
 import com.bkahlert.netmon.enrichment.Enricher
-import com.bkahlert.netmon.net.InterfaceResolver.Companion.networkInterface
-import com.bkahlert.netmon.net.cidr
 import com.bkahlert.netmon.nmap.NmapNetworkScanner
+import com.bkahlert.netmon.nmap.TimingTemplate
+import com.bkahlert.netmon.scanner.InterfaceResolver.Companion.networkInterface
 import java.net.InterfaceAddress
 import java.nio.file.Path
 import java.nio.file.Paths

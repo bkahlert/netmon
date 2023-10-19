@@ -1,5 +1,9 @@
-package com.bkahlert.netmon
+package com.bkahlert.netmon.scanner
 
+import com.bkahlert.netmon.Cidr
+import com.bkahlert.netmon.Host
+import com.bkahlert.netmon.IP
+import com.bkahlert.netmon.Status
 import io.kotest.matchers.collections.shouldContainExactly
 import io.kotest.matchers.shouldBe
 import kotlinx.datetime.Instant

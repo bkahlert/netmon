@@ -6,7 +6,6 @@ import com.bkahlert.kommons.logging.logback.StructuredArguments.kv
 import com.bkahlert.kommons.logging.logback.StructuredArguments.v
 import com.bkahlert.netmon.Cidr
 import com.bkahlert.netmon.Host
-import com.bkahlert.netmon.TimingTemplate
 import com.bkahlert.netmon.serialization.JsonFormat
 import java.net.Inet6Address
 import java.net.URL

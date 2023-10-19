@@ -3,8 +3,8 @@ package com.bkahlert.netmon.nmap
 import com.bkahlert.kommons.FileCache
 import com.bkahlert.kommons.test.createTempDirectory
 import com.bkahlert.netmon.logging.LoggingSettings
-import com.bkahlert.netmon.net.InterfaceResolver
-import com.bkahlert.netmon.net.cidr
+import com.bkahlert.netmon.scanner.InterfaceResolver
+import com.bkahlert.netmon.scanner.cidr
 import io.kotest.inspectors.forAll
 import io.kotest.inspectors.forAtLeastOne
 import io.kotest.matchers.collections.shouldNotBeEmpty

@@ -1,4 +1,4 @@
-package com.bkahlert.netmon
+package com.bkahlert.netmon.scanner
 
 import com.bkahlert.kommons.config.Settings
 import com.bkahlert.kommons.config.setting

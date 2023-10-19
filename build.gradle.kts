@@ -136,7 +136,7 @@ java {
 }
 
 application {
-    mainClass.set("MainKt")
+    mainClass.set("com.bkahlert.netmon.Application")
 }
 
 tasks {
@@ -148,7 +148,7 @@ tasks {
         archiveVersion.set("")
         configurations = listOf(
             project.configurations["jvmRuntimeClasspath"],
-            project.configurations["jvmTestRuntimeClasspath"], // don't know why, but doesn't find "MainKt" otherwise
+            project.configurations["jvmTestRuntimeClasspath"], // don't know why, but doesn't find "com.bkahlert.netmon.Application" otherwise
         )
         mergeServiceFiles()
         transform(Log4j2PluginsCacheFileTransformer::class.java)

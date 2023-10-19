@@ -1,9 +1,8 @@
-package com.bkahlert.netmon.net
+package com.bkahlert.netmon.scanner
 
 import com.bkahlert.kommons.logging.SLF4J
 import com.bkahlert.kommons.logging.logback.StructuredArguments.kv
 import com.bkahlert.kommons.logging.logback.StructuredArguments.o
-import com.bkahlert.netmon.NetworkFilterSettings
 import java.math.BigInteger
 import java.net.Inet4Address
 import java.net.Inet6Address

@@ -15,13 +15,13 @@ import kotlin.io.path.fileSize
 import kotlin.test.Test
 import main as mainMain
 
-class IntegrationTest {
+class ApplicationIntegrationTest {
 
     @Test
     fun start() {
         val output: MutableList<String> = mutableListOf()
         val dir = createTempDirectory("netmon-integration-test")
-        val app = CommandLine(IntegrationTest::class, "-vvv").let(::ProcessBuilder).apply {
+        val app = CommandLine(ApplicationIntegrationTest::class, "-vvv").let(::ProcessBuilder).apply {
             workingDirectory = dir
             environment["BROKER_HOST"] = "foo.local"
             environment["DEBUG"] = "*.netmon*,-*mdns*"
