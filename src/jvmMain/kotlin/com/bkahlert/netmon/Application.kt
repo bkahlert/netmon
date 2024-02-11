@@ -1,11 +1,9 @@
 package com.bkahlert.netmon
 
 import com.bkahlert.kommons.FileCache
-import com.bkahlert.kommons.Program
+import com.bkahlert.kommons.Pid
 import com.bkahlert.kommons.logging.SLF4J
-import com.bkahlert.kommons.logging.logback.StructuredArguments.a
 import com.bkahlert.kommons.logging.logback.StructuredArguments.kv
-import com.bkahlert.kommons.logging.logback.StructuredArguments.o
 import com.bkahlert.kommons.logging.logback.StructuredArguments.v
 import com.bkahlert.kommons.text.checkNotBlank
 import com.bkahlert.netmon.enrichment.AmazonHostEnricher
@@ -21,136 +19,180 @@ import com.bkahlert.netmon.model_identification.DeviceModelCodes
 import com.bkahlert.netmon.model_identification.load
 import com.bkahlert.netmon.model_identification.resource
 import com.bkahlert.netmon.mqtt.MqttPublisher
+import com.bkahlert.netmon.net.SystemInterfaceAddressResolver
+import com.bkahlert.netmon.net.cidr
+import com.bkahlert.netmon.net.networkInterface
 import com.bkahlert.netmon.nmap.NmapMacPrefixesProvisioner
 import com.bkahlert.netmon.nmap.NmapNetworkScanner
-import com.bkahlert.netmon.scanner.InterfaceResolver
-import com.bkahlert.netmon.scanner.InterfaceResolver.Companion.networkInterface
+import com.bkahlert.netmon.nmap.NmapSettings
 import com.bkahlert.netmon.scanner.NetmonScanner
-import com.bkahlert.netmon.scanner.cidr
+import com.bkahlert.netmon.scanner.NetworkFilterSettings
 import com.bkahlert.netmon.serialization.JsonFormat
-import java.lang.Thread.interrupted
 import java.net.InetAddress
+import java.net.InterfaceAddress
 import java.util.Collections
 import kotlin.system.exitProcess
 
-class Application {
+
+class Application(
+    private val hostname: String = kotlin.runCatching { InetAddress.getLocalHost() }
+        .getOrElse { throw IllegalStateException("Failed to determine localhost", it) }
+        .let { localhost ->
+            checkNotBlank(localhost.hostName)
+            kotlin.runCatching { checkNotBlank(localhost.hostName) }
+                .getOrElse { throw IllegalStateException("Failed to determine hostname", it) }
+        },
+    private val interfaceAddresses: () -> Iterable<InterfaceAddress> = SystemInterfaceAddressResolver()::resolve,
+) {
 
     private val cache: FileCache by lazy { FileCache.of("netmon") }
-
-    fun start() {
-
-        val localhost = runCatching { InetAddress.getLocalHost() }
-            .getOrElse { throw IllegalStateException("Failed to determine localhost", it) }
-        val hostname = runCatching { checkNotBlank(localhost.hostName) }
-            .getOrElse { throw IllegalStateException("Failed to determine hostname", it) }
-        val node = hostname.substringBefore('.').lowercase()
-
-        logger.info("Hostname: {}", kv("hostname", hostname))
-
-        val nmapMacPrefixesProvisioner = NmapMacPrefixesProvisioner(cache)
-        val nmapNetworkScanner = NmapNetworkScanner().apply {
+    private val nmapMacPrefixesProvisioner: NmapMacPrefixesProvisioner by lazy { NmapMacPrefixesProvisioner(cache) }
+    private val nmapNetworkScanner by lazy {
+        NmapNetworkScanner().apply {
             dataDir?.let(nmapMacPrefixesProvisioner::provisionIn)
         }
+    }
+
+    fun start() {
+        logger.info(
+            "Configuration: {}",
+            listOf(
+                "hostname" to hostname,
+                "cache" to cache,
+            ).joinToString(separator = "") { (key, value) -> "\n${key.padStart(30)}: $value" },
+        )
+
+        logger.info(
+            "Settings: {}",
+            listOf(
+                LoggingSettings,
+                NetworkFilterSettings,
+                NmapSettings,
+                BrokerSettings,
+                ScanEventSettings,
+                HostEventSettings,
+            ).joinToString(separator = "") { settings ->
+                "\n${settings::class.simpleName.orEmpty().padStart(30)}: ${settings.toString().substringAfter('[').substringBeforeLast(']')}"
+            },
+        )
+
+        val namedInterfaceAddresses: () -> Iterable<Pair<InterfaceAddress, String>> = {
+            interfaceAddresses()
+                .mapNotNull { interfaceAddress ->
+                    interfaceAddress.networkInterface?.let { interfaceAddress to it.name }
+                }
+        }.also {
+            logger.info(
+                "Interface addresses found: {}",
+                it().joinToString { (interfaceAddress, interfaceName) ->
+                    "$interfaceName:${interfaceAddress.cidr}"
+                },
+            )
+        }
+
         val publisher = MqttPublisher(
             host = BrokerSettings.host,
             port = BrokerSettings.port,
             stringFormat = JsonFormat,
             serializer = Event.serializer(),
-        )
+        ).also {
+            logger.info("{} connected", v(it))
+        }
 
-        val netmons: List<NetmonScanner> = InterfaceResolver().resolve()
-            .mapNotNull { interfaceAddress ->
-                interfaceAddress.networkInterface?.let { interfaceAddress to it }
-            }
-            .map { (interfaceAddress, networkInterface) ->
-                val topicSubstitutions = mapOf("node" to node, "interface" to networkInterface.name, "cidr" to interfaceAddress.cidr.toString())
+
+        val serviceInfoCaches = Collections.synchronizedMap(mutableMapOf<InetAddress, JmDNSServiceInfoCache>())
+        val scanners = Collections.synchronizedMap(mutableMapOf<InetAddress, NetmonScanner>())
+
+        val application = SlicedApplication(
+            slice = namedInterfaceAddresses,
+            start = { (interfaceAddress, interfaceName) ->
+                val serviceInfoCache = serviceInfoCaches.getOrPut(interfaceAddress.address) {
+                    JmDNSServiceInfoCache(JmDNS(interfaceAddress.address, hostname), serviceTypes = emptyArray())
+                }
+
+                val topicSubstitutions = mapOf("node" to hostname, "interface" to interfaceName, "cidr" to interfaceAddress.cidr.toString())
                 val scanTopic = ScanEventSettings.topic.toString(topicSubstitutions)
                 val hostTopic = HostEventSettings.topic.toString(topicSubstitutions)
 
-                val jmDns = JmDNS(interfaceAddress.address, hostname)
-                val serviceInfoCache = JmDNSServiceInfoCache(jmDns, serviceTypes = emptyArray())
-                Program.onExit {
-                    serviceInfoCache.close()
-                    jmDns.close()
+                scanners.getOrPut(interfaceAddress.address) {
+                    NetmonScanner(
+                        interfaceAddress = interfaceAddress,
+                        scanner = nmapNetworkScanner,
+                        enrichers = arrayOf(
+                            HostNameEnricher(serviceInfoCache),
+                            DeviceInfoHostEnricher(serviceInfoCache),
+                            AmazonHostEnricher(serviceInfoCache),
+                            SonosHostEnricher(serviceInfoCache),
+                            AppleHostEnricher(serviceInfoCache, DeviceModelCodes.load(DeviceModelCodes.resource)),
+                            HostServicesEnricher(serviceInfoCache),
+                        ),
+                        onScan = { scan ->
+                            publisher.publish(
+                                topic = scanTopic,
+                                event = Event.ScanEvent(
+                                    type = Event.ScanEvent.Type.COMPLETED,
+                                    hosts = scan.hosts,
+                                    timestamp = scan.timestamp,
+                                ),
+                            )
+
+                            logger.info(
+                                "Scan {}:{} with {} host(s) completed and published to {}: {}",
+                                interfaceName, interfaceAddress.cidr,
+                                scan.hosts.size,
+                                scanTopic,
+                                scan.hosts.joinToString(limit = 4) { it.ip.toString() }
+                            )
+                        },
+                        onChange = { host ->
+                            publisher.publish(
+                                topic = hostTopic,
+                                event = Event.HostEvent(
+                                    type = if (host.status == Status.DOWN) Event.HostEvent.Type.DOWN else Event.HostEvent.Type.UP,
+                                    host = host,
+                                ),
+                            )
+                        },
+                    )
                 }
+            },
+            process = { (interfaceAddress, _) ->
+                scanners.getValue(interfaceAddress.address).scan()
+            },
+            finalize = { (interfaceAddress, interfaceName) ->
+                serviceInfoCaches.remove(interfaceAddress.address)?.also {
+                    it.close()
+                    it.jmDns.close()
+                }.also { stoppedCache ->
+                    if (stoppedCache != null) {
+                        logger.info("Stopped scanning {}:{} and corresponding cache", interfaceName, interfaceAddress.cidr)
+                    } else {
+                        logger.warn("Stopped scanning {}:{} but no corresponding cache found", interfaceName, interfaceAddress.cidr)
+                    }
+                }
+            },
+        )
 
-                NetmonScanner(
-                    interfaceAddress = interfaceAddress,
-                    scanner = nmapNetworkScanner,
-                    enrichers = arrayOf(
-                        HostNameEnricher(serviceInfoCache),
-                        DeviceInfoHostEnricher(serviceInfoCache),
-                        AmazonHostEnricher(serviceInfoCache),
-                        SonosHostEnricher(serviceInfoCache),
-                        AppleHostEnricher(serviceInfoCache, DeviceModelCodes.load(DeviceModelCodes.resource)),
-                        HostServicesEnricher(serviceInfoCache),
-                    ),
-                    onScan = { scan ->
-                        publisher.publish(
-                            topic = scanTopic,
-                            event = Event.ScanEvent(
-                                type = Event.ScanEvent.Type.COMPLETED,
-                                hosts = scan.hosts,
-                                timestamp = scan.timestamp,
-                            ),
-                        )
-                    },
-                    onChange = { host ->
-                        publisher.publish(
-                            topic = hostTopic,
-                            event = Event.HostEvent(
-                                type = if (host.status == Status.DOWN) Event.HostEvent.Type.DOWN else Event.HostEvent.Type.UP,
-                                host = host,
-                            ),
-                        )
-                    },
-                )
-            }
-
-        logger.info("Starting {} netmon(s) for {}", v("count", netmons.size), o("networks", netmons) { it.cidr })
-
-        val failed = Collections.synchronizedList<NetmonScanner>(mutableListOf())
-        val h = Thread.UncaughtExceptionHandler { th, ex ->
-            logger.error("Uncaught exception in thread ${th.name}", ex)
-            failed.add(th as NetmonScanner)
-            Thread.currentThread().interrupt()
-        }
-        netmons.forEach {
-            it.setUncaughtExceptionHandler(h)
-            it.start()
-        }
-
-        while (!interrupted() && netmons.all { it.isAlive }) {
-            try {
-                Thread.sleep(1000) // Sleep for 1 second
-            } catch (e: InterruptedException) {
-                // Restore the interrupted status so we exit the loop
-                Thread.currentThread().interrupt()
-            }
-        }
-
-        netmons.filter { it.isAlive }.forEach { it.interrupt() }
-
-        if (failed.isEmpty()) {
-            logger.info("All {} netmon(s) for {} stopped", v("count", netmons.size), o("networks", netmons) { it.cidr })
-            exitProcess(0)
-        } else {
-            logger.error("Failed to start {} netmon(s) for {}", v("count", failed.size), o("networks", failed) { it.cidr })
-            exitProcess(1)
-        }
+        val failed = application.start().waitForTermination().failed
+        check(failed.isEmpty()) { "Errors occurred scanning the following ${failed.size} network(s): ${failed.joinToString { it.first.cidr }}" }
     }
 
     companion object {
 
-        private val logger = SLF4J.getLogger("com.bkahlert.netmon.startup")
+        private val logger by SLF4J
 
         @JvmStatic
         fun main(args: Array<out String>) {
-            LoggingSettings.apply(*args)
-            logger.info("Starting netmon: {}", a(*args, key = "args"))
-
-            val application = Application()
-            application.start()
+            try {
+                LoggingSettings.apply(*args)
+                logger.info("Application starting with {} and {}", kv("pid", Pid.current.value), kv("args", args.asList()))
+                Application().start()
+                logger.debug("Application terminated successfully")
+                exitProcess(0)
+            } catch (e: Throwable) {
+                logger.error("Application terminated erroneously", e)
+                exitProcess(1)
+            }
         }
     }
 }

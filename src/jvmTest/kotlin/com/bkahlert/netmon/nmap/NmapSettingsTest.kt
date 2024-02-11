@@ -38,7 +38,7 @@ class NmapSettingsTest {
 
         withTestConfig("nmap.dataDir" to "${Unicode.ESCAPE}") {
             shouldThrowAny { NmapSettings.dataDir }
-                .message?.lowercase().shouldContain("unexpected json token")
+                .message?.lowercase().shouldContain("not writeable")
         }
     }
 }

@@ -1,11 +1,14 @@
 package com.bkahlert.netmon.enrichment
 
 import com.bkahlert.kommons.logging.SLF4J
+import com.bkahlert.kommons.logging.logback.StructuredArguments.entries
+import com.bkahlert.kommons.logging.logback.StructuredArguments.kv
+import com.bkahlert.kommons.logging.logback.StructuredArguments.objects
+import com.bkahlert.kommons.logging.logback.StructuredArguments.v
 import com.bkahlert.netmon.Host
 import com.bkahlert.netmon.mdns.JmDNSServiceInfoCache
 import com.bkahlert.netmon.mdns.ServiceInfo
 import com.bkahlert.netmon.model_identification.DeviceModelCodes
-import net.logstash.logback.argument.StructuredArguments
 
 /** An enricher that contributes Apple-specific information to a [Host] using the specified [serviceInfoCache]. */
 class AppleHostEnricher(
@@ -40,11 +43,13 @@ class AppleHostEnricher(
             services.forEach { service ->
                 extractModel(service)
                     .also {
-                        if (it.size > 1) logger.warn(
-                            "Multiple models found by {}: {}",
-                            StructuredArguments.kv("service", service.application),
-                            com.bkahlert.kommons.logging.logback.StructuredArguments.v("models", it)
-                        )
+                        if (it.size > 1) {
+                            logger.warn(
+                                "Multiple models found by {}: {}",
+                                kv("service", service.application),
+                                v("models", it)
+                            )
+                        }
                     }
                     .forEach { model ->
                         compute(model) { _, foundBy -> foundBy.orEmpty() + service }
@@ -57,8 +62,8 @@ class AppleHostEnricher(
                 .also {
                     logger.info(
                         "Unique {} found: {}",
-                        StructuredArguments.kv("model", it.key),
-                        com.bkahlert.kommons.logging.logback.StructuredArguments.objects("services", it.value, ServiceInfo::application)
+                        kv("model", it.key),
+                        objects("services", it.value, ServiceInfo::application)
                     )
                 }
                 .key
@@ -66,14 +71,14 @@ class AppleHostEnricher(
             else -> modelsFoundBy.entries.sortedByDescending { it.value.size }
                 .also {
                     logger.warn("Multiple models found: {}",
-                        com.bkahlert.kommons.logging.logback.StructuredArguments.entries(modelsFoundBy) { it.value.map(ServiceInfo::application) })
+                        entries(modelsFoundBy) { it.value.map(ServiceInfo::application) })
                 }
                 .first().key
         }
     }
 
     fun extractModel(services: ServiceInfo): List<String> =
-        services.properties.values.mapNotNull { extractModel(it) }
+        services.properties.values.mapNotNull { extractModel(it) }.distinct()
 
     fun extractModel(serviceProperty: ServiceInfo.Property): String? =
         serviceProperty.text.takeIf { it in deviceModelCodes }

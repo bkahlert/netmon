@@ -17,6 +17,7 @@ import kotlin.io.path.deleteExisting
 import kotlin.io.path.deleteRecursively
 import kotlin.io.path.div
 import kotlin.io.path.exists
+import kotlin.io.path.fileSize
 import kotlin.io.path.inputStream
 import kotlin.io.path.isDirectory
 import kotlin.io.path.isRegularFile
@@ -46,7 +47,7 @@ private val _Cache: Path
     }
 
 /** A simple [directory]-backed file cache. */
-class FileCache(private val directory: Path) {
+class FileCache(val directory: Path) {
 
     private val logger by SLF4J
 
@@ -137,6 +138,12 @@ class FileCache(private val directory: Path) {
             directory.deleteExisting()
         }
         logger.info("Purged all data, {}", kv("reason", "request"))
+    }
+
+    override fun toString(): String {
+        val size = directory.fileSize()
+        val (directories, files) = directory.listDirectoryEntries().partition { it.isDirectory() }
+        return "${FileCache::class.simpleName}(location=file://$directory, size=$size B, directoryCount=${directories.size}, fileCount=${files.size})"
     }
 
     companion object {

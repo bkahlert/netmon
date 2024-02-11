@@ -1,0 +1,473 @@
+{
+    "event": "scan",
+    "type": "completed",
+    "hosts": [
+        {
+            "ip": "192.168.16.1",
+            "status": "up",
+            "vendor": "AVM GmbH"
+        },
+        {
+            "ip": "192.168.16.10",
+            "name": "Anirul",
+            "status": "up",
+            "model": "MacPro7,1@ECOLOR=226,226,224",
+            "vendor": "Synology Incorporated",
+            "services": [
+                "device-info",
+                "smb"
+            ]
+        },
+        {
+            "ip": "192.168.16.30",
+            "status": "up",
+            "vendor": "Netgear"
+        },
+        {
+            "ip": "192.168.16.31",
+            "status": "up",
+            "since": 1708109258,
+            "vendor": "Nintendo"
+        },
+        {
+            "ip": "192.168.16.32",
+            "name": "Fire TV",
+            "status": "up",
+            "model": "Fire TV",
+            "vendor": "Amazon Technologies",
+            "services": [
+                "amzn-wplay"
+            ]
+        },
+        {
+            "ip": "192.168.16.33",
+            "name": "Paul.local.",
+            "status": "up",
+            "model": "Mac14,13",
+            "vendor": "Apple Inc.",
+            "services": [
+                "companion-link",
+                "airplay",
+                "smb",
+                "raop"
+            ]
+        },
+        {
+            "ip": "192.168.16.34",
+            "name": "Alia.local.",
+            "status": "up",
+            "vendor": "Apple",
+            "services": [
+                "smb",
+                "sleep-proxy",
+                "adisk",
+                "afpovertcp",
+                "airport"
+            ]
+        },
+        {
+            "ip": "192.168.16.35",
+            "name": "Rabban.local.",
+            "status": "down",
+            "since": 1708109194,
+            "services": [
+                "companion-link"
+            ]
+        },
+        {
+            "ip": "192.168.16.38",
+            "status": "up",
+            "since": 1708108778
+        },
+        {
+            "ip": "192.168.16.41",
+            "status": "up",
+            "since": 1708109258,
+            "services": [
+                "asquic"
+            ]
+        },
+        {
+            "ip": "192.168.16.42",
+            "name": "Sonos One SL",
+            "status": "up",
+            "since": 1708108429,
+            "model": "One SL",
+            "vendor": "Sonos",
+            "services": [
+                "spotify-connect",
+                "airplay",
+                "raop",
+                "sonos"
+            ]
+        },
+        {
+            "ip": "192.168.16.46",
+            "name": "Network Monitor",
+            "status": "up",
+            "model": "MacPro6,1",
+            "services": [
+                "device-info",
+                "smb",
+                "sftp-ssh",
+                "ssh"
+            ]
+        },
+        {
+            "ip": "192.168.16.57",
+            "name": "Living-Room.local.",
+            "status": "up",
+            "since": 1708108212,
+            "model": "AudioAccessory5,1",
+            "vendor": "Apple Inc.",
+            "services": [
+                "hap",
+                "trel",
+                "companion-link",
+                "airplay",
+                "srpl-tls",
+                "raop",
+                "sleep-proxy",
+                "meshcop"
+            ]
+        },
+        {
+            "ip": "192.168.16.58",
+            "name": "Feyd.local.",
+            "status": "up",
+            "since": 1708108212,
+            "services": [
+                "gamecenter",
+                "companion-link",
+                "apple-mobdev2",
+                "gamed"
+            ]
+        },
+        {
+            "ip": "192.168.16.73",
+            "name": "Am-Carlsgarten-9.local.",
+            "status": "up",
+            "vendor": "Philips Lighting BV",
+            "services": [
+                "hap",
+                "hue"
+            ]
+        },
+        {
+            "ip": "192.168.16.74",
+            "name": "tadoBridgeIB0648296192.local.",
+            "status": "up",
+            "since": 1708108661,
+            "vendor": "tado GmbH",
+            "services": [
+                "hap"
+            ]
+        },
+        {
+            "ip": "192.168.16.75",
+            "name": "Indoorcam.local.",
+            "status": "up",
+            "vendor": "Smart Innovation",
+            "services": [
+                "hap"
+            ]
+        },
+        {
+            "ip": "192.168.16.78",
+            "name": "PS4-57AF74.local.",
+            "status": "up",
+            "vendor": "Sony Interactive Entertainment",
+            "services": [
+                "spotify-connect"
+            ]
+        },
+        {
+            "ip": "192.168.16.120",
+            "status": "up",
+            "vendor": "Raspberry Pi Trading"
+        },
+        {
+            "ip": "192.168.16.140",
+            "status": "up",
+            "vendor": "Raspberry Pi Trading"
+        },
+        {
+            "ip": "192.168.16.141",
+            "status": "up",
+            "vendor": "Raspberry Pi Trading"
+        },
+        {
+            "ip": "192.168.16.142",
+            "status": "up",
+            "since": 1708098151,
+            "vendor": "Raspberry Pi Trading"
+        },
+        {
+            "ip": "192.168.16.143",
+            "status": "up",
+            "since": 1708108602,
+            "vendor": "Raspberry Pi Trading"
+        },
+        {
+            "ip": "192.168.16.180",
+            "name": "longhorn.homelab.choam.de",
+            "status": "up",
+            "vendor": "Raspberry Pi Trading"
+        },
+        {
+            "ip": "192.168.16.190",
+            "status": "up",
+            "vendor": "Raspberry Pi Trading"
+        }
+    ],
+    "timestamp": 1708115212
+}
+{
+    "event": "host",
+    "type": "up",
+    "host": {
+        "ip": "192.168.16.35",
+        "name": "Rabban.local.",
+        "status": "up",
+        "since": 1708109275,
+        "services": [
+            "companion-link"
+        ]
+    }
+}
+{
+    "event": "host",
+    "type": "down",
+    "host": {
+        "ip": "192.168.16.41",
+        "status": "down",
+        "since": 1708109275,
+        "services": [
+            "asquic"
+        ]
+    }
+}
+{
+    "event": "scan",
+    "type": "completed",
+    "hosts": [
+        {
+            "ip": "192.168.16.1",
+            "status": "up",
+            "vendor": "AVM GmbH"
+        },
+        {
+            "ip": "192.168.16.10",
+            "name": "Anirul",
+            "status": "up",
+            "model": "MacPro7,1@ECOLOR=226,226,224",
+            "vendor": "Synology Incorporated",
+            "services": [
+                "device-info",
+                "smb"
+            ]
+        },
+        {
+            "ip": "192.168.16.30",
+            "status": "up",
+            "vendor": "Netgear"
+        },
+        {
+            "ip": "192.168.16.31",
+            "status": "up",
+            "since": 1708109258,
+            "vendor": "Nintendo"
+        },
+        {
+            "ip": "192.168.16.32",
+            "name": "Fire TV",
+            "status": "up",
+            "model": "Fire TV",
+            "vendor": "Amazon Technologies",
+            "services": [
+                "amzn-wplay"
+            ]
+        },
+        {
+            "ip": "192.168.16.33",
+            "name": "Paul.local.",
+            "status": "up",
+            "model": "Mac14,13",
+            "vendor": "Apple Inc.",
+            "services": [
+                "companion-link",
+                "airplay",
+                "smb",
+                "raop"
+            ]
+        },
+        {
+            "ip": "192.168.16.34",
+            "name": "Alia.local.",
+            "status": "up",
+            "vendor": "Apple",
+            "services": [
+                "smb",
+                "sleep-proxy",
+                "adisk",
+                "afpovertcp",
+                "airport"
+            ]
+        },
+        {
+            "ip": "192.168.16.35",
+            "name": "Rabban.local.",
+            "status": "up",
+            "since": 1708109275,
+            "services": [
+                "companion-link"
+            ]
+        },
+        {
+            "ip": "192.168.16.38",
+            "status": "up",
+            "since": 1708108778
+        },
+        {
+            "ip": "192.168.16.41",
+            "status": "down",
+            "since": 1708109275,
+            "services": [
+                "asquic"
+            ]
+        },
+        {
+            "ip": "192.168.16.42",
+            "name": "Sonos One SL",
+            "status": "up",
+            "since": 1708108429,
+            "model": "One SL",
+            "vendor": "Sonos",
+            "services": [
+                "spotify-connect",
+                "airplay",
+                "raop",
+                "sonos"
+            ]
+        },
+        {
+            "ip": "192.168.16.46",
+            "name": "Network Monitor",
+            "status": "up",
+            "model": "MacPro6,1",
+            "services": [
+                "device-info",
+                "smb",
+                "sftp-ssh",
+                "ssh"
+            ]
+        },
+        {
+            "ip": "192.168.16.57",
+            "name": "Living-Room.local.",
+            "status": "up",
+            "since": 1708108212,
+            "model": "AudioAccessory5,1",
+            "vendor": "Apple Inc.",
+            "services": [
+                "hap",
+                "trel",
+                "companion-link",
+                "airplay",
+                "srpl-tls",
+                "raop",
+                "sleep-proxy",
+                "meshcop"
+            ]
+        },
+        {
+            "ip": "192.168.16.58",
+            "name": "Feyd.local.",
+            "status": "up",
+            "since": 1708108212,
+            "services": [
+                "gamecenter",
+                "companion-link",
+                "apple-mobdev2",
+                "gamed"
+            ]
+        },
+        {
+            "ip": "192.168.16.73",
+            "name": "Am-Carlsgarten-9.local.",
+            "status": "up",
+            "vendor": "Philips Lighting BV",
+            "services": [
+                "hap",
+                "hue"
+            ]
+        },
+        {
+            "ip": "192.168.16.74",
+            "name": "tadoBridgeIB0648296192.local.",
+            "status": "up",
+            "since": 1708108661,
+            "vendor": "tado GmbH",
+            "services": [
+                "hap"
+            ]
+        },
+        {
+            "ip": "192.168.16.75",
+            "name": "Indoorcam.local.",
+            "status": "up",
+            "vendor": "Smart Innovation",
+            "services": [
+                "hap"
+            ]
+        },
+        {
+            "ip": "192.168.16.78",
+            "name": "PS4-57AF74.local.",
+            "status": "up",
+            "vendor": "Sony Interactive Entertainment",
+            "services": [
+                "spotify-connect"
+            ]
+        },
+        {
+            "ip": "192.168.16.120",
+            "status": "up",
+            "vendor": "Raspberry Pi Trading"
+        },
+        {
+            "ip": "192.168.16.140",
+            "status": "up",
+            "vendor": "Raspberry Pi Trading"
+        },
+        {
+            "ip": "192.168.16.141",
+            "status": "up",
+            "vendor": "Raspberry Pi Trading"
+        },
+        {
+            "ip": "192.168.16.142",
+            "status": "up",
+            "since": 1708098151,
+            "vendor": "Raspberry Pi Trading"
+        },
+        {
+            "ip": "192.168.16.143",
+            "status": "up",
+            "since": 1708108602,
+            "vendor": "Raspberry Pi Trading"
+        },
+        {
+            "ip": "192.168.16.180",
+            "name": "longhorn.homelab.choam.de",
+            "status": "up",
+            "vendor": "Raspberry Pi Trading"
+        },
+        {
+            "ip": "192.168.16.190",
+            "status": "up",
+            "vendor": "Raspberry Pi Trading"
+        }
+    ],
+    "timestamp": 1708109275
+}

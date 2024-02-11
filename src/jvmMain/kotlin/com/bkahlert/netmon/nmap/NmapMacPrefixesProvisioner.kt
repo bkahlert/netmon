@@ -13,7 +13,7 @@ import kotlin.io.path.inputStream
 import kotlin.time.Duration.Companion.days
 
 class NmapMacPrefixesProvisioner(
-    private val cache: FileCache,
+    cache: FileCache,
 ) {
 
     private val logger by SLF4J

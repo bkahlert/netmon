@@ -84,6 +84,8 @@ kotlin {
         val jvmTest by getting {
             dependencies {
                 implementation("io.kotest:kotest-assertions-json")
+                implementation(platform("org.testcontainers:testcontainers-bom:1.17.6"))
+                implementation("org.testcontainers:testcontainers")
             }
             languageSettings.optIn("kotlin.io.path.ExperimentalPathApi")
         }

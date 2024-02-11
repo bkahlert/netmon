@@ -1,23 +1,23 @@
-package com.bkahlert.netmon.scanner
+package com.bkahlert.netmon.net
 
 import com.bkahlert.kommons.logging.SLF4J
-import com.bkahlert.kommons.logging.logback.StructuredArguments.kv
-import com.bkahlert.kommons.logging.logback.StructuredArguments.o
+import com.bkahlert.kommons.logging.logback.StructuredArguments
+import com.bkahlert.netmon.scanner.NetworkFilterSettings
 import java.math.BigInteger
 import java.net.Inet4Address
 import java.net.Inet6Address
 import java.net.InterfaceAddress
 import java.net.NetworkInterface
 
-class InterfaceResolver(
+class SystemInterfaceAddressResolver(
+    vararg val predicates: Predicate = DefaultPredicates,
     val candidates: () -> List<InterfaceAddress> = {
         NetworkInterface.getNetworkInterfaces().toList().flatMap { it.interfaceAddresses.toList() }
     },
-    vararg val predicates: Predicate = DefaultPredicates,
-) {
+) : InterfaceAddressResolver {
 
-    fun resolve(): List<InterfaceAddress> = candidates()
-        .also { logger.info("Evaluating candidate {}", o<InterfaceAddress>(it)) }
+    override fun resolve(): List<InterfaceAddress> = candidates()
+        .also { logger.info("Evaluating candidate {}", StructuredArguments.o<InterfaceAddress>(it)) }
         .let {
             predicates.fold(it) { acc, predicate ->
                 val (passed, failed) = acc.partition(predicate)
@@ -27,7 +27,7 @@ class InterfaceResolver(
                         failed.size,
                         if (failed.size == 1) "interface" else "interfaces",
                         predicate.description,
-                        o<InterfaceAddress>(failed),
+                        StructuredArguments.o<InterfaceAddress>(failed),
                     )
                 }
                 passed
@@ -36,11 +36,6 @@ class InterfaceResolver(
 
     companion object {
         private val logger by SLF4J
-
-        val InterfaceAddress.networkInterface: NetworkInterface?
-            get() = runCatching { NetworkInterface.getByInetAddress(address) }
-                .onFailure { logger.warn("Could not get network interface for {}", kv("interfaceAddress", this)) }
-                .getOrNull()
 
         val NetworkInterfaceUpPredicate = Predicate("having network interface in up state") {
             it.networkInterface?.isUp == true

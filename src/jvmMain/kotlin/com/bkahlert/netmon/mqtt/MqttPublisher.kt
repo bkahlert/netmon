@@ -1,6 +1,7 @@
 package com.bkahlert.netmon.mqtt
 
 import com.bkahlert.kommons.logging.SLF4J
+import com.bkahlert.kommons.logging.logback.StructuredArguments.v
 import com.bkahlert.kommons.orNull
 import com.bkahlert.netmon.mqtt.GenericMqttClient.Companion.generic
 import com.bkahlert.netmon.serialization.JsonFormat
@@ -32,6 +33,9 @@ class MqttPublisher<T>(
     identifier: String? = null,
 ) : Publisher<T> {
     private val logger by SLF4J
+
+    private val url = "$host:$port${path?.let { "/$it" }.orEmpty()}"
+
     private val client: GenericMqttClient<*, *> = MqttClient.builder()
         .identifier(identifier ?: UUID.randomUUID().toString())
         .serverHost(host)
@@ -40,7 +44,11 @@ class MqttPublisher<T>(
             if (port == 8080 || port == 8081) webSocketConfig(MqttWebSocketConfig.builder().serverPath(path ?: "").build())
         }
         .generic()
-        .apply { connect() }
+
+    private val ack = client.run {
+        logger.info("Connecting to {}:{}{}", v("host", host), v("port", port), v("path", path?.let { "/$it" }.orEmpty()))
+        connect()
+    }
 
     override fun publish(topic: String, event: T): Boolean {
         val message = stringFormat.encodeToString(serializer, event)
@@ -71,6 +79,8 @@ class MqttPublisher<T>(
             }
         }
     }
+
+    override fun toString(): String = "${this::class.simpleName}(url=$url, status=$ack)"
 }
 
 /** Generic MQTT client in the attempt to support both MQTT 3 and MQTT 5 interchangeably. */
@@ -97,7 +107,7 @@ sealed interface GenericMqttClient<ACK, PUBLISH_RESULT> {
     /** [Mqtt5BlockingClient] based implementation of the [GenericMqttClient] */
     class Mqtt5Client(clientBuilder: MqttClientBuilder) : GenericMqttClient<Mqtt5ConnAck, Mqtt5PublishResult> {
         private val client:Mqtt5BlockingClient = clientBuilder.useMqttVersion5().automaticReconnectWithDefaultConfig().buildBlocking()
-        override fun connect():Mqtt5ConnAck = client.connect()
+        override fun connect(): Mqtt5ConnAck = client.connect()
         override fun publish(topic: MqttTopic, qos: MqttQos, retain: Boolean, payload: ByteArray, payloadFormatIndicator: Mqtt5PayloadFormatIndicator?, contentType: String?): Mqtt5PublishResult {
             val message = Mqtt5Publish.builder().topic(topic).qos(qos).retain(retain).payload(payload)
                 .payloadFormatIndicator(payloadFormatIndicator).contentType(contentType)

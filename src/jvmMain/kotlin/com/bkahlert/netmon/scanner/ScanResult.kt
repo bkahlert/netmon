@@ -1,6 +1,7 @@
 package com.bkahlert.netmon.scanner
 
 import com.bkahlert.kommons.logging.SLF4J
+import com.bkahlert.kommons.logging.logback.StructuredArguments.v
 import com.bkahlert.kommons.time.InstantAsEpochSecondsSerializer
 import com.bkahlert.netmon.Cidr
 import com.bkahlert.netmon.Host
@@ -74,10 +75,20 @@ data class ScanResult(
         fun load(
             file: Path,
             format: StringFormat = JsonFormat,
-        ): ScanResult? = file.takeIf { it.exists() }?.runCatching {
-            format.decodeFromString<ScanResult>(readText())
-        }?.getOrElse { error ->
-            logger.error("Error loading scan result", error)
+        ): ScanResult? = if (file.exists()) {
+            file.readText().runCatching {
+                format.decodeFromString<ScanResult>(this)
+            }.fold(
+                onSuccess = {
+                    logger.info("Loaded stored scan from {}", v("file", file))
+                    it
+                },
+                onFailure = { error ->
+                    logger.error("Error loading scan result", error)
+                    null
+                },
+            )
+        } else {
             null
         }
     }

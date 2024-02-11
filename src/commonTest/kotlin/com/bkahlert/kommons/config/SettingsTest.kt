@@ -1,8 +1,11 @@
 package com.bkahlert.kommons.config
 
+import com.bkahlert.netmon.serialization.JsonFormat
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.should
 import io.kotest.matchers.shouldBe
+import io.kotest.matchers.string.shouldMatch
+import kotlinx.serialization.SerializationException
 import kotlin.test.Test
 
 class SettingsTest {
@@ -42,6 +45,18 @@ class SettingsTest {
     }
 
     @Test
+    fun unquoted_string_deserialization() {
+        withTestConfig("foo" to "4:2") {
+            object : Settings() {
+                val setting: String? by setting(name = "foo", stringFormat = JsonFormat)
+            } should { shouldThrow<SerializationException> { it.setting } }
+            object : Settings() {
+                val setting: String? by setting(name = "foo")
+            } should { it.setting shouldBe "4:2" }
+        }
+    }
+
+    @Test
     fun derived_name() {
         withTestConfig("foo" to "42") {
             object : TestSettings() {
@@ -60,6 +75,18 @@ class SettingsTest {
             } should {
                 it.baz shouldBe "69"
             }
+        }
+    }
+
+    @Test
+    fun to_string() {
+        withTestConfig("foo" to "42") {
+            @Suppress("unused", "RegExpRedundantEscape")
+            object : Settings() {
+                val foo: String? by setting()
+                val bar: String? by setting()
+                val path: String? by setting()
+            }.toString() shouldMatch Regex("Settings\\[(?:sys|uri):foo=42, default:bar=null, (?:env|default):path=.+\\]")
         }
     }
 }

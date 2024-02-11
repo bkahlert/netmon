@@ -1,7 +1,6 @@
 package com.bkahlert.netmon.scanner
 
 import com.bkahlert.kommons.config.Settings
-import com.bkahlert.kommons.config.setting
 
 /** Settings for the network monitor's scanner. */
 object NetworkFilterSettings : Settings("network") {

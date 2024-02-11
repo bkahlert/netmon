@@ -29,6 +29,8 @@ class Debug(val debugModes: List<DebugMode>) : Collection<DebugMode> by debugMod
             null -> level
         }
     }
+
+    override fun toString(): String = "${Debug::class.simpleName}(${debugModes.joinToString(",")})"
 }
 
 // TODO support wildcards, see https://www.npmjs.com/package/debug

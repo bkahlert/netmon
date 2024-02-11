@@ -53,7 +53,10 @@ class NmapNetworkScanner(
         val xml = kotlin.runCatching {
             nmapCommandLine.exec().readTextOrThrow()
         }.recover { error ->
-            if (error.message.orEmpty().contains("not permitted", ignoreCase = true)) {
+            val errorMessage = error.message.orEmpty()
+            if (errorMessage.contains("exit code 130", ignoreCase = true)) {
+                throw InterruptedException("nmap execution cancelled")
+            } else if (errorMessage.contains("not permitted", ignoreCase = true)) {
                 if (nmapCommandLine.any { it == "--privileged" }) {
                     logger.warn("Insufficient privileges to execute nmap. Switching to unprivileged mode.")
                     privileged = false

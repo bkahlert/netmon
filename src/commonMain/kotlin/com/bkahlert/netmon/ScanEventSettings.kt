@@ -1,7 +1,6 @@
 package com.bkahlert.netmon
 
 import com.bkahlert.kommons.config.Settings
-import com.bkahlert.kommons.config.setting
 import com.bkahlert.kommons.serialization.UnquotedStringsFormat.Companion.unquoted
 import com.bkahlert.kommons.text.Template
 import com.bkahlert.netmon.serialization.JsonFormat

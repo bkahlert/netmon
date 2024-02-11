@@ -1,10 +1,11 @@
-package com.bkahlert.netmon.scanner
+package com.bkahlert.netmon.net
 
 import com.bkahlert.netmon.Cidr
 import com.bkahlert.netmon.IP
 import java.math.BigInteger
 import java.net.InetAddress
 import java.net.InterfaceAddress
+import java.net.NetworkInterface
 
 /** The number of host bits. */
 val InterfaceAddress.hostBits: Int
@@ -21,6 +22,10 @@ val InterfaceAddress.ip: IP
 /** The CIDR representation of this [InterfaceAddress]. */
 val InterfaceAddress.cidr: Cidr
     get() = Cidr("${address.hostAddress}/$networkPrefixLength")
+
+/** The [NetworkInterface] that has the [InetAddress] bound to it. */
+val InterfaceAddress.networkInterface: NetworkInterface?
+    get() = NetworkInterface.getByInetAddress(address)
 
 // TODO test
 /**

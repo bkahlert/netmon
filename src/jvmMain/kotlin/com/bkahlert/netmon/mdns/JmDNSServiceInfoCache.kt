@@ -14,7 +14,7 @@ import kotlin.concurrent.withLock
  * To cache all services, [serviceTypes] must be empty.
  */
 class JmDNSServiceInfoCache(
-    private val jmdns: JmDNS,
+    val jmDns: JmDNS,
     private vararg val serviceTypes: String = WELL_KNOWN_SERVICE_TYPES,
 ) : AutoCloseable {
 
@@ -65,20 +65,20 @@ class JmDNSServiceInfoCache(
 
     init {
         if (serviceTypes.isEmpty()) {
-            jmdns.addServiceTypeListener(serviceTypeListener)
+            jmDns.addServiceTypeListener(serviceTypeListener)
         } else {
-            serviceTypes.forEach { jmdns.addServiceListener(it, serviceListener) }
+            serviceTypes.forEach { jmDns.addServiceListener(it, serviceListener) }
         }
     }
 
     override fun close() {
         if (serviceTypes.isEmpty()) {
             services.keys.forEach { (_, type) ->
-                jmdns.removeServiceListener(type, serviceListener)
+                jmDns.removeServiceListener(type, serviceListener)
             }
-            jmdns.removeServiceTypeListener(serviceTypeListener)
+            jmDns.removeServiceTypeListener(serviceTypeListener)
         } else {
-            serviceTypes.forEach { jmdns.removeServiceListener(it, serviceListener) }
+            serviceTypes.forEach { jmDns.removeServiceListener(it, serviceListener) }
         }
     }
 
@@ -91,7 +91,7 @@ class JmDNSServiceInfoCache(
     override fun toString(): String = buildString {
         append(JmDNSServiceInfoCache::class.simpleName)
         append("(")
-        append("jmdns=$jmdns")
+        append("jmdns=$jmDns")
         append("; services=")
         mappings.ipAddressToServices.entries.joinTo(this, ", ", "[", "]") { (ip, services) ->
             val servicePart = "[${services.joinToString(",") { it.application }}]"

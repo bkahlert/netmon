@@ -1,5 +1,6 @@
 package com.bkahlert.netmon.logging
 
+import ch.qos.logback.classic.Level
 import com.bkahlert.kommons.logging.logback.Logback
 import io.kotest.data.forAll
 import io.kotest.data.row
@@ -12,7 +13,7 @@ class VerbosityTest {
     @Test
     fun from_integer() = runTest {
         forAll(
-            row(0, Verbosity.ERRORS_ONLY),
+            row(0, Verbosity.ERRORS_AND_WARNINGS),
             row(1, Verbosity.VERBOSE),
             row(2, Verbosity.VERY_VERBOSE),
             row(3, Verbosity.EXTREMELY_VERBOSE),
@@ -25,7 +26,7 @@ class VerbosityTest {
     @Test
     fun from_args() = runTest {
         forAll(
-            row(emptyArray<String>(), Verbosity.ERRORS_ONLY),
+            row(emptyArray<String>(), Verbosity.ERRORS_AND_WARNINGS),
             row(arrayOf("-v"), Verbosity.VERBOSE),
             row(arrayOf("-vv"), Verbosity.VERY_VERBOSE),
             row(arrayOf("-v", "-v"), Verbosity.VERY_VERBOSE),
@@ -40,10 +41,10 @@ class VerbosityTest {
     @Test
     fun level() = runTest {
         forAll(
-            row(Verbosity.ERRORS_ONLY, ch.qos.logback.classic.Level.ERROR),
-            row(Verbosity.VERBOSE, ch.qos.logback.classic.Level.WARN),
-            row(Verbosity.VERY_VERBOSE, ch.qos.logback.classic.Level.INFO),
-            row(Verbosity.EXTREMELY_VERBOSE, ch.qos.logback.classic.Level.DEBUG),
+            row(Verbosity.ERRORS_AND_WARNINGS, Level.WARN),
+            row(Verbosity.VERBOSE, Level.INFO),
+            row(Verbosity.VERY_VERBOSE, Level.INFO),
+            row(Verbosity.EXTREMELY_VERBOSE, Level.DEBUG),
         ) { verbosity, expected ->
             Logback.levels(verbosity.levels)
             Logback["com.bkahlert.netmon"].effectiveLevel shouldBe expected

@@ -1,7 +1,6 @@
 package com.bkahlert.netmon
 
 import com.bkahlert.kommons.config.Settings
-import com.bkahlert.kommons.config.setting
 
 object BrokerSettings : Settings("broker") {
 

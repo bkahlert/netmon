@@ -1,55 +1,68 @@
 package com.bkahlert.netmon
 
-import com.bkahlert.kommons.exec.CommandLine
 import com.bkahlert.kommons.exec.environment
-import com.bkahlert.kommons.exec.workingDirectory
 import io.kotest.inspectors.forAll
+import io.kotest.inspectors.forAny
 import io.kotest.matchers.collections.shouldNotBeEmpty
 import io.kotest.matchers.longs.shouldBeGreaterThan
 import io.kotest.matchers.paths.shouldExist
 import io.kotest.matchers.should
-import io.kotest.matchers.string.shouldNotContainIgnoringCase
-import kotlin.concurrent.thread
-import kotlin.io.path.createTempDirectory
+import io.kotest.matchers.shouldNotBe
+import io.kotest.matchers.string.shouldContain
+import io.kotest.matchers.string.shouldMatch
+import kotlinx.coroutines.test.runTest
+import org.junit.Test
+import org.testcontainers.containers.GenericContainer
+import org.testcontainers.utility.DockerImageName
 import kotlin.io.path.fileSize
-import kotlin.test.Test
-import main as mainMain
+import kotlin.test.AfterTest
+import kotlin.test.BeforeTest
+import kotlin.time.Duration.Companion.seconds
 
-class ApplicationIntegrationTest {
+class ApplicationIntegrationTest : AbstractIntegrationTest() {
 
     @Test
-    fun start() {
-        val output: MutableList<String> = mutableListOf()
-        val dir = createTempDirectory("netmon-integration-test")
-        val app = CommandLine(ApplicationIntegrationTest::class, "-vvv").let(::ProcessBuilder).apply {
-            workingDirectory = dir
-            environment["BROKER_HOST"] = "foo.local"
-            environment["DEBUG"] = "*.netmon*,-*mdns*"
-//            redirectOutput(outputFile.toFile())
-            redirectErrorStream(true)
-        }.start().apply {
-            thread {
-                inputStream.bufferedReader().forEachLine {
-                    output.add(it)
-                    println(it)
-                }
+    fun scan_and_publish() = runTest(timeout = 30.seconds) {
+        val logMessages = runUntilLogged(
+            kClass = ApplicationIntegrationTest::class,
+            "-v",
+            customize = {
+                environment["BROKER_HOST"] = mqttContainer.host
+                environment["BROKER_PORT"] = mqttContainer.firstMappedPort.toString()
+                environment["DEBUG"] = "*.netmon*,-*mdns*"
             }
-        }
-        Thread.sleep(5000)
-        app.destroy()
+        ) { it.contains("host(s) completed and published") }
 
-        output should {
+        logMessages should {
             it.shouldNotBeEmpty()
-            it.forAll { line -> line.shouldNotContainIgnoringCase("error") }
+            it.forAll { (level, _) -> level shouldNotBe LogMessage.Level.ERROR }
+            it.forAll { (level, _) -> level shouldNotBe LogMessage.Level.WARN }
+            it.forAny { (_, message) -> message.shouldContain("Settings: ") }
+            it.forAny { (_, message) -> message.shouldContain("Provisioned file=nmap-mac-prefixes at path=./nmap/nmap-mac-prefixes") }
+            it.forAny { (_, message) -> message.shouldContain("host(s) completed and published") }
+            it.forAny { (_, message) -> message.shouldContain("Stopped scanning") }
+            it.last().message shouldMatch Regex("Terminated SlicedApplication\\(state=Terminated, .*, failed=\\[]\\)")
         }
-        dir.resolve("nmap/nmap-mac-prefixes") should {
+        workingDirectory.resolve("nmap/nmap-mac-prefixes") should {
             it.shouldExist()
             it.fileSize() shouldBeGreaterThan 500_000L
         }
     }
 
+    private val mqttContainer: GenericContainer<*> = GenericContainer<Nothing>(DockerImageName.parse("eclipse-mosquitto:1.5")).withExposedPorts(1883)
+
+    @BeforeTest
+    fun setUp() {
+        mqttContainer.start()
+    }
+
+    @AfterTest
+    fun tearDown() {
+        mqttContainer.stop()
+    }
+
     companion object {
         @JvmStatic
-        fun main(vararg args: String) = mainMain(args)
+        fun main(vararg args: String) = Application.main(args)
     }
 }
