@@ -23,7 +23,13 @@ kotlin {
     // scanner component
     // not using native, because the target "linuxArm32Hfp" (required for Raspberry Pi Zero)
     // is no longer supported in Kotlin 1.9.20
-    jvm()
+    jvm {
+        compilations.all {
+            kotlinOptions {
+                freeCompilerArgs += "-Xjsr305=strict"
+            }
+        }
+    }
 
     // viewer component
     js(IR) {

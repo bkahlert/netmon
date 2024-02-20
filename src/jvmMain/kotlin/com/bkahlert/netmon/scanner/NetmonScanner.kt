@@ -12,8 +12,6 @@ import com.bkahlert.netmon.nmap.TimingTemplate
 import java.net.InterfaceAddress
 import java.nio.file.Path
 import java.nio.file.Paths
-import kotlin.time.Duration
-import kotlin.time.Duration.Companion.seconds
 
 class NetmonScanner(
     val interfaceAddress: InterfaceAddress,
@@ -21,12 +19,12 @@ class NetmonScanner(
     vararg val enrichers: Enricher<Host>,
     val onScan: (ScanResult) -> Unit,
     val onChange: (Host) -> Unit,
-    val `interface`: String = checkNotNull(interfaceAddress.networkInterface).name,
-    val cidr: Cidr = interfaceAddress.cidr,
-    val scanResultFile: Path = Paths.get("scan.$`interface`.${cidr.filenameString}.json"),
-    val scanInterval: Duration = 10.seconds,
 ) {
     private val logger by SLF4J
+
+    val `interface`: String = checkNotNull(interfaceAddress.networkInterface).name
+    val cidr: Cidr = interfaceAddress.cidr
+    val scanResultFile: Path = Paths.get("scan.$`interface`.${cidr.filenameString}.json")
 
     private fun scanInitially(): ScanResult {
         logger.info("Performing initial scan...")
@@ -51,8 +49,6 @@ class NetmonScanner(
         oldScan.merge(currentScan, onChange)
             .also { onScan(it) }
             .also { it.save(scanResultFile) }
-
-        Thread.sleep(scanInterval.inWholeMilliseconds)
     }
 
     override fun toString(): String = "network-scanner-$`interface`-$cidr"

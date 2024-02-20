@@ -43,18 +43,18 @@ data class ScanResult(
                 .map { ip ->
                     val recordedHost = hosts.find { it.ip == ip }
                     val scannedHost = currentResult.hosts.find { it.ip == ip }
-                    val newStatus = if (scannedHost != null) scannedHost.status else Status.DOWN
-                    Host(
+                    val mergedStatus = if (scannedHost != null) scannedHost.status else Status.DOWN
+                    val mergedHost = Host(
                         ip = ip,
                         name = if (scannedHost != null) scannedHost.name else recordedHost?.name,
-                        status = newStatus,
-                        since = if (newStatus != recordedHost?.status) currentResult.timestamp else recordedHost?.since,
+                        status = mergedStatus,
+                        since = if (mergedStatus != recordedHost?.status) currentResult.timestamp else recordedHost?.since,
                         model = if (scannedHost != null) scannedHost.model else recordedHost?.model,
                         vendor = if (scannedHost != null) scannedHost.vendor else recordedHost?.vendor,
                         services = scannedHost?.services ?: recordedHost?.services,
-                    ).also {
-                        if (it != recordedHost) onChange(it)
-                    }
+                    )
+                    if (mergedHost != recordedHost) onChange(mergedHost)
+                    mergedHost
                 },
             timestamp = currentResult.timestamp,
         )

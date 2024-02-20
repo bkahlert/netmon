@@ -27,12 +27,12 @@ import com.bkahlert.netmon.nmap.NmapNetworkScanner
 import com.bkahlert.netmon.nmap.NmapSettings
 import com.bkahlert.netmon.scanner.NetmonScanner
 import com.bkahlert.netmon.scanner.NetworkFilterSettings
+import com.bkahlert.netmon.scanner.ScannerSettings
 import com.bkahlert.netmon.serialization.JsonFormat
 import java.net.InetAddress
 import java.net.InterfaceAddress
 import java.util.Collections
 import kotlin.system.exitProcess
-
 
 class Application(
     private val hostname: String = kotlin.runCatching { InetAddress.getLocalHost() }
@@ -67,6 +67,7 @@ class Application(
             listOf(
                 LoggingSettings,
                 NetworkFilterSettings,
+                ScannerSettings,
                 NmapSettings,
                 BrokerSettings,
                 ScanEventSettings,
@@ -158,6 +159,7 @@ class Application(
             },
             process = { (interfaceAddress, _) ->
                 scanners.getValue(interfaceAddress.address).scan()
+                Thread.sleep(ScannerSettings.pauseDuration.inWholeMilliseconds)
             },
             finalize = { (interfaceAddress, interfaceName) ->
                 serviceInfoCaches.remove(interfaceAddress.address)?.also {

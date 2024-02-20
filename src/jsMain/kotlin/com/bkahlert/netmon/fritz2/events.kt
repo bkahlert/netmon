@@ -14,4 +14,4 @@ public val Element.verticalScrollCoverageRatio: Double
     get() = (clientHeight / scrollHeight.toDouble()).coerceIn(0.0, 1.0)
 
 public val Window.resizes: Listener<Event, Window>
-    get() = kotlinx.browser.window.subscribe<Event, Window>("resize")
+    get() = subscribe("resize")

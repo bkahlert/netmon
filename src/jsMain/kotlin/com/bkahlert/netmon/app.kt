@@ -88,12 +88,7 @@ suspend fun main() {
     render("#root.app .networks") {
         div("h-full overflow-y-hidden sm:grid grid-cols-[repeat(auto-fit,minmax(min(15rem,100%),1fr))] gap-4") {
             window.resizes.debounce(.5.seconds) handledBy { resetZoomed() }
-            scanEventsStore.data.map { it.keys.toList() }.renderEach(
-                idProvider = { it.toString() },
-                into = this,
-            ) { source ->
-                scan(source, scanEventsStore.mapByKey(source).data)
-            }
+            scanEventsStore.data.map { it.keys.toList() }.renderEach(into = this) { scan(it, scanEventsStore.mapByKey(it)) }
         }
     }
 

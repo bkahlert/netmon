@@ -14,24 +14,27 @@ import com.bkahlert.netmon.model_identification.DeviceModelCodes
 import com.bkahlert.netmon.stable
 import com.bkahlert.netmon.ticks
 import com.bkahlert.netmon.timePassed
+import dev.fritz2.core.HtmlTag
 import dev.fritz2.core.RenderContext
-import dev.fritz2.core.Tag
+import dev.fritz2.core.Store
 import dev.fritz2.core.classes
+import dev.fritz2.core.lensOf
+import dev.fritz2.core.mapByElement
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.mapLatest
-import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
+import org.w3c.dom.HTMLDivElement
 import org.w3c.dom.HTMLElement
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.ZERO
 
 fun RenderContext.scan(
     source: EventSource,
-    events: Flow<Event.ScanEvent>,
-): Tag<HTMLElement> = div(
+    events: Store<Event.ScanEvent>,
+): HtmlTag<HTMLElement> = div(
     classes(
         "space-y-5 pt-4 sm:pb-4 sm:px-4 sm:rounded-xl",
         "bg-white/10 sm:border sm:border-white/20",
@@ -40,7 +43,7 @@ fun RenderContext.scan(
     ),
 ) {
     val scanAgeFlow = ticks(UiSettings.REFRESH_INTERVAL)
-        .combine(events.map { it.timestamp }) { _, timestamp -> (Now - timestamp).coerceAtLeast(ZERO) }
+        .combine(events.data.map { it.timestamp }) { _, timestamp -> (Now - timestamp).coerceAtLeast(ZERO) }
     val scanIsDatedFlow = scanAgeFlow.map { it > ScanEventSettings.datedThreshold }
 
     div("flex items-center justify-center sm:justify-start gap-x-2") {
@@ -70,39 +73,41 @@ fun RenderContext.scan(
         }
     }
 
-    val hostsFlows: Flow<Pair<List<Host>, List<Host>>> = events.mapLatest { it.hosts.partition(Host::stable) }
-    val stableHostsFlow: Flow<List<Host>> = hostsFlows.map { it.first }
-    val recentHostsFlow: Flow<List<Host>> = hostsFlows.map { it.second }
+    val hosts: Store<List<Host>> = events.map(lensOf("hosts", { it.hosts }, { p, v -> p.copy(hosts = v) }))
 
     div("flex flex-col") {
-        hostGrid(recentHostsFlow)
-        recentHostsFlow.combine(stableHostsFlow) { r, s -> r.isNotEmpty() && s.isNotEmpty() }.render {
+        hosts(hosts) { !it.stable }
+        hosts.data.mapLatest { it.any { it.stable } && it.any { !it.stable } }.render {
             if (it) {
                 div("divider-xs opacity-60") {
                     +"${HostEventSettings.stabilizedThreshold}+ unchanged"
                 }
             }
         }
-        hostGrid(stableHostsFlow, classes = "opacity-50 [zoom:0.75]")
+        hosts(hosts, classes = "opacity-50 [zoom:0.75]") { it.stable }
     }
 }
 
-fun RenderContext.hostGrid(hosts: Flow<List<Host>>, classes: String? = null) {
-    div("overflow-y-auto") {
-        zoomedToFitClientHeight()
-        hosts.map { it.size }.distinctUntilChanged() handledBy { resetZoomed() }
-        ul(classes("grid grid-cols-[repeat(auto-fill,150px)] justify-around gap-4", classes)) {
-            hosts.renderEach(into = this) { host ->
-                li { host(host) }
-            }
+fun RenderContext.hosts(
+    hosts: Store<List<Host>>,
+    classes: String? = null,
+    filter: (Host) -> Boolean = { true }
+): HtmlTag<HTMLDivElement> = div("overflow-y-auto") {
+    val filteredHosts = hosts.data.map { it.filter(filter) }
+    zoomedToFitClientHeight()
+    filteredHosts.map { it.size }.distinctUntilChanged() handledBy { resetZoomed() }
+    ul(classes("grid grid-cols-[repeat(auto-fill,150px)] justify-around gap-4", classes)) {
+        filteredHosts.renderEach(Host::ip, this) { value ->
+            li { host(hosts.mapByElement(value, Host::ip)) }
         }
     }
 }
 
-fun RenderContext.host(host: Host) {
-    val duration: Flow<Duration?> = ticks(UiSettings.REFRESH_INTERVAL).map { host.timePassed }
+fun RenderContext.host(host: Store<Host>) {
+    val duration: Flow<Duration?> = ticks(UiSettings.REFRESH_INTERVAL).combine(host.data) { _, h -> h.timePassed }
+    val modelName = host.data.map { it.model?.let(DeviceModelCodes::description) ?: it.model }
+
     div("flex justify-center sm:justify-start gap-x-2") {
-        val modelName = host.model?.let { DeviceModelCodes.description(it) } ?: host.model
         className(duration.map {
             when {
                 it == null -> ""
@@ -112,44 +117,44 @@ fun RenderContext.host(host: Host) {
             }
         })
         div("shrink-0 w-10") {
-            val deviceIcon = host.model?.let { DeviceModelCodes.icon(it) }?.source?.toUriOrNull() ?: SFSymbols.display
+            val deviceIcon = host.data.map { it.model?.let(DeviceModelCodes::icon)?.source?.toUriOrNull() ?: SFSymbols.display }
             icon("w-full", deviceIcon) {
-                className(
-                    when (host.status) {
+                className(host.data.map {
+                    when (it.status) {
                         is Status.UP -> "text-green-500"
                         is Status.DOWN -> "text-red-500"
                         is Status.UNKNOWN -> "text-yellow-500"
                         else -> ""
                     }
-                )
+                })
             }
-            modelName?.also {
-                div("opacity-60 text-sm leading-none text-center mt-1") { +it }.zoomToFitClientWidth()
+            modelName.render {
+                if (it != null) div("opacity-60 text-sm leading-none text-center mt-1") { +it }.zoomToFitClientWidth()
             }
         }
         span("truncate") {
-            val caption = host.name?.substringBefore(".") ?: modelName
-            if (caption != null) {
-                div("text-sm font-bold") { +caption }.zoomToFitClientWidth()
-                host.vendor?.also { div("text-sm") { +it }.zoomToFitClientWidth() }
-                div("text-xs font-mono") { +host.ip.toString() }.zoomToFitClientWidth()
-            } else {
-                div("text-sm font-mono") { +host.ip.toString() }.zoomToFitClientWidth()
-                host.vendor?.also { div("text-xs") { +it }.zoomToFitClientWidth() }
+            host.data.combine(modelName) { h, m -> h.name?.substringBefore(".") ?: m }.render { caption ->
+                if (caption != null) {
+                    div("text-sm font-bold") { +caption }.zoomToFitClientWidth()
+                    host.data.map { it.vendor }.render { if (it != null) div("text-sm") { +it }.zoomToFitClientWidth() }
+                    div("text-xs font-mono") { host.data.map { it.ip }.renderText(this) }.zoomToFitClientWidth()
+                } else {
+                    div("text-sm font-mono") { host.data.map { it.ip }.renderText(this) }.zoomToFitClientWidth()
+                    host.data.map { it.vendor }.render { if (it != null) div("text-xs") { +it }.zoomToFitClientWidth() }
+                }
             }
-            host.status?.also { status ->
-                div("text-xs") {
-                    +status.toString()
-                    duration.render {
-                        it?.apply {
-                            +" since "
-                            +toMomentString(descriptive = false)
+
+            host.data.map { it.status }.render { status ->
+                if (status != null) {
+                    div("text-xs") {
+                        +status.toString()
+                        duration.render {
+                            it?.apply {
+                                +" since "
+                                +toMomentString(descriptive = false)
+                            }
                         }
                     }
-                }
-                pre("text-xs") { // TODO remove
-                    inlineStyle("zoom:0.75")
-                    +prettyJson.encodeToString(host)
                 }
             }
         }
