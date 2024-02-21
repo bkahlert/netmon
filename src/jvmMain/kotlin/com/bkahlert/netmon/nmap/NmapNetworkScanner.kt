@@ -6,8 +6,8 @@ import com.bkahlert.kommons.logging.logback.StructuredArguments.kv
 import com.bkahlert.kommons.logging.logback.StructuredArguments.v
 import com.bkahlert.netmon.Cidr
 import com.bkahlert.netmon.Host
+import com.bkahlert.netmon.IPv6
 import com.bkahlert.netmon.serialization.JsonFormat
-import java.net.Inet6Address
 import java.net.URL
 import java.nio.file.Path
 import kotlin.io.path.createTempFile
@@ -41,7 +41,7 @@ class NmapNetworkScanner(
             dataDir?.also { add("--datadir"); add(it.pathString) }
             if (privileged) add("--privileged")
             add("-T${timingTemplate.value}")
-            if (network.ip.addr is Inet6Address) add("-6")
+            if (network.ip is IPv6) add("-6")
             add("-sn")
             add("$network")
             add("-oX")

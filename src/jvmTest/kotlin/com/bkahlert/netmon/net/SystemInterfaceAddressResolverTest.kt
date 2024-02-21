@@ -4,6 +4,7 @@ import io.kotest.inspectors.forAtLeastOne
 import io.kotest.matchers.collections.shouldNotBeEmpty
 import io.kotest.matchers.should
 import io.kotest.matchers.shouldBe
+import java.net.InetAddress
 import kotlin.test.Test
 
 class SystemInterfaceAddressResolverTest {
@@ -15,7 +16,7 @@ class SystemInterfaceAddressResolverTest {
             interfaceAddresses.shouldNotBeEmpty()
             interfaceAddresses.forAtLeastOne {
                 it.ipRange.asSequence().forAtLeastOne { ip ->
-                    ip.addr.isReachable(1) shouldBe true
+                    InetAddress.getByAddress(ip.bytes).isReachable(1) shouldBe true
                 }
             }
         }

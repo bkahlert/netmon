@@ -1,5 +1,6 @@
 package com.bkahlert.netmon
 
+/** Source of an event, specified by who ([node], [interface]) scanned what ([cidr]).  */
 data class EventSource(
     val node: String,
     val `interface`: String,

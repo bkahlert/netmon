@@ -96,7 +96,7 @@ fun NmapOutput.Host.asHost(): Host? = ipAddress?.let { ip ->
 /** [IP] of this [NmapOutput.Host] or `null` if none found. */
 val NmapOutput.Host.ipAddress: IP?
     get() = address.firstOrNull { it.addrType == NmapOutput.Host.Address.AttrType.ipv4 || it.addrType == NmapOutput.Host.Address.AttrType.ipv6 }
-        ?.let { IP(it.addr) }
+        ?.let { IP.of(it.addr) }
 
 /** [NmapOutput.Host.Address.AttrType.mac]-typed [NmapOutput.Host.Address] of this [NmapOutput.Host] or `null` if none found. */
 val NmapOutput.Host.macAddress: NmapOutput.Host.Address?

@@ -118,7 +118,7 @@ class JmDNSServiceInfoCache(
 
         val serverToIpAddresses: Map<String, Set<IP>> by lazy {
             serverToServices.mapValues { (_, infos) ->
-                buildSet { infos.forEach { info -> info.inetAddresses.mapTo(this) { IP(it) } } }
+                buildSet { infos.forEach { info -> info.inetAddresses.mapTo(this) { IP.of(it.address) } } }
             }
         }
 

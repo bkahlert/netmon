@@ -11,7 +11,7 @@ value class Cidr(val value: String) : CharSequence by value {
         require(value.matches(Regex("""[^/]+/\d+"""))) { "Invalid CIDR: $value" }
     }
 
-    val ip: IP get() = IP(value.substringBefore('/'))
+    val ip: IP get() = IP.of(value.substringBefore('/'))
     val mask: Int get() = value.substringAfter('/').toInt()
 
     val filenameString: String get() = "${ip.filenameString}_$mask"

@@ -22,7 +22,7 @@ class CidrTest {
     fun filename_string() = runTest {
         forAll(
             row("10.0.0.1/24", "10-0-0-1_24"),
-            row("::ffff:0a00:0001/104", "--ffff-0a00-0001_104"),
+            row("2001:0db8:0000:0000:0000:0000:0000:0000/104", "2001-db8--_104"),
         ) { value, expected ->
             Cidr(value).filenameString shouldBe expected
         }

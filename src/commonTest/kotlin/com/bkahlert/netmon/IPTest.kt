@@ -7,6 +7,7 @@ import io.kotest.matchers.comparables.shouldBeEqualComparingTo
 import io.kotest.matchers.comparables.shouldBeLessThan
 import io.kotest.matchers.equals.shouldBeEqual
 import io.kotest.matchers.equals.shouldNotBeEqual
+import io.kotest.matchers.should
 import io.kotest.matchers.shouldBe
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.encodeToString
@@ -17,90 +18,95 @@ class IPTest {
     @Test
     fun instantiation() = runTest {
         forAll(
-            row("10.0.0.1", IP("10.0.0.1")),
-            row("::ffff:0a00:0001", IP("::ffff:0a00:0001")),
-            row("10.0.0.1", IP("10.0.0.1")),
-            row("2001:db8::", IP("2001:db8::")),
-        ) { value, expected ->
-            IP(value) shouldBe expected
+            row("10.0.0.1", IP.of("10.0.0.1"), IPv4::class),
+            row("::ffff:0a00:0001", IP.of("::ffff:0a00:0001"), IPv4::class),
+            row("2001:db8::", IP.of("2001:db8::"), IPv6::class),
+            row("2001:0db8:0000:0000:0000:0000:0000:0000", IP.of("2001:db8::"), IPv6::class),
+        ) { text, expected, expectedType ->
+            IP.of(text) should {
+                it shouldBe expected
+                it::class shouldBe expectedType
+            }
         }
     }
 
     @Test
-    fun value() = runTest {
+    fun text() = runTest {
         forAll(
-            row(IP("10.0.0.1"), "10.0.0.1"),
-            row(IP("::ffff:0a00:0001"), "::ffff:0a00:0001"),
-            row(IP("10.0.0.1"), "10.0.0.1"),
-            row(IP("2001:db8::"), "2001:db8::"),
+            row(IP.of("10.0.0.1"), "10.0.0.1"),
+            row(IP.of("::ffff:0a00:0001"), "10.0.0.1"),
+            row(IP.of("2001:db8::"), "2001:db8::"),
+            row(IP.of("2001:0db8:0000:0000:0000:0000:0000:0000"), "2001:db8::"),
         ) { ip, expected ->
-            ip.value shouldBe expected
+            ip.toString() shouldBe expected
         }
     }
 
     @Test
     fun bytes() = runTest {
         forAll(
-            row("10.0.0.1", ubyteArrayOf(10u, 0u, 0u, 1u)),
-            row("::ffff:0a00:0001", ubyteArrayOf(10u, 0u, 0u, 1u)),
-            row("2001:db8::", ubyteArrayOf(32u, 1u, 13u, 184u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u)),
-            row("2001:0db8:0000:0000:0000:0000:0000:0000", ubyteArrayOf(32u, 1u, 13u, 184u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u)),
+            row("10.0.0.1", byteArrayOf(10, 0, 0, 1)),
+            row("::ffff:0a00:0001", byteArrayOf(10, 0, 0, 1)),
+            row("2001:db8::", byteArrayOf(32, 1, 13, -72, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)),
+            row("2001:0db8:0000:0000:0000:0000:0000:0000", byteArrayOf(32, 1, 13, -72, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)),
         ) { ip, expected ->
-            IP(ip).bytes shouldBe expected
+            IP.of(ip).bytes shouldBe expected
         }
     }
 
     @Test
     fun compare() {
-        IP("10.0.0.1") shouldBeEqualComparingTo IP("10.0.0.1")
-        IP("10.0.0.1") shouldBeLessThan IP("10.0.0.2")
-        IP("::ffff:0a00:0001") shouldBeLessThan IP("::ffff:0a00:0002")
-        IP("10.0.0.1") shouldBeEqualComparingTo IP("::ffff:0a00:0001")
-        IP("2001:db8::") shouldBeEqualComparingTo IP("2001:0db8:0000:0000:0000:0000:0000:0000")
+        IP.of("10.0.0.1") shouldBeEqualComparingTo IP.of("10.0.0.1")
+        IP.of("10.0.0.1") shouldBeLessThan IP.of("10.0.0.2")
+        IP.of("::ffff:0a00:0001") shouldBeLessThan IP.of("::ffff:0a00:0002")
+        IP.of("10.0.0.1") shouldBeEqualComparingTo IP.of("::ffff:0a00:0001")
+        IP.of("2001:db8::") shouldBeEqualComparingTo IP.of("2001:0db8:0000:0000:0000:0000:0000:0000")
     }
 
     @Test
     fun equality() {
-        IP("10.0.0.1") shouldBeEqual IP("10.0.0.1")
-        IP("10.0.0.1") shouldNotBeEqual IP("10.0.0.2")
-        IP("::ffff:0a00:0001") shouldNotBeEqual IP("::ffff:0a00:0002")
-        IP("10.0.0.1") shouldBeEqual IP("::ffff:0a00:0001")
-        IP("2001:db8::") shouldBeEqual IP("2001:0db8:0000:0000:0000:0000:0000:0000")
+        IP.of("10.0.0.1") shouldBeEqual IP.of("10.0.0.1")
+        IP.of("10.0.0.1") shouldNotBeEqual IP.of("10.0.0.2")
+        IP.of("::ffff:0a00:0001") shouldNotBeEqual IP.of("::ffff:0a00:0002")
+        IP.of("10.0.0.1") shouldBeEqual IP.of("::ffff:0a00:0001")
+        IP.of("2001:db8::") shouldBeEqual IP.of("2001:0db8:0000:0000:0000:0000:0000:0000")
     }
 
     @Test
     fun filename_string() = runTest {
         forAll(
             row("10.0.0.1", "10-0-0-1"),
-            row("::ffff:0a00:0001", "--ffff-0a00-0001"),
+            row("::ffff:0a00:0001", "10-0-0-1"),
+            row("2001:db8::", "2001-db8--"),
+            row("2001:0db8:0000:0000:0000:0000:0000:0000", "2001-db8--"),
         ) { ip, expected ->
-            IP(ip).filenameString shouldBe expected
+            IP.of(ip).filenameString shouldBe expected
         }
     }
 
     @Test
     fun to_json() = runTest {
         forAll(
-            row(IP("10.0.0.1")),
-            row(IP("::ffff:0a00:0001")),
-            row(IP("10.0.0.1")),
-            row(IP("2001:db8::")),
+            row(IP.of("10.0.0.1")),
+            row(IP.of("::ffff:0a00:0001")),
+            row(IP.of("10.0.0.1")),
+            row(IP.of("2001:db8::")),
         ) { ip ->
-            JsonFormat.encodeToString(ip) shouldBe ip.value.let { "\"$it\"" }
-            JsonFormat.encodeToString(IPSerializer, ip) shouldBe ip.value.let { "\"$it\"" }
+            JsonFormat.encodeToString(ip) shouldBe ip.let { "\"$it\"" }
+            JsonFormat.encodeToString(IPSerializer, ip) shouldBe ip.let { "\"$it\"" }
         }
     }
 
     @Test
     fun from_json() = runTest {
         forAll(
-            row(IP("10.0.0.1")),
-            row(IP("::ffff:0a00:0001")),
-            row(IP("10.0.0.1")),
-            row(IP("2001:db8::")),
+            row(IP.of("10.0.0.1")),
+            row(IP.of("::ffff:0a00:0001")),
+            row(IP.of("10.0.0.1")),
+            row(IP.of("2001:db8::")),
         ) { ip ->
-            JsonFormat.decodeFromString<IP>(ip.value.let { "\"$it\"" }) shouldBe ip
-            JsonFormat.decodeFromString(IPSerializer, ip.value.let { "\"$it\"" }) shouldBe ip
+            JsonFormat.decodeFromString<IP>(ip.let { "\"$it\"" }) shouldBe ip
+            JsonFormat.decodeFromString(IPSerializer, ip.let { "\"$it\"" }) shouldBe ip
         }
     }
 }
