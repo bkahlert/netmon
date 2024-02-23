@@ -26,7 +26,7 @@ val InterfaceAddress.ip: IP
 
 /** The CIDR representation of this [InterfaceAddress]. */
 val InterfaceAddress.cidr: Cidr
-    get() = Cidr("${address.hostAddress}/$networkPrefixLength")
+    get() = Cidr.parse("${address.hostAddress}/$networkPrefixLength")
 
 /** The [NetworkInterface] that has the [InetAddress] bound to it. */
 val InterfaceAddress.networkInterface: NetworkInterface?

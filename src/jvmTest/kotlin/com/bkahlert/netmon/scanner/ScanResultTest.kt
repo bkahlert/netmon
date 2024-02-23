@@ -72,7 +72,7 @@ private fun scan(
     vararg hosts: Host,
 ) = ScanResult(
     `interface` = "en0",
-    cidr = Cidr("10.0.0.0/24"),
+    cidr = Cidr.parse("10.0.0.0/24"),
     timestamp = timestamp,
     hosts = hosts.toList(),
 )

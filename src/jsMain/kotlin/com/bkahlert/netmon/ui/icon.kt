@@ -11,6 +11,7 @@ import dev.fritz2.headless.foundation.Aria
 import io.ktor.http.ContentType.Image
 import kotlinx.browser.document
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import org.w3c.dom.Element
 import org.w3c.dom.asList
@@ -18,36 +19,86 @@ import org.w3c.dom.svg.SVGElement
 
 // TODO rename to image or svg (preferred)?
 
+/**
+ * Renders an image showing the contents of the given [uri] and the optional [classes].
+ *
+ * If the [uri] is a data URI with an SVG image, it's content is directly used (with [ignoredAttributes] applied).
+ * Otherwise, the [uri] is used as the `xlink:href` attribute of an `image` element.
+ *
+ * The generated [SvgTag] can be further customized using the optional [content] lambda.
+ */
 public fun RenderContext.icon(
     classes: String?,
     uri: Flow<Uri>,
     ignoredAttributes: List<String> = listOf("role", "cursor"),
     content: (SvgTag.() -> Unit)? = null,
 ): SvgTag = svg(classes) {
-    mountSimple(job, uri.map { it.extractSvg(ignoredAttributes) }) { attributes(it.first); content(it.second) }
+    mountSimple(
+        parentJob = job,
+        upstream = uri
+            .distinctUntilChanged()
+            .map { it.extractSvg(ignoredAttributes) },
+    ) { (attributes, content) ->
+        attributes(attributes)
+        content(content)
+    }
     content?.invoke(this)
 }
 
-public fun RenderContext.icon(
+/**
+ * Renders an image showing the contents of the given [uri].
+ *
+ * If the [uri] is a data URI with an SVG image, it's content is directly used (with [ignoredAttributes] applied).
+ * Otherwise, the [uri] is used as the `xlink:href` attribute of an `image` element.
+ *
+ * The generated [SvgTag] can be further customized using the optional [content] lambda.
+ */
+@Suppress("NOTHING_TO_INLINE")
+public inline fun RenderContext.icon(
     uri: Flow<Uri>,
     ignoredAttributes: List<String> = listOf("role", "cursor"),
-    content: (SvgTag.() -> Unit)? = null,
-): SvgTag = icon(null, uri, ignoredAttributes, content)
+    noinline content: (SvgTag.() -> Unit)? = null,
+): SvgTag = icon(
+    classes = null,
+    uri = uri,
+    ignoredAttributes = ignoredAttributes,
+    content = content
+)
 
+/**
+ * Renders an image showing the contents of the given [uri] and the optional [classes].
+ *
+ * If the [uri] is a data URI with an SVG image, it's content is directly used (with [ignoredAttributes] applied).
+ * Otherwise, the [uri] is used as the `xlink:href` attribute of an `image` element.
+ *
+ * The generated [SvgTag] can be further customized using the optional [content] lambda.
+ */
 public fun RenderContext.icon(
     classes: String?,
     uri: Uri,
     ignoredAttributes: List<String> = listOf("role", "cursor"),
     content: (SvgTag.() -> Unit)? = null,
 ): SvgTag = svg(classes) {
-    uri.extractSvg(ignoredAttributes).run { attributes(first); content(second) }
+    uri.extractSvg(ignoredAttributes).also { (attributes, content) ->
+        attributes(attributes)
+        content(content)
+    }
     content?.invoke(this)
 }
 
-public fun RenderContext.icon(
+/**
+ * Renders an image showing the contents of the given [uri].
+ *
+ * If the [uri] is a data URI with an SVG image, it's content is directly used (with [ignoredAttributes] applied).
+ * Otherwise, the [uri] is used as the `xlink:href` attribute of an `image` element.
+ *
+ * The generated [SvgTag] can be further customized using the optional [content] lambda.
+ */
+@Suppress("NOTHING_TO_INLINE")
+public inline fun RenderContext.icon(
     uri: Uri,
     ignoredAttributes: List<String> = listOf("role", "cursor"),
-    content: (SvgTag.() -> Unit)? = null,
+    noinline content: (SvgTag.() -> Unit)? = null,
 ): SvgTag = icon(null, uri, ignoredAttributes, content)
 
 

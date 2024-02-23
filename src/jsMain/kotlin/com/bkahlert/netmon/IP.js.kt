@@ -62,7 +62,7 @@ actual sealed interface IP : Comparable<IP> {
 
 actual class IPv4 actual constructor(override val bytes: ByteArray) : IP {
 
-    private val text by lazy { bytes.joinToString(".") }
+    private val text by lazy { bytes.joinToString(".") { (it.toInt() and 0xff).toString() } }
 
     override fun compareTo(other: IP): Int {
         val maxSize = maxOf(bytes.size, other.bytes.size)
@@ -89,6 +89,11 @@ actual class IPv4 actual constructor(override val bytes: ByteArray) : IP {
     override fun hashCode(): Int = bytes.contentHashCode()
 
     override fun toString(): String = text
+
+    actual companion object {
+        actual const val SIZE_BITS: Int = 32
+        actual const val SIZE_BYTES: Int = 4
+    }
 }
 
 actual class IPv6 actual constructor(override val bytes: ByteArray) : IP {
@@ -127,4 +132,9 @@ actual class IPv6 actual constructor(override val bytes: ByteArray) : IP {
     override fun hashCode(): Int = bytes.contentHashCode()
 
     override fun toString(): String = text
+
+    actual companion object {
+        actual const val SIZE_BITS: Int = 128
+        actual const val SIZE_BYTES: Int = 16
+    }
 }

@@ -18,8 +18,19 @@ expect sealed interface IP : Comparable<IP> {
     }
 }
 
-expect class IPv4(bytes: ByteArray) : IP
-expect class IPv6(bytes: ByteArray) : IP
+expect class IPv4(bytes: ByteArray) : IP {
+    companion object {
+        val SIZE_BITS: Int
+        val SIZE_BYTES: Int
+    }
+}
+
+expect class IPv6(bytes: ByteArray) : IP {
+    companion object {
+        val SIZE_BITS: Int
+        val SIZE_BYTES: Int
+    }
+}
 
 data object IPSerializer : KSerializer<IP> {
     override val descriptor: SerialDescriptor = PrimitiveSerialDescriptor("IP", PrimitiveKind.STRING)

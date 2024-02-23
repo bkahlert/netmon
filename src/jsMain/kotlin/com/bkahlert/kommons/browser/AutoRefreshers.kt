@@ -73,6 +73,6 @@ class AutoRefresher(
 
         fun Uri.getEtagOrNull(window: Window): Promise<String?> =
             fetch(method = "head", cache = RequestCache.NO_CACHE, window = window)
-                .then { it.headers.get("etag") }
+                .then(onFulfilled = { it.headers.get("etag") }, onRejected = { null })
     }
 }

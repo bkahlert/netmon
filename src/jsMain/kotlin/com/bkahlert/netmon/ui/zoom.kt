@@ -9,7 +9,6 @@ import dev.fritz2.core.asElementList
 import kotlinx.coroutines.flow.conflate
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.onEach
 import org.w3c.dom.Element
 import org.w3c.dom.HTMLElement
 import org.w3c.dom.MutationObserverInit
@@ -49,15 +48,38 @@ fun Tag<HTMLElement>.zoomToFitClientWidth(): Int? = domNode.zoomToFitClientWidth
  *
  * @return the request id returned by [org.w3c.dom.Window.requestAnimationFrame]
  */
-fun HTMLElement.zoomToFitClientWidth(): Int? = ownerDocument?.defaultView?.requestAnimationFrame {
-    val clientWidth = clientWidth
-    val scrollWidth = scrollWidth
-    if (scrollWidth > clientWidth) {
-        val decreasedZoom = clientWidth.toDouble() / scrollWidth
-        console.debug("Setting zoom to %f of %o", decreasedZoom, this)
-        zoom = decreasedZoom
+fun HTMLElement.zoomToFitClientWidth(): Int? = ownerDocument?.defaultView?.let { window ->
+    window.requestAnimationFrame {
+        val clientWidth = clientWidth
+        val scrollWidth = scrollWidth
+        if (scrollWidth > clientWidth) {
+            val decreasedZoom = clientWidth.toDouble() / scrollWidth
+            console.debug("Setting zoom to %f of %o", decreasedZoom, this)
+            zoom = decreasedZoom
+        }
     }
 }
+
+/**
+ * Flow of zoom factors that fit the content into the available space.
+ *
+ * **Important:** Requires [HTMLElement] to be styled with `overflow-y: hidden`.
+ */
+private val HTMLElement.zoomsToFitClientHeight
+    get() = observedMutations(MutationObserverInit(childList = true, subtree = true, attributes = false, characterData = false))
+        .conflate()
+        .map { verticalScrollCoverageRatio }
+        .distinctUntilChanged()
+        .map { coverageRatio ->
+            val zoom = zoom ?: 1.0
+            when {
+                // square because changing the zoom factor changes width and height
+                coverageRatio < 0.9 -> sqrt(coverageRatio) * zoom
+                coverageRatio < 1.0 -> 0.95 * zoom
+                else -> zoom
+            }
+        }
+        .distinctUntilChanged()
 
 /**
  * Eliminates the need for vertical scrolling by decreasing the zoom factor iteratively
@@ -67,24 +89,19 @@ fun HTMLElement.zoomToFitClientWidth(): Int? = ownerDocument?.defaultView?.reque
  * on an ancestor [Element] when space becomes available again.*
  */
 fun Tag<HTMLElement>.zoomedToFitClientHeight() {
-    className("overflow-y-hidden")
-    inlineStyle(
-        observedMutations(MutationObserverInit(childList = true, subtree = true, attributes = false, characterData = false))
-            .conflate()
-            .map { domNode.verticalScrollCoverageRatio }
-            .distinctUntilChanged()
-            .map { coverageRatio ->
-                val zoom = zoom ?: 1.0
-                when {
-                    // square because changing the zoom factor changes width and height
-                    coverageRatio < 0.9 -> sqrt(coverageRatio) * zoom
-                    coverageRatio < 1.0 -> 0.95 * zoom
-                    else -> zoom
+    addToClasses("overflow-y-hidden")
+    domNode.ownerDocument?.defaultView?.let { window ->
+        domNode.zoomsToFitClientHeight handledBy { zoomToFitClientHeight ->
+            window.requestAnimationFrame {
+                domNode.setAttribute("data-zooming", zoomToFitClientHeight.toString())
+                window.requestAnimationFrame {
+                    markZoomed(zoomToFitClientHeight)
+                    zoom = zoomToFitClientHeight
+                    domNode.removeAttribute("data-zooming")
                 }
             }
-            .distinctUntilChanged()
-            .onEach { markZoomed(it) }
-            .map { "zoom: $it" })
+        }
+    }
 }
 
 /**
@@ -99,9 +116,7 @@ fun WithDomNode<Element>.markZoomed(zoom: Double) {
 /**
  * Resets the zoom of all zoomed elements marked by [markZoomed] to `1.0`.
  */
-fun WithDomNode<Element>.resetZoomed() {
-    domNode.querySelectorAll("[data-zoomed]").asElementList().forEach {
-        it.removeAttribute("data-zoomed")
-        it.zoom = null
-    }
+fun WithDomNode<Element>.resetZoomed(): List<HTMLElement> = domNode.querySelectorAll("[data-zoomed]").asElementList().onEach {
+    it.removeAttribute("data-zoomed")
+    it.zoom = null
 }

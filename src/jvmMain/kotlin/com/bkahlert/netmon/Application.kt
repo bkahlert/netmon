@@ -176,7 +176,7 @@ class Application(
         )
 
         val failed = application.start().waitForTermination().failed
-        check(failed.isEmpty()) { "Errors occurred scanning the following ${failed.size} network(s): ${failed.joinToString { it.first.cidr }}" }
+        check(failed.isEmpty()) { "Errors occurred scanning the following ${failed.size} network(s): ${failed.joinToString { it.first.cidr.toString() }}" }
     }
 
     companion object {

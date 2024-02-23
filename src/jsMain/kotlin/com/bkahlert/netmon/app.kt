@@ -44,7 +44,7 @@ suspend fun main() {
         .apply { enable() }
         .also { console.info("On-screen console enabled") }
 
-    AutoRefreshers().also { console.info("Auto refresh enabled for %O", it.uris) }
+    AutoRefreshers().also { console.info("Auto refresh enabled for %s", it.uris) }
 
     runCatching {
         DeviceModelCodes.set(DeviceModelCodes.load(DeviceModelCodes.resource))
@@ -61,10 +61,13 @@ suspend fun main() {
     render("#root.app .status") {
         h1("font-bold") { +"Network Monitor" }
         div("opacity-50") {
-            val start = Now
-            ticks(UiSettings.REFRESH_INTERVAL).map {
-                start.toMomentString()
-            }.render(into = this) { +"started $it" }
+            +"started "
+            span {
+                val start = Now
+                CurrentTimeStore.data
+                    .map { now -> (start - now).toMomentString() }
+                    .renderText(into = this)
+            }
         }
         div("flex-1 text-right truncate font-mono") {
             // Always show the last (relevant) log message at the top of the app.
@@ -85,10 +88,15 @@ suspend fun main() {
      * Network Scans
      */
     val scanEventsStore = ScanEventsStore()
+
     render("#root.app .networks") {
         div("h-full overflow-y-hidden sm:grid grid-cols-[repeat(auto-fit,minmax(min(15rem,100%),1fr))] gap-4") {
             window.resizes.debounce(.5.seconds) handledBy { resetZoomed() }
-            scanEventsStore.data.map { it.keys.toList() }.renderEach(into = this) { scan(it, scanEventsStore.mapByKey(it)) }
+            scanEventsStore.data
+                .map { it.keys.toList() }
+                .renderEach(into = this) { source ->
+                    scan(source, scanEventsStore.mapByKey(source))
+                }
         }
     }
 
@@ -124,7 +132,8 @@ suspend fun main() {
                 )
             }
             .onEach { console.debug("MQTT::Event received", it) }
-            .onEach { onScreenConsole.disable() } handledBy scanEventsStore.process
+            .onEach { onScreenConsole.disable() }
+            .handledBy(scanEventsStore.process)
 
         onError { console.error("MQTT", it) }
         onDisconnect { console.warn("MQTT::Disconnection packet received from broker", it) }

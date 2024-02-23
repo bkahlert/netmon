@@ -21,8 +21,7 @@ data class Host(
     companion object
 }
 
-val Host.timePassed: Duration?
-    get() = since?.let { Now - it }?.coerceAtLeast(Duration.ZERO)
-
-val Host.stable: Boolean
-    get() = timePassed?.let { it > HostEventSettings.stabilizedThreshold } ?: true
+/** Computes the time passed since this host changed its status. */
+@Suppress("NOTHING_TO_INLINE")
+inline fun Host.getTimePassed(now: Instant = Now): Duration? =
+    since?.let { now - it }?.coerceAtLeast(Duration.ZERO)

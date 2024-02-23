@@ -50,6 +50,11 @@ actual class IPv4(val addr: Inet4Address) : IP {
     override fun hashCode(): Int = bytes.contentHashCode()
 
     override fun toString(): String = text
+
+    actual companion object {
+        actual const val SIZE_BITS: Int = 32
+        actual const val SIZE_BYTES: Int = 4
+    }
 }
 
 actual class IPv6(val addr: Inet6Address) : IP {
@@ -76,4 +81,9 @@ actual class IPv6(val addr: Inet6Address) : IP {
     override fun hashCode(): Int = bytes.contentHashCode()
 
     override fun toString(): String = text
+
+    actual companion object {
+        actual const val SIZE_BITS: Int = 128
+        actual const val SIZE_BYTES: Int = 16
+    }
 }
