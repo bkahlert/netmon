@@ -42,7 +42,9 @@ class NetmonScanner(
         val currentScan = ScanResult(
             `interface` = `interface`,
             cidr = cidr,
-            hosts = scanner.scan(cidr).map { host -> enrichers.fold(host) { acc, enricher -> enricher.enrich(acc) ?: acc } },
+            hosts = scanner.scan(cidr).map { host ->
+                enrichers.fold(host) { acc, enricher -> enricher.enrich(acc) ?: acc }
+            },
             timestamp = Now,
         )
 

@@ -6,7 +6,7 @@ import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.should
 import io.kotest.matchers.shouldBe
 import kotlinx.coroutines.test.runTest
-import org.junit.Test
+import kotlin.test.Test
 
 class NmapOutputTest {
 

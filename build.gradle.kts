@@ -63,6 +63,7 @@ kotlin {
         val commonTest by getting {
             dependencies {
                 implementation(kotlin("test"))
+
                 implementation(platform("io.kotest:kotest-bom:5.6.2"))
                 implementation("io.kotest:kotest-common")
                 implementation("io.kotest:kotest-assertions-core")
@@ -90,7 +91,8 @@ kotlin {
         val jvmTest by getting {
             dependencies {
                 implementation("io.kotest:kotest-assertions-json")
-                implementation(platform("org.testcontainers:testcontainers-bom:1.17.6"))
+
+                implementation(platform("org.testcontainers:testcontainers-bom:1.19.6"))
                 implementation("org.testcontainers:testcontainers")
             }
             languageSettings.optIn("kotlin.io.path.ExperimentalPathApi")

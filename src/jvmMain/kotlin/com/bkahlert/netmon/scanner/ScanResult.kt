@@ -13,8 +13,12 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.StringFormat
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
+import java.nio.channels.ClosedChannelException
 import java.nio.file.Path
+import kotlin.io.path.createTempFile
 import kotlin.io.path.exists
+import kotlin.io.path.moveTo
+import kotlin.io.path.name
 import kotlin.io.path.readText
 import kotlin.io.path.writeText
 
@@ -42,16 +46,16 @@ data class ScanResult(
                 .sorted()
                 .map { ip ->
                     val recordedHost = hosts.find { it.ip == ip }
-                    val scannedHost = currentResult.hosts.find { it.ip == ip }
-                    val mergedStatus = if (scannedHost != null) scannedHost.status else Status.DOWN
+                    val scannedHost = currentResult.hosts.find { it.ip == ip } // TODO improve detection, e.g. by MAC address and/or hostname
+                    val mergedStatus: Status = if (scannedHost != null) scannedHost.status ?: Status.UP else Status.DOWN
                     val mergedHost = Host(
                         ip = ip,
-                        name = if (scannedHost != null) scannedHost.name else recordedHost?.name,
+                        name = if (mergedStatus == Status.UP) scannedHost?.name else recordedHost?.name,
                         status = mergedStatus,
-                        since = if (mergedStatus != recordedHost?.status) currentResult.timestamp else recordedHost?.since,
-                        model = if (scannedHost != null) scannedHost.model else recordedHost?.model,
-                        vendor = if (scannedHost != null) scannedHost.vendor else recordedHost?.vendor,
-                        services = scannedHost?.services ?: recordedHost?.services,
+                        since = if (mergedStatus != recordedHost?.status) currentResult.timestamp else recordedHost.since,
+                        model = if (mergedStatus == Status.UP) scannedHost?.model else recordedHost?.model,
+                        vendor = if (mergedStatus == Status.UP) scannedHost?.vendor else recordedHost?.vendor,
+                        services = if (mergedStatus == Status.UP) scannedHost?.services else recordedHost?.services,
                     )
                     if (mergedHost != recordedHost) onChange(mergedHost)
                     mergedHost
@@ -63,10 +67,15 @@ data class ScanResult(
     fun save(
         file: Path,
         format: StringFormat = JsonFormat,
-    ) = kotlin.runCatching {
-        file.writeText(format.encodeToString(this))
-    }.getOrElse { error ->
-        logger.error("Error saving scan result", error)
+    ) = try {
+        val content = format.encodeToString(this)
+        val tempFile = createTempFile(file.name, ".tmp")
+        tempFile.writeText(content)
+        tempFile.moveTo(file, overwrite = true)
+    } catch (e: ClosedChannelException) {
+        logger.info("Aborted saving scan result to {} was aborted", v("file", file.toAbsolutePath()))
+    } catch (e: Throwable) {
+        logger.error("Error saving scan result to {}", v("file", file.toAbsolutePath()), e)
     }
 
     companion object {

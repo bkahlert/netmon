@@ -123,6 +123,7 @@ suspend fun main() {
             .filter { (topic, _, _) -> topic.endsWith("/scan") }
             .transform { (topic, message, _) ->
                 runCatching {
+                    console.warn("MQTT::Event received", topic, message.decodeToString())
                     val source = EventSource.fromTopic(topic)
                     val event = JsonFormat.decodeFromString<Event.ScanEvent>(message.decodeToString())
                     source to event

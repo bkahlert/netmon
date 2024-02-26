@@ -1,9 +1,13 @@
 package com.bkahlert.netmon
 
 import com.bkahlert.kommons.exec.environment
+import com.bkahlert.kommons.time.Now
+import com.bkahlert.netmon.scanner.ScanResult
+import com.bkahlert.netmon.serialization.JsonFormat
 import io.kotest.inspectors.forAll
 import io.kotest.inspectors.forAny
 import io.kotest.matchers.collections.shouldNotBeEmpty
+import io.kotest.matchers.comparables.shouldBeGreaterThan
 import io.kotest.matchers.longs.shouldBeGreaterThan
 import io.kotest.matchers.paths.shouldExist
 import io.kotest.matchers.should
@@ -11,12 +15,14 @@ import io.kotest.matchers.shouldNotBe
 import io.kotest.matchers.string.shouldContain
 import io.kotest.matchers.string.shouldMatch
 import kotlinx.coroutines.test.runTest
-import org.junit.Test
 import org.testcontainers.containers.GenericContainer
 import org.testcontainers.utility.DockerImageName
 import kotlin.io.path.fileSize
+import kotlin.io.path.listDirectoryEntries
+import kotlin.io.path.readText
 import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
+import kotlin.test.Test
 import kotlin.time.Duration.Companion.seconds
 
 class ApplicationIntegrationTest : AbstractIntegrationTest() {
@@ -31,7 +37,7 @@ class ApplicationIntegrationTest : AbstractIntegrationTest() {
                 environment["BROKER_PORT"] = mqttContainer.firstMappedPort.toString()
                 environment["DEBUG"] = "*.netmon*,-*mdns*"
             }
-        ) { it.contains("host(s) completed and published") }
+        ) { workingDirectory.listDirectoryEntries("scan.*.json").isNotEmpty() }
 
         logMessages should {
             it.shouldNotBeEmpty()
@@ -43,9 +49,18 @@ class ApplicationIntegrationTest : AbstractIntegrationTest() {
             it.forAny { (_, message) -> message.shouldContain("Stopped scanning") }
             it.last().message shouldMatch Regex("Terminated SlicedApplication\\(state=Terminated, .*, failed=\\[]\\)")
         }
-        workingDirectory.resolve("nmap/nmap-mac-prefixes") should {
-            it.shouldExist()
-            it.fileSize() shouldBeGreaterThan 500_000L
+        workingDirectory should {
+            it.resolve("nmap/nmap-mac-prefixes") should { mappingFile ->
+                mappingFile.shouldExist()
+                mappingFile.fileSize() shouldBeGreaterThan 500_000L
+            }
+
+            it.listDirectoryEntries("scan.*.json").forAll { scanResultFile ->
+                scanResultFile.fileSize() shouldBeGreaterThan 0L
+                JsonFormat.decodeFromString<ScanResult>(scanResultFile.readText()) should { scanResult ->
+                    scanResult.timestamp.shouldBeGreaterThan(Now - 30.seconds)
+                }
+            }
         }
     }
 

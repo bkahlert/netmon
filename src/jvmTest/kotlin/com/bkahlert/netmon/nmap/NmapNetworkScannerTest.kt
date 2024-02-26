@@ -11,8 +11,8 @@ import io.kotest.matchers.collections.shouldNotBeEmpty
 import io.kotest.matchers.nulls.shouldBeNull
 import io.kotest.matchers.nulls.shouldNotBeNull
 import kotlinx.coroutines.test.runTest
-import org.junit.Test
 import kotlin.io.path.createFile
+import kotlin.test.Test
 
 class NmapNetworkScannerTest {
 

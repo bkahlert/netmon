@@ -6,7 +6,7 @@ import io.kotest.data.forAll
 import io.kotest.data.row
 import io.kotest.matchers.shouldBe
 import kotlinx.coroutines.test.runTest
-import org.junit.Test
+import kotlin.test.Test
 
 class VerbosityTest {
 

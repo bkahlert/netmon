@@ -2,11 +2,11 @@ package com.bkahlert.kommons
 
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldMatch
-import org.junit.Test
 import kotlin.io.path.createTempDirectory
 import kotlin.io.path.createTempFile
 import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
+import kotlin.test.Test
 
 class FileCacheTest {
 

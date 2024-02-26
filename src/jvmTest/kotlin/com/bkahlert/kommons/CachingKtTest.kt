@@ -16,7 +16,6 @@ import io.kotest.matchers.paths.shouldExist
 import io.kotest.matchers.should
 import io.kotest.matchers.shouldBe
 import kotlinx.coroutines.test.runTest
-import org.junit.Test
 import java.nio.file.attribute.PosixFilePermission
 import kotlin.io.path.appendLines
 import kotlin.io.path.createFile
@@ -24,6 +23,7 @@ import kotlin.io.path.getPosixFilePermissions
 import kotlin.io.path.pathString
 import kotlin.io.path.readLines
 import kotlin.io.path.readText
+import kotlin.test.Test
 import kotlin.time.Duration.Companion.seconds
 
 class CachingKtTest {

@@ -1,7 +1,7 @@
 package com.bkahlert.kommons
 
 import io.kotest.matchers.comparables.shouldBeGreaterThan
-import org.junit.Test
+import kotlin.test.Test
 
 class PidTest {
 
