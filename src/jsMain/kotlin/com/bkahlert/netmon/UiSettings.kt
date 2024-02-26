@@ -10,9 +10,6 @@ object UiSettings : Settings("ui") {
     /** The interval in which the time-relevant information in the UI are updated. */
     val REFRESH_INTERVAL: Duration = 1.seconds
 
-    /** The duration for which changes are strongly highlighted. */
-    val HOST_STATE_CHANGE_STRONG_HIGHLIGHT_DURATION: Duration = 10.seconds
-
     /** The duration for which changes are highlighted. */
     val HOST_STATE_CHANGE_HIGHLIGHT_DURATION: Duration = 60.seconds
 }

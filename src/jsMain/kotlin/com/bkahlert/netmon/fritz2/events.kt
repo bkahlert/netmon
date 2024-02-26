@@ -1,3 +1,5 @@
+@file:Suppress("RedundantVisibilityModifier")
+
 package com.bkahlert.netmon.fritz2
 
 import dev.fritz2.core.Listener

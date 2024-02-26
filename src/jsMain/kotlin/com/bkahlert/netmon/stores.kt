@@ -1,3 +1,5 @@
+@file:Suppress("RedundantVisibilityModifier")
+
 package com.bkahlert.netmon
 
 import com.bkahlert.kommons.js.Console
@@ -8,6 +10,7 @@ import com.bkahlert.kommons.js.tee
 import com.bkahlert.kommons.time.Now
 import com.bkahlert.netmon.Event.ScanEvent
 import dev.fritz2.core.Handler
+import dev.fritz2.core.Lens
 import dev.fritz2.core.RootStore
 import dev.fritz2.core.SimpleHandler
 import kotlinx.coroutines.delay
@@ -82,3 +85,11 @@ class ConsoleLogStore(
             .handledBy(update)
     }
 }
+
+private object HostsLens : Lens<ScanEvent, List<Host>> {
+    override val id: String = "hosts"
+    override fun get(parent: ScanEvent): List<Host> = parent.hosts
+    override fun set(parent: ScanEvent, value: List<Host>): ScanEvent = parent.copy(hosts = value)
+}
+
+fun ScanEvent.Companion.hosts(): Lens<ScanEvent, List<Host>> = HostsLens

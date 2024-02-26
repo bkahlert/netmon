@@ -6,6 +6,7 @@ import com.bkahlert.netmon.fritz2.verticalScrollCoverageRatio
 import dev.fritz2.core.Tag
 import dev.fritz2.core.WithDomNode
 import dev.fritz2.core.asElementList
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.conflate
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
@@ -54,7 +55,6 @@ fun HTMLElement.zoomToFitClientWidth(): Int? = ownerDocument?.defaultView?.let {
         val scrollWidth = scrollWidth
         if (scrollWidth > clientWidth) {
             val decreasedZoom = clientWidth.toDouble() / scrollWidth
-            console.debug("Setting zoom to %f of %o", decreasedZoom, this)
             zoom = decreasedZoom
         }
     }
@@ -65,7 +65,7 @@ fun HTMLElement.zoomToFitClientWidth(): Int? = ownerDocument?.defaultView?.let {
  *
  * **Important:** Requires [HTMLElement] to be styled with `overflow-y: hidden`.
  */
-private val HTMLElement.zoomsToFitClientHeight
+private val HTMLElement.zoomsToFitClientHeight: Flow<Double>
     get() = observedMutations(MutationObserverInit(childList = true, subtree = true, attributes = false, characterData = false))
         .conflate()
         .map { verticalScrollCoverageRatio }
@@ -89,13 +89,13 @@ private val HTMLElement.zoomsToFitClientHeight
  * on an ancestor [Element] when space becomes available again.*
  */
 fun Tag<HTMLElement>.zoomedToFitClientHeight() {
-    addToClasses("overflow-y-hidden")
     domNode.ownerDocument?.defaultView?.let { window ->
         domNode.zoomsToFitClientHeight handledBy { zoomToFitClientHeight ->
             window.requestAnimationFrame {
                 domNode.setAttribute("data-zooming", zoomToFitClientHeight.toString())
                 window.requestAnimationFrame {
                     markZoomed(zoomToFitClientHeight)
+                    console.debug("Setting zoom to %f of %o", zoomToFitClientHeight, domNode)
                     zoom = zoomToFitClientHeight
                     domNode.removeAttribute("data-zooming")
                 }

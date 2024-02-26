@@ -15,15 +15,52 @@ external object MQTT {
     fun connect(url: String, options: dynamic = definedExternally): MqttClient
 }
 
+external interface IClientOptions {
+    /** CLIENT PROPERTIES */
+
+    /** Should be set to `host` */
+    var servername: String?
+
+    /** The default protocol to use when using `servers` and no protocol is specified */
+    var defaultProtocol: String?
+
+    /** Support clientId passed in the query string of the url */
+    var query: Any?
+
+    /** Auth string in the format <username>:<password> */
+    var auth: String?
+
+    /** Broker port */
+    var port: Int?
+
+    /** Broker host. Does NOT include port */
+    var host: String?
+    var hostname: String?
+
+    /** Websocket `path` added as suffix */
+    var path: String?
+
+    /** The `MqttProtocol` to use */
+    var protocol: String?
+}
+
 /**
  * [MQTT client](https://github.com/mqttjs/MQTT.js/#api)
  */
-external object MqttClient {
+external interface MqttClient {
+    val options: IClientOptions
+
     /**
      * Subscribes to the specified [topic] with the given [options].
      * @see <a href="https://github.com/mqttjs/MQTT.js/#mqttclientsubscribetopictopic-arraytopic-object-options-callback">Event 'connect'</a>
      */
     fun subscribe(topic: String, options: ClientSubscribeOptions = definedExternally): MqttClient
+
+    /**
+     * Closes the connection.
+     * @see <a href="https://github.com/mqttjs/MQTT.js/?tab=readme-ov-file#mqttclientendforce-options-callback">mqtt.Client#end</a>
+     */
+    fun end(force: Boolean = definedExternally, options: Map<String, Any?> = definedExternally, callback: (Throwable?) -> Unit = definedExternally): MqttClient
 
     /**
      * Registers the given [callback] which is invoked when the specified [event].

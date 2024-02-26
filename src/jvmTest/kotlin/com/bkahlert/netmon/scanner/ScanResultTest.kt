@@ -2,8 +2,9 @@ package com.bkahlert.netmon.scanner
 
 import com.bkahlert.netmon.Cidr
 import com.bkahlert.netmon.Host
-import com.bkahlert.netmon.IP
 import com.bkahlert.netmon.Status
+import com.bkahlert.netmon.epoch
+import com.bkahlert.netmon.invoke
 import io.kotest.assertions.asClue
 import io.kotest.data.forAll
 import io.kotest.data.row
@@ -13,7 +14,6 @@ import io.kotest.matchers.ints.shouldBeBetween
 import io.kotest.matchers.should
 import io.kotest.matchers.shouldBe
 import kotlinx.coroutines.test.runTest
-import kotlinx.datetime.Instant
 import kotlin.test.Test
 
 class ScanResultTest {
@@ -29,26 +29,130 @@ class ScanResultTest {
     @Test
     fun ip() = mergingShould(
         old = listOf(
-            host("10.0.0.1", "unchanged-host"),
-            host("10.0.0.2", "old-name"),
-            host("10.0.0.3", "foo")
+            Host(
+                ip = "10.0.0.1",
+                name = "unchanged-host",
+                status = Status.UP,
+                since = null,
+                model = "FooPro6,1",
+                vendor = "ACME",
+                services = setOf("smb", "airplay"),
+            ),
+            Host(
+                ip = "10.0.0.2",
+                name = "old-name",
+                status = Status.UP,
+                since = null,
+                model = "FooPro6,1",
+                vendor = "ACME",
+                services = setOf("smb", "airplay"),
+            ),
+            Host(
+                ip = "10.0.0.3",
+                name = "foo",
+                status = Status.UP,
+                since = null,
+                model = "FooPro6,1",
+                vendor = "ACME",
+                services = setOf("smb", "airplay"),
+            )
         ),
         new = listOf(
-            host("10.0.0.1", "unchanged-host"),
-            host("10.0.0.2", "new-name"),
-            host("10.0.0.4", "bar")
+            Host(
+                ip = "10.0.0.1",
+                name = "unchanged-host",
+                status = Status.UP,
+                since = null,
+                model = "FooPro6,1",
+                vendor = "ACME",
+                services = setOf("smb", "airplay"),
+            ),
+            Host(
+                ip = "10.0.0.2",
+                name = "new-name",
+                status = Status.UP,
+                since = null,
+                model = "FooPro6,1",
+                vendor = "ACME",
+                services = setOf("smb", "airplay"),
+            ),
+            Host(
+                ip = "10.0.0.4",
+                name = "bar",
+                status = Status.UP,
+                since = null,
+                model = "FooPro6,1",
+                vendor = "ACME",
+                services = setOf("smb", "airplay"),
+            )
         ),
     ) { merged, changed ->
         merged.hosts.shouldContainExactly(
-            host("10.0.0.1", "unchanged-host", since = 100.epoch),
-            host("10.0.0.2", "new-name", since = 100.epoch),
-            host("10.0.0.3", "foo", status = Status.DOWN, since = 200.epoch),
-            host("10.0.0.4", "bar", since = 200.epoch),
+            Host(
+                ip = "10.0.0.1",
+                name = "unchanged-host",
+                status = Status.UP,
+                since = 100.epoch,
+                model = "FooPro6,1",
+                vendor = "ACME",
+                services = setOf("smb", "airplay"),
+            ),
+            Host(
+                ip = "10.0.0.2",
+                name = "new-name",
+                status = Status.UP,
+                since = 100.epoch,
+                model = "FooPro6,1",
+                vendor = "ACME",
+                services = setOf("smb", "airplay"),
+            ),
+            Host(
+                ip = "10.0.0.3",
+                name = "foo",
+                status = Status.DOWN,
+                since = 200.epoch,
+                model = "FooPro6,1",
+                vendor = "ACME",
+                services = setOf("smb", "airplay"),
+            ),
+            Host(
+                ip = "10.0.0.4",
+                name = "bar",
+                status = Status.UP,
+                since = 200.epoch,
+                model = "FooPro6,1",
+                vendor = "ACME",
+                services = setOf("smb", "airplay"),
+            ),
         )
         changed.shouldContainExactly(
-            host("10.0.0.2", "new-name", since = 100.epoch),
-            host("10.0.0.3", "foo", status = Status.DOWN, since = 200.epoch),
-            host("10.0.0.4", "bar", since = 200.epoch),
+            Host(
+                ip = "10.0.0.2",
+                name = "new-name",
+                status = Status.UP,
+                since = 100.epoch,
+                model = "FooPro6,1",
+                vendor = "ACME",
+                services = setOf("smb", "airplay"),
+            ),
+            Host(
+                ip = "10.0.0.3",
+                name = "foo",
+                status = Status.DOWN,
+                since = 200.epoch,
+                model = "FooPro6,1",
+                vendor = "ACME",
+                services = setOf("smb", "airplay"),
+            ),
+            Host(
+                ip = "10.0.0.4",
+                name = "bar",
+                status = Status.UP,
+                since = 200.epoch,
+                model = "FooPro6,1",
+                vendor = "ACME",
+                services = setOf("smb", "airplay"),
+            ),
         )
     }
 
@@ -66,8 +170,24 @@ class ScanResultTest {
             row(null, null, "bar"),
         ) { oldStatus, newStatus, expected ->
             mergingSingleShould(
-                old = host(name = "foo", status = oldStatus),
-                new = host(name = "bar", status = newStatus),
+                old = Host(
+                    ip = "10.0.0.1",
+                    name = "foo",
+                    status = oldStatus,
+                    since = null,
+                    model = "FooPro6,1",
+                    vendor = "ACME",
+                    services = setOf("smb", "airplay"),
+                ),
+                new = Host(
+                    ip = "10.0.0.1",
+                    name = "bar",
+                    status = newStatus,
+                    since = null,
+                    model = "FooPro6,1",
+                    vendor = "ACME",
+                    services = setOf("smb", "airplay"),
+                ),
             ) { merged, _ ->
                 merged.name shouldBe expected
             }
@@ -88,8 +208,24 @@ class ScanResultTest {
             row(null, null, Status.UP),
         ) { oldStatus, newStatus, expected ->
             mergingSingleShould(
-                old = host(status = oldStatus),
-                new = host(status = newStatus),
+                old = Host(
+                    ip = "10.0.0.1",
+                    name = "foo",
+                    status = oldStatus,
+                    since = null,
+                    model = "FooPro6,1",
+                    vendor = "ACME",
+                    services = setOf("smb", "airplay"),
+                ),
+                new = Host(
+                    ip = "10.0.0.1",
+                    name = "foo",
+                    status = newStatus,
+                    since = null,
+                    model = "FooPro6,1",
+                    vendor = "ACME",
+                    services = setOf("smb", "airplay"),
+                ),
             ) { merged, _ ->
                 merged.status shouldBe expected
             }
@@ -110,8 +246,24 @@ class ScanResultTest {
             row(null, null, 100.epoch), // "unknown since"
         ) { oldStatus, newStatus, expected ->
             mergingSingleShould(
-                old = host(status = oldStatus),
-                new = host(status = newStatus),
+                old = Host(
+                    ip = "10.0.0.1",
+                    name = "foo",
+                    status = oldStatus,
+                    since = null,
+                    model = "FooPro6,1",
+                    vendor = "ACME",
+                    services = setOf("smb", "airplay"),
+                ),
+                new = Host(
+                    ip = "10.0.0.1",
+                    name = "foo",
+                    status = newStatus,
+                    since = null,
+                    model = "FooPro6,1",
+                    vendor = "ACME",
+                    services = setOf("smb", "airplay"),
+                ),
             ) { merged, _ ->
                 merged.since shouldBe expected
             }
@@ -132,8 +284,24 @@ class ScanResultTest {
             row(null, null, "Bar10,6"),
         ) { oldStatus, newStatus, expected ->
             mergingSingleShould(
-                old = host(model = "FooPro6,1", status = oldStatus),
-                new = host(model = "Bar10,6", status = newStatus),
+                old = Host(
+                    ip = "10.0.0.1",
+                    name = "foo",
+                    status = oldStatus,
+                    since = null,
+                    model = "FooPro6,1",
+                    vendor = "ACME",
+                    services = setOf("smb", "airplay"),
+                ),
+                new = Host(
+                    ip = "10.0.0.1",
+                    name = "foo",
+                    status = newStatus,
+                    since = null,
+                    model = "Bar10,6",
+                    vendor = "ACME",
+                    services = setOf("smb", "airplay"),
+                ),
             ) { merged, _ ->
                 merged.model shouldBe expected
             }
@@ -154,8 +322,24 @@ class ScanResultTest {
             row(null, null, "Globex"),
         ) { oldStatus, newStatus, expected ->
             mergingSingleShould(
-                old = host(vendor = "ACME", status = oldStatus),
-                new = host(vendor = "Globex", status = newStatus),
+                old = Host(
+                    ip = "10.0.0.1",
+                    name = "foo",
+                    status = oldStatus,
+                    since = null,
+                    model = "FooPro6,1",
+                    vendor = "ACME",
+                    services = setOf("smb", "airplay"),
+                ),
+                new = Host(
+                    ip = "10.0.0.1",
+                    name = "foo",
+                    status = newStatus,
+                    since = null,
+                    model = "FooPro6,1",
+                    vendor = "Globex",
+                    services = setOf("smb", "airplay"),
+                ),
             ) { merged, _ ->
                 merged.vendor shouldBe expected
             }
@@ -176,8 +360,24 @@ class ScanResultTest {
             row(null, null, setOf("airplay", "smb")),
         ) { oldStatus, newStatus, expected ->
             mergingSingleShould(
-                old = host(services = setOf("smb"), status = oldStatus),
-                new = host(services = setOf("airplay", "smb"), status = newStatus),
+                old = Host(
+                    ip = "10.0.0.1",
+                    name = "foo",
+                    status = oldStatus,
+                    since = null,
+                    model = "FooPro6,1",
+                    vendor = "ACME",
+                    services = setOf("smb"),
+                ),
+                new = Host(
+                    ip = "10.0.0.1",
+                    name = "foo",
+                    status = newStatus,
+                    since = null,
+                    model = "FooPro6,1",
+                    vendor = "ACME",
+                    services = setOf("airplay", "smb"),
+                ),
             ) { merged, _ ->
                 merged.services shouldBe expected
             }
@@ -185,8 +385,6 @@ class ScanResultTest {
     }
 }
 
-private val Int.epoch
-    get() = Instant.fromEpochSeconds(toLong())
 
 /**
  * Asserts the result [ScanResult.merge] operation based on the specified [old] and [new]
@@ -249,21 +447,3 @@ private fun mergingSingleShould(
         }
     }
 }
-
-private fun host(
-    ip: String = "10.0.0.1",
-    name: String? = "foo",
-    status: Status? = Status.UP,
-    since: Instant? = null,
-    model: String = "FooPro6,1",
-    vendor: String = "Apple Inc.",
-    services: Set<String> = setOf("smb", "airplay"),
-) = Host(
-    ip = IP.of(ip),
-    name = name,
-    status = status,
-    since = since,
-    model = model,
-    vendor = vendor,
-    services = services,
-)

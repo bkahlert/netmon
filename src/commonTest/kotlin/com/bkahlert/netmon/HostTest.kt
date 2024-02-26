@@ -48,10 +48,30 @@ class HostTest {
             json.shouldNotContain("\"since\": null")
         }
     }
-
 }
 
-val Host.Companion.UP: Host get() = Host(IP.of("10.0.0.1"), name = "foo.bar", status = Status.UP, since = Instant.fromEpochSeconds(1690159731L))
+operator fun Host.Companion.invoke(
+    ip: String = "10.0.0.1",
+    name: String? = "foo",
+    status: Status? = Status.UP,
+    since: Instant? = null,
+    model: String = "FooPro6,1",
+    vendor: String = "ACME",
+    services: Set<String> = setOf("smb", "airplay"),
+) = Host(
+    ip = IP.of(ip),
+    name = name,
+    status = status,
+    since = since,
+    model = model,
+    vendor = vendor,
+    services = services,
+)
+
+inline val Int.epoch get() = toLong().epoch
+inline val Long.epoch get() = Instant.fromEpochSeconds(this)
+
+val Host.Companion.UP: Host get() = Host(IP.of("10.0.0.1"), name = "foo.bar", status = Status.UP, since = 1690159731L.epoch)
 val Host.Companion.UP_STRING: String
     get() =
         """

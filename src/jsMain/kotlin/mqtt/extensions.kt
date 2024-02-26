@@ -5,6 +5,13 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.flow.map
 
+/**
+ * Client connection options
+ *
+ * @see <a href="https://github.com/mcollina/mqtt-packet#connect">connect packet</a>
+ */
+val IClientOptions.url: String get() = "${protocol}://${hostname}:${port}${path}"
+
 /* Callback-based extensions */
 
 /**

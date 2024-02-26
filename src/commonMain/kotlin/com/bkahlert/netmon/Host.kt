@@ -23,5 +23,5 @@ data class Host(
 
 /** Computes the time passed since this host changed its status. */
 @Suppress("NOTHING_TO_INLINE")
-inline fun Host.getTimePassed(now: Instant = Now): Duration? =
+inline fun Host.getElapsedTime(now: Instant = Now): Duration? =
     since?.let { now - it }?.coerceAtLeast(Duration.ZERO)

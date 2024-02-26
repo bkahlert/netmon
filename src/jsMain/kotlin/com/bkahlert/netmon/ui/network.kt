@@ -1,39 +1,53 @@
 package com.bkahlert.netmon.ui
 
-import com.bkahlert.kommons.time.Now
 import com.bkahlert.kommons.time.toMomentString
 import com.bkahlert.kommons.uri.toUriOrNull
 import com.bkahlert.netmon.CurrentTimeStore
-import com.bkahlert.netmon.Event
+import com.bkahlert.netmon.Event.ScanEvent
 import com.bkahlert.netmon.EventSource
 import com.bkahlert.netmon.Host
 import com.bkahlert.netmon.HostEventSettings
 import com.bkahlert.netmon.ScanEventSettings
-import com.bkahlert.netmon.Status
+import com.bkahlert.netmon.ScanEventsStore
 import com.bkahlert.netmon.UiSettings
-import com.bkahlert.netmon.fritz2.lensForFirst
-import com.bkahlert.netmon.fritz2.lensForSecond
-import com.bkahlert.netmon.getTimePassed
+import com.bkahlert.netmon.fritz2.partition
+import com.bkahlert.netmon.fritz2.resizes
+import com.bkahlert.netmon.getElapsedTime
+import com.bkahlert.netmon.hosts
 import com.bkahlert.netmon.model_identification.DeviceModelCodes
 import dev.fritz2.core.HtmlTag
 import dev.fritz2.core.RenderContext
 import dev.fritz2.core.Store
 import dev.fritz2.core.classes
-import dev.fritz2.core.lensOf
 import dev.fritz2.core.mapByElement
+import dev.fritz2.core.mapByKey
+import kotlinx.browser.window
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.mapLatest
 import org.w3c.dom.HTMLDivElement
 import org.w3c.dom.HTMLElement
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.ZERO
+import kotlin.time.Duration.Companion.seconds
+
+fun RenderContext.networks(scanEventsStore: ScanEventsStore) {
+    div("h-full overflow-y-hidden sm:grid grid-cols-[repeat(auto-fit,minmax(min(15rem,100%),1fr))] gap-4") {
+        window.resizes.debounce(.5.seconds) handledBy { resetZoomed() }
+        val sources = scanEventsStore.data.map { it.keys.toList() }
+        sources.map { it.size }.distinctUntilChanged() handledBy { resetZoomed() }
+        sources
+            .renderEach(into = this) { source ->
+                scan(source, scanEventsStore.mapByKey(source))
+            }
+    }
+}
 
 fun RenderContext.scan(
     source: EventSource,
-    events: Store<Event.ScanEvent>,
+    events: Store<ScanEvent>,
     stabilizedThreshold: Duration = HostEventSettings.stabilizedThreshold,
 ): HtmlTag<HTMLElement> = div(
     classes(
@@ -45,31 +59,34 @@ fun RenderContext.scan(
 ) {
     meta(source, events)
 
-    val now = Now
-    val stableAndUnstableHosts: Store<Pair<List<Host>, List<Host>>> = events.map(
-        lensOf(
-            id = "hosts",
-            getter = { it.hosts.partition { host -> host.getTimePassed(now)?.let { passed -> passed > stabilizedThreshold } ?: true } },
-            setter = { _, _ -> error("Setting ${Event.ScanEvent::hosts} not supported") },
-        )
-    )
-
-    div("flex flex-col") {
-        hosts(stableAndUnstableHosts.map(lensForSecond()))
-        stableAndUnstableHosts.data.mapLatest { (stable, unstable) -> stable.isNotEmpty() && unstable.isNotEmpty() }.render {
-            if (it) {
-                div("divider-xs opacity-60") {
-                    +"$stabilizedThreshold+ unchanged"
-                }
+    val (unstableHosts, stableHosts) = events
+        .map(ScanEvent.hosts())
+        .partition { host ->
+            when (val elapsedTime = host.getElapsedTime()) {
+                null -> false // = always online / never missing during scan
+                else -> elapsedTime <= stabilizedThreshold
             }
         }
-        hosts(stableAndUnstableHosts.map(lensForFirst()), classes = "opacity-50 [zoom:0.75]")
+
+    div("flex flex-col") {
+        hosts(unstableHosts)
+        unstableHosts.data.map { it.isNotEmpty() }
+            .combine(stableHosts.data.map { it.isNotEmpty() }) { a, b ->
+                a && b
+            }.render {
+                if (it) {
+                    div("divider-xs opacity-60") {
+                        +"$stabilizedThreshold+ unchanged"
+                    }
+                }
+            }
+        hosts(stableHosts, classes = "opacity-50 [zoom:0.75]")
     }
 }
 
 private fun HtmlTag<HTMLDivElement>.meta(
     source: EventSource,
-    events: Store<Event.ScanEvent>,
+    events: Store<ScanEvent>,
     datedThreshold: Duration = ScanEventSettings.datedThreshold,
 ) {
     val timePassed = CurrentTimeStore.data
@@ -109,10 +126,13 @@ private fun HtmlTag<HTMLDivElement>.meta(
 fun RenderContext.hosts(
     hosts: Store<List<Host>>,
     classes: String? = null,
-): HtmlTag<HTMLDivElement> = div("overflow-y-auto") {
-    zoomedToFitClientHeight() // TODO to improve performance, perform all zooms inside a single requestAnimationFrame
+): HtmlTag<HTMLDivElement> = div {
+    // "clip" is like "hidden" but with a margin to not cut-off animated content
+    inlineStyle("overflow: clip; overflow-clip-margin: 100px; overflow-y: hidden;")
+    zoomedToFitClientHeight()
     hosts.data.map { it.size }.distinctUntilChanged() handledBy { resetZoomed() }
-    ul(classes("grid grid-cols-[repeat(auto-fill,150px)] justify-around gap-4", classes)) {
+
+    ul(classes("hosts grid grid-cols-[repeat(auto-fill,185px)] justify-around", classes)) {
         hosts.data.renderEach(Host::ip, into = this) { value ->
             li { host(hosts.mapByElement(value, Host::ip)) }
         }
@@ -121,11 +141,10 @@ fun RenderContext.hosts(
 
 fun RenderContext.host(
     host: Store<Host>,
-    strongHighlightDuration: Duration = UiSettings.HOST_STATE_CHANGE_STRONG_HIGHLIGHT_DURATION,
     highlightDuration: Duration = UiSettings.HOST_STATE_CHANGE_HIGHLIGHT_DURATION,
 ) {
 
-    val timePassed: Flow<Duration?> = CurrentTimeStore.data.combine(host.data) { now, h -> h.getTimePassed(now) }
+    val elapsedTime: Flow<Duration?> = CurrentTimeStore.data.combine(host.data) { now, h -> h.getElapsedTime(now) }
 
     val ips = host.data.map { it.ip }.distinctUntilChanged()
     val hostNames = host.data.map { it.name }.distinctUntilChanged()
@@ -139,28 +158,12 @@ fun RenderContext.host(
 
     val captions = hostNames.combine(modelNames) { h, m -> h?.substringBefore(".") ?: m }
 
-
-    div("flex justify-center sm:justify-start gap-x-2") {
-        className(timePassed.map {
-            when {
-                it == null -> ""
-                it < strongHighlightDuration -> "animate-pulse [animation-duration:1s]"
-                it < highlightDuration -> "animate-pulse"
-                else -> ""
-            }
-        })
+    div("host flex justify-center sm:justify-start gap-x-2") {
+        className(elapsedTime.map { if (it != null && it < highlightDuration) "host--highlighted" else "" })
+        attr("data-status", statuses.map { it?.toString()?.lowercase() ?: "" })
 
         div("shrink-0 w-10") {
-            icon("w-full", modelIcons) {
-                className(statuses.map {
-                    when (it) {
-                        is Status.UP -> "text-green-500"
-                        is Status.DOWN -> "text-red-500"
-                        is Status.UNKNOWN -> "text-yellow-500"
-                        else -> ""
-                    }
-                })
-            }
+            icon("host__icon w-full", modelIcons)
             modelNames.render {
                 if (it != null) div("opacity-60 text-sm leading-none text-center mt-1") { +it }.zoomToFitClientWidth()
             }
@@ -173,7 +176,7 @@ fun RenderContext.host(
             }
             vendors.render {
                 if (it != null) div("text-xs") { +it }.zoomToFitClientWidth()
-                else div("text-xs italic") { +"<unknown vendor>" }
+                else div("text-xs italic") { +"<unknown vendor>" }.zoomToFitClientWidth()
             }
             ips.render {
                 div("text-xs font-mono") { +it.toString() }.zoomToFitClientWidth()
@@ -182,7 +185,7 @@ fun RenderContext.host(
                 if (status != null) {
                     div("text-xs") {
                         +status.toString()
-                        timePassed
+                        elapsedTime
                             .map { it?.toMomentString(descriptive = false) }
                             .render {
                                 if (it != null) {
