@@ -23,7 +23,7 @@
   become: true
 
 - name: build query params
-  set_fact:
+  ansible.builtin.set_fact:
     netmon_web_display_query_params: >
       {{
       (netmon_web_display_query_params | default([])) + [(item.key|string|urlencode) + '=' + (item.value|string|urlencode)]
@@ -42,7 +42,7 @@
   notify: reboot
 
 - name: enable lighttpd service
-  ansible.builtin.systemd:
+  ansible.builtin.systemd_service:
     name: lighttpd.service
     daemon_reload: true
     enabled: true
@@ -63,14 +63,14 @@
   become: true
 
 - name: restart lighttpd service
-  ansible.builtin.systemd:
+  ansible.builtin.systemd_service:
     name: lighttpd.service
     state: restarted
   become: true
   notify: "restart display-manager"
 
 - name: restart display-manager service
-  ansible.builtin.systemd:
+  ansible.builtin.systemd_service:
     name: display-manager.service
     state: restarted
   become: true

@@ -28,6 +28,23 @@ Flash [Raspberry Pi OS Lite image](https://downloads.raspberrypi.org/raspios_lit
 to your SD card.
 
 - Boot your Raspberry Pi and connect it to your network.
+- A Raspberry Pi with an ARMv6Z instruction set (Pi 1A, 1A+, 1B, 1B+, Zero, Zero W),
+  requires a compatible Chromium browser that is not available in the current
+  Raspberry Pi OS.  
+  Therefore, you need to:
+    - use [Raspberry Pi OS Lite 10 (buster)](https://downloads.raspberrypi.com/raspios_armhf/images/raspios_armhf-2021-05-28/), **or**
+    - install the old Chromium browser manually (tested
+      on [Raspberry Pi OS Lite 11 (bullseye)](https://downloads.raspberrypi.com/raspios_armhf/images/raspios_armhf-2023-05-03/)):
+      ```shell
+      echo 'deb http://archive.raspberrypi.org/debian/ buster main' | sudo tee /etc/apt/sources.list.d/buster.list
+      sudo apt update
+      apt list -a chromium-browser
+      sudo apt-get remove -y --allow-change-held-packages chromium-browser
+      sudo apt-get install -y --allow-downgrades chromium-codecs-ffmpeg-extra=92.0.4515.98~buster-rpt2
+      sudo apt-get install -y --allow-downgrades chromium-codecs-ffmpeg=92.0.4515.98~buster-rpt2
+      sudo apt-get install -y chromium-browser=92.0.4515.98~buster-rpt2
+      sudo apt-mark hold chromium-browser
+      ```
 - Start the installation using:
   ```shell
   # Setup only the device foo.local

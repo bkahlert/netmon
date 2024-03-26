@@ -37,7 +37,7 @@
   become: true
 
 - name: compute netmon_kiosk defaults
-  set_fact:
+  ansible.builtin.set_fact:
     netmon_kiosk: >
       {{
       netmon_kiosk | default({})
@@ -80,7 +80,7 @@
   become: true
 
 - name: enable display-manager service
-  ansible.builtin.systemd:
+  ansible.builtin.systemd_service:
     name: display-manager.service
     daemon_reload: true
     enabled: true
@@ -91,7 +91,7 @@
   become: true
 
 - name: restart display-manager service
-  ansible.builtin.systemd:
+  ansible.builtin.systemd_service:
     name: display-manager.service
     state: restarted
   become: true

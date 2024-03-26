@@ -31,7 +31,7 @@
   import_tasks: nmap-capabilities.yml
 
 - name: compute netmon_scanner_service defaults
-  set_fact:
+  ansible.builtin.set_fact:
     netmon_scanner_service: >
       {{
       netmon_scanner_service | default({})
@@ -41,7 +41,7 @@
   when: netmon_scanner_service is undefined
 
 - name: build java args
-  set_fact:
+  ansible.builtin.set_fact:
     netmon_scanner_java_args: >
       {{
       (netmon_scanner_java_args | default([])) + ['-D' + (item.key|string) + '="' + (item.value|string) + '"']
@@ -57,7 +57,7 @@
   become: true
 
 - name: enable netmon-scanner service
-  ansible.builtin.systemd:
+  ansible.builtin.systemd_service:
     name: netmon-scanner.service
     daemon_reload: true
     enabled: true
@@ -78,7 +78,7 @@
   become: true
 
 - name: restart netmon-scanner service
-  ansible.builtin.systemd:
+  ansible.builtin.systemd_service:
     name: netmon-scanner.service
     state: restarted
   become: true
