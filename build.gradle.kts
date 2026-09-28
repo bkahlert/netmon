@@ -90,10 +90,17 @@ kotlin {
         }
         val jvmTest by getting {
             dependencies {
+                implementation(kotlin("test"))
+
+//                implementation(platform("org.junit:junit-bom:5.10.2"))
+//                implementation("org.junit.jupiter:junit-jupiter-api")
+//                runtimeOnly("org.junit.jupiter:junit-jupiter-engine")
+
                 implementation("io.kotest:kotest-assertions-json")
 
                 implementation(platform("org.testcontainers:testcontainers-bom:1.19.6"))
                 implementation("org.testcontainers:testcontainers")
+//                implementation("org.testcontainers:junit-jupiter")
             }
             languageSettings.optIn("kotlin.io.path.ExperimentalPathApi")
         }
@@ -147,6 +154,10 @@ java {
 
 application {
     mainClass.set("com.bkahlert.netmon.Application")
+}
+
+tasks.test {
+    useJUnitPlatform()
 }
 
 tasks {
