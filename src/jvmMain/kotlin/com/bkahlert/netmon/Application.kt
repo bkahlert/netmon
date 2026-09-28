@@ -21,6 +21,8 @@ import com.bkahlert.netmon.model_identification.resource
 import com.bkahlert.netmon.mqtt.MqttPublisher
 import com.bkahlert.netmon.net.SystemInterfaceAddressResolver
 import com.bkahlert.netmon.net.cidr
+import com.bkahlert.netmon.net.isWireless
+import com.bkahlert.netmon.net.onePerNetwork
 import com.bkahlert.netmon.net.networkInterface
 import com.bkahlert.netmon.nmap.NmapMacPrefixesProvisioner
 import com.bkahlert.netmon.nmap.NmapNetworkScanner
@@ -82,6 +84,8 @@ class Application(
                 .mapNotNull { interfaceAddress ->
                     interfaceAddress.networkInterface?.let { interfaceAddress to it.name }
                 }
+                // A board on Wi-Fi and on a cable in the same LAN scans it once, over the cable.
+                .onePerNetwork(network = { (interfaceAddress, _) -> interfaceAddress.cidr }, wired = { (_, name) -> !isWireless(name) })
         }.also {
             logger.info(
                 "Interface addresses found: {}",
