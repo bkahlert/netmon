@@ -1,0 +1,20 @@
+[project]
+name = "netmon-dev"
+version = "0.0.0"
+description = "Development environment for the netmon Debian packages and their tests"
+requires-python = ">=3.13"
+
+[tool.uv]
+package = false
+
+[tool.uv.sources]
+# Pinned to the pihero commit that carries pihero-kiosk; becomes tag v2.2.0 with the release.
+pihero-testkit = { git = "https://github.com/bkahlert/pihero", subdirectory = "testkit", rev = "d8bf8f6698c48d72b213ae59323b4eb071128a06" }
+
+[dependency-groups]
+dev = ["pihero-testkit"]
+
+[tool.pytest.ini_options]
+testpaths = ["packages"]
+# testinfra's own plugin registers after the testkit's and its local-host `host` fixture would shadow the target's.
+addopts = "-p pihero_testkit.plugin -p no:pytest11.testinfra --import-mode=importlib -ra"
