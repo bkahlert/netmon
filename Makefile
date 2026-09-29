@@ -1,5 +1,7 @@
 SHELL := /bin/bash
 .DEFAULT_GOAL := help
+# Gradle's output directory is called build, so the targets are declared phony.
+.PHONY: help gradle build test-tier0 test-tier1 test deploy clean release
 
 PLATFORM ?= linux/arm64
 TARGET ?=

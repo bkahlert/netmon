@@ -1,0 +1,27 @@
+name: netmon-display
+arch: all
+platform: linux
+version: ${VERSION}
+section: web
+priority: optional
+maintainer: Björn Kahlert <bkahlert@users.noreply.github.com>
+description: |
+  Netmon: the web display, served by lighttpd and shown by the Pi Hero kiosk.
+  The Kotlin/JS front end subscribes to the broker named in the page URL; pihero-kiosk shows it full
+  screen with URL=http://localhost/?broker.host=localhost&broker.port=8080 in /etc/pihero/kiosk.conf.
+homepage: https://github.com/bkahlert/netmon
+license: MIT
+depends:
+  - lighttpd
+  - pihero-kiosk
+contents:
+  - src: ../../build/dist/js/productionExecutable/
+    dst: /usr/share/netmon/web/
+    type: tree
+  - src: conf/lighttpd-netmon.conf
+    dst: /etc/lighttpd/conf-available/90-netmon.conf
+    type: config
+scripts:
+  postinstall: .build/postinst
+  preremove: .build/prerm
+  postremove: .build/postrm

@@ -15,6 +15,6 @@ pihero-testkit = { git = "https://github.com/bkahlert/pihero", subdirectory = "t
 dev = ["pihero-testkit"]
 
 [tool.pytest.ini_options]
-testpaths = ["packages"]
+testpaths = ["packages", "tests"]
 # testinfra's own plugin registers after the testkit's and its local-host `host` fixture would shadow the target's.
 addopts = "-p pihero_testkit.plugin -p no:pytest11.testinfra --import-mode=importlib -ra"
