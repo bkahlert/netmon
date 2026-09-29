@@ -48,6 +48,11 @@ class TestUnit:
         assert "AmbientCapabilities=cap_net_admin cap_net_raw" in show
         assert "MemoryMax=335544320" in show
 
+    def test_starts_the_jvm_with_the_shipped_options(self, host):
+        """The unit's JAVA_TOOL_OPTIONS reach the JVM whole; unquoted, systemd dropped everything after the first space."""
+        log = journal_until(host, "Picked up JAVA_TOOL_OPTIONS")
+        assert "Picked up JAVA_TOOL_OPTIONS: -Xmx128m -XX:+UseSerialGC -XX:TieredStopAtLevel=1" in log
+
     def test_connects_to_the_broker(self, host):
         log = journal_until(host, "connected")
 

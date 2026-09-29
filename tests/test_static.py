@@ -1,4 +1,5 @@
 """Static checks over the packages, as pihero's own tier 0 runs them: shellcheck, systemd-analyze verify, cloud-init schema."""
+import shlex
 import shutil
 from importlib.resources import files
 from pathlib import Path
@@ -74,3 +75,18 @@ def test_device_file_validates_against_cloud_init_schema(user_data):
     assert user_data.read_text().startswith("#cloud-config\n")
     assert result.returncode == 0, result.stdout + result.stderr
     assert "Valid schema" in result.stdout
+
+
+@pytest.mark.parametrize("unit", sorted(unit_files()), ids=lambda p: p.name)
+def test_unit_environment_assignments_are_well_formed(unit):
+    """systemd splits an unquoted Environment= line on whitespace and ignores every word that is not NAME=value,
+    so a value with spaces must be quoted or its tail is silently dropped."""
+    malformed = []
+    for line in unit.read_text().splitlines():
+        if not line.startswith("Environment="):
+            continue
+        for word in shlex.split(line[len("Environment="):]):
+            name, sep, _ = word.partition("=")
+            if not sep or not name.isidentifier():
+                malformed.append(f"{line!r}: {word!r} is not NAME=value")
+    assert malformed == []
