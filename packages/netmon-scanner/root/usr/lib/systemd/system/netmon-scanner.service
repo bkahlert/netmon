@@ -13,7 +13,7 @@ AmbientCapabilities=CAP_NET_RAW CAP_NET_ADMIN
 CapabilityBoundingSet=CAP_NET_RAW CAP_NET_ADMIN
 Environment=BROKER_HOST=localhost BROKER_PORT=8080
 Environment=NMAP_DATA_DIR=/var/lib/netmon/nmap XDG_CACHE_HOME=/var/cache/netmon
-Environment=JAVA_TOOL_OPTIONS=-Xmx128m -XX:+UseSerialGC -XX:TieredStopAtLevel=1
+Environment="JAVA_TOOL_OPTIONS=-Xmx128m -XX:+UseSerialGC -XX:TieredStopAtLevel=1"
 EnvironmentFile=-/etc/netmon/scanner.conf
 StateDirectory=netmon
 CacheDirectory=netmon
