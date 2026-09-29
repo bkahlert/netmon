@@ -17,7 +17,7 @@ gradle: ## build the scanner jar and the web bundle
 build: gradle ## build the .deb packages into dist/
 	@$(UV) python -m pihero_testkit.build
 
-test-jvm: ## the scanner's JVM unit tests (those that need Docker, macOS bundles or nmap are left out)
+test-jvm: ## the scanner's JVM unit tests (those that need Docker, macOS bundles, nmap or quiet thread timing are left out)
 	./gradlew $(GRADLE_ARGS) jvmTest -PunitOnly
 
 test-tier0: ## unit tests and static checks
