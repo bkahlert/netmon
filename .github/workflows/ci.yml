@@ -19,6 +19,7 @@ jobs:
         with: { enable-cache: true }
       - run: uv sync --frozen
       - run: make build
+      - run: make test-jvm
       - run: make test-tier0
 
   tier1:

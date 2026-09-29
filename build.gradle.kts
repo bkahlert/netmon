@@ -160,6 +160,18 @@ tasks.test {
     useJUnitPlatform()
 }
 
+// `-PunitOnly` leaves out the tests that need Docker (testcontainers), macOS system bundles, or nmap on the host;
+// that is what `make test-jvm` and CI run. A plain `./gradlew jvmTest` still runs everything.
+tasks.named<Test>("jvmTest") {
+    if (project.hasProperty("unitOnly")) {
+        filter {
+            excludeTestsMatching("*IntegrationTest")
+            excludeTestsMatching("com.bkahlert.netmon.model_identification.*")
+            excludeTestsMatching("*NmapNetworkScannerTest")
+        }
+    }
+}
+
 tasks {
     withType<Jar> {
         archiveVersion.set("")

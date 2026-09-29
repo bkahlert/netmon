@@ -1,7 +1,7 @@
 SHELL := /bin/bash
 .DEFAULT_GOAL := help
 # Gradle's output directory is called build, so the targets are declared phony.
-.PHONY: help gradle build test-tier0 test-tier1 test deploy clean release
+.PHONY: help gradle build test-jvm test-tier0 test-tier1 test deploy clean release
 
 PLATFORM ?= linux/arm64
 TARGET ?=
@@ -17,13 +17,16 @@ gradle: ## build the scanner jar and the web bundle
 build: gradle ## build the .deb packages into dist/
 	@$(UV) python -m pihero_testkit.build
 
+test-jvm: ## the scanner's JVM unit tests (those that need Docker, macOS bundles or nmap are left out)
+	./gradlew $(GRADLE_ARGS) jvmTest -PunitOnly
+
 test-tier0: ## unit tests and static checks
 	@$(UV) pytest -m tier0
 
 test-tier1: ## install the packages into a systemd container and test
 	@$(UV) pytest -m installed --target=podman --platform=$(PLATFORM)
 
-test: test-tier0 test-tier1 ## tiers 0 and 1
+test: test-jvm test-tier0 test-tier1 ## JVM unit tests, tiers 0 and 1
 
 deploy: build ## install the built packages on TARGET over SSH
 	@test -n "$(TARGET)" || { echo "usage: make deploy TARGET=pi@host"; exit 2; }

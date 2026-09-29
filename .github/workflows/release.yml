@@ -23,6 +23,7 @@ jobs:
       - uses: docker/setup-qemu-action@99012661954931238ded8c8b007157a8430204e1 # v4.4.0
       - run: uv sync --frozen
       - run: make build
+      - run: make test-jvm
       - run: make test-tier0
       - run: make test-tier1
       - run: make test-tier1 PLATFORM=linux/arm/v7
