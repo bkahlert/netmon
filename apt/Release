@@ -1,0 +1,22 @@
+Architectures: all
+Date: Tue, 29 Sep 2026 01:40:24 +0000
+Description: Netmon packages
+Label: netmon
+Origin: netmon
+Suite: stable
+MD5Sum:
+ 4ae9a298184dafb2160e0a8e79714728             1815 Packages
+ 8028e714c2369486297ec6cf5fd83532             1009 Packages.gz
+ 0aa80ef2b601e0bc9a9f048224737818              129 Release
+SHA1:
+ 4d4b420fa707dafe7c119071b0046bef4db640cf             1815 Packages
+ ceadacefbc769b77ef8055143d7d7db51a47013c             1009 Packages.gz
+ 96f3f940ac99e52a502a6f7e416faa4bfa31c063              129 Release
+SHA256:
+ e053ec8beb27d550834d27706221114e89ee6012454904d3179921858e7691de             1815 Packages
+ 1e7131192d22f3f144d65843935402cf2c0b493c6208bc0d28a71e9c6ecd27e1             1009 Packages.gz
+ 2923c41c5ce29dbbb07cd31bb752171f09f3069ce75c118f40a92c0621603e59              129 Release
+SHA512:
+ cd08f06fd2c099beddbed7f334cc0c262557d75f7da076d4ca847dc6dacb40a958dc0bdb6a0fa85116fa6e72a8d80cbb15fec090cffd76dc27064ae0d08b9e85             1815 Packages
+ 2ce5b5e8610bb5e64cdab20937642fbfeec5730d131243a7bd7cdb3a75c08f95419118e5857d427bd16d1c3453f7bf15e030442d7a849e1da6cc7e0fdf2ab06c             1009 Packages.gz
+ ecee34aa770d95a2fda106c4114638aef9c9103da3b68b64804e2bb6a126952fe90eccc4901d36b2f1cdccd410dda896b313b9572e9f4391b38e0dcdee43998e              129 Release
