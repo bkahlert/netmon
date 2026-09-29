@@ -26,7 +26,10 @@ class TestServing:
         assert 'src="netmon.js"' in page
 
     def test_the_bundle_is_served(self, host):
-        assert "mqtt" in host.check_output(FETCH + "http://localhost/netmon.js | head -c 400000").lower()
+        bundle = host.check_output(FETCH + "http://localhost/netmon.js")
+
+        assert len(bundle) > 1_000_000
+        assert "mqtt" in bundle.lower()
 
 
 class TestKiosk:
