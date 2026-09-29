@@ -160,7 +160,7 @@ tasks.test {
     useJUnitPlatform()
 }
 
-// `-PunitOnly` leaves out the tests that need Docker (testcontainers), macOS system bundles, or nmap on the host;
+// `-PunitOnly` leaves out the tests that need Docker (testcontainers), macOS system bundles, nmap on the host or the internet;
 // that is what `make test-jvm` and CI run. A plain `./gradlew jvmTest` still runs everything.
 tasks.named<Test>("jvmTest") {
     if (project.hasProperty("unitOnly")) {
@@ -170,6 +170,8 @@ tasks.named<Test>("jvmTest") {
             excludeTestsMatching("*NmapNetworkScannerTest")
             // Thread timing under a loaded CI runner; passes locally and failed once in a release run.
             excludeTestsMatching("*SlicedApplicationTest")
+            // Connects to the public test.mosquitto.org; failed a release run with UncompletedCoroutinesError.
+            excludeTestsMatching("*MqttPublisherTest")
         }
     }
 }
