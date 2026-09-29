@@ -61,6 +61,8 @@ class TestUnit:
         log = journal_until(host, "completed and published to", attempts=90)
 
         assert "completed and published to" in log
+        # The scanner falls back to an unprivileged scan (no MAC addresses, no vendors) when nmap lacks raw sockets.
+        assert "Switching to unprivileged mode" not in log
 
     def test_the_scan_is_retained_at_the_broker(self, host, request, mosquitto_clients):
         if request.config.getoption("--target") != "ssh":
