@@ -17,6 +17,25 @@ Description: Netmon: the web display, served by lighttpd and shown by the Pi Her
  The Kotlin/JS front end subscribes to the broker named in the page URL; pihero-kiosk shows it full
  screen with URL=http://localhost/?broker.host=localhost&broker.port=8080 in /etc/pihero/kiosk.conf.
 
+Package: netmon-display
+Architecture: all
+Version: 1.0.1
+Priority: optional
+Section: web
+Maintainer: Björn Kahlert <bkahlert@users.noreply.github.com>
+Installed-Size: 3889
+Depends: lighttpd, pihero-kiosk
+Filename: ./netmon-display_1.0.1_all.deb
+Size: 1025106
+MD5sum: 85cf8c3ac9078bcb7e10ad6c79b8df93
+SHA1: d69ea72350a288ad16fd9589aee160e957d960ad
+SHA256: 1059b894c5f738f78cfcd4bf1bc8bfae1cfbf050169810578fa0cc9d440549a1
+SHA512: 03ea6ef70ddf276b5dd06e71a6581e8d56bd269e2f8174e8c258dc7574c699cef9bd56c4ae89353f156b3d7552d8419429bce1efbf1d4525fd582f3a3afbf6a6
+Homepage: https://github.com/bkahlert/netmon
+Description: Netmon: the web display, served by lighttpd and shown by the Pi Hero kiosk.
+ The Kotlin/JS front end subscribes to the broker named in the page URL; pihero-kiosk shows it full
+ screen with URL=http://localhost/?broker.host=localhost&broker.port=8080 in /etc/pihero/kiosk.conf.
+
 Package: netmon-scanner
 Architecture: all
 Version: 1.0.0
@@ -31,6 +50,25 @@ MD5sum: 5032a4e8265eba2b93840576715ffa53
 SHA1: c49f852717d91f3b2b049d5e87ca0153f684ac4d
 SHA256: 0ef3a8f1753f534280f6ce63f006bc12af326ddf8268163ed938ed1cd689cf81
 SHA512: 6f4a14093c55aa6176f760e83495f8bdf5a22a877748511ab893e2efd9175ef14c8ca6b87f5aea2a3e4a816f582ef60f7267a6ec0a31a1b208cd18e5361b6be2
+Homepage: https://github.com/bkahlert/netmon
+Description: Netmon: scans the networks the device is on and publishes hosts over MQTT.
+ A JVM service around nmap, mDNS and NetBIOS, publishing to the local Mosquitto broker, whose websocket
+ listener on port 8080 this package configures; the web display (netmon-display) subscribes there.
+
+Package: netmon-scanner
+Architecture: all
+Version: 1.0.1
+Priority: optional
+Section: net
+Maintainer: Björn Kahlert <bkahlert@users.noreply.github.com>
+Installed-Size: 77442
+Depends: default-jre-headless, nmap, python3, mosquitto
+Filename: ./netmon-scanner_1.0.1_all.deb
+Size: 70672618
+MD5sum: fec25d23ed5eea77b37cf7995277a022
+SHA1: 85ca8aca66adb91982a1d571a2fd79ac55cf218c
+SHA256: 247e565a3ba52f6440c75d1766fadff29fae675a9a4891d0bf896edf3772ac06
+SHA512: bb5a966304f9f18aa93d5f90bd4a6ca68c34da6934ba1e07d17bf0bd6fe7cc5f7da85c007c96eaddc90c809c5674fa06e906da4ef37e379be93840be5051c160
 Homepage: https://github.com/bkahlert/netmon
 Description: Netmon: scans the networks the device is on and publishes hosts over MQTT.
  A JVM service around nmap, mDNS and NetBIOS, publishing to the local Mosquitto broker, whose websocket

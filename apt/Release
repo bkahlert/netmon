@@ -1,22 +1,22 @@
 Architectures: all
-Date: Tue, 29 Sep 2026 01:40:24 +0000
+Date: Tue, 29 Sep 2026 07:08:04 +0000
 Description: Netmon packages
 Label: netmon
 Origin: netmon
 Suite: stable
 MD5Sum:
- 4ae9a298184dafb2160e0a8e79714728             1815 Packages
- 8028e714c2369486297ec6cf5fd83532             1009 Packages.gz
- 0aa80ef2b601e0bc9a9f048224737818              129 Release
+ 570018f406a34178ae8aae11a4742285             3630 Packages
+ 24fe3ed2ad847b6c24a4bb4f2a913e02             1408 Packages.gz
+ 31499ba71cb9592bf8efea390ef531fb              129 Release
 SHA1:
- 4d4b420fa707dafe7c119071b0046bef4db640cf             1815 Packages
- ceadacefbc769b77ef8055143d7d7db51a47013c             1009 Packages.gz
- 96f3f940ac99e52a502a6f7e416faa4bfa31c063              129 Release
+ 27911d9c23b6958a2cda50a68d13eee75eabe473             3630 Packages
+ ba61e834f2556422a4417991531b391a90e09c97             1408 Packages.gz
+ e07c9084df5a6f5bff4f9b93bee0cbc140223f5d              129 Release
 SHA256:
- e053ec8beb27d550834d27706221114e89ee6012454904d3179921858e7691de             1815 Packages
- 1e7131192d22f3f144d65843935402cf2c0b493c6208bc0d28a71e9c6ecd27e1             1009 Packages.gz
- 2923c41c5ce29dbbb07cd31bb752171f09f3069ce75c118f40a92c0621603e59              129 Release
+ 74777a453bf6d036f28c6fa4dadadc5a8133be39ff4ebc751030a39dd3a8dde5             3630 Packages
+ 75bde4f2511bc4830047b621c72838f3e2f924894e2e497c22e9c0cfa5a33237             1408 Packages.gz
+ ec83bc176645c2bc59f668aefe150b2492948016cebc1a278947127d30801edd              129 Release
 SHA512:
- cd08f06fd2c099beddbed7f334cc0c262557d75f7da076d4ca847dc6dacb40a958dc0bdb6a0fa85116fa6e72a8d80cbb15fec090cffd76dc27064ae0d08b9e85             1815 Packages
- 2ce5b5e8610bb5e64cdab20937642fbfeec5730d131243a7bd7cdb3a75c08f95419118e5857d427bd16d1c3453f7bf15e030442d7a849e1da6cc7e0fdf2ab06c             1009 Packages.gz
- ecee34aa770d95a2fda106c4114638aef9c9103da3b68b64804e2bb6a126952fe90eccc4901d36b2f1cdccd410dda896b313b9572e9f4391b38e0dcdee43998e              129 Release
+ d5996d242f81717a00c56fe7cc0d4ef3233b88d8f7e84853be3006b24ce12a608a131189e69fde1453c836c182f417c0266a552dffaff67a5753cfda4e81c9ef             3630 Packages
+ 9cd83c500504c00b4af7848a7a28d0f0cba1f2a9c72486283f19ed12cbe721d1209dfe9778948a468612f4fbd05b545a881632144dfa438f6e40fc1270a6ec3f             1408 Packages.gz
+ fb61a0bee01b5346a54ca1e56789d38f690396438015d96a9d3577f084038b77c0d3be3ba2cc95dda25f1ae78f002409272245c20d65b6e48f6e2a849e9e8b60              129 Release
