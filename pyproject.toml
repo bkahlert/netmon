@@ -8,8 +8,7 @@ requires-python = ">=3.13"
 package = false
 
 [tool.uv.sources]
-# Pinned to the pihero commit that carries pihero-kiosk; becomes tag v2.2.0 with the release.
-pihero-testkit = { git = "https://github.com/bkahlert/pihero", subdirectory = "testkit", rev = "d8bf8f6698c48d72b213ae59323b4eb071128a06" }
+pihero-testkit = { git = "https://github.com/bkahlert/pihero", subdirectory = "testkit", tag = "v2.2.0" }
 
 [dependency-groups]
 dev = ["pihero-testkit"]
