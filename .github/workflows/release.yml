@@ -1,0 +1,55 @@
+name: release
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    runs-on: ubuntu-24.04-arm
+    # The signing key is a secret of this environment, and only v* tags may deploy to it.
+    environment: release
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with: { fetch-depth: 0 }
+      - uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
+        with: { distribution: temurin, java-version: "17" }
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        with: { enable-cache: true }
+      - uses: docker/setup-qemu-action@99012661954931238ded8c8b007157a8430204e1 # v4.4.0
+      - run: uv sync --frozen
+      - run: make build
+      - run: make test-tier0
+      - run: make test-tier1
+      - run: make test-tier1 PLATFORM=linux/arm/v7
+      - name: Check out the published repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: gh-pages
+          path: gh-pages
+      - name: Add packages and regenerate the signed index
+        env:
+          APT_SIGNING_KEY: ${{ secrets.APT_SIGNING_KEY }}
+        run: |
+          printf '%s' "$APT_SIGNING_KEY" > "$RUNNER_TEMP/key.asc"
+          uv run --frozen python -m pihero_testkit.repo publish --debs 'dist/*.deb' --repo gh-pages/apt --key "$RUNNER_TEMP/key.asc" --origin netmon --label netmon --description 'Netmon packages'
+          rm -f "$RUNNER_TEMP/key.asc"
+      - name: Push
+        run: |
+          cd gh-pages
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "apt: ${GITHUB_REF_NAME}"
+          git push
+      - name: Publish the GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          prerelease=()
+          case "$GITHUB_REF_NAME" in *-*) prerelease=(--prerelease) ;; esac
+          gh release create "$GITHUB_REF_NAME" dist/*.deb --verify-tag --generate-notes "${prerelease[@]}"
