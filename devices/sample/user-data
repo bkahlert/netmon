@@ -1,0 +1,103 @@
+#cloud-config
+# board: Raspberry Pi Zero 2 W
+# image: raspios_lite_arm64
+# Netmon on Pi Hero 2: pihero's sample device plus the netmon apt source, the two netmon packages and the kiosk URL.
+hostname: netmon
+manage_etc_hosts: true
+timezone: Europe/Berlin
+enable_ssh: true
+ssh_pwauth: false
+users:
+  - name: pi
+    groups: users,adm,dialout,audio,netdev,video,plugdev,input,gpio,spi,i2c,render,sudo
+    shell: /bin/bash
+    lock_passwd: true
+    sudo: ALL=(ALL) NOPASSWD:ALL
+    ssh_authorized_keys:
+      - ssh-ed25519 AAAA...your public key... you@mac
+rpi:
+  interfaces:
+    spi: false
+    i2c: false
+    serial: true
+# cloud-final installs the packages. A fresh card's clock is at the image build date until NTP has synced, and apt rejects every
+# repository signature before that as "not live yet". systemd-time-wait-sync reaches time-sync.target on sync; cloud-final waits for
+# it, five minutes at most. bootcmd runs before the network here and is the only step early enough for the current boot to pick it up.
+bootcmd:
+  - |
+    test -e /etc/systemd/system/cloud-final.service.d/time-sync.conf && exit 0
+    mkdir -p /etc/systemd/system/cloud-final.service.d /etc/systemd/system/systemd-time-wait-sync.service.d
+    printf '[Unit]\nAfter=time-sync.target\nWants=time-sync.target\n' > /etc/systemd/system/cloud-final.service.d/time-sync.conf
+    printf '[Service]\nTimeoutStartSec=5min\n' > /etc/systemd/system/systemd-time-wait-sync.service.d/timeout.conf
+    systemctl daemon-reload
+    systemctl enable systemd-time-wait-sync.service
+    systemctl start --no-block systemd-time-wait-sync.service
+package_update: true
+packages:
+  - pihero
+  - pihero-avahi
+  - pihero-usb-gadget
+  - netmon-scanner
+  - netmon-display
+write_files:
+  - path: /etc/apt/sources.list.d/pihero.sources
+    content: |
+      Types: deb
+      URIs: https://bkahlert.github.io/pihero/apt
+      Suites: ./
+      Signed-By:
+       -----BEGIN PGP PUBLIC KEY BLOCK-----
+       .
+       mDMEarmLMBYJKwYBBAHaRw8BAQdAYH5NN70CgNV7X5ac7oOSclZ8KndwP0u1L01s
+       D3uvpfi0OlBpIEhlcm8gYXB0IHJlcG9zaXRvcnkgPGJrYWhsZXJ0QHVzZXJzLm5v
+       cmVwbHkuZ2l0aHViLmNvbT6IrwQTFgoAVxYhBN5gnX/1vkMNrIzIBwgfcOagd996
+       BQJquYswGxSAAAAAAAQADm1hbnUyLDIuNSsxLjEyLDAsMwIbAwULCQgHAgIiAgYV
+       CgkICwIEFgIDAQIeBwIXgAAKCRAIH3DmoHffetE/AP4yQu33ESTuvzbxshkd5vN3
+       zfxERhiv662PLKEMET2WdgEA9bzTYYeziFUuok1oSkF7Q3IkOXHyf71EhXbbixdO
+       Zwc=
+       =dnaq
+       -----END PGP PUBLIC KEY BLOCK-----
+  - path: /etc/apt/sources.list.d/netmon.sources
+    content: |
+      Types: deb
+      URIs: https://bkahlert.github.io/netmon/apt
+      Suites: ./
+      Signed-By:
+       -----BEGIN PGP PUBLIC KEY BLOCK-----
+       .
+       mDMEarr3nRYJKwYBBAHaRw8BAQdA/41zWFXH3/oSN3rKD3pIHs1jhv7lKfl2rMcS
+       TaRQVnS0OU5ldG1vbiBhcHQgcmVwb3NpdG9yeSA8YmthaGxlcnRAdXNlcnMubm9y
+       ZXBseS5naXRodWIuY29tPoivBBMWCgBXFiEEmO9BlpokRTQLh2Ez+V9MM/bY5xcF
+       Amq6950bFIAAAAAABAAObWFudTIsMi41KzEuMTIsMCwzAhsDBQsJCAcCAiICBhUK
+       CQgLAgQWAgMBAh4HAheAAAoJEPlfTDP22OcXbPsBAPqojfgm8c0MCG/a3Aw0QFY/
+       m03RoWZijJtbGf2vthtUAP9jIWuq1oQi7f+gi/Ode9gV4rVjt61QUr25NjsdAzM9
+       Dg==
+       =Cgyv
+       -----END PGP PUBLIC KEY BLOCK-----
+  # MODEL selects the icon Finder shows; the choices are pictured in pihero's devices/README.md.
+  - path: /etc/pihero/device-info.conf
+    content: MODEL=AirPort4
+  # PRODUCT names the gadget on the USB host (the board model if unset); CIDR is the subnet the Pi serves to it.
+  - path: /etc/pihero/usb-gadget.conf
+    content: |
+      PRODUCT="Network Monitor"
+      CIDR=10.10.10.10/29
+  # The kiosk shows the web display; the page takes the broker from the URL. The mode hint is for a panel without EDID.
+  - path: /etc/pihero/kiosk.conf
+    content: |
+      URL=http://localhost/?broker.host=localhost&broker.port=8080
+      COG_PLATFORM_DRM_VIDEO_MODE=800x480
+runcmd:
+  - hostnamectl set-hostname --pretty "Network Monitor"
+  - systemctl restart pihero-avahi-render.service
+  # A panel without EDID (the HAMTYSAN 7-inch) needs its mode forced on; MemoryMax= binds only with the memory controller on.
+  - /usr/lib/pihero/bootconfig add cmdline video=HDMI-A-1:800x480M@60e --package netmon-display
+  - /usr/lib/pihero/bootconfig add cmdline cgroup_enable=memory --package netmon-scanner
+  # Tailscale: uncomment to join a tailnet on first boot with a single-use, expiring auth key (tailscale.com/kb/1085). For an
+  # exit node keep the forwarding line and the flag, then approve the node under Machines in the admin console (kb/1103).
+  # - curl -fsSL https://tailscale.com/install.sh | sh
+  # - printf 'net.ipv4.ip_forward = 1\nnet.ipv6.conf.all.forwarding = 1\n' > /etc/sysctl.d/99-tailscale.conf && sysctl -q -p /etc/sysctl.d/99-tailscale.conf
+  # - tailscale up --auth-key=tskey-auth-... --advertise-exit-node
+power_state:
+  mode: reboot
+  condition: test -f /run/reboot-required

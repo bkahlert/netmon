@@ -16,12 +16,25 @@ The application consists of three independent parts:
 
 - a JVM-based network scanner that publishes appearing and disappearing hosts using MQTT,
 - a Kotlin/JS and [Fritz2](https://github.com/jwstegemann/fritz2) based web interface that display the results, by subscribing to MQTT, and
-- a [Ansible-based installer](ansible/README.md) that installs everyone on a Raspberry Pi (including the Pi 1 and Zero).
+- two Debian packages, `netmon-scanner` and `netmon-display`, from a signed apt repository at
+  [bkahlert.github.io/netmon](https://bkahlert.github.io/netmon/), installed on a Raspberry Pi by a
+  [Pi Hero](https://github.com/bkahlert/pihero) device file.
 
 [![photo of Netmon running on a Raspberry Pi Zero](./docs/netmon-rpi0.jpg)
 Netmon on a Raspberry Pi Zero with an 7-inch screen](./docs/netmon-rpi0.jpg)
 
-Find detailed installation instructions in [ansible/README.md](ansible/README.md).
+## Install on a Raspberry Pi
+
+Netmon runs on [Pi Hero 2](https://github.com/bkahlert/pihero): copy [devices/sample/user-data](devices/sample/user-data)
+and `network-config`, set the hostname, your SSH key and Wi-Fi, flash a card with pihero's `make flash`, and the board
+installs `netmon-scanner` (the scanner, Mosquitto with a websocket listener) and `netmon-display` (the web display behind
+lighttpd, shown full screen by `pihero-kiosk`). [devices/README.md](devices/README.md) has the details, including the one
+line a panel without EDID needs. The scanner reads `/etc/netmon/scanner.conf` (`BROKER_HOST`, `BROKER_PORT`, `NMAP_*`,
+`JAVA_TOOL_OPTIONS`), the display takes its broker from the kiosk URL's `broker.host` and `broker.port` query parameters.
+Any browser on the LAN shows the same page at `http://<host>.local/?broker.host=<host>.local&broker.port=8080`; opened
+without the parameters the page falls back to its built-in default broker. Updates are `sudo apt upgrade`. Pi Hero 1's
+Ansible installer is frozen at the tag
+[`netmon-ansible`](https://github.com/bkahlert/netmon/tree/netmon-ansible).
 
 ## Development
 
@@ -39,39 +52,18 @@ Find detailed installation instructions in [ansible/README.md](ansible/README.md
 ./gradlew jsBrowserDevelopmentRun --continuous
 ```
 
-### Run remotely
-
-If you [installed Netmon on a Raspberry Pi](ansible/README.md), you can use
-the handy [patch tool](ansible/patch).
-
-Just switch the directory, make [patch](ansible/patch) executable, and
-set the `HOST` to work with:
+### Build and test the packages
 
 ```shell
-cd ansible
-chmod +x patch
-export HOST=foo.local
+export JAVA_HOME=$(/usr/libexec/java_home -v 17)   # Gradle 8.2 runs on JDK 17
+make build                                          # Gradle, then nfpm: dist/*.deb
+make test                                           # tier 0 (static checks, unit tests) and tier 1 (install into a systemd container)
+make deploy TARGET=pi@netmon.local                  # the built packages onto a device, no repository involved
 ```
 
-#### Build and update the remote scanner component
-
-```shell
-SCANNER=1 ./patch
-```
-
-#### Build and update the remote web display component
-
-```shell
-WEB_DISPLAY=1 ./patch
-```
-
-#### Build and update the remote scanner *and* web display component
-
-```shell
-SCANNER=1 WEB_DISPLAY=1 ./patch
-```
-
-> 💡 You can export your preferred settings, e.g. `export SCANNER=1 WEB_DISPLAY=1` to only have to type `./patch`.
+The harness is [pihero-testkit](https://github.com/bkahlert/pihero/tree/main/testkit); `uv run pytest -m installed
+--target=ssh --target-uri=pi@netmon.local` checks a running device against the tests. A release is `make release
+VERSION=X.Y.Z` and `git push origin vX.Y.Z`; the workflow builds, signs and publishes the repository.
 
 ### MQTT
 

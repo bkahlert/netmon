@@ -1,0 +1,31 @@
+[Unit]
+Description=Netmon: scans the networks and publishes hosts over MQTT
+Documentation=https://github.com/bkahlert/netmon
+After=network-online.target mosquitto.service
+Wants=network-online.target
+
+[Service]
+User=netmon
+Group=netmon
+# nmap discovers hosts with ARP and ICMP, which need raw sockets; the JVM passes these capabilities on to it, so
+# nmap's binary stays as Debian ships it and an upgrade cannot take the rights away.
+AmbientCapabilities=CAP_NET_RAW CAP_NET_ADMIN
+CapabilityBoundingSet=CAP_NET_RAW CAP_NET_ADMIN
+Environment=BROKER_HOST=localhost BROKER_PORT=8080
+Environment=NMAP_DATA_DIR=/var/lib/netmon/nmap XDG_CACHE_HOME=/var/cache/netmon
+Environment=JAVA_TOOL_OPTIONS=-Xmx128m -XX:+UseSerialGC -XX:TieredStopAtLevel=1
+EnvironmentFile=-/etc/netmon/scanner.conf
+StateDirectory=netmon
+CacheDirectory=netmon
+WorkingDirectory=/var/lib/netmon
+ExecStart=/usr/bin/java -jar /usr/share/netmon/netmon-scanner.jar
+Restart=always
+RestartSec=10
+MemoryMax=320M
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+
+[Install]
+WantedBy=multi-user.target
