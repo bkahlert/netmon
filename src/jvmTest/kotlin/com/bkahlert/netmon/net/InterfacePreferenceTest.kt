@@ -39,3 +39,26 @@ class InterfacePreferenceTest {
         isWireless("wlan0", sysfs) shouldBe true
     }
 }
+
+class NetworkOfTest {
+
+    @Test
+    fun two_addresses_in_one_subnet_share_the_network() {
+        networkOf(java.net.InetAddress.getByName("192.168.17.42"), 23) shouldBe networkOf(java.net.InetAddress.getByName("192.168.17.43"), 23)
+        networkOf(java.net.InetAddress.getByName("192.168.17.42"), 23) shouldBe com.bkahlert.netmon.Cidr.parse("192.168.16.0/23")
+    }
+
+    @Test
+    fun the_network_keeps_the_prefix_and_masks_the_host_bits() {
+        networkOf(java.net.InetAddress.getByName("10.10.10.44"), 29) shouldBe com.bkahlert.netmon.Cidr.parse("10.10.10.40/29")
+        networkOf(java.net.InetAddress.getByName("fe80::2ecf:67ff:fe18:d93c"), 64) shouldBe com.bkahlert.netmon.Cidr.parse("fe80::/64")
+    }
+
+    @Test
+    fun interfaces_on_one_lan_collapse_by_network_not_by_address() {
+        val wlan0 = networkOf(java.net.InetAddress.getByName("192.168.17.105"), 23)
+        val eth0 = networkOf(java.net.InetAddress.getByName("192.168.17.43"), 23)
+
+        listOf("wlan0" to wlan0, "eth0" to eth0).onePerNetwork({ it.second }, { !it.first.startsWith("wl") }) shouldContainExactly listOf("eth0" to eth0)
+    }
+}

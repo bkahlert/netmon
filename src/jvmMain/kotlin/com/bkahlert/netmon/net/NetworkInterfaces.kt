@@ -24,9 +24,27 @@ val InterfaceAddress.maxHosts: BigInteger
 val InterfaceAddress.ip: IP
     get() = IP.of(address.hostAddress)
 
-/** The CIDR representation of this [InterfaceAddress]. */
+/** The CIDR representation of this [InterfaceAddress]: the interface's own address with its prefix, as in `192.168.17.42/23`. */
 val InterfaceAddress.cidr: Cidr
     get() = Cidr.parse("${address.hostAddress}/$networkPrefixLength")
+
+/** The network this [InterfaceAddress] is on: the host bits masked off, as in `192.168.16.0/23`; equal for every interface on one network. */
+val InterfaceAddress.network: Cidr
+    get() = networkOf(address, networkPrefixLength.toInt())
+
+/** The network the [address] with the given [prefixLength] belongs to. */
+fun networkOf(address: InetAddress, prefixLength: Int): Cidr {
+    val bytes = address.address
+    val mask = networkMaskOf(bytes.size, prefixLength)
+    val network = InetAddress.getByAddress(bytes.zip(mask) { a, m -> a and m }.toByteArray())
+    return Cidr.parse("${network.hostAddress}/$prefixLength")
+}
+
+/** A network mask of [size] bytes with the first [prefixLength] bits set. */
+fun networkMaskOf(size: Int, prefixLength: Int): ByteArray = ByteArray(size) { i ->
+    val bits = (prefixLength - i * 8).coerceIn(0, 8)
+    ((0xff shl (8 - bits)) and 0xff).toByte()
+}
 
 /** The [NetworkInterface] that has the [InetAddress] bound to it. */
 val InterfaceAddress.networkInterface: NetworkInterface?
@@ -39,13 +57,7 @@ val InterfaceAddress.networkInterface: NetworkInterface?
  * the first [InterfaceAddress.getNetworkPrefixLength] bits beging 1.
  */
 val InterfaceAddress.networkMask: ByteArray
-    get() = ByteArray(address.address.size) { i ->
-        if (i < networkPrefixLength / 8) {
-            0xff.toByte()
-        } else {
-            (0xff shl 8 - (networkPrefixLength - i * 8)).toByte()
-        }
-    }
+    get() = networkMaskOf(address.address.size, networkPrefixLength.toInt())
 
 /**
  * The network address mask of this [InterfaceAddress], that is,
