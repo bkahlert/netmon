@@ -8,8 +8,8 @@ are gitignored: keep your own here or in a private repository.
 
 Copy the two files, set the hostname, your SSH public key, the pretty name, the USB gadget's name and subnet, and your
 Wi-Fi in `network-config`; then, in a pihero checkout, `make flash DEVICE=<path to your directory> DISK=diskN`. First
-boot takes a few minutes and reboots twice; then the panel shows the network and `http://<host>.local/` shows it in any
-browser.
+boot takes a few minutes and reboots twice; then the panel shows the network, and any browser on the LAN shows it at
+`http://<host>.local/?broker.host=<host>.local&broker.port=8080` (the page takes its broker from the URL).
 
 Two `runcmd` lines are specific to the display: `video=HDMI-A-1:800x480M@60e` forces the connector on for a panel that
 reports no EDID (the HAMTYSAN 7-inch; drop the line for a display that does), and `cgroup_enable=memory` turns on the

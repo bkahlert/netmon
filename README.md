@@ -31,7 +31,9 @@ installs `netmon-scanner` (the scanner, Mosquitto with a websocket listener) and
 lighttpd, shown full screen by `pihero-kiosk`). [devices/README.md](devices/README.md) has the details, including the one
 line a panel without EDID needs. The scanner reads `/etc/netmon/scanner.conf` (`BROKER_HOST`, `BROKER_PORT`, `NMAP_*`,
 `JAVA_TOOL_OPTIONS`), the display takes its broker from the kiosk URL's `broker.host` and `broker.port` query parameters.
-Updates are `sudo apt upgrade`. Pi Hero 1's Ansible installer is frozen at the tag
+Any browser on the LAN shows the same page at `http://<host>.local/?broker.host=<host>.local&broker.port=8080`; opened
+without the parameters the page falls back to its built-in default broker. Updates are `sudo apt upgrade`. Pi Hero 1's
+Ansible installer is frozen at the tag
 [`netmon-ansible`](https://github.com/bkahlert/netmon/tree/netmon-ansible).
 
 ## Development
