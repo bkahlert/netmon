@@ -20,6 +20,7 @@ jobs:
       - run: uv sync --frozen
       - run: make build
       - run: make test-jvm
+      - run: make test-js
       - run: make test-tier0
 
   tier1:

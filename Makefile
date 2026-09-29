@@ -1,7 +1,7 @@
 SHELL := /bin/bash
 .DEFAULT_GOAL := help
 # Gradle's output directory is called build, so the targets are declared phony.
-.PHONY: help gradle build test-jvm test-tier0 test-tier1 test deploy clean release
+.PHONY: help gradle build test-jvm test-js test-tier0 test-tier1 test deploy clean release
 
 PLATFORM ?= linux/arm64
 TARGET ?=
@@ -20,13 +20,16 @@ build: gradle ## build the .deb packages into dist/
 test-jvm: ## the scanner's JVM unit tests (those that need Docker, macOS bundles, nmap or quiet thread timing are left out)
 	./gradlew $(GRADLE_ARGS) jvmTest -PunitOnly
 
+test-js: ## the display's JS unit tests (Karma, headless Chrome)
+	./gradlew $(GRADLE_ARGS) jsBrowserTest
+
 test-tier0: ## unit tests and static checks
 	@$(UV) pytest -m tier0
 
 test-tier1: ## install the packages into a systemd container and test
 	@$(UV) pytest -m installed --target=podman --platform=$(PLATFORM)
 
-test: test-jvm test-tier0 test-tier1 ## JVM unit tests, tiers 0 and 1
+test: test-jvm test-js test-tier0 test-tier1 ## JVM and JS unit tests, tiers 0 and 1
 
 deploy: build ## install the built packages on TARGET over SSH
 	@test -n "$(TARGET)" || { echo "usage: make deploy TARGET=pi@host"; exit 2; }
