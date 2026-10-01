@@ -6,8 +6,8 @@ import org.jetbrains.kotlin.gradle.targets.js.yarn.YarnLockMismatchReport
 import org.jetbrains.kotlin.gradle.targets.js.yarn.yarn
 
 plugins {
-    kotlin("multiplatform") version "1.9.0"
-    kotlin("plugin.serialization") version "1.9.0"
+    kotlin("multiplatform") version "2.4.20"
+    kotlin("plugin.serialization") version "2.4.20"
     application
     id("com.github.johnrengelman.shadow") version "8.1.1"
 }
@@ -52,10 +52,10 @@ kotlin {
                 implementation(platform("com.bkahlert.kommons:kommons-bom:2.8.0"))
                 implementation("com.bkahlert.kommons:kommons-time")
 
-                implementation(platform("org.jetbrains.kotlinx:kotlinx-coroutines-bom:1.7.1"))
+                implementation(platform("org.jetbrains.kotlinx:kotlinx-coroutines-bom:1.11.0"))
                 implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core")
 
-                implementation(platform("org.jetbrains.kotlinx:kotlinx-serialization-bom:1.5.1"))
+                implementation(platform("org.jetbrains.kotlinx:kotlinx-serialization-bom:1.11.0"))
                 implementation("org.jetbrains.kotlinx:kotlinx-serialization-core")
                 implementation("org.jetbrains.kotlinx:kotlinx-serialization-json")
             }
@@ -64,7 +64,7 @@ kotlin {
             dependencies {
                 implementation(kotlin("test"))
 
-                implementation(platform("io.kotest:kotest-bom:5.6.2"))
+                implementation(platform("io.kotest:kotest-bom:6.2.5"))
                 implementation("io.kotest:kotest-common")
                 implementation("io.kotest:kotest-assertions-core")
 
@@ -81,9 +81,9 @@ kotlin {
                 implementation("org.jetbrains.kotlinx:kotlinx-coroutines-jdk8")
                 implementation("org.jetbrains.kotlinx:kotlinx-coroutines-slf4j")
 
-                implementation("com.hivemq:hivemq-mqtt-client:1.3.17") { because("publish scans") }
-                implementation(platform("com.hivemq:hivemq-mqtt-client-websocket:1.3.17"))
-                implementation("org.jmdns:jmdns:3.5.8") { because("mDNS / Bonjour based hostname resolution") }
+                implementation("com.hivemq:hivemq-mqtt-client:1.4.0") { because("publish scans") }
+                implementation(platform("com.hivemq:hivemq-mqtt-client-websocket:1.4.0"))
+                implementation("org.jmdns:jmdns:3.6.3") { because("mDNS / Bonjour based hostname resolution") }
             }
             languageSettings.optIn("kotlin.io.path.ExperimentalPathApi")
         }
@@ -93,7 +93,7 @@ kotlin {
 
                 implementation("io.kotest:kotest-assertions-json")
 
-                implementation(platform("org.testcontainers:testcontainers-bom:1.19.6"))
+                implementation(platform("org.testcontainers:testcontainers-bom:2.0.5"))
                 implementation("org.testcontainers:testcontainers")
             }
             languageSettings.optIn("kotlin.io.path.ExperimentalPathApi")
@@ -103,7 +103,7 @@ kotlin {
             dependencies {
                 implementation("com.bkahlert.kommons:kommons-uri")
 
-                val fritz2Version = "1.0-RC6"
+                val fritz2Version = "1.0-RC21"
                 implementation("dev.fritz2:core:$fritz2Version")
                 implementation("dev.fritz2:headless:$fritz2Version")
 
