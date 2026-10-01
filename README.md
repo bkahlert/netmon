@@ -77,7 +77,7 @@ Tier 2 needs QEMU (`brew install qemu`) and Playwright's WebKit (`make browser`,
 boots the real Raspberry Pi OS root filesystem with [devices/sample/user-data](devices/sample/user-data), rendered for the VM
 by `tests/vm_device.py`, lets the scanner scan QEMU's network, and loads the page in WebKit at the panel's 800×480; the run
 leaves `dist/tier2/display.png`. `make vm` keeps the VM running for a look around, and `make display URL=…` opens any page,
-the VM's, the board's or a dev server's, in that WebKit at that size. `make release` runs tiers 0 to 2.
+the VM's, the board's or a dev server's, in that WebKit at that size. `make release` builds, then runs tiers 0 to 2.
 
 ### MQTT
 
