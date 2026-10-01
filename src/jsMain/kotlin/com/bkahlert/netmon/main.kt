@@ -2,7 +2,7 @@ package com.bkahlert.netmon
 
 import com.bkahlert.kommons.browser.AutoRefreshers
 import com.bkahlert.kommons.js.OnScreenConsole
-import kotlinx.datetime.Clock
+import kotlin.time.Clock
 import com.bkahlert.netmon.model_identification.DeviceModelCodes
 import com.bkahlert.netmon.model_identification.load
 import com.bkahlert.netmon.model_identification.resource

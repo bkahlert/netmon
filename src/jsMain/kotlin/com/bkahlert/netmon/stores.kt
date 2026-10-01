@@ -7,7 +7,7 @@ import com.bkahlert.kommons.js.DefaultConsoleLogFormatter
 import com.bkahlert.kommons.js.console
 import com.bkahlert.kommons.js.format
 import com.bkahlert.kommons.js.tee
-import kotlinx.datetime.Clock
+import kotlin.time.Clock
 import com.bkahlert.netmon.Event.ScanEvent
 import dev.fritz2.core.Handler
 import dev.fritz2.core.Lens
@@ -17,7 +17,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 import kotlin.time.Duration
 
 /** Store of the current time that updates itself based on the specified [refreshInterval]. */

@@ -1,7 +1,7 @@
 package com.bkahlert.netmon
 
 import com.bkahlert.netmon.serialization.InstantAsEpochSecondsSerializer
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonClassDiscriminator

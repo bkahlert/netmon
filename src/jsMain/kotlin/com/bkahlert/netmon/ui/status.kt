@@ -1,6 +1,6 @@
 package com.bkahlert.netmon.ui
 
-import kotlinx.datetime.Clock
+import kotlin.time.Clock
 import com.bkahlert.netmon.ConsoleLogStore
 import com.bkahlert.netmon.CurrentTimeStore
 import dev.fritz2.core.RenderContext

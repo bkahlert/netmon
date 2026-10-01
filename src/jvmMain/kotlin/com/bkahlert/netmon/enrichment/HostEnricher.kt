@@ -5,7 +5,7 @@ import net.logstash.logback.argument.StructuredArguments
 import com.bkahlert.netmon.Host
 import com.bkahlert.netmon.IP
 import com.bkahlert.netmon.Status
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 import kotlin.reflect.KProperty1
 
 /** An enricher that contributes additional information to a [Host]. */

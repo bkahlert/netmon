@@ -1,8 +1,8 @@
 package com.bkahlert.netmon
 
 import com.bkahlert.netmon.serialization.InstantAsEpochSecondsSerializer
-import kotlinx.datetime.Clock
-import kotlinx.datetime.Instant
+import kotlin.time.Clock
+import kotlin.time.Instant
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlin.time.Duration
