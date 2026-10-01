@@ -73,7 +73,7 @@ class TestUnit:
         if request.config.getoption("--target") == "podman":
             pytest.skip("a scan of the container's /16 takes minutes; proven in the VM and on a device")
 
-        out = host.check_output("mosquitto_sub -h 127.0.0.1 -t 'dt/netmon/+/+/+/scan' -C 1 -W 120")
+        out = host.check_output("mosquitto_sub -h 127.0.0.1 -t 'dt/netmon/+/+/+/+/scan' -C 1 -W 120")
 
         assert '"event":"scan"' in out.replace(" ", "")
 
