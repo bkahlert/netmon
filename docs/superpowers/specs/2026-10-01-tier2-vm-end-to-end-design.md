@@ -74,7 +74,7 @@ A module under `tests/` reads `devices/sample/user-data`, applies the three edit
 `dist/vm-device/`. The testkit's public key is read from the installed package
 (`pihero_testkit/keys/pihero-testkit.pub`), so a testkit upgrade that rotates the key needs no change here. The root
 `conftest.py` calls it from `pytest_configure` when `--target=vm` is given and `--device` is not, and sets the option.
-Everything else in the file, the time-sync wait, the packages, the kiosk configuration, the apt hook, the two `bootconfig`
+Everything else in the file, the time-sync wait, the packages, the kiosk configuration, the two `bootconfig`
 lines and the `power_state` reboot, runs as written. The testkit's bootfs builder adds `meta-data` itself.
 
 ### Boot tests
@@ -86,7 +86,6 @@ lines and the `power_state` reboot, runs as written. The testkit's bootfs builde
 - No unit failed.
 - `/proc/cmdline` contains `video=HDMI-A-1:800x480M@60e` and `cgroup_enable=memory`. This proves the two `bootconfig`
   lines, the reboot request they raise, and the harness's handling of that reboot.
-- `/etc/apt/apt.conf.d/52netmon-dpkg` exists and names both units in its pre- and post-invoke lines.
 - `pihero-kiosk` is inactive with its condition unmet, not failed.
 - The scanner's `MemoryCurrent` and `MemoryPeak` are read after the first scan and reported.
 
@@ -147,7 +146,9 @@ the file tier 2 boots.
    inspector, switched on through the kiosk's environment in the device file, lets the Mac inspect the page cog shows;
    whether the board's memory allows it is part of that question.
 3. **The footprint.** The scanner and the kiosk need about 600 MB on a 415 MB board, which only works because zram
-   compresses swap and is why apt cannot run next to them. With tier 2 measuring the scanner's memory with the unit's
+   compresses swap and is why apt cannot run next to them; the board's device file stops both around every dpkg run
+   with an apt hook. The sample deliberately has no such hook: the goal is a footprint small enough that apt runs next
+   to the live stack and the hook becomes unnecessary. With tier 2 measuring the scanner's memory with the unit's
    `JAVA_TOOL_OPTIONS`, tier 1 proving those options reach the JVM whole, and the display test catching a scan cadence that
    breaks the freshness threshold, metaspace and code-cache limits, WPE memory settings and a slower cadence can be tried
    with a safety net.
