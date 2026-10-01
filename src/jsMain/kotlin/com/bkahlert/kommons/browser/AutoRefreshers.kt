@@ -1,7 +1,7 @@
 package com.bkahlert.kommons.browser
 
-import com.bkahlert.kommons.uri.Uri
-import com.bkahlert.kommons.uri.toUriOrNull
+import com.bkahlert.netmon.uri.Uri
+import com.bkahlert.netmon.uri.toUriOrNull
 import org.w3c.dom.Element
 import org.w3c.dom.HTMLScriptElement
 import org.w3c.dom.Window

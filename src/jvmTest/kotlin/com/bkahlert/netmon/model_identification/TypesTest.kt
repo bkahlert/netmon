@@ -25,7 +25,7 @@ class TypesTest {
 
     @BeforeTest
     fun setUp() {
-        Logback["com.bkahlert.kommons.exec"].level = Level.WARN
+        Logback["com.bkahlert.netmon.exec"].level = Level.WARN
     }
 
     @Test

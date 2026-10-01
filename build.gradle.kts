@@ -49,7 +49,6 @@ kotlin {
     sourceSets {
         val commonMain by getting {
             dependencies {
-                implementation(platform("com.bkahlert.kommons:kommons-bom:2.8.0"))
                 implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.4.0")
 
                 implementation(platform("org.jetbrains.kotlinx:kotlinx-coroutines-bom:1.7.1"))
@@ -100,8 +99,6 @@ kotlin {
 
         val jsMain by getting {
             dependencies {
-                implementation("com.bkahlert.kommons:kommons-uri")
-
                 val fritz2Version = "1.0-RC6"
                 implementation("dev.fritz2:core:$fritz2Version")
                 implementation("dev.fritz2:headless:$fritz2Version")

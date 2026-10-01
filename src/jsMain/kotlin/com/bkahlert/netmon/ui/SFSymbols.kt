@@ -2,8 +2,7 @@
 
 package com.bkahlert.netmon.ui
 
-import com.bkahlert.kommons.uri.DataUri
-import io.ktor.http.ContentType.Image
+import com.bkahlert.netmon.uri.DataUri
 
 /** Selection of symbols from the [SF Symbols iconography library](https://developer.apple.com/sf-symbols/). */
 @Suppress("LongLine", "ObjectPropertyName")
@@ -40,8 +39,7 @@ public object SFSymbols : LazySymbols() {
 }
 
 open class LazySymbols : LazyNamedEntriesList<Pair<Pair<String, String>, String>, DataUri>({ _, property, (dimensions, content) ->
-    DataUri(
-        Image.SVG,
+    DataUri.svg(
         """<svg xmlns="http://www.w3.org/2000/svg" data-symbol-name="${property.name}" viewBox="0 0 ${dimensions.first} ${dimensions.second}">$content</svg>"""
     )
 })

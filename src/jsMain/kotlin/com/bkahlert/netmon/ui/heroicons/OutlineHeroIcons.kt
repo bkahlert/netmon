@@ -2,9 +2,8 @@
 
 package com.bkahlert.netmon.ui.heroicons
 
-import com.bkahlert.kommons.uri.DataUri
+import com.bkahlert.netmon.uri.DataUri
 import com.bkahlert.netmon.ui.LazyNamedEntriesList
-import io.ktor.http.ContentType.Image
 
 /**
  * Outline icon definitions from the fantastic [heroicons](https://heroicons.com),
@@ -18,7 +17,7 @@ import io.ktor.http.ContentType.Image
  */
 @Suppress("LongLine")
 public object OutlineHeroIcons : HeroIcons, LazyNamedEntriesList<String, DataUri>({ _, _, content ->
-    DataUri(Image.SVG, """<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">$content</svg>""")
+    DataUri.svg("""<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">$content</svg>""")
 }) {
 
     // @formatter:off
