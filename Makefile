@@ -64,9 +64,10 @@ device-model-codes: ## regenerate the model codes and symbols the display draws,
 clean: ## remove build outputs
 	rm -rf dist packages/*/.build build
 
-release: ## run the tiers, then tag VERSION (make release VERSION=1.0.0)
+release: ## build, run the tiers, then tag VERSION (make release VERSION=1.0.0)
 	@test -n "$(VERSION)" || { echo "usage: make release VERSION=X.Y.Z"; exit 2; }
 	@git diff --quiet HEAD || { echo "working tree is dirty"; exit 1; }
+	@$(MAKE) gradle
 	@$(MAKE) test-all
 	git tag -a "v$(VERSION)" -m "v$(VERSION)"
 	@echo "Tagged v$(VERSION). Push with: git push origin v$(VERSION)"
