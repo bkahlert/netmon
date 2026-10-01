@@ -1,14 +1,20 @@
 {
-  "code-identifier-mappings": {
-    "FooPro6,1": "com.example.foopro-cylinder",
-    "Bar10,6": "com.example.bar-x-1"
+  "models": {
+    "Bar10,6": {
+      "description": "Bar X (Model A1865, A1901, A1902, A1903)",
+      "symbol": "bar.x"
+    },
+    "Baz1,1": {
+      "description": null,
+      "symbol": "private.name"
+    },
+    "FooPro6,1": {
+      "description": "Foo Pro",
+      "symbol": "foopro.gen3"
+    }
   },
-  "identifier-description-mappings": {
-    "com.example.foopro-cylinder": "Foo Pro",
-    "com.example.bar-x-1": "Bar X (Model A1865, A1901, A1902, A1903)"
-  },
-  "identifier-icon-mappings": {
-    "com.example.foopro-cylinder": "com.example.foopro-cylinder.icns",
-    "com.example.bar-x-1": "com.example.bar-x-1.icns"
+  "symbols": {
+    "bar.x": "<svg xmlns=\"http://www.w3.org/2000/svg\" data-symbol-name=\"bar.x\" viewBox=\"0 0 10 10\"><path fill=\"currentColor\" fill-opacity=\"0.5\" d=\"M0 10L10 0Z\"/></svg>",
+    "foopro.gen3": "<svg xmlns=\"http://www.w3.org/2000/svg\" data-symbol-name=\"foopro.gen3\" viewBox=\"0 0 10 10\"><path fill=\"currentColor\" d=\"M0 0L10 10Z\"/></svg>"
   }
 }

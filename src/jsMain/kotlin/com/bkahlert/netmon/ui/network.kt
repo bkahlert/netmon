@@ -1,6 +1,6 @@
 package com.bkahlert.netmon.ui
 
-import com.bkahlert.netmon.uri.toUriOrNull
+import com.bkahlert.netmon.uri.DataUri
 import com.bkahlert.netmon.CurrentTimeStore
 import com.bkahlert.netmon.Event.ScanEvent
 import com.bkahlert.netmon.EventSource
@@ -151,7 +151,7 @@ fun RenderContext.host(
 
     val models = host.data.map { it.model }.distinctUntilChanged()
     val modelNames = models.map { it?.let(DeviceModelCodes::description) ?: it }
-    val modelIcons = models.map { it?.let(DeviceModelCodes::icon)?.source?.toUriOrNull() ?: SFSymbols.display }
+    val modelIcons = models.map { it?.let(DeviceModelCodes::symbol)?.let(DataUri::svg) ?: SFSymbols.display }
 
     val vendors = host.data.map { it.vendor }.distinctUntilChanged()
 
