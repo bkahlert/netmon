@@ -1,7 +1,7 @@
 package com.bkahlert.netmon.model_identification
 
-import com.bkahlert.kommons.uri.Uri
-import com.bkahlert.kommons.uri.toUri
+import com.bkahlert.netmon.uri.Uri
+import com.bkahlert.netmon.uri.toUri
 import kotlinx.browser.window
 import kotlinx.coroutines.await
 import kotlinx.serialization.json.Json

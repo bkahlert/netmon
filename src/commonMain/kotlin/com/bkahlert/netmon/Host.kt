@@ -1,7 +1,7 @@
 package com.bkahlert.netmon
 
-import com.bkahlert.kommons.time.InstantAsEpochSecondsSerializer
-import com.bkahlert.kommons.time.Now
+import com.bkahlert.netmon.serialization.InstantAsEpochSecondsSerializer
+import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -23,5 +23,5 @@ data class Host(
 
 /** Computes the time passed since this host changed its status. */
 @Suppress("NOTHING_TO_INLINE")
-inline fun Host.getElapsedTime(now: Instant = Now): Duration? =
+inline fun Host.getElapsedTime(now: Instant = Clock.System.now()): Duration? =
     since?.let { now - it }?.coerceAtLeast(Duration.ZERO)

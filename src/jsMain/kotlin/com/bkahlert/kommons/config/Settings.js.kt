@@ -1,8 +1,7 @@
 package com.bkahlert.kommons.config
 
-import com.bkahlert.kommons.uri.Uri
-import com.bkahlert.kommons.uri.queryParameters
-import com.bkahlert.kommons.uri.toUri
+import com.bkahlert.netmon.uri.Uri
+import com.bkahlert.netmon.uri.toUri
 import kotlinx.browser.window
 import kotlinx.serialization.DeserializationStrategy
 import kotlinx.serialization.StringFormat
@@ -21,7 +20,7 @@ class UriSetting<T>(
     override val origin: String = "uri"
     override val value: T?
         get() = path.joinToString(".")
-            .let { UriSource.uri.queryParameters[it] }
+            .let { UriSource.uri.queryParameters.get(it) }
             ?.let { stringFormat.decodeFromString(deserializer, it) }
 
     override fun toString(): String = "$origin:${path.joinToString(".")}=$value"

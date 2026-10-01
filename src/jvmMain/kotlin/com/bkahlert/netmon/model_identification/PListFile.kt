@@ -1,6 +1,6 @@
 package com.bkahlert.netmon.model_identification
 
-import com.bkahlert.kommons.exec.CommandLine
+import com.bkahlert.netmon.exec.CommandLine
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject

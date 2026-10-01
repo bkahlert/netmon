@@ -1,6 +1,5 @@
 package com.bkahlert.kommons.config
 
-import com.bkahlert.kommons.text.toScreamingSnakeCasedString
 import kotlinx.serialization.DeserializationStrategy
 import kotlinx.serialization.StringFormat
 
@@ -40,7 +39,6 @@ class SystemSetting<T>(
     override fun toString(): String = "$origin:${path.joinToString(".")}=$value"
 }
 
-private fun envKey(path: List<String>): String = path.joinToString("_") { it.toScreamingSnakeCasedString() }
-private fun envValue(path: List<String>): String? = System.getenv(envKey(path))
+private fun envValue(path: List<String>): String? = System.getenv(environmentKey(path))
 private fun sysPropKey(path: List<String>): String = path.joinToString(".")
 private fun sysPropValue(path: List<String>): String? = System.getProperty(sysPropKey(path))

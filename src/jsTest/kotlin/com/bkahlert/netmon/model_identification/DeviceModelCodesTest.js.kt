@@ -1,6 +1,6 @@
 package com.bkahlert.netmon.model_identification
 
-import com.bkahlert.kommons.uri.toUri
+import com.bkahlert.netmon.uri.toUri
 
 @JsModule("./$TEST_DEVICE_CODE_MODES_RESOURCE_NAME")
 @JsNonModule

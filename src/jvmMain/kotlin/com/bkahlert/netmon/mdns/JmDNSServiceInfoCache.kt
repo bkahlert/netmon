@@ -1,7 +1,7 @@
 package com.bkahlert.netmon.mdns
 
-import com.bkahlert.kommons.logging.SLF4J
-import com.bkahlert.kommons.logging.logback.StructuredArguments.entries
+import com.bkahlert.netmon.logging.SLF4J
+import net.logstash.logback.argument.StructuredArguments.entries
 import com.bkahlert.netmon.IP
 import java.util.concurrent.locks.ReentrantLock
 import javax.jmdns.JmDNS
@@ -25,7 +25,7 @@ class JmDNSServiceInfoCache(
     private var mappings: ResolveMappings = ResolveMappings(emptyList())
 
     private fun addService(type: String, name: String, info: ServiceInfo) {
-        logger.info("Adding service: {}", entries("name" to name, "type" to type))
+        logger.info("Adding service: {}", entries(mapOf("name" to name, "type" to type)))
         servicesLock.withLock {
             services[name to type] = info
             mappings = ResolveMappings(services.values.toList())
@@ -33,7 +33,7 @@ class JmDNSServiceInfoCache(
     }
 
     private fun removeService(type: String, name: String) {
-        logger.info("Removing service: {}", entries("name" to name, "type" to type))
+        logger.info("Removing service: {}", entries(mapOf("name" to name, "type" to type)))
         servicesLock.withLock {
             services.remove(name to type)
             mappings = ResolveMappings(services.values.toList())
@@ -47,7 +47,7 @@ class JmDNSServiceInfoCache(
 
         override fun serviceResolved(instance: JmDNS, type: String, name: String, info: ServiceInfo) {
             logger.info("Service resolved: $name.$type: $info")
-            logger.info("Adding service: {}", entries("name" to name, "type" to type))
+            logger.info("Adding service: {}", entries(mapOf("name" to name, "type" to type)))
             addService(type, name, info)
         }
 

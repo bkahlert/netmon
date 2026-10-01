@@ -1,7 +1,5 @@
 package com.bkahlert.netmon.mdns
 
-import com.bkahlert.kommons.Program
-import com.bkahlert.kommons.text.takeUnlessBlank
 import java.net.Inet4Address
 import java.net.Inet6Address
 import java.net.InetAddress
@@ -33,7 +31,7 @@ fun JmDNS(
     name: String? = null,
     threadSleepDuration: Duration = Duration.ZERO,
 ): JmDNS = JmDNS.create(addr, name, threadSleepDuration.inWholeMilliseconds).apply {
-    Program.onExit { close() }
+    Runtime.getRuntime().addShutdownHook(Thread { close() })
 }
 
 /**
@@ -159,7 +157,7 @@ data class ServiceInfo(
     constructor(info: javax.jmdns.ServiceInfo) : this(
         type = info.type,
         typeWithSubtype = info.typeWithSubtype,
-        subtype = info.subtype.takeUnlessBlank(),
+        subtype = info.subtype.takeUnless { it.isBlank() },
         application = info.application,
         protocol = info.protocol,
         domain = info.domain,

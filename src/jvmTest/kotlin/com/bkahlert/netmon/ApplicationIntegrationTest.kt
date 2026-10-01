@@ -1,7 +1,6 @@
 package com.bkahlert.netmon
 
-import com.bkahlert.kommons.exec.environment
-import com.bkahlert.kommons.time.Now
+import kotlinx.datetime.Clock
 import com.bkahlert.netmon.scanner.ScanResult
 import com.bkahlert.netmon.serialization.JsonFormat
 import io.kotest.inspectors.forAll
@@ -33,9 +32,9 @@ class ApplicationIntegrationTest : AbstractIntegrationTest() {
             kClass = ApplicationIntegrationTest::class,
             "-v",
             customize = {
-                environment["BROKER_HOST"] = mqttContainer.host
-                environment["BROKER_PORT"] = mqttContainer.firstMappedPort.toString()
-                environment["DEBUG"] = "*.netmon*,-*mdns*"
+                environment()["BROKER_HOST"] = mqttContainer.host
+                environment()["BROKER_PORT"] = mqttContainer.firstMappedPort.toString()
+                environment()["DEBUG"] = "*.netmon*,-*mdns*"
             }
         ) { workingDirectory.listDirectoryEntries("scan.*.json").isNotEmpty() }
 
@@ -58,7 +57,7 @@ class ApplicationIntegrationTest : AbstractIntegrationTest() {
             it.listDirectoryEntries("scan.*.json").forAll { scanResultFile ->
                 scanResultFile.fileSize() shouldBeGreaterThan 0L
                 JsonFormat.decodeFromString<ScanResult>(scanResultFile.readText()) should { scanResult ->
-                    scanResult.timestamp.shouldBeGreaterThan(Now - 30.seconds)
+                    scanResult.timestamp.shouldBeGreaterThan(Clock.System.now() - 30.seconds)
                 }
             }
         }

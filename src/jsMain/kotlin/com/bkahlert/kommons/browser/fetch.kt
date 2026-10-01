@@ -2,7 +2,7 @@
 
 package com.bkahlert.kommons.browser
 
-import com.bkahlert.kommons.uri.Uri
+import com.bkahlert.netmon.uri.Uri
 import kotlinx.coroutines.await
 import org.w3c.fetch.RequestCache
 import org.w3c.fetch.RequestCredentials

@@ -14,8 +14,7 @@ enum class Verbosity(
     VERBOSE(
         "root" to Level.INFO,
         "javax.jmdns.impl.DNSIncoming" to Level.ERROR, // Suppresses "There was an OPT answer. Not currently handled. Option code: 10"
-        "com.bkahlert.kommons.cache" to Level.WARN,
-        "com.bkahlert.kommons.exec" to Level.WARN,
+        "com.bkahlert.netmon.exec" to Level.WARN,
         "com.bkahlert.netmon.net" to Level.WARN,
         "com.bkahlert.netmon.mdns.JmDNSServiceInfoCache" to Level.WARN,
         "com.bkahlert.netmon.enrichment" to Level.WARN,

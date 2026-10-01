@@ -1,7 +1,6 @@
 package com.bkahlert.netmon.nmap
 
 import com.bkahlert.kommons.config.withTestConfig
-import com.bkahlert.kommons.text.Unicode
 import io.kotest.assertions.throwables.shouldThrowAny
 import io.kotest.data.forAll
 import io.kotest.data.row
@@ -36,7 +35,7 @@ class NmapSettingsTest {
             }
         }
 
-        withTestConfig("nmap.dataDir" to "${Unicode.ESCAPE}") {
+        withTestConfig("nmap.dataDir" to "\u001B") {
             shouldThrowAny { NmapSettings.dataDir }
                 .message?.lowercase().shouldContain("not writeable")
         }

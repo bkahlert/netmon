@@ -1,9 +1,9 @@
 package com.bkahlert.netmon.model_identification
 
-import com.bkahlert.kommons.io.useBufferedInputStream
 import kotlinx.serialization.json.Json
 import java.net.URL
 import java.nio.file.Path
+import kotlin.io.path.inputStream
 
 /** The URL of the resource containing the [DeviceModelCodes] mappings. */
 val DeviceModelCodes.Companion.resource: URL
@@ -16,4 +16,4 @@ fun DeviceModelCodes.Companion.load(resource: URL): DeviceModelCodes =
 
 /** Creates a [DeviceModelCodes] instance from the given [file]. */
 fun DeviceModelCodes.Companion.load(file: Path): DeviceModelCodes =
-    file.useBufferedInputStream { Json.decodeFromString(it.readBytes().decodeToString()) }
+    file.inputStream().buffered().use { Json.decodeFromString(it.readBytes().decodeToString()) }

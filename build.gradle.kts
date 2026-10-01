@@ -49,8 +49,7 @@ kotlin {
     sourceSets {
         val commonMain by getting {
             dependencies {
-                implementation(platform("com.bkahlert.kommons:kommons-bom:2.8.0"))
-                implementation("com.bkahlert.kommons:kommons-time")
+                implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.4.0")
 
                 implementation(platform("org.jetbrains.kotlinx:kotlinx-coroutines-bom:1.7.1"))
                 implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core")
@@ -74,16 +73,15 @@ kotlin {
 
         val jvmMain by getting {
             dependencies {
-                implementation("com.bkahlert.kommons:kommons-logging-core")
-                implementation("com.bkahlert.kommons:kommons-logging-logback")
-                implementation("com.bkahlert.kommons:kommons-exec") { because("CommandLine, ShellScript") }
+                implementation("ch.qos.logback:logback-classic:1.3.16")
+                implementation("net.logstash.logback:logstash-logback-encoder:7.4") { because("structured log arguments; JSON log files in the integration tests") }
 
                 implementation("org.jetbrains.kotlinx:kotlinx-coroutines-jdk8")
                 implementation("org.jetbrains.kotlinx:kotlinx-coroutines-slf4j")
 
                 implementation("com.hivemq:hivemq-mqtt-client:1.3.17") { because("publish scans") }
                 implementation(platform("com.hivemq:hivemq-mqtt-client-websocket:1.3.17"))
-                implementation("org.jmdns:jmdns:3.5.8") { because("mDNS / Bonjour based hostname resolution") }
+                implementation("org.jmdns:jmdns:3.6.3") { because("mDNS / Bonjour based hostname resolution") }
             }
             languageSettings.optIn("kotlin.io.path.ExperimentalPathApi")
         }
@@ -101,8 +99,6 @@ kotlin {
 
         val jsMain by getting {
             dependencies {
-                implementation("com.bkahlert.kommons:kommons-uri")
-
                 val fritz2Version = "1.0-RC6"
                 implementation("dev.fritz2:core:$fritz2Version")
                 implementation("dev.fritz2:headless:$fritz2Version")

@@ -1,6 +1,6 @@
 package com.bkahlert.netmon.mqtt
 
-import com.bkahlert.kommons.time.Now
+import kotlinx.datetime.Clock
 import com.bkahlert.netmon.DOWN
 import com.bkahlert.netmon.Event
 import com.bkahlert.netmon.Host

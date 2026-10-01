@@ -1,9 +1,9 @@
 package com.bkahlert.netmon.model_identification
 
 import com.bkahlert.kommons.FileCache
-import com.bkahlert.kommons.logging.SLF4J
-import com.bkahlert.kommons.logging.logback.StructuredArguments
-import com.bkahlert.kommons.logging.logback.StructuredArguments.kv
+import com.bkahlert.netmon.logging.SLF4J
+import net.logstash.logback.argument.StructuredArguments
+import net.logstash.logback.argument.StructuredArguments.kv
 import java.nio.file.LinkOption
 import java.nio.file.Path
 import kotlin.io.path.createSymbolicLinkPointingTo

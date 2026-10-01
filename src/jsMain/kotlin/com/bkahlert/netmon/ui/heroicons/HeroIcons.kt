@@ -2,7 +2,7 @@
 
 package com.bkahlert.netmon.ui.heroicons
 
-import com.bkahlert.kommons.uri.DataUri
+import com.bkahlert.netmon.uri.DataUri
 
 /**
  * Icon definitions from the fantastic [heroicons](https://heroicons.com)

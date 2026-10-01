@@ -1,9 +1,9 @@
 package com.bkahlert.netmon.nmap
 
-import com.bkahlert.kommons.exec.CommandLine
-import com.bkahlert.kommons.logging.SLF4J
-import com.bkahlert.kommons.logging.logback.StructuredArguments.kv
-import com.bkahlert.kommons.logging.logback.StructuredArguments.v
+import com.bkahlert.netmon.exec.CommandLine
+import com.bkahlert.netmon.logging.SLF4J
+import net.logstash.logback.argument.StructuredArguments.kv
+import net.logstash.logback.argument.StructuredArguments.v
 import com.bkahlert.netmon.Cidr
 import com.bkahlert.netmon.Host
 import com.bkahlert.netmon.IPv6

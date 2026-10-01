@@ -1,7 +1,7 @@
 package com.bkahlert.netmon.model_identification
 
 import com.bkahlert.kommons.SystemLocations
-import com.bkahlert.kommons.debug.open
+import com.bkahlert.kommons.test.open
 import io.kotest.assertions.throwables.shouldNotThrowAny
 import io.kotest.inspectors.forAll
 import io.kotest.inspectors.forAllValues

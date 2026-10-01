@@ -2,13 +2,12 @@
 
 package com.bkahlert.netmon.ui
 
-import com.bkahlert.kommons.uri.DataUri
-import com.bkahlert.kommons.uri.Uri
+import com.bkahlert.netmon.uri.DataUri
+import com.bkahlert.netmon.uri.Uri
 import dev.fritz2.core.RenderContext
 import dev.fritz2.core.SvgTag
 import dev.fritz2.core.mountSimple
 import dev.fritz2.headless.foundation.Aria
-import io.ktor.http.ContentType.Image
 import kotlinx.browser.document
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -129,7 +128,7 @@ private fun SvgTag.attributes(
 
 
 private fun Uri.toSvgElementOrNull(): SVGElement? = when (this) {
-    is DataUri -> data.takeIf { mediaType?.match(Image.SVG) == true }?.toElement<SVGElement>()
+    is DataUri -> data.takeIf { isSvg }?.toElement<SVGElement>()
     else -> null
 }
 

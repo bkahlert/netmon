@@ -1,8 +1,7 @@
 package com.bkahlert.netmon.mqtt
 
-import com.bkahlert.kommons.logging.SLF4J
-import com.bkahlert.kommons.logging.logback.StructuredArguments.v
-import com.bkahlert.kommons.orNull
+import com.bkahlert.netmon.logging.SLF4J
+import net.logstash.logback.argument.StructuredArguments.v
 import com.bkahlert.netmon.mqtt.GenericMqttClient.Companion.generic
 import com.bkahlert.netmon.serialization.JsonFormat
 import com.hivemq.client.mqtt.MqttClient
@@ -64,7 +63,7 @@ class MqttPublisher<T>(
             contentType = if (stringFormat is Json) "application/json" else null,
         )
 
-        return when (val error = (result as? Mqtt5PublishResult)?.error.orNull()) {
+        return when (val error = (result as? Mqtt5PublishResult)?.error?.orElse(null)) {
             null -> {
                 when (result) {
                     Unit -> logger.info("Published message ({} bytes) to {}", payload.size, topic)

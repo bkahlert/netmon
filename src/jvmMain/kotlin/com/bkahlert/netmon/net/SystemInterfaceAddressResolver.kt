@@ -1,7 +1,7 @@
 package com.bkahlert.netmon.net
 
-import com.bkahlert.kommons.logging.SLF4J
-import com.bkahlert.kommons.logging.logback.StructuredArguments
+import com.bkahlert.netmon.logging.SLF4J
+import net.logstash.logback.argument.StructuredArguments
 import com.bkahlert.netmon.scanner.NetworkFilterSettings
 import java.math.BigInteger
 import java.net.Inet4Address
@@ -17,7 +17,7 @@ class SystemInterfaceAddressResolver(
 ) : InterfaceAddressResolver {
 
     override fun resolve(): List<InterfaceAddress> = candidates()
-        .also { logger.info("Evaluating candidate {}", StructuredArguments.o<InterfaceAddress>(it)) }
+        .also { logger.info("Evaluating candidate {}", StructuredArguments.array("interface-addresses", *it.toTypedArray())) }
         .let {
             predicates.fold(it) { acc, predicate ->
                 val (passed, failed) = acc.partition(predicate)
@@ -27,7 +27,7 @@ class SystemInterfaceAddressResolver(
                         failed.size,
                         if (failed.size == 1) "interface" else "interfaces",
                         predicate.description,
-                        StructuredArguments.o<InterfaceAddress>(failed),
+                        StructuredArguments.array("interface-addresses", *failed.toTypedArray()),
                     )
                 }
                 passed
