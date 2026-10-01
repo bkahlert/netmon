@@ -1,7 +1,6 @@
 package com.bkahlert.netmon.model_identification
 
 import com.bkahlert.kommons.FileCache
-import com.bkahlert.kommons.io.useBufferedOutputStream
 import com.bkahlert.netmon.logging.SLF4J
 import net.logstash.logback.argument.StructuredArguments.v
 import com.bkahlert.netmon.serialization.DataUrl
@@ -21,6 +20,7 @@ import kotlin.io.path.extension
 import kotlin.io.path.fileSize
 import kotlin.io.path.isDirectory
 import kotlin.io.path.listDirectoryEntries
+import kotlin.io.path.outputStream
 import kotlin.io.path.pathString
 import kotlin.io.path.readBytes
 import kotlin.io.path.readText
@@ -135,7 +135,7 @@ object DeviceModelCodesExporter {
             ),
         ).forEach { (fileName, instance) ->
             directory.resolve(fileName).apply {
-                useBufferedOutputStream { Json.encodeToStream(instance, it) }
+                outputStream().buffered().use { Json.encodeToStream(instance, it) }
                 logger.info("Created {}", v("file", pathString))
                 exportHtmlTo(deviceModelCodes = instance, file = resolveSibling(fileName.substringBeforeLast(".").plus(".html"))).also {
                     logger.info("Created {}", v("file", it.pathString))

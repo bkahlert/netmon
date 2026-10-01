@@ -1,9 +1,8 @@
 package com.bkahlert.netmon.model_identification
 
 import ch.qos.logback.classic.Level
-import com.bkahlert.kommons.debug.open
+import com.bkahlert.kommons.test.open
 import com.bkahlert.netmon.logging.Logback
-import com.bkahlert.kommons.text.capitalize
 import io.kotest.matchers.collections.shouldNotBeEmpty
 import io.kotest.matchers.paths.shouldExist
 import io.kotest.matchers.should
@@ -88,7 +87,7 @@ fun Class<*>.findResourcesDirectoryOrNull(target: String? = null, config: String
         if (acc.last().pathString == "build") acc else acc.resolve(segment)
     })
     val (clazzTarget, clazzConfig) = classesDir.toList().map { it.fileName.pathString }.takeLast(2)
-    val configurationName = (target ?: clazzTarget) + (config ?: clazzConfig).capitalize()
+    val configurationName = (target ?: clazzTarget) + (config ?: clazzConfig).replaceFirstChar { it.uppercase() }
     val srcDir = buildDir.resolveSibling("src")
     srcDir.resolve(configurationName).takeIf { it.exists() }?.resolve("resources")
 }

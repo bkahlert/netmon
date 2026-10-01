@@ -1,7 +1,6 @@
 package com.bkahlert.netmon.model_identification
 
 import ch.qos.logback.classic.Level
-import com.bkahlert.kommons.io.toPath
 import com.bkahlert.netmon.logging.Logback
 import io.kotest.assertions.throwables.shouldNotThrowAny
 import io.kotest.inspectors.forAll
@@ -20,7 +19,7 @@ import kotlin.test.Test
 class BundleTest {
 
     companion object {
-        val TEST_BUNDLES_DIR = checkNotNull(BundleTest::class.java.classLoader.getResource("bundles")) { "Failed to find test bundles" }.toPath()
+        val TEST_BUNDLES_DIR = checkNotNull(BundleTest::class.java.classLoader.getResource("bundles")) { "Failed to find test bundles" }.toURI().let(Paths::get)
         val TEST_BUNDLE_DIR = TEST_BUNDLES_DIR / "CoreTypes.bundle"
     }
 

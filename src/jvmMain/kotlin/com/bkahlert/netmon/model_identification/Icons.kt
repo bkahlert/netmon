@@ -1,9 +1,8 @@
 package com.bkahlert.netmon.model_identification
 
-import com.bkahlert.kommons.exec.CommandLine
+import com.bkahlert.netmon.exec.CommandLine
 import com.bkahlert.netmon.logging.SLF4J
 import net.logstash.logback.argument.StructuredArguments.kv
-import com.bkahlert.kommons.text.withPrefix
 import java.nio.file.Path
 import kotlin.io.path.copyTo
 import kotlin.io.path.createDirectory
@@ -75,7 +74,7 @@ sealed interface Icon {
             require(filePaths.isNotEmpty()) { "Icon ${toString()} not found" }
             iconset.createDirectory()
             filePaths.forEach { filePath ->
-                filePath.copyTo(iconset.resolve(filePath.fileName.pathString.removePrefix("${name}_").withPrefix("icon_")))
+                filePath.copyTo(iconset.resolve(filePath.fileName.pathString.removePrefix("${name}_").let { if (it.startsWith("icon_")) it else "icon_$it" }))
             }
         }
 

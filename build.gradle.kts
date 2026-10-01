@@ -76,7 +76,6 @@ kotlin {
             dependencies {
                 implementation("ch.qos.logback:logback-classic:1.2.11")
                 implementation("net.logstash.logback:logstash-logback-encoder:7.2") { because("structured log arguments; JSON log files in the integration tests") }
-                implementation("com.bkahlert.kommons:kommons-exec") { because("CommandLine, ShellScript") }
 
                 implementation("org.jetbrains.kotlinx:kotlinx-coroutines-jdk8")
                 implementation("org.jetbrains.kotlinx:kotlinx-coroutines-slf4j")

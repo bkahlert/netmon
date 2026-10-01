@@ -1,7 +1,5 @@
 package com.bkahlert.kommons
 
-import com.bkahlert.kommons.io.age
-import com.bkahlert.kommons.io.deleteOnExit
 import com.bkahlert.kommons.test.createTempDirectory
 import com.bkahlert.kommons.test.createTempFile
 import io.kotest.assertions.fail
@@ -75,7 +73,7 @@ class CachingKtTest {
 
     @Test
     fun put_directory() = runTest {
-        val directory = createTempDirectory().deleteOnExit().also {
+        val directory = createTempDirectory().also {
             it.resolve("file1").createFile().appendLines(listOf("line 1", "line 2"))
             it.resolve("file2").createFile().appendLines(listOf("line a", "line b"))
         }

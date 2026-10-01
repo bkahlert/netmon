@@ -2,7 +2,6 @@ package com.bkahlert.netmon.model_identification
 
 import com.bkahlert.netmon.logging.SLF4J
 import net.logstash.logback.argument.StructuredArguments
-import com.bkahlert.kommons.text.capitalize
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.jsonPrimitive
@@ -39,7 +38,7 @@ class Bundle private constructor(
 
     private fun <T> cfBundle(transform: (JsonElement) -> T) = PropertyDelegateProvider { thisRef: Bundle, property: KProperty<*> ->
         lazy {
-            val propertyName = "CFBundle${property.name.capitalize()}"
+            val propertyName = "CFBundle${property.name.replaceFirstChar { it.uppercase() }}"
             val propertyValue = checkNotNull(thisRef.info[propertyName]) { "Missing $propertyName for bundle ${thisRef.path}" }
             transform(propertyValue)
         }
@@ -47,7 +46,7 @@ class Bundle private constructor(
 
     private fun <T, R : T> cfBundle(default: R, transform: (JsonElement) -> T) = PropertyDelegateProvider { thisRef: Bundle, property: KProperty<*> ->
         lazy {
-            val propertyName = "CFBundle${property.name.capitalize()}"
+            val propertyName = "CFBundle${property.name.replaceFirstChar { it.uppercase() }}"
             val propertyValue = thisRef.info[propertyName]
             propertyValue?.let { transform(it) } ?: default
         }

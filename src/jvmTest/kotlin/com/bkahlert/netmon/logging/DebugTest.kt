@@ -27,6 +27,21 @@ class DebugTest {
     }
 
     @Test
+    fun wildcard_patterns() = runTest {
+        val wildcards = Debug(
+            DebugMode(true, "*.netmon*"),
+            DebugMode(false, "*mdns*"),
+        )
+        forAll(
+            row("com.bkahlert.netmon.net", true),
+            row("com.bkahlert.netmon.mdns.JmDNSServiceInfoCache", false),
+            row("io.netty", null),
+        ) { namespace, expected ->
+            wildcards.state(namespace) shouldBe expected
+        }
+    }
+
+    @Test
     fun apply() = runTest {
         val levels = mapOf(
             "netmon.test" to Level.INFO,

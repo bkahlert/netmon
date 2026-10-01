@@ -5,7 +5,6 @@ import com.bkahlert.kommons.Pid
 import com.bkahlert.netmon.logging.SLF4J
 import net.logstash.logback.argument.StructuredArguments.kv
 import net.logstash.logback.argument.StructuredArguments.v
-import com.bkahlert.kommons.text.checkNotBlank
 import com.bkahlert.netmon.enrichment.AmazonHostEnricher
 import com.bkahlert.netmon.enrichment.AppleHostEnricher
 import com.bkahlert.netmon.enrichment.DeviceInfoHostEnricher
@@ -40,11 +39,8 @@ import kotlin.system.exitProcess
 class Application(
     private val hostname: String = kotlin.runCatching { InetAddress.getLocalHost() }
         .getOrElse { throw IllegalStateException("Failed to determine localhost", it) }
-        .let { localhost ->
-            checkNotBlank(localhost.hostName)
-            kotlin.runCatching { checkNotBlank(localhost.hostName) }
-                .getOrElse { throw IllegalStateException("Failed to determine hostname", it) }
-        },
+        .hostName
+        .also { check(it.isNotBlank()) { "Failed to determine hostname" } },
     private val interfaceAddresses: () -> Iterable<InterfaceAddress> = SystemInterfaceAddressResolver()::resolve,
 ) {
 

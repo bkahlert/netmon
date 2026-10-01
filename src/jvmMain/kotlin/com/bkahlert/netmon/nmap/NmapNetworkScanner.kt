@@ -1,6 +1,6 @@
 package com.bkahlert.netmon.nmap
 
-import com.bkahlert.kommons.exec.CommandLine
+import com.bkahlert.netmon.exec.CommandLine
 import com.bkahlert.netmon.logging.SLF4J
 import net.logstash.logback.argument.StructuredArguments.kv
 import net.logstash.logback.argument.StructuredArguments.v

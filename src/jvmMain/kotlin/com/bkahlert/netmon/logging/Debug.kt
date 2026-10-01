@@ -1,7 +1,6 @@
 package com.bkahlert.netmon.logging
 
 import ch.qos.logback.classic.Level
-import com.bkahlert.kommons.text.fromGlob
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.descriptors.PrimitiveKind
@@ -38,7 +37,7 @@ data class DebugMode(
     val enabled: Boolean,
     val pattern: String,
 ) {
-    val regex: Regex = Regex.fromGlob(pattern, lineSeparators = emptyArray())
+    val regex: Regex = pattern.split('*').joinToString(".*") { Regex.escape(it) }.toRegex()
     fun matches(namespace: String): Boolean = regex.matches(namespace)
 }
 

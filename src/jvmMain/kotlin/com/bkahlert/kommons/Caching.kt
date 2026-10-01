@@ -1,12 +1,12 @@
 package com.bkahlert.kommons
 
-import com.bkahlert.kommons.io.useBufferedOutputStream
 import com.bkahlert.netmon.logging.SLF4J
 import com.bkahlert.netmon.logging.Logback
 import net.logstash.logback.argument.StructuredArguments.kv
 import java.io.InputStream
 import java.nio.file.Path
 import java.nio.file.Paths
+import java.security.MessageDigest
 import kotlin.io.path.copyToRecursively
 import kotlin.io.path.createDirectories
 import kotlin.io.path.createDirectory
@@ -20,30 +20,45 @@ import kotlin.io.path.fileSize
 import kotlin.io.path.inputStream
 import kotlin.io.path.isDirectory
 import kotlin.io.path.isRegularFile
+import kotlin.io.path.getLastModifiedTime
 import kotlin.io.path.listDirectoryEntries
+import kotlin.io.path.outputStream
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.milliseconds
 
-/**
- * Cache directory of the current user.
- */
-@Suppress("RedundantVisibilityModifier")
-public val SystemLocations.Cache: Path by lazy { _Cache }
+/** Well-known directories of the running system. */
+object SystemLocations {
 
-private val logger = Logback[SystemLocations::class]
-private val _Cache: Path
-    get() {
+    /** The working directory. */
+    val Work: Path by lazy { Paths.get("").toAbsolutePath() }
+
+    /** The home directory of the current user. */
+    val Home: Path by lazy { Paths.get(System.getProperty("user.home")) }
+
+    /** The directory for temporary files. */
+    val Temp: Path by lazy { Paths.get(System.getProperty("java.io.tmpdir")) }
+
+    /** The cache directory of the current user. */
+    val Cache: Path by lazy {
         val osName = System.getProperty("os.name").orEmpty().lowercase()
-        return if (osName.indexOf("mac") >= 0) {
-            (SystemLocations.Home.takeIf { it.exists() } ?: Paths.get("/")) / "Library" / "Caches"
+        if (osName.indexOf("mac") >= 0) {
+            (Home.takeIf { it.exists() } ?: Paths.get("/")) / "Library" / "Caches"
         } else if (osName.indexOf("nix") >= 0 || osName.indexOf("nux") >= 0 || osName.indexOf("aix") > 0) {
             when (val cacheHome = System.getenv("XDG_CACHE_HOME")) {
-                null -> SystemLocations.Home.takeIf { it.exists() }?.resolve(".cache") ?: Paths.get("/var/cache")
+                null -> Home.takeIf { it.exists() }?.resolve(".cache") ?: Paths.get("/var/cache")
                 else -> Paths.get(cacheHome)
             }
         } else {
             logger.warn("Unable to determine cache directory for OS: $osName")
-            SystemLocations.Temp
+            Temp
         }
     }
+}
+
+private val logger = Logback[SystemLocations::class]
+
+/** The time elapsed since this file was last modified. */
+val Path.age: Duration get() = (System.currentTimeMillis() - getLastModifiedTime().toMillis()).milliseconds
 
 /** A simple [directory]-backed file cache. */
 class FileCache(val directory: Path) {
@@ -52,10 +67,13 @@ class FileCache(val directory: Path) {
 
     private val String.path: Path get() = directory.resolve(md5Checksum())
 
+    private fun String.md5Checksum(): String =
+        MessageDigest.getInstance("MD5").digest(toByteArray()).joinToString("") { "%02x".format(it) }
+
     private fun InputStream.copyTo(path: Path): Path = path.also {
         it.createParentDirectories()
         if (it.exists()) it.deleteRecursively()
-        it.useBufferedOutputStream { out -> copyTo(out) }
+        it.outputStream().buffered().use { out -> copyTo(out) }
     }
 
     private fun Path.copyTo(path: Path): Path = if (isRegularFile()) {
