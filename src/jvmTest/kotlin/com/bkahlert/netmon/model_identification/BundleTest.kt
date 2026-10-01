@@ -2,8 +2,7 @@ package com.bkahlert.netmon.model_identification
 
 import ch.qos.logback.classic.Level
 import com.bkahlert.kommons.io.toPath
-import com.bkahlert.kommons.logging.logback.Logback
-import com.bkahlert.netmon.logging.get
+import com.bkahlert.netmon.logging.Logback
 import io.kotest.assertions.throwables.shouldNotThrowAny
 import io.kotest.inspectors.forAll
 import io.kotest.matchers.collections.shouldContainExactly

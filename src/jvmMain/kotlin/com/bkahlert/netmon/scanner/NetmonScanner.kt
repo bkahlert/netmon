@@ -1,6 +1,6 @@
 package com.bkahlert.netmon.scanner
 
-import com.bkahlert.kommons.logging.SLF4J
+import com.bkahlert.netmon.logging.SLF4J
 import kotlinx.datetime.Clock
 import com.bkahlert.netmon.Cidr
 import com.bkahlert.netmon.Host

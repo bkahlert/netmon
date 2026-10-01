@@ -1,13 +1,11 @@
 package com.bkahlert.netmon
 
-import com.bkahlert.kommons.exec.CommandLine
-import com.bkahlert.kommons.exec.environment
-import com.bkahlert.kommons.exec.workingDirectory
 import com.bkahlert.netmon.serialization.JsonFormat
 import io.kotest.assertions.failure
 import io.kotest.matchers.booleans.shouldBeFalse
 import kotlinx.serialization.Serializable
 import java.nio.file.Path
+import java.nio.file.Paths
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import kotlin.concurrent.thread
@@ -40,15 +38,18 @@ abstract class AbstractIntegrationTest {
         predicate: (String) -> Boolean,
     ): List<LogMessage> {
         val logFile = workingDirectory.resolve("netmon-integration-test.log")
-        val process = CommandLine(kClass, *arguments)
-            .let(::ProcessBuilder)
-            .also {
-                it.workingDirectory = workingDirectory
-                it.environment["LOG_FILE"] = logFile.pathString
-                it.environment["FILE_LOG_PRESET"] = "json"
-                it.customize()
-                it.redirectErrorStream(true)
-            }.start()
+        val process = ProcessBuilder(
+            Paths.get(System.getProperty("java.home"), "bin", "java").pathString,
+            "-Dlogback.configurationFile=$logbackConfiguration",
+            "-DLOG_FILE=${logFile.pathString}",
+            "-cp", System.getProperty("java.class.path"),
+            checkNotNull(kClass.qualifiedName) { "$kClass has no qualified name" },
+            *arguments,
+        ).also {
+            it.directory(workingDirectory.toFile())
+            it.customize()
+            it.redirectErrorStream(true)
+        }.start()
 
         val outputConsumer = thread {
             process.inputStream.bufferedReader().forEachLine {
@@ -79,6 +80,10 @@ abstract class AbstractIntegrationTest {
         workingDirectory.deleteRecursively()
     }
 
+    private val logbackConfiguration: String =
+        checkNotNull(AbstractIntegrationTest::class.java.classLoader.getResource("logback-integration-test.xml")) {
+            "logback-integration-test.xml not found"
+        }.toExternalForm()
 }
 
 

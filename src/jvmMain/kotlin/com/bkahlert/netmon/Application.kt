@@ -2,9 +2,9 @@ package com.bkahlert.netmon
 
 import com.bkahlert.kommons.FileCache
 import com.bkahlert.kommons.Pid
-import com.bkahlert.kommons.logging.SLF4J
-import com.bkahlert.kommons.logging.logback.StructuredArguments.kv
-import com.bkahlert.kommons.logging.logback.StructuredArguments.v
+import com.bkahlert.netmon.logging.SLF4J
+import net.logstash.logback.argument.StructuredArguments.kv
+import net.logstash.logback.argument.StructuredArguments.v
 import com.bkahlert.kommons.text.checkNotBlank
 import com.bkahlert.netmon.enrichment.AmazonHostEnricher
 import com.bkahlert.netmon.enrichment.AppleHostEnricher
@@ -102,7 +102,7 @@ class Application(
             stringFormat = JsonFormat,
             serializer = Event.serializer(),
         ).also {
-            logger.info("{} connected", v(it))
+            logger.info("{} connected", v("publisher", it))
         }
 
 

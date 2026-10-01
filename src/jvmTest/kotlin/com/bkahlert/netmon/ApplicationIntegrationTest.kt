@@ -1,6 +1,5 @@
 package com.bkahlert.netmon
 
-import com.bkahlert.kommons.exec.environment
 import kotlinx.datetime.Clock
 import com.bkahlert.netmon.scanner.ScanResult
 import com.bkahlert.netmon.serialization.JsonFormat
@@ -33,9 +32,9 @@ class ApplicationIntegrationTest : AbstractIntegrationTest() {
             kClass = ApplicationIntegrationTest::class,
             "-v",
             customize = {
-                environment["BROKER_HOST"] = mqttContainer.host
-                environment["BROKER_PORT"] = mqttContainer.firstMappedPort.toString()
-                environment["DEBUG"] = "*.netmon*,-*mdns*"
+                environment()["BROKER_HOST"] = mqttContainer.host
+                environment()["BROKER_PORT"] = mqttContainer.firstMappedPort.toString()
+                environment()["DEBUG"] = "*.netmon*,-*mdns*"
             }
         ) { workingDirectory.listDirectoryEntries("scan.*.json").isNotEmpty() }
 

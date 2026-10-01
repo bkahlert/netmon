@@ -1,7 +1,6 @@
 package com.bkahlert.netmon.logging
 
 import ch.qos.logback.classic.Level
-import com.bkahlert.kommons.logging.logback.Logback
 import io.kotest.data.forAll
 import io.kotest.data.row
 import io.kotest.matchers.shouldBe

@@ -1,6 +1,6 @@
 package com.bkahlert.netmon
 
-import com.bkahlert.kommons.logging.SLF4J
+import com.bkahlert.netmon.logging.SLF4J
 import io.kotest.data.forAll
 import io.kotest.data.row
 import io.kotest.inspectors.forAll

@@ -1,10 +1,9 @@
 package com.bkahlert.kommons
 
 import com.bkahlert.kommons.io.useBufferedOutputStream
-import com.bkahlert.kommons.logging.SLF4J
-import com.bkahlert.kommons.logging.logback.Logback
-import com.bkahlert.kommons.logging.logback.StructuredArguments.kv
-import com.bkahlert.netmon.logging.get
+import com.bkahlert.netmon.logging.SLF4J
+import com.bkahlert.netmon.logging.Logback
+import net.logstash.logback.argument.StructuredArguments.kv
 import java.io.InputStream
 import java.nio.file.Path
 import java.nio.file.Paths
@@ -29,7 +28,7 @@ import kotlin.io.path.listDirectoryEntries
 @Suppress("RedundantVisibilityModifier")
 public val SystemLocations.Cache: Path by lazy { _Cache }
 
-private val logger = Logback.get(SystemLocations::class)
+private val logger = Logback[SystemLocations::class]
 private val _Cache: Path
     get() {
         val osName = System.getProperty("os.name").orEmpty().lowercase()

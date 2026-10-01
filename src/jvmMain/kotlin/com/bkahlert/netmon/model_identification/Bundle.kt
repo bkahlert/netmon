@@ -1,7 +1,7 @@
 package com.bkahlert.netmon.model_identification
 
-import com.bkahlert.kommons.logging.SLF4J
-import com.bkahlert.kommons.logging.logback.StructuredArguments
+import com.bkahlert.netmon.logging.SLF4J
+import net.logstash.logback.argument.StructuredArguments
 import com.bkahlert.kommons.text.capitalize
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
@@ -112,7 +112,7 @@ class Bundle private constructor(
                         val plist = directory.findInformationPropertyListFile()
                         if (plist != null) {
                             kotlin.runCatching { Bundle(directory, plist) }
-                                .onSuccess { bundle -> add(bundle).also { logger.debug("Found {}", StructuredArguments.kv(bundle)) } }
+                                .onSuccess { bundle -> add(bundle).also { logger.debug("Found {}", StructuredArguments.kv("bundle", bundle)) } }
                                 .onFailure { logger.warn("Ignoring unreadable {}", StructuredArguments.kv("bundle", directory), it) }
                             FileVisitResult.SKIP_SUBTREE
                         } else {

@@ -2,9 +2,8 @@ package com.bkahlert.netmon.model_identification
 
 import ch.qos.logback.classic.Level
 import com.bkahlert.kommons.FileCache
-import com.bkahlert.kommons.logging.logback.Logback
+import com.bkahlert.netmon.logging.Logback
 import com.bkahlert.kommons.test.createTempDirectory
-import com.bkahlert.netmon.logging.get
 import com.bkahlert.netmon.model_identification.DeviceModelCodesLookup.Image
 import io.kotest.matchers.collections.shouldHaveSize
 import io.kotest.matchers.longs.shouldBeLessThan

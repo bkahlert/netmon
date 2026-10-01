@@ -1,10 +1,10 @@
 package com.bkahlert.netmon.enrichment
 
-import com.bkahlert.kommons.logging.SLF4J
-import com.bkahlert.kommons.logging.logback.StructuredArguments.entries
-import com.bkahlert.kommons.logging.logback.StructuredArguments.kv
-import com.bkahlert.kommons.logging.logback.StructuredArguments.objects
-import com.bkahlert.kommons.logging.logback.StructuredArguments.v
+import com.bkahlert.netmon.logging.SLF4J
+import net.logstash.logback.argument.StructuredArguments.entries
+import net.logstash.logback.argument.StructuredArguments.kv
+import net.logstash.logback.argument.StructuredArguments.array
+import net.logstash.logback.argument.StructuredArguments.v
 import com.bkahlert.netmon.Host
 import com.bkahlert.netmon.mdns.JmDNSServiceInfoCache
 import com.bkahlert.netmon.mdns.ServiceInfo
@@ -63,7 +63,7 @@ class AppleHostEnricher(
                     logger.info(
                         "Unique {} found: {}",
                         kv("model", it.key),
-                        objects("services", it.value, ServiceInfo::application)
+                        array("services", *it.value.map(ServiceInfo::application).toTypedArray())
                     )
                 }
                 .key
@@ -71,7 +71,7 @@ class AppleHostEnricher(
             else -> modelsFoundBy.entries.sortedByDescending { it.value.size }
                 .also {
                     logger.warn("Multiple models found: {}",
-                        entries(modelsFoundBy) { it.value.map(ServiceInfo::application) })
+                        entries(modelsFoundBy.mapValues { it.value.map(ServiceInfo::application) }))
                 }
                 .first().key
         }

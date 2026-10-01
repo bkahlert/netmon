@@ -1,8 +1,7 @@
 package com.bkahlert.kommons.config
 
 import ch.qos.logback.classic.Level
-import com.bkahlert.kommons.logging.logback.Logback
-import com.bkahlert.netmon.logging.get
+import com.bkahlert.netmon.logging.Logback
 import java.util.Properties
 
 actual fun <R> withTestConfig(vararg config: Pair<String, String>, block: () -> R): R {

@@ -1,7 +1,6 @@
 package com.bkahlert.netmon.logging
 
 import com.bkahlert.kommons.config.Settings
-import com.bkahlert.kommons.logging.logback.Logback
 import com.bkahlert.kommons.serialization.UnquotedStringsFormat.Companion.unquoted
 import com.bkahlert.netmon.serialization.JsonFormat
 

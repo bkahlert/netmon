@@ -1,8 +1,8 @@
 package com.bkahlert.netmon
 
-import com.bkahlert.kommons.logging.SLF4J
-import com.bkahlert.kommons.logging.logback.StructuredArguments.e
-import com.bkahlert.kommons.logging.logback.StructuredArguments.v
+import com.bkahlert.netmon.logging.SLF4J
+import net.logstash.logback.argument.StructuredArguments.entries
+import net.logstash.logback.argument.StructuredArguments.v
 import org.slf4j.Logger
 import java.util.Collections
 import java.util.concurrent.atomic.AtomicReference
@@ -127,10 +127,12 @@ sealed interface SlicedApplicationState {
             workers = workers - evictedSlices + startedWorkers
             logger.debug(
                 "Updated workers to {}",
-                e(
-                    "started" to startedWorkers.keys,
-                    "existing" to workers.keys - startedWorkers.keys,
-                    "evicted" to evictedSlices,
+                entries(
+                    mapOf(
+                        "started" to startedWorkers.keys,
+                        "existing" to workers.keys - startedWorkers.keys,
+                        "evicted" to evictedSlices,
+                    )
                 )
             )
         }

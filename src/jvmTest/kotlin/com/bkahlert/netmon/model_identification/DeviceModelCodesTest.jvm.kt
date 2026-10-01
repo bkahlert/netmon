@@ -2,9 +2,8 @@ package com.bkahlert.netmon.model_identification
 
 import ch.qos.logback.classic.Level
 import com.bkahlert.kommons.debug.open
-import com.bkahlert.kommons.logging.logback.Logback
+import com.bkahlert.netmon.logging.Logback
 import com.bkahlert.kommons.text.capitalize
-import com.bkahlert.netmon.logging.get
 import io.kotest.matchers.collections.shouldNotBeEmpty
 import io.kotest.matchers.paths.shouldExist
 import io.kotest.matchers.should

@@ -2,8 +2,8 @@ package com.bkahlert.netmon.model_identification
 
 import com.bkahlert.kommons.FileCache
 import com.bkahlert.kommons.io.useBufferedOutputStream
-import com.bkahlert.kommons.logging.SLF4J
-import com.bkahlert.kommons.logging.logback.StructuredArguments.v
+import com.bkahlert.netmon.logging.SLF4J
+import net.logstash.logback.argument.StructuredArguments.v
 import com.bkahlert.netmon.serialization.DataUrl
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.encodeToStream

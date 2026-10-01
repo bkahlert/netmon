@@ -3,8 +3,8 @@ package com.bkahlert.netmon.nmap
 import com.bkahlert.kommons.FileCache
 import com.bkahlert.kommons.io.age
 import com.bkahlert.kommons.io.useBufferedOutputStream
-import com.bkahlert.kommons.logging.SLF4J
-import com.bkahlert.kommons.logging.logback.StructuredArguments.kv
+import com.bkahlert.netmon.logging.SLF4J
+import net.logstash.logback.argument.StructuredArguments.kv
 import java.net.URL
 import java.nio.file.Path
 import kotlin.io.path.createDirectories
