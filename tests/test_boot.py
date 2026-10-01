@@ -38,14 +38,15 @@ class TestKiosk:
 
 
 class TestScanner:
-    def test_reports_its_memory_after_the_first_scan(self, host, request):
+    def test_reports_its_memory_after_the_first_scan(self, host, request, capfd):
         log = journal_until(host, "completed and published to", attempts=90)
         assert "completed and published to" in log
 
         show = host.check_output("systemctl show -p MemoryCurrent -p MemoryPeak netmon-scanner.service").splitlines()
 
         reporter = request.config.pluginmanager.get_plugin("terminalreporter")
-        reporter.ensure_newline()
-        reporter.write_line(f"netmon-scanner after the first scan: {' '.join(show)}")
+        with capfd.disabled():
+            reporter.ensure_newline()
+            reporter.write_line(f"netmon-scanner after the first scan: {' '.join(show)}")
         assert "MemoryCurrent=[not set]" not in show
         assert any(line.startswith("MemoryCurrent=") for line in show), show
