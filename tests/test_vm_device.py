@@ -82,6 +82,11 @@ class TestPytestConfigure:
 
         assert not (vm_device.OUT / "user-data").exists()
 
+    @pytest.fixture(autouse=True)
+    def restored_device_file(self):
+        yield
+        vm_device.write()
+
 
 def without_edited_blocks(text: str) -> str:
     for start in ("users:", "  - path: /etc/apt/sources.list.d/netmon.sources"):
