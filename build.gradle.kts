@@ -73,15 +73,15 @@ kotlin {
 
         val jvmMain by getting {
             dependencies {
-                implementation("ch.qos.logback:logback-classic:1.2.11")
-                implementation("net.logstash.logback:logstash-logback-encoder:7.2") { because("structured log arguments; JSON log files in the integration tests") }
+                implementation("ch.qos.logback:logback-classic:1.3.16")
+                implementation("net.logstash.logback:logstash-logback-encoder:7.4") { because("structured log arguments; JSON log files in the integration tests") }
 
                 implementation("org.jetbrains.kotlinx:kotlinx-coroutines-jdk8")
                 implementation("org.jetbrains.kotlinx:kotlinx-coroutines-slf4j")
 
                 implementation("com.hivemq:hivemq-mqtt-client:1.3.17") { because("publish scans") }
                 implementation(platform("com.hivemq:hivemq-mqtt-client-websocket:1.3.17"))
-                implementation("org.jmdns:jmdns:3.5.8") { because("mDNS / Bonjour based hostname resolution") }
+                implementation("org.jmdns:jmdns:3.6.3") { because("mDNS / Bonjour based hostname resolution") }
             }
             languageSettings.optIn("kotlin.io.path.ExperimentalPathApi")
         }
