@@ -10,7 +10,7 @@ import io.kotest.data.forAll
 import io.kotest.data.row
 import io.kotest.matchers.collections.shouldBeSingleton
 import io.kotest.matchers.collections.shouldContainExactly
-import io.kotest.matchers.ints.shouldBeBetween
+import io.kotest.matchers.comparables.shouldBeBetween
 import io.kotest.matchers.should
 import io.kotest.matchers.shouldBe
 import kotlinx.coroutines.test.runTest

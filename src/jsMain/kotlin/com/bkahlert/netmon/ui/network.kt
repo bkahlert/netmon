@@ -17,7 +17,7 @@ import com.bkahlert.netmon.model_identification.DeviceModelCodes
 import dev.fritz2.core.HtmlTag
 import dev.fritz2.core.RenderContext
 import dev.fritz2.core.Store
-import dev.fritz2.core.classes
+import dev.fritz2.core.joinClasses
 import dev.fritz2.core.mapByElement
 import dev.fritz2.core.mapByKey
 import kotlinx.browser.window
@@ -49,7 +49,7 @@ fun RenderContext.scan(
     events: Store<ScanEvent>,
     stabilizedThreshold: Duration = HostEventSettings.stabilizedThreshold,
 ): HtmlTag<HTMLElement> = div(
-    classes(
+    joinClasses(
         "space-y-5 pt-4 sm:pb-4 sm:px-4 sm:rounded-xl",
         "sm:border sm:border-white/20",
         "grid grid-rows-[1fr_minmax(1px,100%)]",
@@ -131,7 +131,7 @@ fun RenderContext.hosts(
     zoomedToFitClientHeight()
     hosts.data.map { it.size }.distinctUntilChanged() handledBy { resetZoomed() }
 
-    ul(classes("hosts grid grid-cols-[repeat(auto-fill,185px)] justify-around", classes)) {
+    ul(joinClasses("hosts grid grid-cols-[repeat(auto-fill,185px)] justify-around", classes)) {
         hosts.data.renderEach(Host::ip, into = this) { value ->
             li { host(hosts.mapByElement(value, Host::ip)) }
         }

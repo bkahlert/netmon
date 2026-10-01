@@ -13,6 +13,7 @@ import dev.fritz2.core.Handler
 import dev.fritz2.core.Lens
 import dev.fritz2.core.RootStore
 import dev.fritz2.core.SimpleHandler
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
@@ -22,7 +23,7 @@ import kotlin.time.Duration
 /** Store of the current time that updates itself based on the specified [refreshInterval]. */
 open class CurrentTimeStore(
     private val refreshInterval: Duration = UiSettings.REFRESH_INTERVAL,
-) : RootStore<Instant>(Clock.System.now()) {
+) : RootStore<Instant>(Clock.System.now(), job = Job()) {
 
     final override val update: SimpleHandler<Instant> = super.update
 
@@ -42,7 +43,7 @@ open class CurrentTimeStore(
 /** Store of network scans. */
 class ScanEventsStore(
     private val outdatedThreshold: Duration = ScanEventSettings.outdatedThreshold,
-) : RootStore<Map<EventSource, ScanEvent>>(emptyMap()) {
+) : RootStore<Map<EventSource, ScanEvent>>(emptyMap(), job = Job()) {
 
     val process: Handler<Pair<EventSource, ScanEvent>> = handle { currentScans, (newSource, newScan) ->
         if (newScan.isOutdated()) {
@@ -76,7 +77,7 @@ class ConsoleLogStore(
     initial: Pair<String, String>,
     private vararg val levels: String = arrayOf("error", "warn", "info"),
     private val console: Console = com.bkahlert.kommons.js.console,
-) : RootStore<Pair<String, String>>(initial) {
+) : RootStore<Pair<String, String>>(initial, job = Job()) {
 
     init {
         console.asDynamic()[initial.first](initial.second)

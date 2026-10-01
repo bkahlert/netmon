@@ -12,7 +12,7 @@ help: ## list targets
 	@grep -E '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) | awk 'BEGIN{FS=":.*?## "}{printf "  %-14s %s\n", $$1, $$2}'
 
 gradle: ## build the scanner jar and the web bundle
-	./gradlew $(GRADLE_ARGS) shadowJar jsBrowserProductionWebpack
+	./gradlew $(GRADLE_ARGS) shadowJar jsBrowserDistribution
 
 build: gradle ## build the .deb packages into dist/
 	@$(UV) python -m pihero_testkit.build

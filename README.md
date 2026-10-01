@@ -43,7 +43,7 @@ Ansible installer is frozen at the tag
 #### Run the scanner component locally
 
 ```shell
-./gradlew runShadow
+./gradlew runJvm
 ```
 
 #### Run the web display component locally
@@ -55,7 +55,7 @@ Ansible installer is frozen at the tag
 ### Build and test the packages
 
 ```shell
-export JAVA_HOME=$(/usr/libexec/java_home -v 17)   # Gradle 8.2 runs on JDK 17
+# Gradle runs on JDK 17 (gradle/gradle-daemon-jvm.properties) and finds or downloads one itself
 make build                                          # Gradle, then nfpm: dist/*.deb
 make test                                           # tier 0 (static checks, unit tests) and tier 1 (install into a systemd container)
 make deploy TARGET=pi@netmon.local                  # the built packages onto a device, no repository involved
