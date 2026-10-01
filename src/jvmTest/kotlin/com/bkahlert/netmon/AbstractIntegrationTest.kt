@@ -1,7 +1,6 @@
 package com.bkahlert.netmon
 
 import com.bkahlert.netmon.serialization.JsonFormat
-import io.kotest.assertions.failure
 import io.kotest.matchers.booleans.shouldBeFalse
 import kotlinx.serialization.Serializable
 import java.nio.file.Path
@@ -67,7 +66,7 @@ abstract class AbstractIntegrationTest {
             outputConsumer.interrupt()
             terminationObserver.interrupt()
             process.destroyForcibly()
-            throw failure("Test should have completed within $timeout")
+            throw AssertionError("Test should have completed within $timeout")
         }
 
         process.isAlive.shouldBeFalse()

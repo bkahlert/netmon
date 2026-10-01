@@ -8,6 +8,8 @@ import pytest
 
 from pihero_testkit import tools
 
+import vm_device
+
 pytestmark = pytest.mark.tier0
 
 ROOT = Path.cwd()
@@ -35,6 +37,7 @@ def unit_files():
 
 def device_files():
     yield from (ROOT / "devices").glob("*/user-data")
+    yield vm_device.write() / "user-data"
 
 
 @pytest.mark.parametrize("script", sorted(shell_files()), ids=lambda p: str(p.relative_to(ROOT)))

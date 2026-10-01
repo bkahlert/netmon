@@ -1,5 +1,5 @@
 <component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="netmon [runShadow]" type="GradleRunConfiguration" factoryName="Gradle">
+  <configuration default="false" name="netmon [runJvm]" type="GradleRunConfiguration" factoryName="Gradle">
     <ExternalSystemSettings>
       <option name="executionName" />
       <option name="externalProjectPath" value="$PROJECT_DIR$" />
@@ -10,7 +10,7 @@
       </option>
       <option name="taskNames">
         <list>
-          <option value="runShadow" />
+          <option value="runJvm" />
         </list>
       </option>
       <option name="vmOptions" />
@@ -21,7 +21,7 @@
     <RunAsTest>false</RunAsTest>
     <method v="2" />
   </configuration>
-  <configuration default="false" name="netmon [runShadow]" type="GradleRunConfiguration" factoryName="Gradle">
+  <configuration default="false" name="netmon [runJvm]" type="GradleRunConfiguration" factoryName="Gradle">
     <ExternalSystemSettings>
       <option name="env">
         <map>
@@ -38,7 +38,7 @@
       </option>
       <option name="taskNames">
         <list>
-          <option value="runShadow" />
+          <option value="runJvm" />
         </list>
       </option>
       <option name="vmOptions" />

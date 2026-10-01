@@ -11,9 +11,13 @@ package = false
 pihero-testkit = { git = "https://github.com/bkahlert/pihero", subdirectory = "testkit", tag = "v2.2.0" }
 
 [dependency-groups]
-dev = ["pihero-testkit"]
+dev = [
+    "pihero-testkit",
+    "playwright>=1.63.0",
+]
 
 [tool.pytest.ini_options]
 testpaths = ["packages", "tests"]
+pythonpath = ["tests"]
 # testinfra's own plugin registers after the testkit's and its local-host `host` fixture would shadow the target's.
 addopts = "-p pihero_testkit.plugin -p no:pytest11.testinfra --import-mode=importlib -ra"

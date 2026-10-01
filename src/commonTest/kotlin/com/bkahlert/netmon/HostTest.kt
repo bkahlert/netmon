@@ -1,11 +1,11 @@
 package com.bkahlert.netmon
 
-import kotlinx.datetime.Clock
+import kotlin.time.Clock
 import com.bkahlert.netmon.serialization.JsonFormat
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldContain
 import io.kotest.matchers.string.shouldNotContain
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 import kotlinx.serialization.encodeToString
 import kotlin.test.Test
 

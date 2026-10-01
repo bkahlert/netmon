@@ -1,6 +1,6 @@
 package com.bkahlert.netmon
 
-import kotlinx.datetime.Clock
+import kotlin.time.Clock
 import com.bkahlert.netmon.scanner.ScanResult
 import com.bkahlert.netmon.serialization.JsonFormat
 import io.kotest.inspectors.forAll

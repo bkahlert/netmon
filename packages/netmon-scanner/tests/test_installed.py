@@ -60,8 +60,8 @@ class TestUnit:
         assert host.service("netmon-scanner").is_running
 
     def test_completes_and_publishes_a_scan(self, host, request):
-        if request.config.getoption("--target") != "ssh":
-            pytest.skip("a scan of the container's /16 takes minutes; proven on a device")
+        if request.config.getoption("--target") == "podman":
+            pytest.skip("a scan of the container's /16 takes minutes; proven in the VM and on a device")
 
         log = journal_until(host, "completed and published to", attempts=90)
 
@@ -70,10 +70,10 @@ class TestUnit:
         assert "Switching to unprivileged mode" not in log
 
     def test_the_scan_is_retained_at_the_broker(self, host, request, mosquitto_clients):
-        if request.config.getoption("--target") != "ssh":
-            pytest.skip("a scan of the container's /16 takes minutes; proven on a device")
+        if request.config.getoption("--target") == "podman":
+            pytest.skip("a scan of the container's /16 takes minutes; proven in the VM and on a device")
 
-        out = host.check_output("mosquitto_sub -h 127.0.0.1 -t 'dt/netmon/+/+/+/scan' -C 1 -W 120")
+        out = host.check_output("mosquitto_sub -h 127.0.0.1 -t 'dt/netmon/+/+/+/+/scan' -C 1 -W 120")
 
         assert '"event":"scan"' in out.replace(" ", "")
 

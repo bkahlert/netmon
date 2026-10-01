@@ -1,8 +1,8 @@
 package com.bkahlert.netmon.ui
 
-import kotlinx.datetime.Clock
-import kotlinx.datetime.Instant
-import kotlinx.datetime.toJSDate
+import kotlin.time.Clock
+import kotlin.time.Instant
+import kotlin.js.Date
 import kotlin.js.dateLocaleOptions
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.days
@@ -54,4 +54,4 @@ private fun Duration.describeMoment(moment: String, descriptive: Boolean): Strin
 }
 
 private fun Instant.toLocalDateString(): String =
-    toJSDate().toLocaleDateString(options = dateLocaleOptions { year = "numeric"; month = "short"; day = "numeric" })
+    Date(toEpochMilliseconds().toDouble()).toLocaleDateString(options = dateLocaleOptions { year = "numeric"; month = "short"; day = "numeric" })

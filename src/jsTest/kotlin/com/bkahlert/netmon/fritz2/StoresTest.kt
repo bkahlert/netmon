@@ -15,7 +15,7 @@ class StoresTest {
 
     @Test
     fun partition_initial() = runTest {
-        val store = RootStore(listOf("bar"))
+        val store = RootStore(listOf("bar"), job = job)
         val partitionedStores = store.partition { it.first() < 'f' }
 
         partitionedStores should { (first, second) ->
@@ -26,7 +26,7 @@ class StoresTest {
 
     @Test
     fun partition_downstream() = runTest {
-        val store = RootStore(listOf("bar"))
+        val store = RootStore(listOf("bar"), job = job)
         val partitionedStores = store.partition { it.first() < 'f' }
 
         store.update(listOf("foo", "bar", "baz"))
@@ -40,7 +40,7 @@ class StoresTest {
 
     @Test
     fun partition_upstream() = runTest {
-        val store = RootStore(listOf("bar"))
+        val store = RootStore(listOf("bar"), job = job)
         val partitionedStores = store.partition { it.first() < 'f' }
 
         partitionedStores.first.update(listOf("bar", "e", "z"))

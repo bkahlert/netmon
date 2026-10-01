@@ -41,7 +41,7 @@ data class DebugMode(
     fun matches(namespace: String): Boolean = regex.matches(namespace)
 }
 
-private data object DebugSerializer : KSerializer<Debug> {
+internal data object DebugSerializer : KSerializer<Debug> {
     override val descriptor: SerialDescriptor = PrimitiveSerialDescriptor("Debug", PrimitiveKind.STRING)
 
     override fun serialize(encoder: Encoder, value: Debug) {

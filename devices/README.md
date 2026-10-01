@@ -4,7 +4,9 @@
 netmon apt source (its key inline, so the device trusts nothing else), the packages `netmon-scanner` and `netmon-display`,
 and `/etc/pihero/kiosk.conf` with the page the kiosk shows. Every other key is explained in pihero's
 [devices/README.md](https://github.com/bkahlert/pihero/blob/main/devices/README.md). Directories other than `sample/`
-are gitignored: keep your own here or in a private repository.
+are gitignored: keep your own here or in a private repository. `sample/` is also what tier 2 boots: `make test-tier2`
+renders it for the VM with the testkit's user and the local package repository and nothing else, so the file users copy is
+the file that is tested.
 
 Copy the two files, set the hostname, your SSH public key, the pretty name, the USB gadget's name and subnet, and your
 Wi-Fi in `network-config`; then, in a pihero checkout, `make flash DEVICE=<path to your directory> DISK=diskN`. First

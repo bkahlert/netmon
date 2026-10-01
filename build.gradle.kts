@@ -1,15 +1,13 @@
-import com.github.jengelman.gradle.plugins.shadow.transformers.Log4j2PluginsCacheFileTransformer
-import org.gradle.kotlin.dsl.support.listFilesOrdered
-import org.jetbrains.kotlin.gradle.targets.js.webpack.KotlinWebpack
+import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
 import org.jetbrains.kotlin.gradle.targets.js.webpack.KotlinWebpackConfig
 import org.jetbrains.kotlin.gradle.targets.js.yarn.YarnLockMismatchReport
-import org.jetbrains.kotlin.gradle.targets.js.yarn.yarn
+import org.jetbrains.kotlin.gradle.targets.js.yarn.YarnPlugin
+import org.jetbrains.kotlin.gradle.targets.js.yarn.YarnRootExtension
 
 plugins {
-    kotlin("multiplatform") version "1.9.0"
-    kotlin("plugin.serialization") version "1.9.0"
-    application
-    id("com.github.johnrengelman.shadow") version "8.1.1"
+    kotlin("multiplatform") version "2.4.20"
+    kotlin("plugin.serialization") version "2.4.20"
+    id("com.gradleup.shadow") version "9.6.1"
 }
 
 group = "com.bkahlert.netmon"
@@ -23,38 +21,41 @@ kotlin {
     // scanner component
     // not using native, because the target "linuxArm32Hfp" (required for Raspberry Pi Zero)
     // is no longer supported in Kotlin 1.9.20
+    // Raspberry Pi OS bookworm ships JRE 17, trixie JRE 21; kotest 6 and testcontainers 2 need 11 and 17.
+    jvmToolchain(17)
+
+    compilerOptions {
+        freeCompilerArgs.add("-Xexpect-actual-classes") // IP and its address types are expect/actual classes
+    }
+
     jvm {
-        compilations.all {
-            kotlinOptions {
-                freeCompilerArgs += "-Xjsr305=strict"
+        compilerOptions {
+            freeCompilerArgs.add("-Xjsr305=strict")
+        }
+        binaries {
+            executable {
+                mainClass.set("com.bkahlert.netmon.Application")
             }
         }
     }
 
     // viewer component
-    js(IR) {
+    js {
         browser {
-            commonWebpackConfig(Action<KotlinWebpackConfig> {
-                devServer = devServer?.copy(open = false)
-            })
+            commonWebpackConfig {
+                devServer = (devServer ?: KotlinWebpackConfig.DevServer()).copy(open = false)
+            }
         }
-        yarn.apply {
-            ignoreScripts = false // suppress "warning Ignored scripts due to flag." warning
-            yarnLockMismatchReport = YarnLockMismatchReport.NONE
-            reportNewYarnLock = true // true
-            yarnLockAutoReplace = true // true
-        }
-    }.binaries.executable()
+        binaries.executable()
+    }
 
     sourceSets {
         val commonMain by getting {
             dependencies {
-                implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.4.0")
-
-                implementation(platform("org.jetbrains.kotlinx:kotlinx-coroutines-bom:1.7.1"))
+                implementation(project.dependencies.platform("org.jetbrains.kotlinx:kotlinx-coroutines-bom:1.11.0"))
                 implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core")
 
-                implementation(platform("org.jetbrains.kotlinx:kotlinx-serialization-bom:1.5.1"))
+                implementation(project.dependencies.platform("org.jetbrains.kotlinx:kotlinx-serialization-bom:1.11.0"))
                 implementation("org.jetbrains.kotlinx:kotlinx-serialization-core")
                 implementation("org.jetbrains.kotlinx:kotlinx-serialization-json")
             }
@@ -63,9 +64,10 @@ kotlin {
             dependencies {
                 implementation(kotlin("test"))
 
-                implementation(platform("io.kotest:kotest-bom:5.6.2"))
+                implementation(project.dependencies.platform("io.kotest:kotest-bom:6.2.5"))
                 implementation("io.kotest:kotest-common")
                 implementation("io.kotest:kotest-assertions-core")
+                implementation("io.kotest:kotest-assertions-table")
 
                 implementation("org.jetbrains.kotlinx:kotlinx-coroutines-test")
             }
@@ -73,14 +75,14 @@ kotlin {
 
         val jvmMain by getting {
             dependencies {
-                implementation("ch.qos.logback:logback-classic:1.3.16")
-                implementation("net.logstash.logback:logstash-logback-encoder:7.4") { because("structured log arguments; JSON log files in the integration tests") }
+                implementation("ch.qos.logback:logback-classic:1.5.38")
+                implementation("net.logstash.logback:logstash-logback-encoder:9.0") { because("structured log arguments, JSON logs in the integration tests") }
 
                 implementation("org.jetbrains.kotlinx:kotlinx-coroutines-jdk8")
                 implementation("org.jetbrains.kotlinx:kotlinx-coroutines-slf4j")
 
-                implementation("com.hivemq:hivemq-mqtt-client:1.3.17") { because("publish scans") }
-                implementation(platform("com.hivemq:hivemq-mqtt-client-websocket:1.3.17"))
+                implementation("com.hivemq:hivemq-mqtt-client:1.4.0") { because("publish scans") }
+                implementation(project.dependencies.platform("com.hivemq:hivemq-mqtt-client-websocket:1.4.0"))
                 implementation("org.jmdns:jmdns:3.6.3") { because("mDNS / Bonjour based hostname resolution") }
             }
             languageSettings.optIn("kotlin.io.path.ExperimentalPathApi")
@@ -91,7 +93,7 @@ kotlin {
 
                 implementation("io.kotest:kotest-assertions-json")
 
-                implementation(platform("org.testcontainers:testcontainers-bom:1.19.6"))
+                implementation(project.dependencies.platform("org.testcontainers:testcontainers-bom:2.0.5"))
                 implementation("org.testcontainers:testcontainers")
             }
             languageSettings.optIn("kotlin.io.path.ExperimentalPathApi")
@@ -99,25 +101,25 @@ kotlin {
 
         val jsMain by getting {
             dependencies {
-                val fritz2Version = "1.0-RC6"
+                val fritz2Version = "1.0-RC21"
                 implementation("dev.fritz2:core:$fritz2Version")
                 implementation("dev.fritz2:headless:$fritz2Version")
 
                 // tailwind
-                implementation(npm("tailwindcss", "^3.3.3")) { because("low-level CSS classes") }
+                implementation(npm("tailwindcss", "^3.4")) { because("low-level CSS classes") }
 
                 // optional tailwind plugins
                 implementation(devNpm("@tailwindcss/typography", "^0.5")) { because("prose classes to format arbitrary text") }
                 implementation(devNpm("tailwind-heropatterns", "^0.0.8")) { because("hero-pattern like striped backgrounds") }
 
                 // webpack
-                implementation(devNpm("postcss", "^8.4.17")) { because("CSS post transformation, e.g. auto-prefixing") }
-                implementation(devNpm("postcss-loader", "^7.0.1")) { because("Loader to process CSS with PostCSS") }
-                implementation(devNpm("postcss-import", "^15.1")) { because("@import support") }
-                implementation(devNpm("autoprefixer", "10.4.12")) { because("auto-prefixing by PostCSS") }
-                implementation(devNpm("css-loader", "6.7.1"))
-                implementation(devNpm("style-loader", "3.3.1"))
-                implementation(devNpm("cssnano", "5.1.13")) { because("CSS minification by PostCSS") }
+                implementation(devNpm("postcss", "^8.5")) { because("CSS post transformation, e.g. auto-prefixing") }
+                implementation(devNpm("postcss-loader", "^8.1")) { because("Loader to process CSS with PostCSS") }
+                implementation(devNpm("postcss-import", "^16.1")) { because("@import support") }
+                implementation(devNpm("autoprefixer", "^10.4")) { because("auto-prefixing by PostCSS") }
+                implementation(devNpm("css-loader", "^7.1"))
+                implementation(devNpm("style-loader", "^4.0"))
+                implementation(devNpm("cssnano", "^7.0")) { because("CSS minification by PostCSS") }
             }
         }
         all {
@@ -133,20 +135,17 @@ kotlin {
     }
 }
 
-java {
-    toolchain {
-        languageVersion.set(JavaLanguageVersion.of(8))
-        // verify by passing "--info" to gradle, and
-        // look for: [KOTLIN] Kotlin compilation 'jdkHome' argument:
-        // see https://kotlinlang.org/docs/gradle-configure-project.html#gradle-java-toolchains-support
+rootProject.plugins.withType<YarnPlugin> {
+    rootProject.the<YarnRootExtension>().apply {
+        ignoreScriptsProperty.set(false) // suppress "warning Ignored scripts due to flag." warning
+        yarnLockMismatchReportProperty.set(YarnLockMismatchReport.NONE)
+        reportNewYarnLockProperty.set(true)
+        yarnLockAutoReplaceProperty.set(true)
     }
 }
 
-application {
-    mainClass.set("com.bkahlert.netmon.Application")
-}
 
-tasks.test {
+tasks.withType<Test>().configureEach {
     useJUnitPlatform()
 }
 
@@ -171,41 +170,22 @@ tasks {
         archiveVersion.set("")
     }
 
-    shadowJar {
+    // Shadow picks up the jvm target's main compilation and runtime classpath itself.
+    named<ShadowJar>("shadowJar") {
+        archiveBaseName.set("netmon")
         archiveVersion.set("")
-        // The application plugin's `main` source set is empty in a multiplatform build; the classes live in the jvm compilation.
-        from(kotlin.jvm().compilations.getByName("main").output.allOutputs)
-        configurations = listOf(project.configurations["jvmRuntimeClasspath"])
+        manifest { attributes["Main-Class"] = "com.bkahlert.netmon.Application" }
         mergeServiceFiles()
-        transform(Log4j2PluginsCacheFileTransformer::class.java)
     }
 
     assemble {
-        finalizedBy(shadowJar)
+        finalizedBy("shadowJar")
     }
 }
 
-tasks {
-    val removalPattern = listOf(
-        Regex("\\.(json)\$"),
-        Regex("\\.(jpe?g|png|gif|svg)\$"),
-        Regex("\\.(woff|woff2|eot|ttf|otf)\$"),
-        Regex("mqtt(\\.min)?\\.js\$"),
-        Regex("\\.(css)\$"),
-    )
-
-    val removalFilter: (File) -> Boolean = { file ->
-        removalPattern.any { it.containsMatchIn(file.name) }
-    }
-
-    val productionBuilds = withType<KotlinWebpack>().matching { it.name.endsWith("ProductionWebpack") }
-    val cleanUpProductionBuild by registering(Delete::class) {
-        mustRunAfter(productionBuilds)
-        doLast {
-            productionBuilds
-                .flatMap { task -> task.outputs.files.filter { it.isDirectory } }
-                .forEach { distDir -> distDir.listFilesOrdered(removalFilter).forEach { it.delete() } }
-        }
-    }
-    productionBuilds.configureEach { finalizedBy(cleanUpProductionBuild) }
+// webpack emits the images and JSON it bundles next to netmon.js; the distribution gets the identical files from the resources.
+// The stylesheets and mqtt.js are bundled into netmon.js and not served on their own.
+tasks.named<Sync>("jsBrowserDistribution") {
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+    exclude("*.css", "mqtt.js")
 }
