@@ -42,6 +42,20 @@ class TestRender:
         with pytest.raises(ValueError, match="one user"):
             vm_device.render(two, key=KEY)
 
+    def test_on_a_users_block_without_a_key_raises(self):
+        keyless = SAMPLE.replace("    ssh_authorized_keys:\n      - ssh-ed25519 AAAA...your public key... you@mac\n", "")
+
+        with pytest.raises(ValueError, match="ssh_authorized_keys"):
+            vm_device.render(keyless, key=KEY)
+
+    def test_sets_the_key_under_ssh_authorized_keys_and_not_an_earlier_list(self):
+        imported = SAMPLE.replace("    ssh_authorized_keys:\n", "    ssh_import_id:\n      - gh:someone\n    ssh_authorized_keys:\n")
+
+        result = vm_device.render(imported, key=KEY)
+
+        assert "    ssh_import_id:\n      - gh:someone\n" in result
+        assert f"    ssh_authorized_keys:\n      - {KEY}\n" in result
+
 
 class TestWrite:
     def test_writes_only_user_data_with_the_testkit_key(self, tmp_path):

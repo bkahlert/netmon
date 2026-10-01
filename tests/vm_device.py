@@ -24,7 +24,9 @@ def render(sample: str, key: str, user: str = USER, url: str = REPO_URL) -> str:
     if users.count("  - name: ") != 1:
         raise ValueError("expected one user in the sample device file")
     renamed = re.sub(r"^(?P<prefix>  - name: ).*$", lambda m: m["prefix"] + user, users, count=1, flags=re.M)
-    rekeyed = re.sub(r"^(?P<prefix>      - ).*$", lambda m: m["prefix"] + key, renamed, count=1, flags=re.M)
+    rekeyed, keys = re.subn(r"^(?P<prefix>    ssh_authorized_keys:\n      - ).*$", lambda m: m["prefix"] + key, renamed, count=1, flags=re.M)
+    if keys == 0:
+        raise ValueError("expected an ssh_authorized_keys entry in the sample device file")
     text = sample.replace(users, rekeyed)
     return text.replace(block(text, "  - path: /etc/apt/sources.list.d/netmon.sources"), NETMON_SOURCE.format(url=url))
 
