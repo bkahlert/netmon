@@ -80,7 +80,6 @@ kotlin {
 
                 implementation("org.jetbrains.kotlinx:kotlinx-coroutines-jdk8")
                 implementation("org.jetbrains.kotlinx:kotlinx-coroutines-slf4j")
-                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-debug")
 
                 implementation("com.hivemq:hivemq-mqtt-client:1.3.0") { because("publish scans") }
                 implementation(platform("com.hivemq:hivemq-mqtt-client-websocket:1.3.0"))
@@ -92,15 +91,10 @@ kotlin {
             dependencies {
                 implementation(kotlin("test"))
 
-//                implementation(platform("org.junit:junit-bom:5.10.2"))
-//                implementation("org.junit.jupiter:junit-jupiter-api")
-//                runtimeOnly("org.junit.jupiter:junit-jupiter-engine")
-
                 implementation("io.kotest:kotest-assertions-json")
 
                 implementation(platform("org.testcontainers:testcontainers-bom:1.19.6"))
                 implementation("org.testcontainers:testcontainers")
-//                implementation("org.testcontainers:junit-jupiter")
             }
             languageSettings.optIn("kotlin.io.path.ExperimentalPathApi")
         }
@@ -183,10 +177,9 @@ tasks {
 
     shadowJar {
         archiveVersion.set("")
-        configurations = listOf(
-            project.configurations["jvmRuntimeClasspath"],
-            project.configurations["jvmTestRuntimeClasspath"], // don't know why, but doesn't find "com.bkahlert.netmon.Application" otherwise
-        )
+        // The application plugin's `main` source set is empty in a multiplatform build; the classes live in the jvm compilation.
+        from(kotlin.jvm().compilations.getByName("main").output.allOutputs)
+        configurations = listOf(project.configurations["jvmRuntimeClasspath"])
         mergeServiceFiles()
         transform(Log4j2PluginsCacheFileTransformer::class.java)
     }
