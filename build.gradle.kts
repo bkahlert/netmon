@@ -81,8 +81,8 @@ kotlin {
                 implementation("org.jetbrains.kotlinx:kotlinx-coroutines-jdk8")
                 implementation("org.jetbrains.kotlinx:kotlinx-coroutines-slf4j")
 
-                implementation("com.hivemq:hivemq-mqtt-client:1.3.0") { because("publish scans") }
-                implementation(platform("com.hivemq:hivemq-mqtt-client-websocket:1.3.0"))
+                implementation("com.hivemq:hivemq-mqtt-client:1.3.17") { because("publish scans") }
+                implementation(platform("com.hivemq:hivemq-mqtt-client-websocket:1.3.17"))
                 implementation("org.jmdns:jmdns:3.5.8") { because("mDNS / Bonjour based hostname resolution") }
             }
             languageSettings.optIn("kotlin.io.path.ExperimentalPathApi")
