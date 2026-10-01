@@ -1,16 +1,19 @@
 package com.bkahlert.netmon.enrichment
 
-import com.bkahlert.netmon.logging.SLF4J
-import net.logstash.logback.argument.StructuredArguments.entries
-import net.logstash.logback.argument.StructuredArguments.kv
-import net.logstash.logback.argument.StructuredArguments.array
-import net.logstash.logback.argument.StructuredArguments.v
 import com.bkahlert.netmon.Host
+import com.bkahlert.netmon.logging.SLF4J
 import com.bkahlert.netmon.mdns.JmDNSServiceInfoCache
 import com.bkahlert.netmon.mdns.ServiceInfo
 import com.bkahlert.netmon.model_identification.DeviceModelCodes
+import net.logstash.logback.argument.StructuredArguments.array
+import net.logstash.logback.argument.StructuredArguments.entries
+import net.logstash.logback.argument.StructuredArguments.kv
+import net.logstash.logback.argument.StructuredArguments.v
 
-/** An enricher that contributes Apple-specific information to a [Host] using the specified [serviceInfoCache]. */
+/**
+ * An enricher that contributes Apple-specific information to a [Host] using the specified [serviceInfoCache].
+ * @see <a href="https://pyatv.dev/documentation/protocols/#companion-link">Companion Link</a>
+ */
 class AppleHostEnricher(
     private val serviceInfoCache: JmDNSServiceInfoCache,
     private val deviceModelCodes: DeviceModelCodes,
