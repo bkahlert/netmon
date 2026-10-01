@@ -2,7 +2,7 @@ package com.bkahlert.netmon
 
 import com.bkahlert.kommons.browser.AutoRefreshers
 import com.bkahlert.kommons.js.OnScreenConsole
-import com.bkahlert.kommons.time.Now
+import kotlinx.datetime.Clock
 import com.bkahlert.netmon.model_identification.DeviceModelCodes
 import com.bkahlert.netmon.model_identification.load
 import com.bkahlert.netmon.model_identification.resource
@@ -58,7 +58,7 @@ private fun scan(
             ip = IP.of("192.168.1.${it + 1}"),
             name = "Host $it",
             status = if (it % 2 == 0) Status.UP else Status.DOWN,
-            since = Now - (10 * (it * it).seconds)
+            since = Clock.System.now() - (10 * (it * it).seconds)
         )
     },
     customize: (Int, Host) -> Host = { _, host -> host },
@@ -67,5 +67,5 @@ private fun scan(
     hosts = buildList {
         for (i in 0..100) add(customize(i, template(i)))
     },
-    timestamp = Now - 1.seconds,
+    timestamp = Clock.System.now() - 1.seconds,
 )

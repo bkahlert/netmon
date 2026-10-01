@@ -1,6 +1,6 @@
 package com.bkahlert.netmon
 
-import com.bkahlert.kommons.time.Now
+import kotlinx.datetime.Clock
 import com.bkahlert.netmon.serialization.JsonFormat
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldContain
@@ -37,12 +37,12 @@ class HostTest {
 
     /**
      * Regression test for when [Host.since] wasn't serialized,
-     * likely because of its default parameter `if (status == Status.UP) Now else null`.
+     * likely because of its default parameter `if (status == Status.UP) Clock.System.now() else null`.
      */
     @Test
     fun regression() {
         (0..100).map {
-            val host = Host(ip = IP.of("10.0.0.1"), name = null, status = Status.UP, since = Now)
+            val host = Host(ip = IP.of("10.0.0.1"), name = null, status = Status.UP, since = Clock.System.now())
             val json = JsonFormat.encodeToString(Host.serializer(), host)
             json.shouldContain("\"since\":")
             json.shouldNotContain("\"since\": null")

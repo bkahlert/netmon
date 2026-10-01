@@ -1,6 +1,5 @@
 package com.bkahlert.netmon.ui
 
-import com.bkahlert.kommons.time.toMomentString
 import com.bkahlert.kommons.uri.toUriOrNull
 import com.bkahlert.netmon.CurrentTimeStore
 import com.bkahlert.netmon.Event.ScanEvent

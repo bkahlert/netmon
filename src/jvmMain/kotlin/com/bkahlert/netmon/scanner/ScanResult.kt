@@ -2,7 +2,7 @@ package com.bkahlert.netmon.scanner
 
 import com.bkahlert.kommons.logging.SLF4J
 import com.bkahlert.kommons.logging.logback.StructuredArguments.v
-import com.bkahlert.kommons.time.InstantAsEpochSecondsSerializer
+import com.bkahlert.netmon.serialization.InstantAsEpochSecondsSerializer
 import com.bkahlert.netmon.Cidr
 import com.bkahlert.netmon.Host
 import com.bkahlert.netmon.Status

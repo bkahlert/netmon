@@ -50,7 +50,7 @@ kotlin {
         val commonMain by getting {
             dependencies {
                 implementation(platform("com.bkahlert.kommons:kommons-bom:2.8.0"))
-                implementation("com.bkahlert.kommons:kommons-time")
+                implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.4.0")
 
                 implementation(platform("org.jetbrains.kotlinx:kotlinx-coroutines-bom:1.7.1"))
                 implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core")

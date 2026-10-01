@@ -1,7 +1,6 @@
 package com.bkahlert.netmon.ui
 
-import com.bkahlert.kommons.time.Now
-import com.bkahlert.kommons.time.toMomentString
+import kotlinx.datetime.Clock
 import com.bkahlert.netmon.ConsoleLogStore
 import com.bkahlert.netmon.CurrentTimeStore
 import dev.fritz2.core.RenderContext
@@ -12,7 +11,7 @@ fun RenderContext.status(consoleLogStore: ConsoleLogStore) {
     div("opacity-50") {
         +"started "
         span {
-            val start = Now
+            val start = Clock.System.now()
             CurrentTimeStore.data
                 .map { now -> (start - now).toMomentString() }
                 .renderText(into = this)

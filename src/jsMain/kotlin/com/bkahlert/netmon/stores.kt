@@ -7,7 +7,7 @@ import com.bkahlert.kommons.js.DefaultConsoleLogFormatter
 import com.bkahlert.kommons.js.console
 import com.bkahlert.kommons.js.format
 import com.bkahlert.kommons.js.tee
-import com.bkahlert.kommons.time.Now
+import kotlinx.datetime.Clock
 import com.bkahlert.netmon.Event.ScanEvent
 import dev.fritz2.core.Handler
 import dev.fritz2.core.Lens
@@ -22,7 +22,7 @@ import kotlin.time.Duration
 /** Store of the current time that updates itself based on the specified [refreshInterval]. */
 open class CurrentTimeStore(
     private val refreshInterval: Duration = UiSettings.REFRESH_INTERVAL,
-) : RootStore<Instant>(Now) {
+) : RootStore<Instant>(Clock.System.now()) {
 
     final override val update: SimpleHandler<Instant> = super.update
 
@@ -31,7 +31,7 @@ open class CurrentTimeStore(
         flow {
             while (true) {
                 delay(timeMillis)
-                emit(Now)
+                emit(Clock.System.now())
             }
         } handledBy update
     }
@@ -64,7 +64,7 @@ class ScanEventsStore(
         }
     }
 
-    private fun ScanEvent.isOutdated(): Boolean = (Now - timestamp) > outdatedThreshold
+    private fun ScanEvent.isOutdated(): Boolean = (Clock.System.now() - timestamp) > outdatedThreshold
 
     init {
         CurrentTimeStore.data.map { } handledBy cleanUp

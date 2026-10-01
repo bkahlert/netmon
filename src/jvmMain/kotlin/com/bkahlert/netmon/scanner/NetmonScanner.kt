@@ -1,7 +1,7 @@
 package com.bkahlert.netmon.scanner
 
 import com.bkahlert.kommons.logging.SLF4J
-import com.bkahlert.kommons.time.Now
+import kotlinx.datetime.Clock
 import com.bkahlert.netmon.Cidr
 import com.bkahlert.netmon.Host
 import com.bkahlert.netmon.enrichment.Enricher
@@ -32,7 +32,7 @@ class NetmonScanner(
             `interface` = `interface`,
             cidr = cidr,
             hosts = scanner.scan(cidr, timingTemplate = TimingTemplate.Insane),
-            timestamp = Now,
+            timestamp = Clock.System.now(),
         )
     }
 
@@ -45,7 +45,7 @@ class NetmonScanner(
             hosts = scanner.scan(cidr).map { host ->
                 enrichers.fold(host) { acc, enricher -> enricher.enrich(acc) ?: acc }
             },
-            timestamp = Now,
+            timestamp = Clock.System.now(),
         )
 
         oldScan.merge(currentScan, onChange)
