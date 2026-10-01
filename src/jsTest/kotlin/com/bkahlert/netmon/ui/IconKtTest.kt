@@ -10,6 +10,7 @@ import kotlinx.coroutines.delay
 import kotlinx.browser.document
 import org.w3c.dom.HTMLElement
 import kotlin.test.Test
+import kotlin.time.Duration.Companion.milliseconds
 
 class IconKtTest {
 
@@ -19,7 +20,7 @@ class IconKtTest {
         document.body?.appendChild(container)
 
         render(container) { icon(SFSymbols.display) }
-        delay(50)
+        delay(50.milliseconds)
 
         withClue(container.outerHTML) {
             container.querySelector("svg").shouldNotBeNull() should {
