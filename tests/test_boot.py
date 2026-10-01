@@ -9,7 +9,8 @@ pytestmark = pytest.mark.boot
 
 class TestProvisioning:
     def test_cloud_init_finished_without_errors(self, host):
-        status = json.loads(host.check_output("cloud-init status --long --format json"))
+        # cloud-init exits 2 for "degraded done", which the recoverable-errors filter judges; the JSON is read either way.
+        status = json.loads(host.run("cloud-init status --long --format json").stdout)
 
         assert status["errors"] == []
         assert unexpected_recoverable_errors(status) == []
