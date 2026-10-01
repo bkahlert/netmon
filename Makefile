@@ -1,7 +1,7 @@
 SHELL := /bin/bash
 .DEFAULT_GOAL := help
 # Gradle's output directory is called build, so the targets are declared phony.
-.PHONY: help gradle build test-jvm test-js test-tier0 test-tier1 test deploy clean release
+.PHONY: help gradle build browser test-jvm test-js test-tier0 test-tier1 test-tier2 test test-all vm-device vm-prepare vm display deploy clean release
 
 PLATFORM ?= linux/arm64
 TARGET ?=
@@ -16,6 +16,9 @@ gradle: ## build the scanner jar and the web bundle
 
 build: gradle ## build the .deb packages into dist/
 	@$(UV) python -m pihero_testkit.build
+
+browser: ## download Playwright's WebKit, the kiosk's engine family, for the display tests
+	@$(UV) playwright install webkit
 
 test-jvm: ## the scanner's JVM unit tests (those that need Docker, macOS bundles, nmap or quiet thread timing are left out)
 	./gradlew $(GRADLE_ARGS) jvmTest -PunitOnly

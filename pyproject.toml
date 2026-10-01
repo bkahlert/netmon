@@ -11,7 +11,10 @@ package = false
 pihero-testkit = { git = "https://github.com/bkahlert/pihero", subdirectory = "testkit", tag = "v2.2.0" }
 
 [dependency-groups]
-dev = ["pihero-testkit"]
+dev = [
+    "pihero-testkit",
+    "playwright>=1.63.0",
+]
 
 [tool.pytest.ini_options]
 testpaths = ["packages", "tests"]
