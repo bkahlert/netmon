@@ -1,8 +1,38 @@
-import pytest
+from pathlib import Path
+from types import SimpleNamespace
 
-from booted import exactly, gateway_of, unexpected_recoverable_errors
+import pytest
+from pihero_testkit.ssh import SshTarget
+
+from booted import exactly, gateway_of, tunnel_command, unexpected_recoverable_errors
 
 pytestmark = pytest.mark.tier0
+
+
+class TestTunnelCommand:
+    def test_for_the_vm_uses_its_key_port_and_user_without_connection_sharing(self):
+        vm = SimpleNamespace(key=Path("/tmp/vm/pihero-testkit"), port=5022, user="pihero")
+
+        result = tunnel_command(vm, http=18080, ws=18081)
+
+        assert result[:2] == ["ssh", "-N"]
+        assert "-L" in result and "127.0.0.1:18080:127.0.0.1:80" in result and "127.0.0.1:18081:127.0.0.1:8080" in result
+        assert "-i" in result and "/tmp/vm/pihero-testkit" in result
+        assert "-p" in result and "5022" in result
+        assert result[-1] == "pihero@127.0.0.1"
+        assert "ControlMaster=no" in result and "ControlPath=none" in result
+
+    def test_for_an_ssh_target_uses_the_uri_and_its_port(self):
+        result = tunnel_command(SshTarget("pi@netmon.local:2222", []), http=18080, ws=18081)
+
+        assert result[-1] == "pi@netmon.local"
+        assert "-p" in result and "2222" in result
+        assert "ControlPath=none" in result
+
+    def test_for_an_ssh_target_without_a_port_passes_none(self):
+        result = tunnel_command(SshTarget("pi@netmon.local", []), http=18080, ws=18081)
+
+        assert "-p" not in result
 
 
 class TestGatewayOf:

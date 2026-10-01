@@ -4,7 +4,8 @@ import socket
 import subprocess
 import time
 
-from pihero_testkit.vm import SSH_OPTS, Vm
+from pihero_testkit.ssh import SshTarget
+from pihero_testkit.vm import SSH_OPTS
 
 KNOWN_CLOUD_INIT_WARNING = "cc_netplan_nm_patch"
 
@@ -37,26 +38,31 @@ def exactly(ip: str) -> re.Pattern:
     return re.compile(rf"^{re.escape(ip)}$")
 
 
+def tunnel_command(target, http: int, ws: int) -> list[str]:
+    """Return the `ssh -N -L` command forwarding the local ports `http` and `ws` to the target's 80 and 8080."""
+    forwards = ["-L", f"127.0.0.1:{http}:127.0.0.1:80", "-L", f"127.0.0.1:{ws}:127.0.0.1:8080"]
+    # A multiplexed client hands the forwards to the master and exits at once; the tunnel has to be its own connection.
+    unshared = ["-o", "ControlMaster=no", "-o", "ControlPath=none"]
+    if isinstance(target, SshTarget):
+        user_host, _, port = target.uri.partition(":")
+        return ["ssh", "-N", *forwards, *(["-p", port] if port else []), *unshared, "-o", "BatchMode=yes", user_host]
+    return ["ssh", "-N", *forwards, "-i", str(target.key), "-p", str(target.port), *unshared, *SSH_OPTS, f"{target.user}@127.0.0.1"]
+
+
 class Tunnel:
     """Forwards two free local ports to the target's 80 and 8080 with `ssh -N -L` until closed."""
 
     def __init__(self, target):
         self.http = free_port()
         self.ws = free_port()
-        forwards = ["-L", f"127.0.0.1:{self.http}:127.0.0.1:80", "-L", f"127.0.0.1:{self.ws}:127.0.0.1:8080"]
-        if isinstance(target, Vm):
-            command = ["ssh", "-N", *forwards, "-i", str(target.key), "-p", str(target.port), *SSH_OPTS, f"{target.user}@127.0.0.1"]
-        else:
-            user_host, _, port = target.uri.partition(":")
-            command = ["ssh", "-N", *forwards, *(["-p", port] if port else []), "-o", "BatchMode=yes", user_host]
-        self.process = subprocess.Popen(command, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE, text=True)
+        self.process = subprocess.Popen(tunnel_command(target, self.http, self.ws), stdout=subprocess.DEVNULL, stderr=subprocess.PIPE, text=True)
         self._wait_listening()
 
     def _wait_listening(self, timeout: float = 30) -> None:
         deadline = time.monotonic() + timeout
         while time.monotonic() < deadline:
             if self.process.poll() is not None:
-                raise RuntimeError(f"the ssh tunnel exited: {self.process.stderr.read()}")
+                raise RuntimeError(f"the ssh tunnel exited with {self.process.returncode}: {self.process.stderr.read()}")
             try:
                 with socket.create_connection(("127.0.0.1", self.http), timeout=1):
                     return
