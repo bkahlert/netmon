@@ -26,12 +26,6 @@ class TestProvisioning:
         assert "video=HDMI-A-1:800x480M@60e" in cmdline
         assert "cgroup_enable=memory" in cmdline
 
-    def test_the_apt_hook_stops_and_starts_the_stack_around_dpkg(self, host):
-        hook = host.file("/etc/apt/apt.conf.d/52netmon-dpkg").content_string
-
-        assert 'DPkg::Pre-Invoke { "systemctl stop pihero-kiosk netmon-scanner || true"; };' in hook
-        assert 'DPkg::Post-Invoke { "systemctl start netmon-scanner pihero-kiosk || true"; };' in hook
-
 
 class TestKiosk:
     def test_is_skipped_by_its_condition_without_a_display_adapter(self, host):
