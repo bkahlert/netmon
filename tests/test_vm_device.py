@@ -1,3 +1,5 @@
+import subprocess
+import sys
 from pathlib import Path
 
 import pytest
@@ -51,7 +53,30 @@ class TestWrite:
         assert vm_device.PUBLIC_KEY.read_text().strip() in text
 
 
+class TestPytestConfigure:
+    def test_on_the_vm_target_without_a_device_generates_it(self):
+        (vm_device.OUT / "user-data").unlink(missing_ok=True)
+
+        collect_only("--target=vm")
+
+        assert (vm_device.OUT / "user-data").exists()
+
+    def test_on_an_explicit_device_leaves_it_alone(self):
+        (vm_device.OUT / "user-data").unlink(missing_ok=True)
+
+        collect_only("--target=vm", "--device=devices/sample")
+
+        assert not (vm_device.OUT / "user-data").exists()
+
+
 def without_edited_blocks(text: str) -> str:
     for start in ("users:", "  - path: /etc/apt/sources.list.d/netmon.sources"):
         text = text.replace(vm_device.block(text, start), "")
     return text
+
+
+def collect_only(*options: str) -> None:
+    subprocess.run(
+        [sys.executable, "-m", "pytest", "--collect-only", "-q", "-p", "no:cacheprovider", *options, "tests/test_vm_device.py"],
+        cwd=ROOT, check=True, capture_output=True, text=True,
+    )
