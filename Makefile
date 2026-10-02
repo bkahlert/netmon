@@ -13,8 +13,15 @@ GRADLE_ARGS ?= --no-daemon --console=plain
 help: ## list targets
 	@grep -E '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) | awk 'BEGIN{FS=":.*?## "}{printf "  %-14s %s\n", $$1, $$2}'
 
-gradle: ## build the scanner jar and the web bundle
+NATIVE_IMAGE := localhost/netmon-native:$(shell shasum -a 256 packages/netmon-scanner/native/Containerfile | cut -c1-12)
+
+gradle: ## build the scanner jar, its native binary and the web bundle
 	./gradlew $(GRADLE_ARGS) shadowJar jsBrowserDistribution
+	@$(MAKE) build/native/netmon-scanner
+
+build/native/netmon-scanner: build/libs/netmon-all.jar packages/netmon-scanner/native/Containerfile packages/netmon-scanner/native/compile
+	@podman image exists $(NATIVE_IMAGE) || podman build --platform linux/arm64 -t $(NATIVE_IMAGE) -f packages/netmon-scanner/native/Containerfile packages/netmon-scanner/native
+	podman run --rm --platform linux/arm64 -v "$(CURDIR):/work" -w /work $(NATIVE_IMAGE) packages/netmon-scanner/native/compile
 
 build: gradle ## build the .deb packages into dist/
 	@$(UV) python -m pihero_testkit.build
