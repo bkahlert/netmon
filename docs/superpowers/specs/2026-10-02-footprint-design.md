@@ -407,8 +407,25 @@ packages, `openssl`, `libssl3t64`, `openssl-provider-legacy`, `pihero-avahi`, `p
 22:17:59 by its package's hand and the page had loaded 24 s later; the scanner, the broker and lighttpd ran through,
 and the boot id did not change.
 
-The finish line is reached: apt and dpkg run next to the live stack. The hook stays aside and leaves the board's device
-template in choam.de, and the fleet playbook's `apt_stop_units` for netmon goes with it. The headroom is thin, 4 to
+Release 2.0.0 followed the same evening, tagged after tiers 0 to 2 passed locally and published by the release
+workflow, and the board took it from the repository next to the live stack, 23:46 to 23:51: `apt-get update` and
+`apt-get upgrade -y` of both packages, 14 MB over Wi-Fi, took 311 s at an apt `MemoryPeak` of 122 MB, `available` at
+least 105 MB, load up to 7.0; lighttpd, the broker and the scanner restarted once each by their packages' postinst,
+the kiosk's web process kept its PID, and the boot id did not change. The installed and boot tests passed over SSH, 22
+with 7 skipped. The new scanner unit runs with `MemoryMax=128M`, a 48 MiB heap and a 49 MB cgroup peak at start. The
+page did not reload onto the new bundle within ten minutes although lighttpd served new ETags, see the follow-ups.
+
+A ten-minute board soak on 2.0.0, 23:56 to 00:04, confirms the cap: `memory.max=134217728` in its header, the
+scanner's peak 39 MB and its rss up to 24 MB, `memory.events` all zero after the run, so the limit never engaged; the
+kiosk's peak 158 MB RAM+zram and 49 MB private dirty as before, 341 major faults per second, the web process's PID
+unchanged. Its last row:
+
+| t | scanner RAM+zram | scanner anon/file | scanner rss/anon | kiosk RAM+zram | kiosk anon/file | web private dirty/swap | Δweb cpu | available | swap free | zram pool | load | Δswpin | Δswpout | Δmajflt | PSI full10 |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| 608 | 14+5 | 9/4 | 16/11 | 92+61 | 53/34 | 47/33 | 37.8 | 139 | 269 | 34 | 1.6 | 3584 | 5201 | 10899 | n/a |
+
+The finish line is reached: apt and dpkg run next to the live stack. The hook is deleted from the board and has left the
+board's device template in choam.de, and the fleet playbook's `apt_stop_units` for netmon went with it. The headroom is thin, 4 to
 10 MB on paper, and a kernel upgrade with its initramfs build has not run next to the stack yet; the apt probe is the
 re-check after any change.
 
@@ -669,6 +686,9 @@ One pull request per step, every tier green at every step.
 4. **The display's rendering differences** seen in tier 2, and the `MQTT::Disconnected` header.
 5. **The web process's CPU on the board**, about one core at 800x480 under cog's `modeset` renderer against 5 % in
    the VM, before and after the kiosk changes; the soak's Δweb cpu column shows it.
+6. **The page's auto refresh on the kiosk.** After the 2.0.0 upgrade the panel kept the previous bundle for at least ten
+   minutes while lighttpd served new ETags for the page and `netmon.js`; cog logged no load event. Whether the
+   HEAD requests happen is unknown, since lighttpd keeps no access log; a VM with the access log on settles it.
 
 ## Sources
 
