@@ -35,9 +35,19 @@ class TestClassify:
         assert classify("exited", "0", "boot-1", "boot-1", units(), units(kiosk_restarts=1)) == f"{KIOSK} restarted during the run"
         assert classify("exited", "0", "boot-1", "boot-1", units(), units(scanner_active="inactive")) == f"{SCANNER} is inactive after the run"
 
+    def test_a_unit_that_was_inactive_before_and_after_is_named(self):
+        result = classify("exited", "0", "boot-1", "boot-1", units(kiosk_active="failed"), units(kiosk_active="failed"))
 
-def units(scanner_active: str = "active", kiosk_restarts: int = 0) -> dict[str, UnitSample]:
-    def unit(active: str, restarts: int) -> UnitSample:
-        return UnitSample(active=active, restarts=restarts, current=1, swap_current=1, peak=1, swap_peak=1, anon=1, file=1, oom_kills=0)
+        assert result == f"{KIOSK} is failed after the run"
 
-    return {SCANNER: unit(scanner_active, 0), KIOSK: unit("active", kiosk_restarts)}
+    def test_an_oom_kill_during_the_run_is_named(self):
+        result = classify("exited", "0", "boot-1", "boot-1", units(), units(kiosk_oom_kills=1))
+
+        assert result == f"{KIOSK} had an oom kill during the run"
+
+
+def units(scanner_active: str = "active", kiosk_active: str = "active", kiosk_restarts: int = 0, kiosk_oom_kills: int = 0) -> dict[str, UnitSample]:
+    def unit(active: str, restarts: int, oom_kills: int) -> UnitSample:
+        return UnitSample(active=active, restarts=restarts, current=1, swap_current=1, peak=1, swap_peak=1, anon=1, file=1, oom_kills=oom_kills)
+
+    return {SCANNER: unit(scanner_active, 0, 0), KIOSK: unit(kiosk_active, kiosk_restarts, kiosk_oom_kills)}

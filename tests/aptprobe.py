@@ -13,7 +13,7 @@ def command(package: str) -> str:
 
 
 def classify(sub_state: str, exit_status: str, boot_before: str, boot_after: str, before: dict[str, UnitSample], after: dict[str, UnitSample]) -> str:
-    """Return `ok`, or one sentence naming what went wrong: a reset, an unreachable target, a timeout, apt's exit status, a unit that restarted or stopped."""
+    """Return `ok`, or one sentence naming the failure: a reset, an unreachable target, a timeout, apt's exit status, a unit stopped, restarted or killed."""
     if not boot_after:
         return "the target is unreachable after the run"
     if boot_after != boot_before:
@@ -24,8 +24,10 @@ def classify(sub_state: str, exit_status: str, boot_before: str, boot_after: str
         return f"apt exited with {exit_status}"
     for unit, was in before.items():
         now = after[unit]
-        if was.active == "active" and now.active != "active":
+        if now.active != "active":
             return f"{unit} is {now.active} after the run"
         if now.restarts != was.restarts:
             return f"{unit} restarted during the run"
+        if now.oom_kills != was.oom_kills:
+            return f"{unit} had an oom kill during the run"
     return "ok"

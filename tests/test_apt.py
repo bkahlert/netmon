@@ -4,7 +4,7 @@ from pathlib import Path
 import pytest
 
 from aptprobe import HOOK, TERMINAL, UNIT, classify, command
-from sampling import na, parse_show, read_sample, render_table
+from sampling import KIOSK, UNITS, na, parse_show, read_sample, render_table
 
 pytestmark = pytest.mark.apt
 SAMPLE_INTERVAL = 10
@@ -18,6 +18,12 @@ class TestAptNextToTheStack:
         package = request.config.getoption("--apt-package")
         host.run(f"systemctl stop {UNIT}; systemctl reset-failed {UNIT}")
         before = read_sample(host)
+        kiosk_expected = host.file("/dev/dri").exists
+        for unit in UNITS:
+            if unit == KIOSK and not kiosk_expected:
+                continue
+            if before.units[unit].active != "active":
+                pytest.fail(f"{unit} is {before.units[unit].active} before the run; the probe needs both units running")
 
         started = time.monotonic()
         host.check_output(command(package))
