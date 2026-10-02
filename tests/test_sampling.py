@@ -155,6 +155,13 @@ class TestRenderTable:
 
         assert "web process private dirty up to 60 MB, web process cpu 4.2 s, " in result
 
+    def test_summary_omits_the_web_process_cpu_across_a_replaced_web_process(self):
+        samples = [sample(0, web_cpu_ticks=1000), sample(30, web_cpu_ticks=1250), sample(60, web_cpu_ticks=50, web_pid=1985)]
+
+        result = render_summary(samples)
+
+        assert "web process cpu" not in result
+
     def test_summary_names_the_peaks(self):
         samples = [sample(0, kiosk_current=80 * 2**20), sample(30, kiosk_current=120 * 2**20)]
 
