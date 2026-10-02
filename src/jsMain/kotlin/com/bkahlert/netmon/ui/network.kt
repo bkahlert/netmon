@@ -6,6 +6,7 @@ import com.bkahlert.netmon.Event.ScanEvent
 import com.bkahlert.netmon.EventSource
 import com.bkahlert.netmon.Host
 import com.bkahlert.netmon.HostEventSettings
+import com.bkahlert.netmon.MinuteClock
 import com.bkahlert.netmon.ScanEventSettings
 import com.bkahlert.netmon.ScanEventsStore
 import com.bkahlert.netmon.UiSettings
@@ -31,6 +32,7 @@ import org.w3c.dom.HTMLElement
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.ZERO
 import kotlin.time.Duration.Companion.seconds
+import kotlin.time.Instant
 
 fun RenderContext.networks(scanEventsStore: ScanEventsStore) {
     div("h-full overflow-y-hidden sm:grid grid-cols-[repeat(auto-fit,minmax(min(15rem,100%),1fr))] gap-4") {
@@ -79,7 +81,7 @@ fun RenderContext.scan(
                     }
                 }
             }
-        hosts(stableHosts, classes = "opacity-50 [zoom:0.75]")
+        hosts(stableHosts, clock = MinuteClock.data, classes = "opacity-50 [zoom:0.75]")
     }
 }
 
@@ -123,6 +125,7 @@ private fun HtmlTag<HTMLDivElement>.meta(
 
 fun RenderContext.hosts(
     hosts: Store<List<Host>>,
+    clock: Flow<Instant> = CurrentTimeStore.data,
     classes: String? = null,
 ): HtmlTag<HTMLDivElement> = div {
     // "clip" is like "hidden" but with a margin to not cut-off animated content
@@ -132,17 +135,18 @@ fun RenderContext.hosts(
 
     ul(joinClasses("hosts grid grid-cols-[repeat(auto-fill,185px)] justify-around", classes)) {
         hosts.data.renderEach(Host::ip, into = this) { value ->
-            li { host(hosts.mapByElement(value, Host::ip)) }
+            li { host(hosts.mapByElement(value, Host::ip), clock) }
         }
     }
 }
 
 fun RenderContext.host(
     host: Store<Host>,
+    clock: Flow<Instant>,
     highlightDuration: Duration = UiSettings.HOST_STATE_CHANGE_HIGHLIGHT_DURATION,
 ) {
 
-    val elapsedTime: Flow<Duration?> = CurrentTimeStore.data.combine(host.data) { now, h -> h.getElapsedTime(now) }
+    val elapsedTime: Flow<Duration?> = clock.combine(host.data) { now, h -> h.getElapsedTime(now) }
 
     val ips = host.data.map { it.ip }.distinctUntilChanged()
     val hostNames = host.data.map { it.name }.distinctUntilChanged()
