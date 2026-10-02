@@ -3,6 +3,9 @@ from sampling import UnitSample
 
 HOOK = "/etc/apt/apt.conf.d/52netmon-dpkg"
 UNIT = "netmon-apt-probe"
+SAMPLER = "netmon-apt-anon-sampler"
+STAT_FILE = f"/sys/fs/cgroup/system.slice/{UNIT}.service/memory.stat"
+PEAK_FILE = "/run/netmon-apt-anon-peak"
 TERMINAL = {"exited", "failed", "dead"}
 
 
@@ -10,6 +13,23 @@ def command(package: str) -> str:
     """Return the systemd-run line that runs the update and reinstalls the package as an accounted unit that stays loaded after exit."""
     apt = f"apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y --reinstall {package}"
     return f"systemd-run --unit={UNIT} --quiet -p MemoryAccounting=yes -p RemainAfterExit=yes sh -c '{apt}'"
+
+
+def sampler_command(timeout: int) -> str:
+    """Return the systemd-run line that samples the probe unit's anonymous memory every half second and keeps its maximum in a file."""
+    loop = (
+        f"peak=0; end=$(( $(date +%s) + {timeout} )); "
+        "while [ $(date +%s) -lt $end ]; do "
+        f'anon=$(grep -m1 "^anon " {STAT_FILE} 2>/dev/null | cut -d" " -f2); anon=${{anon:-0}}; '
+        'if [ "$anon" -gt "$peak" ]; then peak=$anon; fi; '
+        f"echo $peak > {PEAK_FILE}; sleep 0.5; done"
+    )
+    return f"systemd-run --unit={SAMPLER} --quiet sh -c '{loop}'"
+
+
+def parse_anon_peak(content: str) -> int | None:
+    """Return the peak in bytes the sampler wrote, or None for an empty or missing file."""
+    return int(content) if content.strip() else None
 
 
 def classify(sub_state: str, exit_status: str, boot_before: str, boot_after: str, before: dict[str, UnitSample], after: dict[str, UnitSample]) -> str:
