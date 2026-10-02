@@ -228,7 +228,8 @@ def render_summary(samples: list[Sample]) -> str:
 
     web = max((s.system.web_private_dirty for s in samples if s.system.web_private_dirty is not None), default=None)
     scanner_rss = max((s.system.scanner_rss for s in samples if s.system.scanner_rss is not None), default=None)
-    web_cpu = cpu_seconds(samples[0].system.web_cpu_ticks, samples[-1].system.web_cpu_ticks)
+    first, last = samples[0].system, samples[-1].system
+    web_cpu = cpu_seconds(first.web_cpu_ticks, last.web_cpu_ticks) if first.web_pid == last.web_pid else "n/a"
     web_cpu_text = "" if web_cpu == "n/a" else f", web process cpu {web_cpu} s"
     faults = (samples[-1].system.pgmajfault - samples[0].system.pgmajfault) / max(samples[-1].at - samples[0].at, 1)
     return (
