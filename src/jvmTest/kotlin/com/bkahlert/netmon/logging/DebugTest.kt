@@ -1,6 +1,5 @@
 package com.bkahlert.netmon.logging
 
-import ch.qos.logback.classic.Level
 import io.kotest.data.forAll
 import io.kotest.data.row
 import io.kotest.matchers.should
@@ -44,15 +43,15 @@ class DebugTest {
     @Test
     fun apply() = runTest {
         val levels = mapOf(
-            "netmon.test" to Level.INFO,
-            "foo.bar" to Level.INFO,
-            "foo.baz" to Level.INFO,
+            "netmon.test" to LogLevel.INFO,
+            "foo.bar" to LogLevel.INFO,
+            "foo.baz" to LogLevel.INFO,
         )
 
         debug.apply(levels) should {
-            it["netmon.test"] shouldBe Level.DEBUG
-            it["foo.bar"] shouldBe Level.OFF
-            it["foo.baz"] shouldBe Level.INFO
+            it["netmon.test"] shouldBe LogLevel.DEBUG
+            it["foo.bar"] shouldBe LogLevel.OFF
+            it["foo.baz"] shouldBe LogLevel.INFO
         }
     }
 }

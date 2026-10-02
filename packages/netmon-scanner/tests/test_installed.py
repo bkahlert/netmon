@@ -13,7 +13,7 @@ class TestPackage:
         assert package.version == version
 
     def test_pulls_in_the_runtime(self, host):
-        for name in ("nmap", "mosquitto", "default-jre-headless", "python3"):
+        for name in ("nmap", "mosquitto", "default-jre-headless"):
             assert host.package(name).is_installed, name
 
     def test_leaves_nmaps_binary_as_debian_ships_it(self, host, libcap):

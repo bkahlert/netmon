@@ -1,6 +1,5 @@
 package com.bkahlert.netmon.logging
 
-import ch.qos.logback.classic.Level
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.descriptors.PrimitiveKind
@@ -20,11 +19,11 @@ class Debug(val debugModes: List<DebugMode>) : Collection<DebugMode> by debugMod
         }
     }
 
-    fun apply(levels: Map<String, Level>): Map<String, Level> = levels.mapValues { (logger, level) ->
+    fun apply(levels: Map<String, LogLevel>): Map<String, LogLevel> = levels.mapValues { (logger, level) ->
         val lowerCaseName = logger.lowercase()
         when (state(lowerCaseName) ?: state(lowerCaseName.replace('.', ':'))) {
-            true -> Level.DEBUG
-            false -> Level.OFF
+            true -> LogLevel.DEBUG
+            false -> LogLevel.OFF
             null -> level
         }
     }

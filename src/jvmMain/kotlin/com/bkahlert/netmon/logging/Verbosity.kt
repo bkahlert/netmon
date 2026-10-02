@@ -1,40 +1,38 @@
 package com.bkahlert.netmon.logging
 
-import ch.qos.logback.classic.Level
-
 enum class Verbosity(
-    val levels: Map<String, Level>
+    val levels: Map<String, LogLevel>
 ) {
     ERRORS_AND_WARNINGS(
-        "root" to Level.WARN,
-        "javax.jmdns.impl.DNSIncoming" to Level.ERROR, // Suppresses "There was an OPT answer. Not currently handled. Option code: 10"
-        "com.bkahlert.netmon.Application" to Level.INFO,
-        "com.bkahlert.netmon.enrichment" to Level.ERROR,
+        "root" to LogLevel.WARN,
+        "javax.jmdns.impl.DNSIncoming" to LogLevel.ERROR, // Suppresses "There was an OPT answer. Not currently handled. Option code: 10"
+        "com.bkahlert.netmon.Application" to LogLevel.INFO,
+        "com.bkahlert.netmon.enrichment" to LogLevel.ERROR,
     ),
     VERBOSE(
-        "root" to Level.INFO,
-        "javax.jmdns.impl.DNSIncoming" to Level.ERROR, // Suppresses "There was an OPT answer. Not currently handled. Option code: 10"
-        "com.bkahlert.netmon.exec" to Level.WARN,
-        "com.bkahlert.netmon.net" to Level.WARN,
-        "com.bkahlert.netmon.mdns.JmDNSServiceInfoCache" to Level.WARN,
-        "com.bkahlert.netmon.enrichment" to Level.WARN,
-        "com.bkahlert.netmon.mqtt" to Level.WARN,
+        "root" to LogLevel.INFO,
+        "javax.jmdns.impl.DNSIncoming" to LogLevel.ERROR, // Suppresses "There was an OPT answer. Not currently handled. Option code: 10"
+        "com.bkahlert.netmon.exec" to LogLevel.WARN,
+        "com.bkahlert.netmon.net" to LogLevel.WARN,
+        "com.bkahlert.netmon.mdns.JmDNSServiceInfoCache" to LogLevel.WARN,
+        "com.bkahlert.netmon.enrichment" to LogLevel.WARN,
+        "com.bkahlert.netmon.mqtt" to LogLevel.WARN,
     ),
     VERY_VERBOSE(
-        "root" to Level.INFO,
-        "javax.jmdns.impl.DNSIncoming" to Level.ERROR, // Suppresses "There was an OPT answer. Not currently handled. Option code: 10"
-        "com.bkahlert.netmon.Application" to Level.DEBUG,
-        "com.bkahlert.netmon.mdns" to Level.DEBUG,
-        "com.bkahlert.netmon.mdns.JmDNSServiceInfoCache" to Level.INFO,
+        "root" to LogLevel.INFO,
+        "javax.jmdns.impl.DNSIncoming" to LogLevel.ERROR, // Suppresses "There was an OPT answer. Not currently handled. Option code: 10"
+        "com.bkahlert.netmon.Application" to LogLevel.DEBUG,
+        "com.bkahlert.netmon.mdns" to LogLevel.DEBUG,
+        "com.bkahlert.netmon.mdns.JmDNSServiceInfoCache" to LogLevel.INFO,
     ),
     EXTREMELY_VERBOSE(
-        "root" to Level.DEBUG,
-        "io.netty" to Level.INFO,
-        "javax.jmdns" to Level.INFO,
+        "root" to LogLevel.DEBUG,
+        "org.eclipse.paho" to LogLevel.INFO,
+        "javax.jmdns" to LogLevel.INFO,
     ),
     ;
 
-    constructor(vararg levels: Pair<String, Level>) : this(levels.toMap())
+    constructor(vararg levels: Pair<String, LogLevel>) : this(levels.toMap())
 
     companion object {
         fun from(verbosity: Int): Verbosity = when (verbosity) {

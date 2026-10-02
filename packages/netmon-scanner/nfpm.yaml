@@ -14,7 +14,6 @@ license: MIT
 depends:
   - default-jre-headless
   - nmap
-  - python3
   - mosquitto
 contents:
   - src: root/

@@ -7,5 +7,5 @@ import kotlin.time.Duration.Companion.seconds
 /** Settings for the [NmapNetworkScanner]. */
 object ScannerSettings : Settings("scanner") {
 
-    val pauseDuration: Duration by setting(default = 10.seconds)
+    val pauseDuration: Duration by setting(default = 30.seconds)
 }

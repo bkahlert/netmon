@@ -1,7 +1,6 @@
 package com.bkahlert.netmon.scanner
 
 import com.bkahlert.netmon.logging.SLF4J
-import net.logstash.logback.argument.StructuredArguments.v
 import com.bkahlert.netmon.serialization.InstantAsEpochSecondsSerializer
 import com.bkahlert.netmon.Cidr
 import com.bkahlert.netmon.Host
@@ -73,9 +72,9 @@ data class ScanResult(
         tempFile.writeText(content)
         tempFile.moveTo(file, overwrite = true)
     } catch (e: ClosedChannelException) {
-        logger.info("Aborted saving scan result to {} was aborted", v("file", file.toAbsolutePath()))
+        logger.info("Aborted saving scan result to {} was aborted", file.toAbsolutePath())
     } catch (e: Throwable) {
-        logger.error("Error saving scan result to {}", v("file", file.toAbsolutePath()), e)
+        logger.error("Error saving scan result to {}", file.toAbsolutePath(), e)
     }
 
     companion object {
@@ -89,7 +88,7 @@ data class ScanResult(
                 format.decodeFromString<ScanResult>(this)
             }.fold(
                 onSuccess = {
-                    logger.info("Loaded stored scan from {}", v("file", file))
+                    logger.info("Loaded stored scan from {}", file)
                     it
                 },
                 onFailure = { error ->

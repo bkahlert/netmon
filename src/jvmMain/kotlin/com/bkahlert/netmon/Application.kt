@@ -3,8 +3,6 @@ package com.bkahlert.netmon
 import com.bkahlert.kommons.FileCache
 import com.bkahlert.kommons.Pid
 import com.bkahlert.netmon.logging.SLF4J
-import net.logstash.logback.argument.StructuredArguments.kv
-import net.logstash.logback.argument.StructuredArguments.v
 import com.bkahlert.netmon.enrichment.AmazonHostEnricher
 import com.bkahlert.netmon.enrichment.AppleHostEnricher
 import com.bkahlert.netmon.enrichment.DeviceInfoHostEnricher
@@ -98,7 +96,7 @@ class Application(
             stringFormat = JsonFormat,
             serializer = Event.serializer(),
         ).also {
-            logger.info("{} connected", v("publisher", it))
+            logger.info("{} connected", it)
         }
 
 
@@ -188,7 +186,7 @@ class Application(
         fun main(args: Array<out String>) {
             try {
                 LoggingSettings.apply(*args)
-                logger.info("Application starting with {} and {}", kv("pid", Pid.current.value), kv("args", args.asList()))
+                logger.info("Application starting with pid={} and args={}", Pid.current.value, args.asList())
                 Application().start()
                 logger.debug("Application terminated successfully")
                 exitProcess(0)

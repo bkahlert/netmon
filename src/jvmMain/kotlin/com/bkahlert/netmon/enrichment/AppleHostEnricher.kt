@@ -5,10 +5,6 @@ import com.bkahlert.netmon.logging.SLF4J
 import com.bkahlert.netmon.mdns.JmDNSServiceInfoCache
 import com.bkahlert.netmon.mdns.ServiceInfo
 import com.bkahlert.netmon.model_identification.DeviceModelCodes
-import net.logstash.logback.argument.StructuredArguments.array
-import net.logstash.logback.argument.StructuredArguments.entries
-import net.logstash.logback.argument.StructuredArguments.kv
-import net.logstash.logback.argument.StructuredArguments.v
 
 /**
  * An enricher that contributes Apple-specific information to a [Host] using the specified [serviceInfoCache].
@@ -48,9 +44,9 @@ class AppleHostEnricher(
                     .also {
                         if (it.size > 1) {
                             logger.warn(
-                                "Multiple models found by {}: {}",
-                                kv("service", service.application),
-                                v("models", it)
+                                "Multiple models found by service={}: {}",
+                                service.application,
+                                it
                             )
                         }
                     }
@@ -64,9 +60,9 @@ class AppleHostEnricher(
             1 -> modelsFoundBy.entries.first()
                 .also {
                     logger.info(
-                        "Unique {} found: {}",
-                        kv("model", it.key),
-                        array("services", *it.value.map(ServiceInfo::application).toTypedArray())
+                        "Unique model={} found: services={}",
+                        it.key,
+                        it.value.map(ServiceInfo::application)
                     )
                 }
                 .key
@@ -74,7 +70,7 @@ class AppleHostEnricher(
             else -> modelsFoundBy.entries.sortedByDescending { it.value.size }
                 .also {
                     logger.warn("Multiple models found: {}",
-                        entries(modelsFoundBy.mapValues { it.value.map(ServiceInfo::application) }))
+                        modelsFoundBy.mapValues { it.value.map(ServiceInfo::application) })
                 }
                 .first().key
         }

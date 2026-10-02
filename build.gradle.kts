@@ -75,14 +75,12 @@ kotlin {
 
         val jvmMain by getting {
             dependencies {
-                implementation("ch.qos.logback:logback-classic:1.6.4")
-                implementation("net.logstash.logback:logstash-logback-encoder:9.0") { because("structured log arguments, JSON logs in the integration tests") }
+                implementation("org.slf4j:slf4j-simple:2.0.20") { because("logging to the journal without XML or reflection") }
 
                 implementation("org.jetbrains.kotlinx:kotlinx-coroutines-jdk8")
                 implementation("org.jetbrains.kotlinx:kotlinx-coroutines-slf4j")
 
-                implementation("com.hivemq:hivemq-mqtt-client:1.4.0") { because("publish scans") }
-                implementation(project.dependencies.platform("com.hivemq:hivemq-mqtt-client-websocket:1.4.0"))
+                implementation("org.eclipse.paho:org.eclipse.paho.client.mqttv3:1.2.5") { because("publish scans over MQTT 3; no transitive dependencies") }
                 implementation("org.jmdns:jmdns:3.6.3") { because("mDNS / Bonjour based hostname resolution") }
             }
             languageSettings.optIn("kotlin.io.path.ExperimentalPathApi")
@@ -155,11 +153,9 @@ tasks.named<Test>("jvmTest") {
     if (project.hasProperty("unitOnly")) {
         filter {
             excludeTestsMatching("*IntegrationTest")
-            excludeTestsMatching("*NmapNetworkScannerTest")
+            excludeTestsMatching("*NmapNetworkScannerTest.scan*")
             // Thread timing under a loaded CI runner; passes locally and failed once in a release run.
             excludeTestsMatching("*SlicedApplicationTest")
-            // Connects to the public test.mosquitto.org; failed a release run with UncompletedCoroutinesError.
-            excludeTestsMatching("*MqttPublisherTest")
         }
     }
 }

@@ -1,7 +1,6 @@
 package com.bkahlert.netmon.net
 
 import com.bkahlert.netmon.logging.SLF4J
-import net.logstash.logback.argument.StructuredArguments
 import com.bkahlert.netmon.scanner.NetworkFilterSettings
 import java.math.BigInteger
 import java.net.Inet4Address
@@ -17,17 +16,17 @@ class SystemInterfaceAddressResolver(
 ) : InterfaceAddressResolver {
 
     override fun resolve(): List<InterfaceAddress> = candidates()
-        .also { logger.info("Evaluating candidate {}", StructuredArguments.array("interface-addresses", *it.toTypedArray())) }
+        .also { logger.info("Evaluating candidate interface-addresses={}", it) }
         .let {
             predicates.fold(it) { acc, predicate ->
                 val (passed, failed) = acc.partition(predicate)
                 if (failed.isNotEmpty()) {
                     logger.info(
-                        "{} {} not {}: {}",
+                        "{} {} not {}: interface-addresses={}",
                         failed.size,
                         if (failed.size == 1) "interface" else "interfaces",
                         predicate.description,
-                        StructuredArguments.array("interface-addresses", *failed.toTypedArray()),
+                        failed,
                     )
                 }
                 passed

@@ -2,26 +2,18 @@ package com.bkahlert.netmon.nmap
 
 import com.bkahlert.netmon.exec.CommandLine
 import com.bkahlert.netmon.logging.SLF4J
-import net.logstash.logback.argument.StructuredArguments.kv
-import net.logstash.logback.argument.StructuredArguments.v
 import com.bkahlert.netmon.Cidr
 import com.bkahlert.netmon.Host
 import com.bkahlert.netmon.IPv6
-import com.bkahlert.netmon.serialization.JsonFormat
-import java.net.URL
 import java.nio.file.Path
-import kotlin.io.path.createTempFile
-import kotlin.io.path.deleteIfExists
 import kotlin.io.path.pathString
-import kotlin.io.path.readText
-import kotlin.io.path.writeBytes
-import kotlin.io.path.writeText
 import kotlin.properties.Delegates
 import kotlin.time.Duration.Companion.seconds
 
 class NmapNetworkScanner(
     privileged: Boolean = NmapSettings.privileged,
     val dataDir: Path? = NmapSettings.dataDir,
+    binary: Path = requireCommand("nmap"),
 ) {
     // read-only from the outside
     // can internally only be set to false
@@ -29,13 +21,13 @@ class NmapNetworkScanner(
         private set
 
     private val logger by SLF4J
-    private val binary: String = requireCommand("nmap").pathString
+    private val binary: String = binary.pathString
 
     fun scan(
         network: Cidr,
         timingTemplate: TimingTemplate = TimingTemplate.Aggressive,
     ): List<Host> {
-        logger.info("Scanning network {}", v("network", network))
+        logger.info("Scanning network {}", network)
 
         val nmapCommandLine = CommandLine(binary, buildList {
             dataDir?.also { add("--datadir"); add(it.pathString) }
@@ -53,6 +45,7 @@ class NmapNetworkScanner(
         val xml = kotlin.runCatching {
             nmapCommandLine.exec().readTextOrThrow()
         }.recover { error ->
+            if (error is InterruptedException) throw error
             val errorMessage = error.message.orEmpty()
             if (errorMessage.contains("exit code 130", ignoreCase = true)) {
                 throw InterruptedException("nmap execution cancelled")
@@ -71,40 +64,8 @@ class NmapNetworkScanner(
             nmapCommandLine.exec().readTextOrThrow()
         }.getOrThrow()
 
-        val json = XmlToJsonConverter.convert(xml)
-        val hosts = JsonFormat.decodeFromString<NmapOutput>(json).nmapRun.hosts
-        logger.info("Discovered {} in {}", kv("hosts", hosts), kv("network", network))
+        val hosts = NmapXml.parse(xml)
+        logger.info("Discovered hosts={} in network={}", hosts, network)
         return hosts
     }
-}
-
-object XmlToJsonConverter {
-
-    private val logger by SLF4J
-    private val python: String = requireCommand("python3").pathString
-    private val xml2json: String = run {
-        val resource: URL = XmlToJsonConverter::class.java.classLoader.getResource("xml2json.py") ?: error("Resource not found: xml2json.py")
-        resource.readBytes().let {
-            val tempFile = createTempFile("xml2json", ".py").apply { toFile().deleteOnExit() }
-            tempFile.writeBytes(it)
-            tempFile.pathString
-        }
-    }
-
-    fun convert(xml: String): String = createTempFile("xml2json", ".xml").let {
-        it.writeText(xml)
-        val result = kotlin.runCatching { convert(it) }
-        it.deleteIfExists()
-        result.getOrThrow()
-    }
-
-    fun convert(xmlFile: Path): String = CommandLine(python, xml2json, "--type", "xml2json", xmlFile.pathString)
-        .exec()
-        .runCatching {
-            readTextOrThrow()
-        }.onFailure {
-            val xml = runCatching { xmlFile.readText() }.getOrElse { "—FAIL—" }
-            logger.error("Failed to convert XML to JSON: {}", kv("xml", xml))
-        }.getOrThrow()
-        .trim()
 }

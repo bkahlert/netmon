@@ -1,7 +1,5 @@
 package com.bkahlert.kommons.config
 
-import ch.qos.logback.classic.Level
-import com.bkahlert.netmon.logging.Logback
 import java.util.Properties
 
 actual fun <R> withTestConfig(vararg config: Pair<String, String>, block: () -> R): R {
@@ -11,16 +9,11 @@ actual fun <R> withTestConfig(vararg config: Pair<String, String>, block: () -> 
         putAll(config)
     }
 
-    val logger = Logback[Settings::class.java.`package`.name]
-    val oldLogLevel = logger.level
-
     System.setProperties(testConfig)
-    logger.level = Level.DEBUG
 
     try {
         return block()
     } finally {
-        logger.level = oldLogLevel
         System.setProperties(oldConfig)
     }
 }

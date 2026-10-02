@@ -1,6 +1,5 @@
 package com.bkahlert.netmon.logging
 
-import ch.qos.logback.classic.Level
 import io.kotest.data.forAll
 import io.kotest.data.row
 import io.kotest.matchers.shouldBe
@@ -10,21 +9,18 @@ import kotlin.test.Test
 class LoggingSettingsTest {
 
     @Test
-    fun apply() = runTest {
+    fun apply_sets_the_simple_loggers_levels_from_verbosity_and_debug() = runTest {
         System.setProperty("debug", "*.netmon*,-*mdns*")
+
         LoggingSettings.apply("-v")
+
         forAll(
-            // enabled by debug
-            row("com.bkahlert.netmon.net", Level.DEBUG),
-
-            // disabled by debug
-            row("javax.jmdns.impl.DNSIncoming", Level.OFF),
-            row("com.bkahlert.netmon.mdns.JmDNSServiceInfoCache", Level.OFF),
-
-            // unaffected by debug
-            row("io.netty", Verbosity.VERY_VERBOSE.levels["io.netty"]),
+            row("com.bkahlert.netmon.net", LogLevel.DEBUG),
+            row("javax.jmdns.impl.DNSIncoming", LogLevel.OFF),
+            row("com.bkahlert.netmon.mdns.JmDNSServiceInfoCache", LogLevel.OFF),
+            row(SimpleLogger.ROOT, LogLevel.INFO),
         ) { logger, level ->
-            Logback[logger].level shouldBe level
+            SimpleLogger.level(logger) shouldBe level
         }
     }
 }
