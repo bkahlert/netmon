@@ -45,11 +45,11 @@ fills its `-Xmx128m`; the kiosk's `MemoryPeak` is 315 MB and its `MemoryCurrent`
 wants without any pressure.
 
 The budget: the two units' working sets, anonymous plus file-backed, must fit into the RAM size minus everything else
-minus apt's own peak minus a 40 MB margin. Everything else comes from the soak as used memory minus the two units;
-apt's peak comes from the apt probe in the VM. Both are measured in step 1 of the order of work and written into this
-section. Judging by today's numbers the two units have to land near 150 to 200 MB, half of what they take. The
-scanner's share is its measured steady state after step 3; the kiosk gets the remainder, and the web process's share of
-that is what its memory limit is sized from.
+minus apt's own peak minus a 40 MB margin. Everything else comes from the soak as used memory minus the two units; apt's
+peak comes from the apt probe in the VM. Both are measured in step 1 of the order of work and written into this section.
+Judging by today's numbers the two units have to land near 150 to 200 MB, half of what they take. The board baseline
+below supersedes this estimate. The scanner's share is its measured steady state after step 3; the kiosk gets the
+remainder, and the web process's share of that is what its memory limit is sized from.
 
 ### VM, 1 GB, zram swap
 
@@ -112,10 +112,15 @@ The budget from the last row, with the two units at 88 + 247 = 335 and `availabl
 415 (RAM) - (306 - 335) (everything else) - 309 (apt) - 40 (margin) = 95
 ```
 
-Everything else comes out at -29 MB. Used memory counts the compressed pages in zram, while the units' zram figures are
-the uncompressed sizes of what they swapped out, so the subtraction mixes two measures and the 95 is not a reliable
-budget. With the 75 MB of RAM that the 07:40 table gives for everything else, the same formula yields 415 - 75 - 309 -
-40 = -9.
+Everything else comes out at -29 MB. The likely reason is that used memory counts the compressed pages in zram, while
+the units' zram figures are probably the uncompressed sizes of what they swapped out. If so, the subtraction mixes two
+measures and the 95 is not a reliable budget. The harness samples the zram pool's `mem_used_total` and renders it from
+the next soak on, which will confirm or refute this. With the 75 MB of RAM that the 07:40 table gives for everything
+else, the same formula yields 415 - 75 - 309 - 40 = -9.
+
+The budget is open. Two decisions are the user's: how "everything else" is measured, with used memory minus the units'
+RAM minus the zram pool, within one measure, as the candidate, and whether apt's term is the cgroup's `MemoryPeak`,
+309 MB, or its anonymous peak, which the probe does not yet read.
 
 ## Decisions
 
