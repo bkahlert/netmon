@@ -449,7 +449,7 @@ re-check after any change.
 | Remote inspector | Switched on by hand in a kept VM when a JavaScript heap figure is wanted, never in the sample | The file users copy is the file tier 2 boots |
 | Page | Auto-reload polls once a minute; the radar icons pulse for ten seconds after a scan arrives; cards in the stable section take a one-minute clock; unused Tailwind plugins, prototyping CSS and the headless module go | The feature that reloads the panel after a display upgrade stays, at a twelfth of the requests; the infinite animation goes; the per-second work shrinks to the cards whose texts change; MQTT.js stays as documented |
 | Package | `netmon-scanner` is `arch: arm64`, depends on nmap and mosquitto, ships the binary at `/usr/lib/netmon/netmon-scanner` | No JRE, no Python |
-| The testkit | Unchanged during the plan, pinned at v2.4.0; bumped to v2.5.2 right after 2.0.0, with the tier 0 collection tests collecting against the vm target since v2.5.0 asks an ssh target which packages it has | Its build module names every deb `_all.deb` and reuses self-built debs; both are harmless here since apt-ftparchive reads the control file and the deploy filter accepts the suffix, and the native build stays out of the testkit's self-build path |
+| The testkit | Unchanged during the plan, pinned at v2.4.0; bumped to v2.5.2 and then v2.6.0 right after 2.0.0, with the tier 0 collection tests collecting against the vm target since v2.5.0 asks an ssh target which packages it has | Its build module names every deb `_all.deb` and reuses self-built debs; both are harmless here since apt-ftparchive reads the control file and the deploy filter accepts the suffix, and the native build stays out of the testkit's self-build path |
 | CI | The tier 1 matrix and the release lose `linux/arm/v7` and the QEMU setup that existed for it | The scanner no longer installs there |
 | Version | The release that ships the native scanner is 2.0.0 | Dropping 32-bit ARM and the JRE dependency is a breaking change |
 | Gate | After the board soak of step 3 and the A/Bs of step 4, the numbers go against the budget before the finish line is attempted | Short means the table names the side that is over and the escalation is a new brainstorm, not a longer list of knobs |
@@ -689,8 +689,8 @@ Closed after 2.0.0:
 
 - **Weekly tier 2 CI** runs from [.github/workflows/weekly.yml](../../../.github/workflows/weekly.yml) on Monday 05:00
   under software emulation; its first run passed in 30 minutes.
-- **The testkit's deb names** carry `_all` for an arm64 package. Fixed in pihero's build module for its 2.6.0
-  release, not yet out; harmless here meanwhile, as the testkit decision says.
+- **The testkit's deb names** carried `_all` for an arm64 package. Fixed in pihero 2.6.0, which netmon pins since:
+  the scanner deb is `netmon-scanner_<version>_arm64.deb`, and nothing in netmon named the old suffix.
 - **The native build as a CI artifact** is not done: tier 0 and tier 1 each build it in about five minutes, and the
   time does not hurt.
 - **The display's rendering differences** between the kiosk and Playwright's WebKit are the two engines' fonts and
