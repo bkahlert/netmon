@@ -176,12 +176,16 @@ def render_table(samples: list[Sample], limits: dict[str, str]) -> str:
 
 
 def render_summary(samples: list[Sample]) -> str:
-    def peak(unit: str) -> int:
-        return max((s.units[unit].current or 0) + (s.units[unit].swap_current or 0) for s in samples)
+    def peak(unit: str) -> int | None:
+        totals = [(u.current or 0) + (u.swap_current or 0) for s in samples if (u := s.units[unit]).current is not None or u.swap_current is not None]
+        return max(totals, default=None)
 
-    web = max((s.system.web_private_dirty or 0) for s in samples)
+    def size(value: int | None) -> str:
+        return "n/a" if value is None else f"{mb(value)} MB"
+
+    web = max((s.system.web_private_dirty for s in samples if s.system.web_private_dirty is not None), default=None)
     faults = (samples[-1].system.pgmajfault - samples[0].system.pgmajfault) / max(samples[-1].at - samples[0].at, 1)
-    return f"soak: scanner peak {mb(peak(SCANNER))} MB, kiosk peak {mb(peak(KIOSK))} MB RAM+zram, web process private dirty up to {mb(web)} MB, {faults:.1f} major faults/s"
+    return f"soak: scanner peak {size(peak(SCANNER))}, kiosk peak {size(peak(KIOSK))} RAM+zram, web process private dirty up to {size(web)}, {faults:.1f} major faults/s"
 
 
 def mb(value: int | None) -> str:

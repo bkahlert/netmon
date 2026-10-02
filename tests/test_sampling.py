@@ -96,9 +96,25 @@ class TestRenderTable:
 
         assert "kiosk" in result and "220 MB" in result
 
+    def test_summary_reports_an_unmeasured_peak_as_na(self):
+        samples = [sample(at, kiosk_current=None, kiosk_swap_current=None, web_private_dirty=None) for at in (0, 30)]
 
-def sample(at: float, pswpin: int = 0, pressure: float | None = None, kiosk_current: int = 50 * 2**20) -> Sample:
+        result = render_summary(samples)
+
+        assert "scanner peak 70 MB" in result
+        assert "kiosk peak n/a" in result
+        assert "private dirty up to n/a" in result
+
+
+def sample(
+    at: float,
+    pswpin: int = 0,
+    pressure: float | None = None,
+    kiosk_current: int | None = 50 * 2**20,
+    kiosk_swap_current: int | None = 100 * 2**20,
+    web_private_dirty: int | None = 60 * 2**20,
+) -> Sample:
     scanner = UnitSample(active="active", restarts=0, current=40 * 2**20, swap_current=30 * 2**20, peak=60 * 2**20, swap_peak=40 * 2**20, anon=30 * 2**20, file=10 * 2**20, oom_kills=0)
-    kiosk = UnitSample(active="active", restarts=0, current=kiosk_current, swap_current=100 * 2**20, peak=150 * 2**20, swap_peak=120 * 2**20, anon=50 * 2**20, file=20 * 2**20, oom_kills=0)
-    system = SystemSample(mem_available=90 * 2**20, swap_free=160 * 2**20, load1=3.1, pswpin=pswpin, pswpout=0, pgmajfault=0, pressure_full10=pressure, zram_used=69 * 2**20, web_private_dirty=60 * 2**20, web_swap=110 * 2**20, top="")
+    kiosk = UnitSample(active="active", restarts=0, current=kiosk_current, swap_current=kiosk_swap_current, peak=150 * 2**20, swap_peak=120 * 2**20, anon=50 * 2**20, file=20 * 2**20, oom_kills=0)
+    system = SystemSample(mem_available=90 * 2**20, swap_free=160 * 2**20, load1=3.1, pswpin=pswpin, pswpout=0, pgmajfault=0, pressure_full10=pressure, zram_used=69 * 2**20, web_private_dirty=web_private_dirty, web_swap=110 * 2**20, top="")
     return Sample(at=at, boot_id="b", units={SCANNER: scanner, KIOSK: kiosk}, system=system)
