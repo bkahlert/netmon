@@ -1,5 +1,5 @@
 name: netmon-scanner
-arch: all
+arch: arm64
 platform: linux
 version: ${VERSION}
 section: net
@@ -7,20 +7,21 @@ priority: optional
 maintainer: Björn Kahlert <bkahlert@users.noreply.github.com>
 description: |
   Netmon: scans the networks the device is on and publishes hosts over MQTT.
-  A JVM service around nmap, mDNS and NetBIOS, publishing to the local Mosquitto broker, whose websocket
+  A native service around nmap and mDNS, publishing to the local Mosquitto broker, whose websocket
   listener on port 8080 this package configures; the web display (netmon-display) subscribes there.
 homepage: https://github.com/bkahlert/netmon
 license: MIT
 depends:
-  - default-jre-headless
   - nmap
   - mosquitto
 contents:
   - src: root/
     dst: /
     type: tree
-  - src: ../../build/libs/netmon-all.jar
-    dst: /usr/share/netmon/netmon-scanner.jar
+  - src: ../../build/native/netmon-scanner
+    dst: /usr/lib/netmon/netmon-scanner
+    file_info:
+      mode: 0755
   - src: conf/mosquitto-netmon.conf
     dst: /etc/mosquitto/conf.d/netmon.conf
     type: config

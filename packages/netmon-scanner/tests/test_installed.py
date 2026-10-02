@@ -1,3 +1,4 @@
+import re
 import time
 
 import pytest
@@ -13,7 +14,7 @@ class TestPackage:
         assert package.version == version
 
     def test_pulls_in_the_runtime(self, host):
-        for name in ("nmap", "mosquitto", "default-jre-headless"):
+        for name in ("nmap", "mosquitto"):
             assert host.package(name).is_installed, name
 
     def test_leaves_nmaps_binary_as_debian_ships_it(self, host, libcap):
@@ -48,10 +49,12 @@ class TestUnit:
         assert "AmbientCapabilities=cap_net_admin cap_net_raw" in show
         assert "MemoryMax=335544320" in show
 
-    def test_starts_the_jvm_with_the_shipped_options(self, host):
-        """The unit's JAVA_TOOL_OPTIONS reach the JVM whole; unquoted, systemd dropped everything after the first space."""
-        log = journal_until(host, "Picked up JAVA_TOOL_OPTIONS")
-        assert "Picked up JAVA_TOOL_OPTIONS: -Xmx128m -XX:+UseSerialGC -XX:TieredStopAtLevel=1" in log
+    def test_starts_with_the_shipped_heap_cap(self, host):
+        log = journal_until(host, "max heap: ")
+        match = re.search(r"max heap: (?P<bytes>\d+) bytes", log)
+
+        assert match, log
+        assert 40 * 2**20 <= int(match["bytes"]) <= 48 * 2**20
 
     def test_connects_to_the_broker(self, host):
         log = journal_until(host, "connected")
@@ -94,7 +97,7 @@ class TestRemoval:
     def test_purge_leaves_nothing_behind(self, host, target):
         target.purge(["netmon-scanner"])
 
-        assert not host.file("/usr/share/netmon/netmon-scanner.jar").exists
+        assert not host.file("/usr/lib/netmon/netmon-scanner").exists
         assert not host.file("/etc/mosquitto/conf.d/netmon.conf").exists
         assert not host.file("/var/lib/netmon").exists
         assert not host.user("netmon").exists
