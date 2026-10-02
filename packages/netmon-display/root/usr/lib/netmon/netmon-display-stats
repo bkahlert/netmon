@@ -1,0 +1,89 @@
+#!/usr/bin/env bash
+# Purpose: Samples the kiosk's CPU and memory for the panel's status bar and writes them as JSON.
+# Usage:   netmon-display-stats [--out <file>] [--interval <seconds>] [--root <dir>] [--once]
+#
+# Options:
+#   --out <file>          The JSON file to write (default: /run/netmon-display/stats.json).
+#   --interval <seconds>  Seconds between two samples (default: 5).
+#   --root <dir>          Directory holding sys/ and proc/, for a fixture (default: /).
+#   --once                Write one sample and exit.
+#   -h, --help            Show this help.
+#
+# Examples:
+#   netmon-display-stats --once --interval 1 --out /tmp/stats.json && cat /tmp/stats.json
+#   {"at":1759450000,"interval":1,"kioskCpu":118,"webCpu":114,"kioskMemory":168820736}
+
+set -euo pipefail
+
+usage() { awk 'NR==1{next} /^#/{sub(/^# ?/,""); print; next} {exit}' "${BASH_SOURCE[0]}"; }
+die()   { printf '%s: %s\nSee '\''%s --help'\''\n' "${0##*/}" "$1" "${0##*/}" >&2; exit 2; }
+
+out=/run/netmon-display/stats.json; interval=5; root=/; once=false
+while (( $# )); do
+  case $1 in
+    -h|--help)    usage; exit 0 ;;
+    --out)        out=${2?--out: missing value}; shift 2 ;;
+    --out=*)      out=${1#*=}; shift ;;
+    --interval)   interval=${2?--interval: missing value}; shift 2 ;;
+    --interval=*) interval=${1#*=}; shift ;;
+    --root)       root=${2?--root: missing value}; shift 2 ;;
+    --root=*)     root=${1#*=}; shift ;;
+    --once)       once=true; shift ;;
+    -?*)          die "unknown option: $1" ;;
+    *)            die "unexpected argument: $1" ;;
+  esac
+done
+
+cgroup="${root%/}/sys/fs/cgroup/system.slice/pihero-kiosk.service"
+proc="${root%/}/proc"
+tick=$(getconf CLK_TCK)
+
+# Microseconds since the epoch.
+now_usec() { local t=$EPOCHREALTIME; echo "${t%.*}${t#*.}"; }
+
+# The kiosk cgroup's CPU time in microseconds, empty without the cgroup.
+kiosk_usec() { awk '/^usage_usec/ {print $2}' "$cgroup/cpu.stat" 2>/dev/null || true; }
+
+# The kiosk cgroup's RAM plus zram in bytes, empty without the cgroup.
+kiosk_memory() {
+  local ram swap
+  ram=$(cat "$cgroup/memory.current" 2>/dev/null) || return 0
+  swap=$(cat "$cgroup/memory.swap.current" 2>/dev/null) || swap=0
+  echo $(( ram + swap ))
+}
+
+# The PID of the kiosk's web process, empty without one.
+web_pid() {
+  local pid
+  [[ -r $cgroup/cgroup.procs ]] || return 0
+  while read -r pid; do
+    if [[ $(cat "$proc/$pid/comm" 2>/dev/null) == WPEWebProcess ]]; then echo "$pid"; return; fi
+  done < "$cgroup/cgroup.procs"
+}
+
+# The CPU ticks of PID $1 in user and kernel mode, empty when it is gone.
+web_ticks() {
+  local stat
+  [[ -n $1 ]] || return 0
+  stat=$(cat "$proc/$1/stat" 2>/dev/null) || return 0
+  # shellcheck disable=SC2086  # the words after the parenthesised command name are meant to split
+  set -- ${stat##*) }
+  echo $(( ${12} + ${13} ))
+}
+
+json() { printf '{"at":%s,"interval":%s,"kioskCpu":%s,"webCpu":%s,"kioskMemory":%s}\n' "$1" "$interval" "${2:-null}" "${3:-null}" "${4:-null}"; }
+
+prev_time=$(now_usec); prev_usec=$(kiosk_usec); prev_pid=$(web_pid); prev_ticks=$(web_ticks "$prev_pid")
+while :; do
+  sleep "$interval"
+  time=$(now_usec); usec=$(kiosk_usec); pid=$(web_pid); ticks=$(web_ticks "$pid")
+  elapsed=$(( time - prev_time ))
+  kiosk_cpu=""; web_cpu=""
+  if [[ -n $usec && -n $prev_usec ]]; then kiosk_cpu=$(( (usec - prev_usec) * 100 / elapsed )); fi
+  if [[ -n $pid && $pid == "$prev_pid" && -n $ticks && -n $prev_ticks ]]; then
+    web_cpu=$(( (ticks - prev_ticks) * 100 * 1000000 / (tick * elapsed) ))
+  fi
+  json "$(( time / 1000000 ))" "$kiosk_cpu" "$web_cpu" "$(kiosk_memory)" > "$out.tmp" && mv -f "$out.tmp" "$out"
+  prev_time=$time; prev_usec=$usec; prev_pid=$pid; prev_ticks=$ticks
+  if $once; then exit 0; fi
+done
