@@ -122,6 +122,19 @@ The budget is open. Two decisions are the user's: how "everything else" is measu
 RAM minus the zram pool, within one measure, as the candidate, and whether apt's term is the cgroup's `MemoryPeak`,
 309 MB, or its anonymous peak, which the probe does not yet read.
 
+### Scanner on the JVM after the slimming
+
+Tier 2 VM, 2026-10-02 14:00. Tier 1 passed with 16 tests, and tier 2 passed with 26 tests and 1 skipped. The boot tests
+printed:
+
+```
+pihero-kiosk after the first scan: MemoryCurrent=300298240 MemoryPeak=314802176
+netmon-scanner after the first scan: MemoryCurrent=36421632 MemoryPeak=36827136
+```
+
+This is the JVM baseline before the native image. The scanner's `MemoryCurrent` after the first scan fell from 51 MB on
+main to 35 MB.
+
 ## Decisions
 
 | Decision | Choice | Why |
