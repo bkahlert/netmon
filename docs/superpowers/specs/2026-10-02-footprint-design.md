@@ -234,16 +234,36 @@ the page without a JIT. The sample's `kiosk.conf` now carries `JSC_useJIT=false`
 `WEBKIT_SKIA_CPU_PAINTING_THREADS=1`. The A/B ran on top of the tiers rather than on `03-jit-off.conf`, and the VM
 paints in software anyway, so the board decides whether the line earns its place.
 
-WebKit's footprint is the web process's resident private dirty memory. `--web-mem-limit=200` puts the conservative
-threshold at 66 MB and the strict one at 100 MB. In every soak the web process's private dirty memory stayed between 103
-and 127 MB. In the four variants with the limit that is above the strict line, so WebKit ran its critical release on
-every ten-second check for the whole run: it purges caches and style data, discards all JIT and JavaScript code and
-schedules a full garbage collection. The mean load over the eleven samples was 0.12 for the baseline, which sets no
-limit, and 0.31, 0.40, 0.42 and 0.40 for `01-cog.conf` to `04-paint.conf`, while the Cog flags alone moved private dirty
-memory from 126 to 123 MB. The sizing rule in the kiosk configuration below puts the strict threshold at the web
-process's budget share and so guarantees that state. The board A/B in the next step runs the current lines against a
-limit of about 250 MiB and against the default 30-second check interval, judged on load and on the web process's CPU
-time, which the soak now samples.
+The soak reads the web process's private dirty memory; WebKit's own footprint is another measure, see the next
+paragraph. `--web-mem-limit=200` puts the conservative threshold at 66 MB and the strict one at 100 MB. In every soak
+the web process's private dirty memory stayed between 103 and 127 MB. In the four variants with the limit that is above
+the strict line, so WebKit ran its critical release on every ten-second check for the whole run: it purges caches and
+style data, discards all JIT and JavaScript code and schedules a full garbage collection. The mean load over the eleven
+samples was 0.12 for the baseline, which sets no limit, and 0.31, 0.40, 0.42 and 0.40 for `01-cog.conf` to
+`04-paint.conf`, while the Cog flags alone moved private dirty memory from 126 to 123 MB. The sizing rule in the kiosk
+configuration below puts the strict threshold at the web process's budget share and so guarantees that state. The board
+A/B in the next step runs the current lines against a limit of about 250 MiB and against the default 30-second check
+interval, judged on load and on the web process's CPU time, which the soak now samples.
+
+The web-process PID invariant, added to the soak afterwards, failed the first two-minute soak of the sample: the PID
+changed between samples, the kiosk's cgroup sat near its 300M cap and the system took 240 to 320 major faults per
+sample. In the kept VM the journal shows WebKit killing the web process at its first ten-second check, `Unable to shrink
+memory footprint of process (239 MB) below the kill thresold (190 MB). Killed`, and cog relaunching it, every ten
+seconds since boot: eight kills in 90 s with the sample as booted, after a restart, and with the Cog flags alone. WPE
+2.48.3 takes its footprint from bmalloc, which reads the resident pages in `/proc/self/statm`, so the libraries mapped
+into the web process count: 240 to 270 MB against 100 to 124 MB of anonymous memory, with `libWPEWebKit` at 63 MB,
+`libLLVM` at 52 MB and `libgallium` at 12 MB resident. Variants 01 to 04 carried the same threshold, and 01 loops in the
+kept VM too, so all four ran in the loop unseen; their rows describe a web process at most ten seconds old, and their
+higher load is the relaunches rather than the critical release. The sample drops `--web-kill-threshold`: a threshold
+above the resident set sits near `MemoryMax=300M`, which stays the leak guard. Without it the web process kept its PID
+through the two-minute soak, with about 2 s of CPU per 30-second sample and no major faults after the first. The kiosk's
+cgroup still reads 293+7 MB, 129 MB of it file pages charged at boot, against 175 MB after a restart. In the kept VM the
+web process used 8.8 % of a core, against 6.6 % with no memory flags at all, since its resident set keeps it in the
+strict policy on every check. The soak's summary line:
+
+```
+soak: scanner peak 47 MB, kiosk peak 300 MB RAM+zram, web process private dirty up to 93 MB, web process cpu 8.1 s, 0.0 major faults/s
+```
 
 ## Decisions
 
@@ -383,10 +403,11 @@ VM judged by the soak and `kiosk.png`, then confirmed on the board:
 
 1. `COG_ARGS` with `--doc-viewer`, which selects the document-viewer cache model and switches off the web process's
    memory cache; `--web-mem-limit=<MiB>` with `--web-check-interval=10`, the limit sized from the first soak so that
-   WebKit's strict threshold, half the limit, sits at the web process's share of the budget; and `--web-kill-threshold`
-   with `--webprocess-failure=restart` as the leak guard. The first soaks show that this puts the process into WebKit's
-   strict policy permanently, see Numbers; the board A/B settles the limit. Without a limit cog ignores the other memory
-   flags.
+   WebKit's strict threshold, half the limit, sits at the web process's share of the budget; and
+   `--webprocess-failure=restart` to relaunch a web process that dies. No `--web-kill-threshold`: WebKit's footprint is
+   the web process's resident set, libraries included, so any threshold below `MemoryMax=300M` kills it at load. The
+   first soaks show that this puts the process into WebKit's strict policy permanently, see Numbers; the board A/B
+   settles the limit. Without a limit cog ignores the other memory flags.
 2. `JSC_useDFGJIT=false` and `JSC_useFTLJIT=false` first, then `JSC_useJIT=false`, which puts JavaScriptCore into its
    reduced-memory mode without generational GC. `JSC_logGC=1` once, to see in the journal that the environment reaches
    the web process.
@@ -445,8 +466,8 @@ the measured headroom and apt's timing, and the stop line leaves the command blo
 
 System levers observed in the soak and decided in the runbook, not here: removing the armhf foreign architecture if no
 armhf package is installed, which halves apt's list download and cache build; `tailscaled`'s CPU and memory; the zram
-size once the working set fits. The kiosk's `MemoryMax=300M` is pihero's and stays; the web process kill threshold is
-the finer guard.
+size once the working set fits. The kiosk's `MemoryMax=300M` is pihero's and stays, and it is the kiosk's only leak
+guard, since WebKit's kill threshold cannot sit below the web process's resident set.
 
 ### Make and documentation
 
@@ -483,7 +504,7 @@ One pull request per step, every tier green at every step.
 - The web process kill threshold is set too low: cog restarts the web process after a memory kill and shows its error
   page only after five failures within one second, which memory kills, at least ten seconds apart, never reach, so the
   page reloads forever without a systemd restart. The soak's web-process PID invariant fails on it, and the threshold
-  goes back up.
+  goes back up. The sample's 190 MB did exactly that, and the sample now sets no threshold, see Kiosk A/Bs.
 - The apt probe fails: by time, by a reset, or by a stopped unit, each reported distinctly, so the runbook learns which.
 - The soak's invariants fail on the board without any change of ours: the baseline is what it is and the number stands
   in the table.
