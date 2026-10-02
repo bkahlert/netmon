@@ -10,6 +10,14 @@ pytestmark = pytest.mark.tier0
 ROOT = Path(__file__).resolve().parents[1]
 SAMPLE = (ROOT / "devices" / "sample" / "user-data").read_text()
 KEY = "ssh-ed25519 AAAATEST pihero-testkit"
+LOCAL_NETMON_SOURCE = """\
+  - path: /etc/apt/sources.list.d/netmon.sources
+    content: |
+      Types: deb
+      URIs: http://10.0.2.2:8000/
+      Suites: ./
+      Trusted: yes
+"""
 
 
 class TestRender:
@@ -28,9 +36,24 @@ class TestRender:
         assert "bkahlert.github.io/pihero" in result
 
     def test_changes_nothing_else(self):
+        netmon_source = SAMPLE[SAMPLE.index("  - path: /etc/apt/sources.list.d/netmon.sources"):SAMPLE.index("  # MODEL selects")]
+        expected = (
+            SAMPLE.replace("  - name: pi\n", "  - name: pihero\n")
+            .replace("      - ssh-ed25519 AAAA...your public key... you@mac\n", f"      - {KEY}\n")
+            .replace(netmon_source, LOCAL_NETMON_SOURCE)
+        )
+
         result = vm_device.render(SAMPLE, key=KEY)
 
-        assert without_edited_blocks(result) == without_edited_blocks(SAMPLE)
+        assert result == expected
+
+    def test_keeps_a_comment_inside_the_users_block_and_still_sets_the_key(self):
+        commented = SAMPLE.replace("    shell: /bin/bash\n", "# the login shell\n    shell: /bin/bash\n")
+
+        result = vm_device.render(commented, key=KEY)
+
+        assert "# the login shell\n    shell: /bin/bash\n" in result
+        assert f"    ssh_authorized_keys:\n      - {KEY}\n" in result
 
     def test_on_a_file_without_a_users_block_raises(self):
         with pytest.raises(ValueError, match="users:"):
@@ -54,14 +77,6 @@ class TestRender:
         result = vm_device.render(imported, key=KEY)
 
         assert "    ssh_import_id:\n      - gh:someone\n" in result
-        assert f"    ssh_authorized_keys:\n      - {KEY}\n" in result
-
-    def test_keeps_a_comment_inside_the_users_block_and_still_sets_the_key(self):
-        commented = SAMPLE.replace("    shell: /bin/bash\n", "# the login shell\n    shell: /bin/bash\n")
-
-        result = vm_device.render(commented, key=KEY)
-
-        assert "# the login shell\n    shell: /bin/bash\n" in result
         assert f"    ssh_authorized_keys:\n      - {KEY}\n" in result
 
 
@@ -94,12 +109,6 @@ class TestPytestConfigure:
     def restored_device_file(self):
         yield
         vm_device.write()
-
-
-def without_edited_blocks(text: str) -> str:
-    for start in ("users:", "  - path: /etc/apt/sources.list.d/netmon.sources"):
-        text = text.replace(vm_device.block(text, start), "")
-    return text
 
 
 def collect_only(*options: str) -> None:
