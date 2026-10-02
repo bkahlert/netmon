@@ -220,17 +220,30 @@ The last row of each table:
 | 04-paint | 305 | 47+0 | 10/36 | 228+0 | 164/40 | 114/0 | 600 | 967 | 0 | 0.6 | 0 | 0 | 0 | 0.00 |
 
 No `WPEWebProcess` appeared among the five top CPU lines at the last sample of any variant, because the page was idle
-and every listed process was at 0.0 %CPU. No variant swapped: swap in and out stayed at 0 throughout, and PSI full10
-stayed at 0.00. Major faults were at most 5 per sample, except a burst of 48 at 214 s in `03-jit-off.conf`, which gives its 0.2 per second.
-All five soaks passed and every kiosk came back after the restart.
+and every listed process was at 0.0 %CPU. No variant swapped during the soak: swap in and out stayed at 0 throughout,
+and PSI full10 stayed at 0.00. Major faults were at most 5 per sample, except a burst of 48 at 214 s in
+`03-jit-off.conf`, which gives its 0.2 per second. All five soaks passed and every kiosk came back after the restart.
 
 The Cog flags alone moved little in the VM (254 against 252 MB), and the JIT carried the difference. `03-jit-off.conf`
 beats `02-jit-tiers.conf` on both kiosk numbers, 207 against 223 MB RAM+zram and 105 against 117 MB private dirty, and
-the acceptance tier 2 run with it passed 28 tests and 1 skipped, display test included. The sample's `kiosk.conf` now
-carries `JSC_useJIT=false` in place of the two tier lines. `04-paint.conf` sits 6 MB above `02-jit-tiers.conf` on the
-kiosk peak (229 against 223 MB), 5 MB of it file pages, and 1 MB below on private dirty, so the painting thread is not
-clearly hurting and the sample keeps `WEBKIT_SKIA_CPU_PAINTING_THREADS=1`. The A/B ran on top of the tiers rather than
-on `03-jit-off.conf`, and the VM paints in software anyway, so the board decides whether the line earns its place.
+the acceptance tier 2 run with it passed 28 tests and 1 skipped and `kiosk.png` showed the hosts. The display test
+exercises Playwright's WebKit on the Mac through a tunnel, not the kiosk, so the kiosk's picture is the only check of
+the page without a JIT. The sample's `kiosk.conf` now carries `JSC_useJIT=false` in place of the two tier lines.
+`04-paint.conf` sits 6 MB above `02-jit-tiers.conf` on the kiosk peak (229 against 223 MB), 5 MB of it file pages, and
+1 MB below on private dirty, so the painting thread is not clearly hurting and the sample keeps
+`WEBKIT_SKIA_CPU_PAINTING_THREADS=1`. The A/B ran on top of the tiers rather than on `03-jit-off.conf`, and the VM
+paints in software anyway, so the board decides whether the line earns its place.
+
+WebKit's footprint is the web process's resident private dirty memory. `--web-mem-limit=200` puts the conservative
+threshold at 66 MB and the strict one at 100 MB. In every soak the web process's private dirty memory stayed between 103
+and 127 MB. In the four variants with the limit that is above the strict line, so WebKit ran its critical release on
+every ten-second check for the whole run: it purges caches and style data, discards all JIT and JavaScript code and
+schedules a full garbage collection. The mean load over the eleven samples was 0.12 for the baseline, which sets no
+limit, and 0.31, 0.40, 0.42 and 0.40 for `01-cog.conf` to `04-paint.conf`, while the Cog flags alone moved private dirty
+memory from 126 to 123 MB. The sizing rule in the kiosk configuration below puts the strict threshold at the web
+process's budget share and so guarantees that state. The board A/B in the next step runs the current lines against a
+limit of about 250 MiB and against the default 30-second check interval, judged on load and on the web process's CPU
+time, which the soak now samples.
 
 ## Decisions
 
@@ -371,7 +384,9 @@ VM judged by the soak and `kiosk.png`, then confirmed on the board:
 1. `COG_ARGS` with `--doc-viewer`, which selects the document-viewer cache model and switches off the web process's
    memory cache; `--web-mem-limit=<MiB>` with `--web-check-interval=10`, the limit sized from the first soak so that
    WebKit's strict threshold, half the limit, sits at the web process's share of the budget; and `--web-kill-threshold`
-   with `--webprocess-failure=restart` as the leak guard. Without a limit cog ignores the other memory flags.
+   with `--webprocess-failure=restart` as the leak guard. The first soaks show that this puts the process into WebKit's
+   strict policy permanently, see Numbers; the board A/B settles the limit. Without a limit cog ignores the other memory
+   flags.
 2. `JSC_useDFGJIT=false` and `JSC_useFTLJIT=false` first, then `JSC_useJIT=false`, which puts JavaScriptCore into its
    reduced-memory mode without generational GC. `JSC_logGC=1` once, to see in the journal that the environment reaches
    the web process.
@@ -463,10 +478,12 @@ One pull request per step, every tier green at every step.
   which points at the CPU target; the tcg VM reproduces it.
 - Missing reflection or resource metadata: a runtime exception in tier 1 or tier 2, not a build error; the tracing
   agent produces the entry.
-- JavaScriptCore without its JIT is too slow for the page: the display test's wait for the gateway catches it, and the
-  JIT step is dropped.
-- The web process kill threshold is set too low: the kiosk reloads in a loop, visible as restarts and a dark panel; the
-  threshold goes back up.
+- JavaScriptCore without its JIT is too slow for the page: the kiosk's picture in the VM and a look at the panel on the
+  board catch it (the display test runs Playwright's WebKit on the Mac, not the kiosk), and the JIT step is dropped.
+- The web process kill threshold is set too low: cog restarts the web process after a memory kill and shows its error
+  page only after five failures within one second, which memory kills, at least ten seconds apart, never reach, so the
+  page reloads forever without a systemd restart. The soak's web-process PID invariant fails on it, and the threshold
+  goes back up.
 - The apt probe fails: by time, by a reset, or by a stopped unit, each reported distinctly, so the runbook learns which.
 - The soak's invariants fail on the board without any change of ours: the baseline is what it is and the number stands
   in the table.
