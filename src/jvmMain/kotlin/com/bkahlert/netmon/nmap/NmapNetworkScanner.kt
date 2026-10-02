@@ -13,6 +13,7 @@ import kotlin.time.Duration.Companion.seconds
 class NmapNetworkScanner(
     privileged: Boolean = NmapSettings.privileged,
     val dataDir: Path? = NmapSettings.dataDir,
+    binary: Path = requireCommand("nmap"),
 ) {
     // read-only from the outside
     // can internally only be set to false
@@ -20,7 +21,7 @@ class NmapNetworkScanner(
         private set
 
     private val logger by SLF4J
-    private val binary: String = requireCommand("nmap").pathString
+    private val binary: String = binary.pathString
 
     fun scan(
         network: Cidr,
@@ -44,6 +45,7 @@ class NmapNetworkScanner(
         val xml = kotlin.runCatching {
             nmapCommandLine.exec().readTextOrThrow()
         }.recover { error ->
+            if (error is InterruptedException) throw error
             val errorMessage = error.message.orEmpty()
             if (errorMessage.contains("exit code 130", ignoreCase = true)) {
                 throw InterruptedException("nmap execution cancelled")

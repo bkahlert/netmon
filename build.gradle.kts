@@ -153,7 +153,7 @@ tasks.named<Test>("jvmTest") {
     if (project.hasProperty("unitOnly")) {
         filter {
             excludeTestsMatching("*IntegrationTest")
-            excludeTestsMatching("*NmapNetworkScannerTest")
+            excludeTestsMatching("*NmapNetworkScannerTest.scan*")
             // Thread timing under a loaded CI runner; passes locally and failed once in a release run.
             excludeTestsMatching("*SlicedApplicationTest")
         }
