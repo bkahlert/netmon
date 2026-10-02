@@ -32,7 +32,8 @@ def render(sample: str, key: str, user: str = USER, url: str = REPO_URL) -> str:
 
 
 def block(text: str, start: str) -> str:
-    """Return the line equal to `start` and every following line indented deeper than it."""
+    """Return the line equal to `start` and every following line indented deeper than it, with the blank and comment
+    lines between them; blank and comment lines after the last such line belong to what follows the block."""
     lines = text.splitlines(keepends=True)
     try:
         begin = next(i for i, line in enumerate(lines) if line.rstrip("\n") == start)
@@ -40,8 +41,13 @@ def block(text: str, start: str) -> str:
         raise ValueError(f"the device file has no line {start!r}") from None
     indent = len(start) - len(start.lstrip(" "))
     end = begin + 1
-    while end < len(lines) and (not lines[end].strip() or len(lines[end]) - len(lines[end].lstrip(" ")) > indent):
-        end += 1
+    for i in range(begin + 1, len(lines)):
+        stripped = lines[i].strip()
+        if not stripped or stripped.startswith("#"):
+            continue
+        if len(lines[i]) - len(lines[i].lstrip(" ")) <= indent:
+            break
+        end = i + 1
     return "".join(lines[begin:end])
 
 

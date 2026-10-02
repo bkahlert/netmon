@@ -56,6 +56,14 @@ class TestRender:
         assert "    ssh_import_id:\n      - gh:someone\n" in result
         assert f"    ssh_authorized_keys:\n      - {KEY}\n" in result
 
+    def test_keeps_a_comment_inside_the_users_block_and_still_sets_the_key(self):
+        commented = SAMPLE.replace("    shell: /bin/bash\n", "# the login shell\n    shell: /bin/bash\n")
+
+        result = vm_device.render(commented, key=KEY)
+
+        assert "# the login shell\n    shell: /bin/bash\n" in result
+        assert f"    ssh_authorized_keys:\n      - {KEY}\n" in result
+
 
 class TestWrite:
     def test_writes_only_user_data_with_the_testkit_key(self, tmp_path):
