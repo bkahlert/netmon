@@ -1,0 +1,50 @@
+name: weekly
+on:
+  schedule:
+    - cron: "0 5 * * 1"
+  workflow_dispatch:
+  # A change to this file proves itself on its pull request.
+  pull_request:
+    paths: [".github/workflows/weekly.yml"]
+
+permissions:
+  contents: read
+
+env:
+  # Shared by the step that downloads the browser as the runner and the test step that runs as root.
+  PLAYWRIGHT_BROWSERS_PATH: ${{ github.workspace }}/.playwright-browsers
+
+jobs:
+  tier2:
+    # GitHub's Arm runners have no hardware virtualization, so the VM runs under software emulation here.
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with: { fetch-depth: 0 }
+      - uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
+        with: { distribution: temurin, java-version: "17" }
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        with: { enable-cache: true }
+      # binfmt for the arm64 root filesystem the base image preparation chroots into.
+      - uses: docker/setup-qemu-action@99012661954931238ded8c8b007157a8430204e1 # v4.4.0
+      - run: sudo apt-get update && sudo apt-get install -y qemu-system-arm qemu-utils
+      - run: uv sync --frozen
+      - run: uv run --frozen playwright install --with-deps webkit
+      - run: make gradle
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.cache/pihero
+          key: netmon-tier2-base-${{ hashFiles('uv.lock') }}
+      # The testkit's base-image preparation mounts the Raspberry Pi OS image through loop devices, which the runner's
+      # rootless podman cannot provide, and QEMU must be able to write what the tools container creates: the whole step
+      # runs as root, as pihero's weekly job does.
+      - run: sudo -E env "PATH=$PATH" make test-tier2 QEMU_ACCEL=tcg
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        if: always()
+        with:
+          name: tier2
+          path: |
+            dist/tier2/*.png
+            dist/vm/*/serial.log
+          if-no-files-found: ignore

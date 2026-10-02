@@ -79,7 +79,8 @@ by `tests/vm_device.py`, lets the scanner scan QEMU's network, loads the page in
 `pihero-kiosk` show it on the VM's virtual display of that size; the run leaves `dist/tier2/display.png`, the page as WebKit
 renders it, and `dist/tier2/kiosk.png`, the same page as cog paints it in the VM. `make vm` keeps the VM running for a look
 around, and `make display URL=…` opens any page, the VM's, the board's or a dev server's, in that WebKit at that size.
-`make release` builds, then runs tiers 0 to 2.
+`make release` builds, then runs tiers 0 to 2. Tier 2 also runs weekly in CI under software emulation
+([weekly.yml](.github/workflows/weekly.yml)), the signal for what rotted between releases.
 
 ### MQTT
 
