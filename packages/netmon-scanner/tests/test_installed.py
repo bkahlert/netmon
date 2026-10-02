@@ -47,7 +47,7 @@ class TestUnit:
 
         assert "User=netmon" in show
         assert "AmbientCapabilities=cap_net_admin cap_net_raw" in show
-        assert "MemoryMax=335544320" in show
+        assert "MemoryMax=134217728" in show
 
     def test_starts_with_the_shipped_heap_cap(self, host):
         log = journal_until(host, "max heap: ")
