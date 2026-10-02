@@ -41,6 +41,18 @@ def gateway_of(routes: str) -> str:
     raise ValueError(f"no default route in {routes!r}")
 
 
+def kiosk_conf(text: str) -> dict[str, str]:
+    """Return the assignments of an EnvironmentFile such as /etc/pihero/kiosk.conf, double quotes stripped, comments and blanks skipped."""
+    result = {}
+    for line in text.splitlines():
+        stripped = line.strip()
+        if not stripped or stripped.startswith("#") or "=" not in stripped:
+            continue
+        name, _, value = stripped.partition("=")
+        result[name.strip()] = value.strip().strip('"')
+    return result
+
+
 def exactly(ip: str) -> re.Pattern:
     return re.compile(rf"^{re.escape(ip)}$")
 

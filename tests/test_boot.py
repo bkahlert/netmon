@@ -1,10 +1,11 @@
 import json
+import shlex
 from pathlib import Path
 
 import pytest
 from pihero_testkit.ssh import SshTarget
 
-from booted import journal_until, unexpected_recoverable_errors
+from booted import journal_until, kiosk_conf, unexpected_recoverable_errors
 
 pytestmark = pytest.mark.boot
 
@@ -49,6 +50,27 @@ class TestKiosk:
 
         properties = dict(line.split("=", 1) for line in show.splitlines())
         assert properties == {"ActiveState": "active", "NRestarts": "0"}
+
+    def test_runs_cog_with_the_configured_arguments(self, host):
+        if not host.file("/dev/dri").exists:
+            pytest.skip("no display adapter")
+        conf = kiosk_conf(host.file("/etc/pihero/kiosk.conf").content_string)
+        pid = host.check_output("pgrep -x cog").split()[0]
+
+        cmdline = host.check_output(f"tr '\\0' '\\n' < /proc/{pid}/cmdline").splitlines()
+
+        assert set(shlex.split(conf["COG_ARGS"])) <= set(cmdline), cmdline
+
+    def test_the_web_process_sees_the_webkit_variables(self, host):
+        if not host.file("/dev/dri").exists:
+            pytest.skip("no display adapter")
+        conf = kiosk_conf(host.file("/etc/pihero/kiosk.conf").content_string)
+        expected = {f"{name}={value}" for name, value in conf.items() if name.startswith(("JSC_", "WEBKIT_"))}
+        pid = host.check_output("pgrep -x WPEWebProcess").split()[0]
+
+        environ = host.check_output(f"tr '\\0' '\\n' < /proc/{pid}/environ").splitlines()
+
+        assert expected <= set(environ), sorted(environ)
 
     def test_is_pictured_after_the_first_scan(self, host, target, request, capfd):
         if getattr(target, "display", None) is None:

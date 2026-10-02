@@ -4,7 +4,7 @@ from types import SimpleNamespace
 import pytest
 from pihero_testkit.ssh import SshTarget
 
-from booted import exactly, gateway_of, tunnel_command, unexpected_recoverable_errors
+from booted import exactly, gateway_of, kiosk_conf, tunnel_command, unexpected_recoverable_errors
 
 pytestmark = pytest.mark.tier0
 
@@ -80,3 +80,12 @@ class TestUnexpectedRecoverableErrors:
         result = unexpected_recoverable_errors({"status": "done"})
 
         assert result == []
+
+
+class TestKioskConf:
+    def test_reads_assignments_and_strips_double_quotes(self):
+        text = 'URL=http://localhost/?a=1&b=2\nCOG_ARGS="--doc-viewer --web-mem-limit=200"\n# a comment\n\nJSC_useFTLJIT=false\n'
+
+        result = kiosk_conf(text)
+
+        assert result == {"URL": "http://localhost/?a=1&b=2", "COG_ARGS": "--doc-viewer --web-mem-limit=200", "JSC_useFTLJIT": "false"}
