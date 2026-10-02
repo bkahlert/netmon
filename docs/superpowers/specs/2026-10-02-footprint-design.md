@@ -300,6 +300,59 @@ sample keeps `JSC_useJIT=false`. The painting thread line is untested in the VM,
 board decides whether it earns its place. The memory limit stays in the sample until the board A/B of the limit against
 no limit described above.
 
+### After the kiosk changes
+
+The board runs `1.1.1+64.0251dad`, both packages deployed 2026-10-02 at 20:59 from the phase 4 branch. The sample's
+five kiosk lines went into `/etc/pihero/kiosk.conf` by hand, the previous file kept as `kiosk.conf.before-phase4`, and
+the kiosk was restarted. The two kiosk boot tests passed over SSH: cog's command line carries the four flags and the web
+process's environment the two variables. The user judged the panel and kept the configuration.
+
+Board soak, 2026-10-02, 21:03 to 21:14, ten minutes. The summary line:
+
+```
+soak: scanner peak 38 MB, kiosk peak 160 MB RAM+zram, web process private dirty up to 49 MB, web process cpu 724.3 s, 260.7 major faults/s; table in dist/ssh/soak.md
+```
+
+The last row of the table, in MB, from the harness of the phase 4 branch, which had no scanner rss column yet:
+
+| t | scanner RAM+zram | scanner anon/file | kiosk RAM+zram | kiosk anon/file | web private dirty/swap | Δweb cpu | available | swap free | zram pool | load | Δswpin | Δswpout | Δmajflt | PSI full10 |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| 631 | 22+5 | 8/13 | 101+59 | 53/42 | 46/34 | 37.3 | 140 | 278 | 34 | 1.5 | 3731 | 3322 | 9116 | n/a |
+
+Against the 16:38 soak after the native scanner: the kiosk's peak fell from 235 to 160 MB RAM+zram, the web process's
+private dirty peak from 84 to 49 MB, and major faults from 798 to 261 per second. The scanner's peak rose from 27 to
+38 MB, file pages after the fresh installation. The web process ran 724 s of CPU over 631 s, about one core; the 16:38 soak's
+top block already showed `WPEWebProcess` at 100 %, so the load predates the kiosk changes. In the VM the same page costs
+16 s over a 306 s soak.
+
+Board A/Bs, 21:20 to 21:48, the same boot, ten minutes each, the kiosk restarted between them, the web process's PID
+unchanged within every soak. N is the sample's lines with `COG_ARGS="--doc-viewer --webprocess-failure=restart"`, so no
+memory limit and no check interval; G is the sample's lines plus `WEBKIT_SKIA_ENABLE_CPU_RENDERING=0`. The summary
+lines:
+
+```
+N: scanner peak 30 MB, kiosk peak 156 MB RAM+zram, web process private dirty up to 49 MB, web process cpu 706.5 s, 269.1 major faults/s
+G: scanner peak 42 MB, kiosk peak 178 MB RAM+zram, web process private dirty up to 59 MB, web process cpu 685.3 s, 24.4 major faults/s
+```
+
+The last rows, with the sample's row repeated:
+
+| variant | t | scanner RAM+zram | scanner anon/file | kiosk RAM+zram | kiosk anon/file | web private dirty/swap | Δweb cpu | available | swap free | zram pool | load | Δswpin | Δswpout | Δmajflt | PSI full10 |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| the sample | 631 | 22+5 | 8/13 | 101+59 | 53/42 | 46/34 | 37.3 | 140 | 278 | 34 | 1.5 | 3731 | 3322 | 9116 | n/a |
+| N, no limit | 630 | 19+2 | 12/6 | 90+64 | 50/33 | 45/36 | 39.7 | 140 | 264 | 34 | 2.3 | 2686 | 4932 | 6907 | n/a |
+| G, GPU painting | 619 | 29+0 | 11/18 | 102+70 | 64/32 | 58/43 | 39.5 | 81 | 295 | 33 | 1.4 | 8 | 0 | 26 | n/a |
+
+N against the sample is a tie: the kiosk's peak 156 against 160 MB, the private dirty peak 49 MB in both, faults and CPU
+within run-to-run noise. The web process stayed near 76 MB resident, so the 200 MB limit never fired; it stays as the
+guard against a leak, which a ten-minute soak cannot show. G cuts major faults about tenfold, 24 against 261 per second,
+and costs memory: the kiosk's peak plus 18 MB, the private dirty peak plus 10 MB, `available` 68 to 102 MB against 125
+to 157 under the sample. Two of its samples, at t=489 and t=521, show the web process idle for about a minute without a
+known cause, and nothing confirmed that painting reached the GPU: the variable reached the web process and the journal
+shows no error, but cog names the `modeset` renderer under both configurations and no DRM state was captured for a
+comparison. The user decided on 2026-10-02: the board keeps the sample's five lines, the memory limit stays, and GPU
+painting is not adopted.
+
 ## Decisions
 
 | Decision | Choice | Why |
@@ -442,15 +495,16 @@ VM judged by the soak and `kiosk.png`, then confirmed on the board:
 1. `COG_ARGS` with `--doc-viewer`, which selects the document-viewer cache model and switches off the web process's
    memory cache; `--web-mem-limit=<MiB>` with `--web-check-interval=10`; and `--webprocess-failure=restart` to relaunch
    a web process that dies. WebKit's footprint is the web process's resident set, libraries included, so the process
-   sits above the limit's strict line on every check, see Kiosk A/Bs in the VM; whether the limit stays is the user's
-   decision after the board A/B of the limit against no limit. No `--web-kill-threshold`: a threshold that holds would
-   sit between the resident set and `MemoryMax=300M`, where it guards nothing. Without a limit cog ignores the other
-   memory flags.
+   sits above the limit's strict line on every check, see Kiosk A/Bs in the VM; the board A/B of the limit against no
+   limit was a tie and the limit stays as the leak guard, see After the kiosk changes. No `--web-kill-threshold`: a
+   threshold that holds would sit between the resident set and `MemoryMax=300M`, where it guards nothing. Without a
+   limit cog ignores the other memory flags.
 2. `JSC_useDFGJIT=false` and `JSC_useFTLJIT=false` first, then `JSC_useJIT=false`, which puts JavaScriptCore into its
    reduced-memory mode without generational GC. `JSC_logGC=1` once, to see in the journal that the environment reaches
    the web process.
-3. `WEBKIT_SKIA_CPU_PAINTING_THREADS=1`. `WEBKIT_SKIA_ENABLE_CPU_RENDERING=0`, GPU painting, is a board-only A/B
-   with a screenshot pair, since the VM paints in software anyway.
+3. `WEBKIT_SKIA_CPU_PAINTING_THREADS=1`. `WEBKIT_SKIA_ENABLE_CPU_RENDERING=0`, GPU painting, was a board-only A/B,
+   since the VM paints in software anyway; it cut the card reads tenfold, cost 18 MB of kiosk peak and 60 MB of
+   `available`, and is not adopted, see After the kiosk changes.
 
 A new boot test proves the plumbing: cog's command line in `/proc/<pid>/cmdline` carries the configured arguments, and
 `WPEWebProcess`'s environment carries the `JSC_` entries.
@@ -554,6 +608,8 @@ One pull request per step, every tier green at every step.
    is next due.
 3. **The native build as a CI artifact** shared between jobs, if the per-job build time hurts.
 4. **The display's rendering differences** seen in tier 2, and the `MQTT::Disconnected` header.
+5. **The web process's CPU on the board**, about one core at 800x480 under cog's `modeset` renderer against 5 % in
+   the VM, before and after the kiosk changes; the soak's Δweb cpu column shows it.
 
 ## Sources
 
