@@ -19,10 +19,11 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
 import kotlin.time.Instant
 import kotlin.time.Duration
+import kotlin.time.Duration.Companion.minutes
 
 /** Store of the current time that updates itself based on the specified [refreshInterval]. */
 open class CurrentTimeStore(
-    private val refreshInterval: Duration = UiSettings.REFRESH_INTERVAL,
+    val refreshInterval: Duration = UiSettings.REFRESH_INTERVAL,
 ) : RootStore<Instant>(Clock.System.now(), job = Job()) {
 
     final override val update: SimpleHandler<Instant> = super.update
@@ -39,6 +40,9 @@ open class CurrentTimeStore(
 
     companion object : CurrentTimeStore()
 }
+
+/** The clock of the stable section, whose texts change once a minute at most. */
+object MinuteClock : CurrentTimeStore(1.minutes)
 
 /** Store of network scans. */
 class ScanEventsStore(
