@@ -11,7 +11,7 @@ import javax.xml.stream.XMLStreamReader
 /** nmap's XML output (`-oX`) read into [Host] instances. */
 object NmapXml {
 
-    private val factory: XMLInputFactory = XMLInputFactory.newInstance().apply {
+    private val factory: XMLInputFactory = XMLInputFactory.newDefaultFactory().apply {
         setProperty(XMLInputFactory.SUPPORT_DTD, false)
         setProperty(XMLInputFactory.IS_SUPPORTING_EXTERNAL_ENTITIES, false)
         setProperty(XMLConstants.ACCESS_EXTERNAL_DTD, "")
