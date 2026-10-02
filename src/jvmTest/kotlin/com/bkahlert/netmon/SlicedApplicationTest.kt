@@ -16,10 +16,13 @@ import io.kotest.matchers.string.shouldMatch
 import io.kotest.matchers.types.shouldBeInstanceOf
 import kotlinx.coroutines.test.runTest
 import java.util.Collections
+import java.util.concurrent.CompletableFuture
+import java.util.concurrent.TimeUnit
 import kotlin.concurrent.thread
 import kotlin.test.Test
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
+import kotlin.time.Duration.Companion.seconds
 import kotlin.time.measureTime
 
 class SlicedApplicationTest : AbstractIntegrationTest() {
@@ -266,6 +269,50 @@ class SlicedApplicationTest : AbstractIntegrationTest() {
         application.terminate()
 
         invocations["bar"].shouldNotBeEmpty().last().shouldBeInstanceOf<Invocations.Invocation.FINALIZED<*>>()
+    }
+
+    @Test
+    fun failed_start_ends_the_application() {
+        val application = SlicedApplication(
+            slice = Slices("foo", "bar"),
+            start = { if (it == "bar") throw RuntimeException("test") },
+            process = { 50.milliseconds.wait() },
+        )
+
+        val started = application.start()
+        val state = CompletableFuture.supplyAsync { started.waitForTermination() }.get(5, TimeUnit.SECONDS)
+
+        state.failed.shouldContainExactly("bar")
+    }
+
+    @Test
+    fun failed_worker_ends_the_application() {
+        val invocations = Invocations<String>()
+        val application = SlicedApplication(
+            slice = Slices("foo", "bar"),
+            process = { if (it == "bar") throw RuntimeException("test") else 10.seconds.wait() },
+            finalize = { invocations.finalized(it) },
+        )
+
+        val started = application.start()
+        val state = CompletableFuture.supplyAsync { started.waitForTermination() }.get(5, TimeUnit.SECONDS)
+
+        state.failed.shouldContainExactly("bar")
+        invocations["foo"].shouldContainExactly(Invocations.Invocation.FINALIZED("foo"))
+    }
+
+    @Test
+    fun failed_worker_with_failed_finalization_ends_the_application() {
+        val application = SlicedApplication(
+            slice = Slices("foo", "bar"),
+            process = { if (it == "bar") throw RuntimeException("test") else 50.milliseconds.wait() },
+            finalize = { if (it == "bar") throw RuntimeException("finalize") },
+        )
+
+        val started = application.start()
+        val state = CompletableFuture.supplyAsync { started.waitForTermination() }.get(5, TimeUnit.SECONDS)
+
+        state.failed.shouldContainExactly("bar")
     }
 
     @Test
