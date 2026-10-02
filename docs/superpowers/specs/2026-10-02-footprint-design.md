@@ -265,6 +265,39 @@ strict policy on every check. The soak's summary line:
 soak: scanner peak 47 MB, kiosk peak 300 MB RAM+zram, web process private dirty up to 93 MB, web process cpu 8.1 s, 0.0 major faults/s
 ```
 
+**Rerun without the kill threshold.** Tier 2 VM, 2026-10-02 19:23 to 19:53. 1 GB VM, five-minute soaks, the page of this branch, each variant on a fresh
+boot and without `--web-kill-threshold`. These four variants supersede 01 to 04 above, whose web processes WebKit
+relaunched every ten seconds. `11-cog.conf` is the Cog flags alone, `12-jit-tiers.conf` adds the two upper JIT tiers off and one painting
+thread, `13-jit-off.conf` replaces the tiers with the JIT off, and `14-no-limit.conf` is `13-jit-off.conf` without the
+memory limit. `00-baseline.conf` is unaffected. The soak also fails when the web process is replaced, and all four passed.
+Its summary lines:
+
+```
+11-cog.conf:       scanner peak 47 MB, kiosk peak 323 MB RAM+zram, web process private dirty up to 188 MB, web process cpu 17.8 s, 0.8 major faults/s
+12-jit-tiers.conf: scanner peak 47 MB, kiosk peak 249 MB RAM+zram, web process private dirty up to 116 MB, web process cpu 15.8 s, 0.0 major faults/s
+13-jit-off.conf:   scanner peak 47 MB, kiosk peak 218 MB RAM+zram, web process private dirty up to 104 MB, web process cpu 15.8 s, 0.0 major faults/s
+14-no-limit.conf:  scanner peak 47 MB, kiosk peak 222 MB RAM+zram, web process private dirty up to 104 MB, web process cpu 16.2 s, 0.0 major faults/s
+```
+
+The last row of each table:
+
+| variant | t | scanner RAM+zram | scanner anon/file | kiosk RAM+zram | kiosk anon/file | web private dirty/swap | Δweb cpu | available | swap free | zram pool | load | Δswpin | Δswpout | Δmajflt | PSI full10 |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| 11-cog | 306 | 47+0 | 10/36 | 218+41 | 122/10 | 109/7 | 1.9 | 582 | 927 | 12 | 0.0 | 16 | 3952 | 16 | 0.00 |
+| 12-jit-tiers | 306 | 47+0 | 10/36 | 248+0 | 158/50 | 107/0 | 1.7 | 611 | 967 | 0 | 0.0 | 0 | 0 | 0 | 0.00 |
+| 13-jit-off | 306 | 47+0 | 10/36 | 217+0 | 146/46 | 98/0 | 1.5 | 642 | 968 | 0 | 0.1 | 0 | 0 | 0 | 0.00 |
+| 14-no-limit | 306 | 47+0 | 10/36 | 220+0 | 149/48 | 100/0 | 1.2 | 635 | 967 | 0 | 0.3 | 0 | 0 | 0 | 0.00 |
+
+`11-cog.conf`, the one variant without a JIT or painting line, climbed to 323 MB RAM+zram and 188 MB private dirty and
+swapped out in five samples, so it joins neither comparison. `13-jit-off.conf` beats `12-jit-tiers.conf` on both kiosk
+numbers, 218 against 249 MB RAM+zram and 104 against 116 MB private dirty, and the web process ran the same 15.8 s of CPU
+over the run. `13-jit-off.conf` and `14-no-limit.conf`, which differ in the memory limit, peaked at 218 and 222 MB
+RAM+zram and at 104 MB private dirty each, and the web process ran 15.8 s of CPU with the limit and 16.2 s without it.
+
+`13-jit-off.conf` beats `12-jit-tiers.conf` on both the kiosk peak RAM+zram and the web private dirty peak, so the sample
+keeps `JSC_useJIT=false`, and the painting thread line stays. The memory limit stays in the sample as well; whether to keep
+it is the user's decision, and the 13 against 14 figures above are what the soak says about it.
+
 ## Decisions
 
 | Decision | Choice | Why |
