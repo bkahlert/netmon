@@ -60,11 +60,18 @@ make build                                          # Gradle, then nfpm: dist/*.
 make test                                           # tier 0 (static checks, unit tests) and tier 1 (install into a systemd container)
 make test-tier2                                     # tier 2: boot a QEMU VM from devices/sample, scan, show the page in WebKit and the kiosk
 make deploy TARGET=pi@netmon.local                  # the built packages onto a device, no repository involved
+make device-model-codes                             # the model codes and SF Symbols the display draws, from this Mac
 ```
 
 The harness is [pihero-testkit](https://github.com/bkahlert/pihero/tree/main/testkit); `uv run pytest -m installed
 --target=ssh --target-uri=pi@netmon.local` checks a running device against the tests. A release is `make release
 VERSION=X.Y.Z` and `git push origin vX.Y.Z`; the workflow builds, signs and publishes the repository.
+
+The model codes the scanner recognises, and the description and SF Symbol the display draws for each, are
+`src/commonMain/resources/assets/device-model-codes.json`. `make device-model-codes` regenerates it on a Mac with
+[device-icons](https://github.com/bkahlert/device-icons), which reads them from macOS itself; the codes of the Fire TV
+and Sonos devices the enrichers report, and the symbols of Apple types that declare none, are
+[tests/device_model_codes.py](tests/device_model_codes.py)'s own.
 
 Tier 2 needs QEMU (`brew install qemu`) and Playwright's WebKit (`make browser`, downloaded once into Playwright's cache). It
 boots the real Raspberry Pi OS root filesystem with [devices/sample/user-data](devices/sample/user-data), rendered for the VM
@@ -72,7 +79,7 @@ by `tests/vm_device.py`, lets the scanner scan QEMU's network, loads the page in
 `pihero-kiosk` show it on the VM's virtual display of that size; the run leaves `dist/tier2/display.png`, the page as WebKit
 renders it, and `dist/tier2/kiosk.png`, the same page as cog paints it in the VM. `make vm` keeps the VM running for a look
 around, and `make display URL=…` opens any page, the VM's, the board's or a dev server's, in that WebKit at that size.
-`make release` runs tiers 0 to 2.
+`make release` builds, then runs tiers 0 to 2.
 
 ### MQTT
 

@@ -1,7 +1,7 @@
 SHELL := /bin/bash
 .DEFAULT_GOAL := help
 # Gradle's output directory is called build, so the targets are declared phony.
-.PHONY: help gradle build browser test-jvm test-js test-tier0 test-tier1 test-tier2 test test-all vm-device vm-prepare vm display deploy clean release
+.PHONY: help gradle build browser test-jvm test-js test-tier0 test-tier1 test-tier2 test test-all vm-device vm-prepare vm display deploy device-model-codes clean release
 
 PLATFORM ?= linux/arm64
 TARGET ?=
@@ -58,12 +58,16 @@ deploy: build ## install the built packages on TARGET over SSH
 	@test -n "$(TARGET)" || { echo "usage: make deploy TARGET=pi@host"; exit 2; }
 	@$(UV) python -m pihero_testkit.deploy "$(TARGET)"
 
+device-model-codes: ## regenerate the model codes and symbols the display draws, from this Mac with device-icons
+	@$(UV) python tests/device_model_codes.py
+
 clean: ## remove build outputs
 	rm -rf dist packages/*/.build build
 
-release: ## run the tiers, then tag VERSION (make release VERSION=1.0.0)
+release: ## build, run the tiers, then tag VERSION (make release VERSION=1.0.0)
 	@test -n "$(VERSION)" || { echo "usage: make release VERSION=X.Y.Z"; exit 2; }
 	@git diff --quiet HEAD || { echo "working tree is dirty"; exit 1; }
+	@$(MAKE) gradle
 	@$(MAKE) test-all
 	git tag -a "v$(VERSION)" -m "v$(VERSION)"
 	@echo "Tagged v$(VERSION). Push with: git push origin v$(VERSION)"
