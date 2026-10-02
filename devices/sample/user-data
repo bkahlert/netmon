@@ -83,8 +83,8 @@ write_files:
       PRODUCT="Network Monitor"
       CIDR=10.10.10.10/29
   # The kiosk shows the web display; the page takes the broker from the URL. The mode hint is for a panel without EDID.
-  # COG_ARGS: the document-viewer cache model; WebKit's own memory limit for the web process, checked every ten seconds,
-  # so it frees caches before the kernel swaps it; a web process restart at the kill threshold as the leak guard.
+  # COG_ARGS: the document-viewer cache model; WebKit's memory limit, above half of which the web process drops its
+  # caches and JIT code and collects garbage on every ten-second check; a restart at the kill threshold as leak guard.
   # JSC_ and WEBKIT_ reach the web process through its environment: the JIT off, one Skia painting thread.
   - path: /etc/pihero/kiosk.conf
     content: |
