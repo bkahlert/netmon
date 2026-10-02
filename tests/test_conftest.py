@@ -43,6 +43,13 @@ class TestPytestCollectionModifyitems:
         assert result.returncode == 0, result.stdout + result.stderr
         assert "test_soak.py" not in result.stdout
 
+    def test_on_podman_the_soak_is_skipped_for_needing_a_booted_system(self):
+        result = run_pytest("-m", "soak", "--target=podman", "-rs", "tests")
+
+        assert result.returncode == 0, result.stdout + result.stderr
+        assert "1 skipped" in result.stdout
+        assert "needs a booted system" in result.stdout
+
 
 def run_pytest(*options: str, browsers: Path | None = None) -> subprocess.CompletedProcess:
     env = dict(os.environ)

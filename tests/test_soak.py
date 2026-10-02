@@ -54,9 +54,12 @@ def kiosk_variant(host, request) -> str | None:
         pytest.fail("--kiosk-conf rewrites the target's kiosk configuration; use it in the VM only")
     content = Path(path).read_text()
     host.check_output(f"printf '%s' {shlex.quote(content)} > /etc/pihero/kiosk.conf")
+    before = host.check_output("systemctl show -p MainPID --value pihero-kiosk.service").strip()
     host.check_output("systemctl restart pihero-kiosk.service")
     for _ in range(45):
-        if "Loaded successfully" in host.run("journalctl -u pihero-kiosk -b --no-pager -o cat").stdout:
-            break
+        pid = host.check_output("systemctl show -p MainPID --value pihero-kiosk.service").strip()
+        if pid not in (before, "0") and host.run("pgrep -x WPEWebProcess").rc == 0:
+            return path
         time.sleep(2)
-    return path
+    journal = host.run("journalctl -u pihero-kiosk -b --no-pager -o cat | tail -n 20").stdout
+    pytest.fail(f"the kiosk did not come back after the restart with {path}:\n{journal}")
