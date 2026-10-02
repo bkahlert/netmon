@@ -14,7 +14,8 @@ Recent network scan](./docs/netmon-running.gif)
 
 The application consists of three independent parts:
 
-- a JVM-based network scanner that publishes appearing and disappearing hosts using MQTT,
+- a network scanner, Kotlin compiled to a native arm64 binary with GraalVM, that publishes appearing and disappearing
+  hosts using MQTT,
 - a Kotlin/JS and [Fritz2](https://github.com/jwstegemann/fritz2) based web interface that display the results, by subscribing to MQTT, and
 - two Debian packages, `netmon-scanner` and `netmon-display`, from a signed apt repository at
   [bkahlert.github.io/netmon](https://bkahlert.github.io/netmon/), installed on a Raspberry Pi by a
@@ -25,15 +26,15 @@ Netmon on a Raspberry Pi Zero with an 7-inch screen](./docs/netmon-rpi0.jpg)
 
 ## Install on a Raspberry Pi
 
-Netmon runs on [Pi Hero 2](https://github.com/bkahlert/pihero): copy [devices/sample/user-data](devices/sample/user-data)
-and `network-config`, set the hostname, your SSH key and Wi-Fi, flash a card with pihero's `make flash`, and the board
-installs `netmon-scanner` (the scanner, Mosquitto with a websocket listener) and `netmon-display` (the web display behind
-lighttpd, shown full screen by `pihero-kiosk`). [devices/README.md](devices/README.md) has the details, including the one
-line a panel without EDID needs. The scanner reads `/etc/netmon/scanner.conf` (`BROKER_HOST`, `BROKER_PORT`, `NMAP_*`,
-`JAVA_TOOL_OPTIONS`); the display subscribes to the broker on the host the page was loaded from, port 8080, unless the
-URL's `broker.host` and `broker.port` query parameters say otherwise. Any browser on the LAN shows the same page at
-`http://<host>.local/`. Updates are `sudo apt upgrade`. Pi Hero 1's
-Ansible installer is frozen at the tag
+Netmon runs on [Pi Hero 2](https://github.com/bkahlert/pihero), on a 64-bit Raspberry Pi OS: copy
+[devices/sample/user-data](devices/sample/user-data) and `network-config`, set the hostname, your SSH key and Wi-Fi,
+flash a card with pihero's `make flash`, and the board installs `netmon-scanner` (the scanner, Mosquitto with a
+websocket listener) and `netmon-display` (the web display behind lighttpd, shown full screen by `pihero-kiosk`).
+[devices/README.md](devices/README.md) has the details, including the one line a panel without EDID needs. The scanner
+reads `/etc/netmon/scanner.conf` (`BROKER_HOST`, `BROKER_PORT`, `NMAP_*`, `NETMON_SCANNER_OPTIONS`); the display
+subscribes to the broker on the host the page was loaded from, port 8080, unless the URL's `broker.host` and
+`broker.port` query parameters say otherwise. Any browser on the LAN shows the same page at `http://<host>.local/`.
+Updates are `sudo apt upgrade`. Pi Hero 1's Ansible installer is frozen at the tag
 [`netmon-ansible`](https://github.com/bkahlert/netmon/tree/netmon-ansible).
 
 ## Development
@@ -56,7 +57,7 @@ Ansible installer is frozen at the tag
 
 ```shell
 # Gradle runs on JDK 17 (gradle/gradle-daemon-jvm.properties) and finds or downloads one itself
-make build                                          # Gradle, then nfpm: dist/*.deb
+make build                                          # Gradle, the native binary in a podman container, then nfpm: dist/*.deb
 make test                                           # tier 0 (static checks, unit tests) and tier 1 (install into a systemd container)
 make test-tier2                                     # tier 2: boot a QEMU VM from devices/sample, scan, show the page in WebKit and the kiosk
 make deploy TARGET=pi@netmon.local                  # the built packages onto a device, no repository involved
@@ -64,6 +65,10 @@ make soak TARGET=pi@netmon.local                    # ten minutes of memory samp
 make apt-probe TARGET=pi@netmon.local               # apt update and a reinstall next to the live stack, timed, with apt's peak
 make device-model-codes                             # the model codes and SF Symbols the display draws, from this Mac
 ```
+
+The native image is built by GraalVM's native-image inside a container
+([packages/netmon-scanner/native](packages/netmon-scanner/native)), so podman is needed for make build as it is for tier
+1; the binary is rebuilt only when the jar changed.
 
 The harness is [pihero-testkit](https://github.com/bkahlert/pihero/tree/main/testkit); `uv run pytest -m installed
 --target=ssh --target-uri=pi@netmon.local` checks a running device against the tests. A release is `make release

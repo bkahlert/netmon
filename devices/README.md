@@ -20,5 +20,6 @@ memory controller Raspberry Pi OS boots without, so the units' `MemoryMax=` bind
 `kiosk.conf` picks the mode when the connector offers several.
 
 The scanner's overrides go into `/etc/netmon/scanner.conf` (`BROKER_HOST`, `BROKER_PORT`, `NMAP_DATA_DIR`,
-`JAVA_TOOL_OPTIONS`, and the `NETWORK_MIN_HOST_BITS`/`NETWORK_MAX_HOST_BITS` filter), written with `write_files` like
-the kiosk's. A network the board reaches over Wi-Fi and a cable at once is scanned once, over the cable.
+`NETMON_SCANNER_OPTIONS` (the native image's runtime options, `-Xmx48m` by default), and the
+`NETWORK_MIN_HOST_BITS`/`NETWORK_MAX_HOST_BITS` filter), written with `write_files` like the kiosk's. A network the
+board reaches over Wi-Fi and a cable at once is scanned once, over the cable.
