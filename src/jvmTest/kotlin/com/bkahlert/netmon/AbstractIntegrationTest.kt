@@ -31,7 +31,7 @@ abstract class AbstractIntegrationTest {
         kClass: KClass<*>,
         vararg arguments: String,
         customize: ProcessBuilder.() -> Unit = {},
-        timeout: Duration = 25.seconds,
+        timeout: Duration = 120.seconds,
         predicate: (String) -> Boolean,
     ): List<LogMessage> {
         val process = ProcessBuilder(

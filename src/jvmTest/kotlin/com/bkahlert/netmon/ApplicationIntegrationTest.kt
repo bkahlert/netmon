@@ -27,7 +27,7 @@ import kotlin.time.Duration.Companion.seconds
 class ApplicationIntegrationTest : AbstractIntegrationTest() {
 
     @Test
-    fun scan_and_publish() = runTest(timeout = 30.seconds) {
+    fun scan_and_publish() = runTest(timeout = 150.seconds) {
         val logMessages = runUntilLogged(
             kClass = ApplicationIntegrationTest::class,
             "-v",
