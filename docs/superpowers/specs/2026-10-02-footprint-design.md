@@ -45,11 +45,14 @@ fills its `-Xmx128m`; the kiosk's `MemoryPeak` is 315 MB and its `MemoryCurrent`
 wants without any pressure.
 
 The budget: the two units' working sets, anonymous plus file-backed, must fit into the RAM size minus everything else
-minus apt's own peak minus a 40 MB margin. Everything else comes from the soak as used memory minus the two units; apt's
-peak comes from the apt probe in the VM. Both are measured in step 1 of the order of work and written into this section.
-Judging by today's numbers the two units have to land near 150 to 200 MB, half of what they take. The board baseline
-below supersedes this estimate. The scanner's share is its measured steady state after step 3; the kiosk gets the
-remainder, and the web process's share of that is what its memory limit is sized from.
+minus apt's own peak minus a 40 MB margin. On 2026-10-02 the user settled the two terms. Everything else is used RAM
+(`MemTotal` minus `MemAvailable`) minus the two units' RAM (`MemoryCurrent`) minus the zram pool (`mem_used_total`), all
+within one measure. Apt's term is its anonymous peak from the apt probe, with the cgroup's `MemoryPeak` as the upper
+bound. The gate (Task 20) takes "everything else" from the board's last soak row and apt's anonymous peak from the
+probe's summary line, the VM's 60 MB until the board's own probe runs. Judging by today's numbers the two units have to
+land near 150 to 200 MB, half of what they take. The board baseline below supersedes this estimate. The scanner's share
+is its measured steady state after step 3; the kiosk gets the remainder, and the web process's share of that is what its
+memory limit is sized from.
 
 ### VM, 1 GB, zram swap
 
@@ -118,9 +121,10 @@ measures and the 95 is not a reliable budget. The harness samples the zram pool'
 the next soak on, which will confirm or refute this. With the 75 MB of RAM that the 07:40 table gives for everything
 else, the same formula yields 415 - 75 - 309 - 40 = -9.
 
-The budget is open. Two decisions are the user's: how "everything else" is measured, with used memory minus the units'
-RAM minus the zram pool, within one measure, as the candidate, and whether apt's term is the cgroup's `MemoryPeak`,
-309 MB, or its anonymous peak, which the probe does not yet read.
+The user decided both open points on 2026-10-02. "Everything else" is used memory minus the units' RAM minus the zram
+pool, within one measure, which avoids the -29 MB above. Apt's term is its anonymous peak, which the probe now reads,
+and the cgroup's `MemoryPeak` stays as its upper bound, because it includes the page cache that the kernel can
+reclaim. It read 309 MB at the first probe and 420 MB today.
 
 ### Scanner on the JVM after the slimming
 
@@ -223,7 +227,9 @@ marked `mutating`, because the plugin skips `mutating` tests on the board and th
 The probe fails early with a message while the hook file exists on the target. It records the boot id and both
 restart counts, then runs `apt-get update` and reinstalls the package inside a transient unit with memory accounting that
 remains after exit, so that `MemoryPeak` and the exit status can be read from `systemctl show` afterwards and the unit
-is stopped and reset. While apt runs, a thread samples both units every ten seconds with the soak's reader.
+is stopped and reset. While apt runs, a thread samples both units every ten seconds with the soak's reader. A sampler
+on the target reads the apt unit's anonymous memory every half second, and the summary reports its peak next to the
+cgroup's `MemoryPeak`, which includes the page cache.
 
 It asserts: apt exited zero within the timeout; the boot id is unchanged; both units are active with unchanged restart
 counts. It reports apt's peak, the wall time, the major-fault delta and the memory pressure during the run. In the VM
