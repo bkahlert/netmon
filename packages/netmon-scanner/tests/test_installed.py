@@ -78,6 +78,17 @@ class TestUnit:
         assert '"event":"scan"' in out.replace(" ", "")
 
 
+class TestStop:
+    @pytest.mark.mutating
+    def test_a_stop_leaves_the_unit_inactive_not_failed(self, host):
+        host.check_output("sudo systemctl stop netmon-scanner.service")
+        state = host.check_output("systemctl show -p ActiveState --value netmon-scanner.service").strip()
+        result = host.check_output("systemctl show -p Result --value netmon-scanner.service").strip()
+        host.check_output("sudo systemctl start netmon-scanner.service")
+
+        assert (state, result) == ("inactive", "success")
+
+
 class TestRemoval:
     @pytest.mark.mutating
     def test_purge_leaves_nothing_behind(self, host, target):

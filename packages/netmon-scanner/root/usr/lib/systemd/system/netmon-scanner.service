@@ -19,6 +19,8 @@ StateDirectory=netmon
 CacheDirectory=netmon
 WorkingDirectory=/var/lib/netmon
 ExecStart=/usr/bin/java -jar /usr/share/netmon/netmon-scanner.jar
+# The JVM answers SIGTERM by exiting with 143 rather than dying from the signal; without this a stop ends "failed".
+SuccessExitStatus=143
 Restart=always
 RestartSec=10
 MemoryMax=320M

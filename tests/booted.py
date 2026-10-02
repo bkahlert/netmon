@@ -3,11 +3,18 @@ import re
 import socket
 import subprocess
 import time
+from pathlib import Path
 
 from pihero_testkit.ssh import SshTarget
 from pihero_testkit.vm import SSH_OPTS
+from playwright.sync_api import sync_playwright
 
 KNOWN_CLOUD_INIT_WARNING = "cc_netplan_nm_patch"
+
+
+def webkit_installed() -> bool:
+    with sync_playwright() as playwright:
+        return Path(playwright.webkit.executable_path).exists()
 
 
 def journal_until(host, needle: str, attempts: int = 45) -> str:
