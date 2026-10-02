@@ -9,7 +9,8 @@ import org.w3c.dom.asList
 import org.w3c.fetch.NO_CACHE
 import org.w3c.fetch.RequestCache
 import kotlin.js.Promise
-import kotlin.time.Duration.Companion.seconds
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.minutes
 
 value class AutoRefreshers(val autoRefreshers: List<AutoRefresher>) : List<AutoRefresher> by autoRefreshers {
 
@@ -48,10 +49,11 @@ class AutoRefresher(
     val uri: Uri,
     var etag: String? = null,
     val window: Window = kotlinx.browser.window,
+    interval: Duration = INTERVAL,
 ) {
 
     init {
-        window.setInterval(::refresh, INTERVAL.inWholeMilliseconds.toInt())
+        window.setInterval(::refresh, interval.inWholeMilliseconds.toInt())
     }
 
     fun refresh() {
@@ -69,7 +71,8 @@ class AutoRefresher(
     }
 
     companion object {
-        val INTERVAL = 5.seconds
+        /** Once a minute: enough for a new deploy to reach the panel. */
+        val INTERVAL = 1.minutes
 
         fun Uri.getEtagOrNull(window: Window): Promise<String?> =
             fetch(method = "head", cache = RequestCache.NO_CACHE, window = window)
