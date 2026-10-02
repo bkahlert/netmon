@@ -44,15 +44,7 @@ const tailwindConfig = {
         },
       },
     },
-    plugins: [
-      require('@tailwindcss/typography'),
-      // require('@tailwindcss/forms'),
-      require('tailwind-heropatterns')({
-        // see https://github.com/AndreaMinato/tailwind-heropatterns
-        colors: { default: require('tailwindcss/colors').gray['500'] },
-        opacity: { default: 0.4 },
-      }),
-    ],
+    plugins: [],
   }
 
 
