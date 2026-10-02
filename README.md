@@ -60,6 +60,8 @@ make build                                          # Gradle, then nfpm: dist/*.
 make test                                           # tier 0 (static checks, unit tests) and tier 1 (install into a systemd container)
 make test-tier2                                     # tier 2: boot a QEMU VM from devices/sample, scan, show the page in WebKit and the kiosk
 make deploy TARGET=pi@netmon.local                  # the built packages onto a device, no repository involved
+make soak TARGET=pi@netmon.local                    # ten minutes of memory samples of both units: dist/ssh/soak.md (the VM without TARGET)
+make apt-probe TARGET=pi@netmon.local               # apt update and a reinstall next to the live stack, timed, with apt's peak
 make device-model-codes                             # the model codes and SF Symbols the display draws, from this Mac
 ```
 

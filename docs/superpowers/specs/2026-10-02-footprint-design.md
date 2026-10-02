@@ -45,11 +45,82 @@ fills its `-Xmx128m`; the kiosk's `MemoryPeak` is 315 MB and its `MemoryCurrent`
 wants without any pressure.
 
 The budget: the two units' working sets, anonymous plus file-backed, must fit into the RAM size minus everything else
-minus apt's own peak minus a 40 MB margin. Everything else comes from the soak as used memory minus the two units;
-apt's peak comes from the apt probe in the VM. Both are measured in step 1 of the order of work and written into this
-section. Judging by today's numbers the two units have to land near 150 to 200 MB, half of what they take. The
-scanner's share is its measured steady state after step 3; the kiosk gets the remainder, and the web process's share of
-that is what its memory limit is sized from.
+minus apt's own peak minus a 40 MB margin. Everything else comes from the soak as used memory minus the two units; apt's
+peak comes from the apt probe in the VM. Both are measured in step 1 of the order of work and written into this section.
+Judging by today's numbers the two units have to land near 150 to 200 MB, half of what they take. The board baseline
+below supersedes this estimate. The scanner's share is its measured steady state after step 3; the kiosk gets the
+remainder, and the web process's share of that is what its memory limit is sized from.
+
+### VM, 1 GB, zram swap
+
+The "no swap" above was wrong. The VM image swaps into zram like the board: the soak shows 960 MB of swap free at the
+start, and the kiosk's zram share grew from 7 to 80 MB during the five minutes.
+
+VM soak, 2026-10-02, five minutes, finished 09:56. The summary line:
+
+```
+soak: scanner peak 123 MB, kiosk peak 371 MB RAM+zram, web process private dirty up to 158 MB, 1.3 major faults/s; table in dist/tier2/soak.md
+```
+
+The last row of the table, in MB:
+
+| t | scanner RAM+zram | scanner anon/file | kiosk RAM+zram | kiosk anon/file | web private dirty/swap | available | swap free | load | Δswpin | Δswpout | Δmajflt | PSI full10 |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| 305 | 122+0 | 72/54 | 233+80 | 114/40 | 92/46 | 535 | 888 | 0.3 | 0 | 0 | 4 | 0.00 |
+
+The VM's `apt-get update` and reinstall of `netmon-display` next to the stack, 2026-10-02, 10:43, took 11 s and 82 major
+faults, with a PSI full10 peak of 0.00. The transient unit's `MemoryPeak` was 323874816 bytes, which is 309 MB.
+System-wide `available` fell by 3 MB during the run, from 543 to 540 MB. The cgroup's peak is therefore mostly the
+package lists and the downloaded deb charged as page cache, which the kernel reclaims under pressure, so the formula's
+apt term, taken as `MemoryPeak`, is an upper bound.
+
+### Board baseline
+
+Board soak, 2026-10-02, 11:03 to 11:13, ten minutes, in MB. The summary line:
+
+```
+soak: scanner peak 98 MB, kiosk peak 262 MB RAM+zram, web process private dirty up to 61 MB, 2188.5 major faults/s; table in dist/ssh/soak.md
+```
+
+| t | scanner RAM+zram | scanner anon/file | kiosk RAM+zram | kiosk anon/file | web private dirty/swap | available | swap free | load | Δswpin | Δswpout | Δmajflt | PSI full10 |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| 0 | 13+75 | 8/2 | 74+165 | 47/21 | 50/127 | 111 | 109 | 3.6 | 0 | 0 | 0 | n/a |
+| 36 | 34+60 | 22/8 | 87+161 | 54/25 | 49/127 | 107 | 100 | 3.5 | 74233 | 70035 | 78138 | n/a |
+| 73 | 18+73 | 12/11 | 97+151 | 64/24 | 49/131 | 105 | 93 | 3.0 | 65002 | 69857 | 73890 | n/a |
+| 108 | 23+71 | 14/7 | 85+155 | 56/14 | 38/146 | 102 | 86 | 2.9 | 52368 | 52137 | 58670 | n/a |
+| 144 | 31+66 | 16/4 | 66+176 | 43/11 | 38/151 | 120 | 66 | 3.5 | 73860 | 80092 | 81586 | n/a |
+| 181 | 18+68 | 13/1 | 80+170 | 58/14 | 61/127 | 94 | 88 | 3.5 | 110387 | 106965 | 119266 | n/a |
+| 216 | 29+67 | 17/4 | 60+186 | 44/11 | 40/155 | 108 | 67 | 3.3 | 75265 | 81418 | 84529 | n/a |
+| 251 | 30+61 | 17/3 | 80+173 | 57/18 | 47/142 | 99 | 83 | 3.8 | 82342 | 78640 | 90674 | n/a |
+| 286 | 23+74 | 11/5 | 68+187 | 48/15 | 44/155 | 111 | 57 | 3.6 | 78351 | 84172 | 85945 | n/a |
+| 320 | 19+74 | 11/5 | 85+171 | 66/13 | 50/149 | 93 | 76 | 3.1 | 54451 | 50742 | 62131 | n/a |
+| 355 | 20+71 | 14/4 | 68+168 | 44/14 | 29/155 | 110 | 81 | 2.2 | 48326 | 52201 | 55052 | n/a |
+| 391 | 28+69 | 16/10 | 68+168 | 47/14 | 45/136 | 106 | 82 | 1.9 | 56855 | 56815 | 65507 | n/a |
+| 426 | 14+78 | 5/7 | 80+158 | 55/18 | 45/136 | 112 | 81 | 2.4 | 58298 | 59573 | 66396 | n/a |
+| 463 | 22+72 | 12/15 | 66+171 | 46/13 | 31/153 | 112 | 78 | 2.5 | 54348 | 53437 | 61791 | n/a |
+| 498 | 28+69 | 16/10 | 74+166 | 50/14 | 40/145 | 111 | 74 | 2.7 | 66190 | 69042 | 74109 | n/a |
+| 535 | 31+66 | 19/10 | 77+185 | 36/34 | 43/136 | 108 | 73 | 3.5 | 75569 | 75268 | 83525 | n/a |
+| 574 | 40+54 | 37/10 | 77+171 | 59/24 | 45/139 | 102 | 82 | 3.5 | 90656 | 89282 | 100877 | n/a |
+| 612 | 16+72 | 11/3 | 94+153 | 68/18 | 52/132 | 109 | 74 | 3.4 | 88085 | 88166 | 97903 | n/a |
+
+The board ran at about 2,200 major faults per second, and its PSI is unavailable, shown as n/a.
+
+The budget from the last row, with the two units at 88 + 247 = 335 and `available` at 109, so used memory is 415 - 109 =
+306:
+
+```
+415 (RAM) - (306 - 335) (everything else) - 309 (apt) - 40 (margin) = 95
+```
+
+Everything else comes out at -29 MB. The likely reason is that used memory counts the compressed pages in zram, while
+the units' zram figures are probably the uncompressed sizes of what they swapped out. If so, the subtraction mixes two
+measures and the 95 is not a reliable budget. The harness samples the zram pool's `mem_used_total` and renders it from
+the next soak on, which will confirm or refute this. With the 75 MB of RAM that the 07:40 table gives for everything
+else, the same formula yields 415 - 75 - 309 - 40 = -9.
+
+The budget is open. Two decisions are the user's: how "everything else" is measured, with used memory minus the units'
+RAM minus the zram pool, within one measure, as the candidate, and whether apt's term is the cgroup's `MemoryPeak`,
+309 MB, or its anonymous peak, which the probe does not yet read.
 
 ## Decisions
 
