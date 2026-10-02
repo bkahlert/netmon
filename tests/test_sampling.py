@@ -90,6 +90,15 @@ class TestRenderTable:
         assert "n/a" in result
         assert "335544320" in result
 
+    def test_shows_memtotal_after_the_boot_id_and_the_zram_pool_after_swap_free(self):
+        samples = [sample(0, zram_used=69 * 2**20)]
+
+        result = render_table(samples, {})
+
+        assert "Boot id b. MemTotal 415 MB." in result
+        assert "| swap free | zram pool | load |" in result
+        assert "| 160 | 69 | 3.1 |" in result
+
     def test_summary_names_the_peaks(self):
         samples = [sample(0, kiosk_current=80 * 2**20), sample(30, kiosk_current=120 * 2**20)]
 
@@ -116,6 +125,14 @@ class TestReadSample:
         with pytest.raises(ConnectionError, match="rc 255"):
             read_sample(DropsAfterBootIdHost())
 
+    def test_reads_memtotal_from_meminfo(self):
+        host = AnsweringHost({"cat /proc/meminfo": "MemTotal:         424960 kB\nMemAvailable:      95312 kB\n"})
+
+        result = read_sample(host)
+
+        assert result.system.mem_total == 424960 * 1024
+        assert result.system.mem_available == 95312 * 1024
+
 
 def sample(
     at: float,
@@ -124,10 +141,12 @@ def sample(
     kiosk_current: int | None = 50 * 2**20,
     kiosk_swap_current: int | None = 100 * 2**20,
     web_private_dirty: int | None = 60 * 2**20,
+    zram_used: int | None = 69 * 2**20,
+    mem_total: int | None = 415 * 2**20,
 ) -> Sample:
     scanner = UnitSample(active="active", restarts=0, current=40 * 2**20, swap_current=30 * 2**20, peak=60 * 2**20, swap_peak=40 * 2**20, anon=30 * 2**20, file=10 * 2**20, oom_kills=0)
     kiosk = UnitSample(active="active", restarts=0, current=kiosk_current, swap_current=kiosk_swap_current, peak=150 * 2**20, swap_peak=120 * 2**20, anon=50 * 2**20, file=20 * 2**20, oom_kills=0)
-    system = SystemSample(mem_available=90 * 2**20, swap_free=160 * 2**20, load1=3.1, pswpin=pswpin, pswpout=0, pgmajfault=0, pressure_full10=pressure, zram_used=69 * 2**20, web_private_dirty=web_private_dirty, web_swap=110 * 2**20, top="")
+    system = SystemSample(mem_total=mem_total, mem_available=90 * 2**20, swap_free=160 * 2**20, load1=3.1, pswpin=pswpin, pswpout=0, pgmajfault=0, pressure_full10=pressure, zram_used=zram_used, web_private_dirty=web_private_dirty, web_swap=110 * 2**20, top="")
     return Sample(at=at, boot_id="b", units={SCANNER: scanner, KIOSK: kiosk}, system=system)
 
 
@@ -149,3 +168,17 @@ class AnswerResult:
 class DropsAfterBootIdHost:
     def run(self, command: str) -> AnswerResult | DeadResult:
         return AnswerResult() if "boot_id" in command else DeadResult()
+
+
+class AnsweringResult:
+    def __init__(self, rc: int, stdout: str):
+        self.rc = rc
+        self.stdout = stdout
+
+
+class AnsweringHost:
+    def __init__(self, answers: dict[str, str]):
+        self.answers = {"cat /proc/sys/kernel/random/boot_id": "boot-1\n", "cat /proc/loadavg": "0.10 0.20 0.30 1/100 1234\n", **answers}
+
+    def run(self, command: str) -> AnsweringResult:
+        return AnsweringResult(0, self.answers[command]) if command in self.answers else AnsweringResult(1, "")

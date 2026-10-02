@@ -26,6 +26,7 @@ class UnitSample:
 
 @dataclass(frozen=True)
 class SystemSample:
+    mem_total: int | None
     mem_available: int | None
     swap_free: int | None
     load1: float
@@ -144,6 +145,7 @@ def read_sample(host) -> Sample:
     rollup = run(f"p=$(pgrep -x {WEB_PROCESS} | head -1); [ -n \"$p\" ] && cat /proc/$p/smaps_rollup")
     web = parse_kb_lines(rollup.stdout) if rollup.rc == 0 else {}
     system = SystemSample(
+        mem_total=meminfo.get("MemTotal"),
         mem_available=meminfo.get("MemAvailable"),
         swap_free=meminfo.get("SwapFree"),
         load1=float(run("cat /proc/loadavg").stdout.split()[0]),
@@ -162,11 +164,12 @@ def read_sample(host) -> Sample:
 def render_table(samples: list[Sample], limits: dict[str, str]) -> str:
     """Return the soak as Markdown: the limits, one row per sample with the swap and fault counters as deltas, the last sample's top lines."""
     first = samples[0]
+    limit_text = ", ".join(f"{unit} memory.max={limit}" for unit, limit in limits.items())
     lines = [
-        f"Boot id {first.boot_id}. Limits: " + ", ".join(f"{unit} memory.max={limit}" for unit, limit in limits.items()) + ".",
+        f"Boot id {first.boot_id}. MemTotal {mb(first.system.mem_total)} MB. Limits: {limit_text}.",
         "",
-        "| t | scanner RAM+zram | scanner anon/file | kiosk RAM+zram | kiosk anon/file | web private dirty/swap | available | swap free | load | Δswpin | Δswpout | Δmajflt | PSI full10 |",
-        "|---|---|---|---|---|---|---|---|---|---|---|---|---|",
+        "| t | scanner RAM+zram | scanner anon/file | kiosk RAM+zram | kiosk anon/file | web private dirty/swap | available | swap free | zram pool | load | Δswpin | Δswpout | Δmajflt | PSI full10 |",
+        "|---|---|---|---|---|---|---|---|---|---|---|---|---|---|",
     ]
     previous = first
     for sample in samples:
@@ -176,7 +179,7 @@ def render_table(samples: list[Sample], limits: dict[str, str]) -> str:
             f"| {mb(s.current)}+{mb(s.swap_current)} | {mb(s.anon)}/{mb(s.file)} "
             f"| {mb(k.current)}+{mb(k.swap_current)} | {mb(k.anon)}/{mb(k.file)} "
             f"| {mb(sys.web_private_dirty)}/{mb(sys.web_swap)} "
-            f"| {mb(sys.mem_available)} | {mb(sys.swap_free)} | {sys.load1:.1f} "
+            f"| {mb(sys.mem_available)} | {mb(sys.swap_free)} | {mb(sys.zram_used)} | {sys.load1:.1f} "
             f"| {sys.pswpin - previous.system.pswpin} | {sys.pswpout - previous.system.pswpout} | {sys.pgmajfault - previous.system.pgmajfault} "
             f"| {na(sys.pressure_full10)} |"
         )
