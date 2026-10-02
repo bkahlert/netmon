@@ -8,6 +8,7 @@ import org.w3c.dom.Window
 import org.w3c.dom.asList
 import org.w3c.fetch.NO_CACHE
 import org.w3c.fetch.RequestCache
+import org.w3c.fetch.RequestInit
 import kotlin.js.Promise
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.minutes
@@ -56,26 +57,28 @@ class AutoRefresher(
         window.setInterval(::refresh, interval.inWholeMilliseconds.toInt())
     }
 
-    fun refresh() {
-        uri.getEtagOrNull(window = window)
-            .then {
-                if (it != null) {
-                    val prevEtag = etag
-                    if (prevEtag == null) {
-                        etag = it
-                    } else if (prevEtag != it) {
-                        window.location.reload()
-                    }
+    /** Polls the ETag once and reloads the page when it differs from the first one seen; a failed poll changes nothing. */
+    fun refresh(): Promise<Unit> = uri.getEtagOrNull(window = window)
+        .then {
+            if (it != null) {
+                val prevEtag = etag
+                if (prevEtag == null) {
+                    etag = it
+                } else if (prevEtag != it) {
+                    window.location.reload()
                 }
             }
-    }
+        }
 
     companion object {
         /** Once a minute: enough for a new deploy to reach the panel. */
         val INTERVAL = 1.minutes
 
         fun Uri.getEtagOrNull(window: Window): Promise<String?> =
-            fetch(method = "head", cache = RequestCache.NO_CACHE, window = window)
-                .then(onFulfilled = { it.headers.get("etag") }, onRejected = { null })
+            window.fetch(toString(), RequestInit(method = "HEAD", cache = RequestCache.NO_CACHE))
+                .then(
+                    onFulfilled = { it.headers.get("etag") },
+                    onRejected = { com.bkahlert.kommons.js.console.warn("Auto refresh of %s failed: %s", toString(), it); null },
+                )
     }
 }
