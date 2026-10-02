@@ -148,6 +148,55 @@ The binary built in 42 s with a 2.1 GB peak and is 40 MB. `MemoryCurrent` probab
 set, because the binary's 40 MB are file-backed pages that dpkg wrote and that are charged outside the scanner's cgroup,
 so the board soak of Task 13 also records the process's `smaps_rollup`.
 
+### After the native scanner
+
+The board runs `1.1.1+47.4f1d788`, deployed 2026-10-02 at 16:36. The scanner started with `max heap: 50331648 bytes`,
+connected to the broker 3.5 s after the unit started, and published its first scan 13.5 s after that. The installed
+tests passed with 15 tests and 4 skipped.
+
+Board soak, 2026-10-02, 16:38 to 16:48, ten minutes. The summary line:
+
+```
+soak: scanner peak 27 MB, scanner rss up to 18 MB, kiosk peak 235 MB RAM+zram, web process private dirty up to 84 MB, 798.0 major faults/s; table in dist/ssh/soak.md
+```
+
+The last row of the table, in MB:
+
+| t | scanner RAM+zram | scanner anon/file | scanner rss/anon | kiosk RAM+zram | kiosk anon/file | web private dirty/swap | available | swap free | zram pool | load | Δswpin | Δswpout | Δmajflt | PSI full10 |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| 625 | 18+3 | 7/10 | 10/4 | 102+123 | 83/11 | 70/100 | 116 | 190 | 46 | 2.3 | 22754 | 23690 | 29467 | n/a |
+
+Against the baseline's last row, the scanner's RAM+zram fell from 88 to 21 MB and its process rss is 10 MB; the baseline
+did not sample the process, so the rss has no earlier figure.
+
+VM soak, 2026-10-02, finished 17:01, ten minutes. The summary line:
+
+```
+soak: scanner peak 49 MB, scanner rss up to 37 MB, kiosk peak 475 MB RAM+zram, web process private dirty up to 196 MB, 0.5 major faults/s; table in dist/tier2/soak.md
+```
+
+The last row of the table, in MB:
+
+| t | scanner RAM+zram | scanner anon/file | scanner rss/anon | kiosk RAM+zram | kiosk anon/file | web private dirty/swap | available | swap free | zram pool | load | Δswpin | Δswpout | Δmajflt | PSI full10 |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| 610 | 49+0 | 10/36 | 37/10 | 287+188 | 183/29 | 171/151 | 495 | 779 | 56 | 0.2 | 16 | 3427 | 32 | 0.00 |
+
+The scanner's cgroup holds 36 MB of file-backed pages in the VM, the binary resident. On the board it holds 3 to 16 MB
+over the rows, probably because the kernel evicts the binary's pages under pressure. The cap below has to leave room
+for them.
+
+The scanner's steady RAM+zram on the board is 17 to 22 MB over the last five rows. The cap is the larger of three times
+the highest, rounded up to a multiple of 16 MB, and 128 MB, which is the 48 MiB heap cap plus the 40 MB mapped image
+plus headroom. A cap below heap plus image would make the kernel push the binary's own pages out to the SD card. The
+floor wins, so `MemoryMax` is `128M`, 134217728 bytes:
+
+```
+max(ceil(3 x 22 = 66 up to 80), 128) = 128 MB = 134217728 bytes
+```
+
+Both soaks above ran under the previous cap of 320 MB, which their tables show as `memory.max=335544320`. The first
+deploy of this commit applies 128 MB, and a short board soak then confirms it.
+
 ## Decisions
 
 | Decision | Choice | Why |
@@ -270,8 +319,8 @@ tool that produces it.
 The unit runs `ExecStart=/usr/lib/netmon/netmon-scanner $NETMON_SCANNER_OPTIONS` with
 `Environment=NETMON_SCANNER_OPTIONS=-Xmx48m`, overridable in `/etc/netmon/scanner.conf` as `JAVA_TOOL_OPTIONS` was.
 `Application.start` logs the effective maximum heap in its configuration block. `MemoryMax` is set from the soak as a
-leak guard, two to three times the steady state. `AmbientCapabilities` stays: nmap inherits the capabilities across
-`execve` from a native binary as it did from the JVM.
+leak guard, three times the steady state and never below the heap plus the image. `AmbientCapabilities` stays: nmap
+inherits the capabilities across `execve` from a native binary as it did from the JVM.
 
 Tests per tier: the installed tests check the package without a JRE and Python, the binary's start, the broker
 connection over 1883, the logged heap cap and the capabilities; tier 2 proves that a scan completes and is published,
