@@ -12,4 +12,7 @@ object UiSettings : Settings("ui") {
 
     /** The duration for which changes are highlighted. */
     val HOST_STATE_CHANGE_HIGHLIGHT_DURATION: Duration = 60.seconds
+
+    /** How long the radar icons animate after a scan arrives. */
+    val SCAN_PULSE_DURATION: Duration = 10.seconds
 }
