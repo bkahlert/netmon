@@ -92,15 +92,14 @@ private fun HtmlTag<HTMLDivElement>.meta(
         .combine(events.data.map { it.timestamp }) { now, timestamp ->
             (now - timestamp).coerceAtLeast(ZERO)
         }
-    val scanIsDatedFlow = timePassed.map { it > datedThreshold }
 
     div("flex items-center justify-center sm:justify-start gap-x-2") {
         icon("shrink-0 w-6 h-6", SFSymbols.`wave.3.left`) {
-            className(scanIsDatedFlow.map { if (it) "text-yellow-500/60" else "animate-variable-color" })
+            className(timePassed.map { radarClass(it, datedThreshold = datedThreshold) })
         }
         div("text-xl font-bold") { +source.node }
         icon("shrink-0 w-6 h-6", SFSymbols.`wave.3.right`) {
-            className(scanIsDatedFlow.map { if (it) "text-yellow-500/60" else "animate-variable-color" })
+            className(timePassed.map { radarClass(it, datedThreshold = datedThreshold) })
         }
         div("flex-grow") {
             ul("flex flex-col items-end text-xs") {
