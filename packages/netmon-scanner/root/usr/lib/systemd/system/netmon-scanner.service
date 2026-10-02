@@ -7,8 +7,8 @@ Wants=network-online.target
 [Service]
 User=netmon
 Group=netmon
-# nmap discovers hosts with ARP and ICMP, which need raw sockets; the JVM passes these capabilities on to it, so
-# nmap's binary stays as Debian ships it and an upgrade cannot take the rights away.
+# nmap discovers hosts with ARP and ICMP, which need raw sockets; it inherits these ambient capabilities across execve
+# from the scanner binary, so nmap's binary stays as Debian ships it and an upgrade cannot take the rights away.
 AmbientCapabilities=CAP_NET_RAW CAP_NET_ADMIN
 CapabilityBoundingSet=CAP_NET_RAW CAP_NET_ADMIN
 Environment=BROKER_HOST=127.0.0.1 BROKER_PORT=1883
@@ -20,7 +20,7 @@ StateDirectory=netmon
 CacheDirectory=netmon
 WorkingDirectory=/var/lib/netmon
 ExecStart=/usr/lib/netmon/netmon-scanner $NETMON_SCANNER_OPTIONS
-# The binary answers SIGTERM like the JVM did, by exiting with 143 rather than dying from the signal; without this a stop ends "failed".
+# The binary exits with 143 on SIGTERM (--install-exit-handlers) instead of dying from the signal; without this a stop ends "failed".
 SuccessExitStatus=143
 Restart=always
 RestartSec=10
