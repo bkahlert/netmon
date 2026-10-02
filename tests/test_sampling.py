@@ -12,6 +12,7 @@ from sampling import (
     parse_key_values,
     parse_pressure,
     parse_show,
+    parse_stat_ticks,
     parse_zram,
     read_sample,
     render_summary,
@@ -79,6 +80,16 @@ class TestParseZram:
         assert parse_zram(None) is None
 
 
+class TestParseStatTicks:
+    def test_sums_utime_and_stime_after_a_comm_with_a_space(self):
+        text = "1234 (WPE Web) S 1 1234 1234 0 -1 4194560 52040 0 812 0 1500 250 0 0 20 0 9 0 3456 400000000 25000\n"
+
+        assert parse_stat_ticks(text) == 1750
+
+    def test_missing_is_none(self):
+        assert parse_stat_ticks("") is None
+
+
 class TestRenderTable:
     def test_has_a_row_per_sample_with_deltas_and_na_for_missing_values(self):
         samples = [sample(0, pswpin=100, pressure=None), sample(30, pswpin=160, pressure=0.5)]
@@ -113,6 +124,28 @@ class TestRenderTable:
         result = render_table(samples, {})
 
         assert "| 30/10 | n/a/n/a | 50+100 |" in result
+    def test_shows_the_web_process_cpu_seconds_since_the_previous_sample(self):
+        samples = [sample(0, web_cpu_ticks=1000), sample(30, web_cpu_ticks=1250)]
+
+        result = render_table(samples, {})
+
+        assert "| web private dirty/swap | Δweb cpu | available |" in result
+        assert "| 60/110 | 0.0 | 90 |" in result
+        assert "| 60/110 | 2.5 | 90 |" in result
+
+    def test_shows_na_for_the_web_process_cpu_without_a_web_process(self):
+        samples = [sample(0, web_cpu_ticks=1000), sample(30, web_cpu_ticks=None)]
+
+        result = render_table(samples, {})
+
+        assert "| 60/110 | n/a | 90 |" in result
+
+    def test_summary_names_the_web_process_cpu(self):
+        samples = [sample(0, web_cpu_ticks=1000), sample(30, web_cpu_ticks=1250), sample(60, web_cpu_ticks=1420)]
+
+        result = render_summary(samples)
+
+        assert "web process private dirty up to 60 MB, web process cpu 4.2 s, " in result
 
     def test_summary_names_the_peaks(self):
         samples = [sample(0, kiosk_current=80 * 2**20), sample(30, kiosk_current=120 * 2**20)]
@@ -137,6 +170,7 @@ class TestRenderTable:
         assert "kiosk peak n/a" in result
         assert "private dirty up to n/a" in result
         assert "scanner rss up to n/a" in result
+        assert "web process cpu" not in result
 
 
 class TestReadSample:
@@ -171,6 +205,25 @@ class TestReadSample:
 
         assert result.system.scanner_rss is None
         assert result.system.scanner_anon is None
+    def test_reads_the_web_process_pid_and_cpu_ticks(self):
+        host = AnsweringHost({
+            "pgrep -x WPEWebProcess | head -1": "1234\n",
+            "cat /proc/1234/stat": "1234 (WPEWebProcess) S 1 1234 1234 0 -1 4194560 52040 0 812 0 1500 250 0 0 20 0 9 0 3456\n",
+        })
+
+        result = read_sample(host)
+
+        assert result.system.web_pid == 1234
+        assert result.system.web_cpu_ticks == 1750
+
+    def test_reads_no_web_process_as_none(self):
+        host = AnsweringHost({"pgrep -x WPEWebProcess | head -1": ""})
+
+        result = read_sample(host)
+
+        assert result.system.web_pid is None
+        assert result.system.web_cpu_ticks is None
+        assert result.system.web_private_dirty is None
 
 
 def sample(
@@ -184,10 +237,11 @@ def sample(
     mem_total: int | None = 415 * 2**20,
     scanner_rss: int | None = 45 * 2**20,
     scanner_anon: int | None = 30 * 2**20,
+    web_cpu_ticks: int | None = None,
 ) -> Sample:
     scanner = UnitSample(active="active", restarts=0, current=40 * 2**20, swap_current=30 * 2**20, peak=60 * 2**20, swap_peak=40 * 2**20, anon=30 * 2**20, file=10 * 2**20, oom_kills=0)
     kiosk = UnitSample(active="active", restarts=0, current=kiosk_current, swap_current=kiosk_swap_current, peak=150 * 2**20, swap_peak=120 * 2**20, anon=50 * 2**20, file=20 * 2**20, oom_kills=0)
-    system = SystemSample(mem_total=mem_total, mem_available=90 * 2**20, swap_free=160 * 2**20, load1=3.1, pswpin=pswpin, pswpout=0, pgmajfault=0, pressure_full10=pressure, zram_used=zram_used, web_private_dirty=web_private_dirty, web_swap=110 * 2**20, scanner_rss=scanner_rss, scanner_anon=scanner_anon, top="")
+    system = SystemSample(mem_total=mem_total, mem_available=90 * 2**20, swap_free=160 * 2**20, load1=3.1, pswpin=pswpin, pswpout=0, pgmajfault=0, pressure_full10=pressure, zram_used=zram_used, web_private_dirty=web_private_dirty, web_swap=110 * 2**20, scanner_rss=scanner_rss, scanner_anon=scanner_anon, web_pid=1234 if web_cpu_ticks is not None else None, web_cpu_ticks=web_cpu_ticks, top="")
     return Sample(at=at, boot_id="b", units={SCANNER: scanner, KIOSK: kiosk}, system=system)
 
 

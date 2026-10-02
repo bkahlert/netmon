@@ -10,6 +10,7 @@ SCANNER_PROCESS = "netmon-scanner"
 NOT_SET = "[not set]"
 UNIT_SECONDS = {"s": 1, "m": 60, "h": 3600}
 MIB = 2**20
+CLK_TCK = 100
 
 
 @dataclass(frozen=True)
@@ -40,6 +41,8 @@ class SystemSample:
     web_swap: int | None
     scanner_rss: int | None
     scanner_anon: int | None
+    web_pid: int | None
+    web_cpu_ticks: int | None
     top: str
 
 
@@ -112,6 +115,14 @@ def parse_zram(text: str | None) -> int | None:
     return int(fields[2]) if len(fields) >= 3 else None
 
 
+def parse_stat_ticks(text: str) -> int | None:
+    """Return utime plus stime, fields 14 and 15 of /proc/<pid>/stat, counted after the comm in parentheses, which may contain spaces."""
+    if ")" not in text:
+        return None
+    fields = text.rsplit(")", 1)[1].split()
+    return int(fields[11]) + int(fields[12])
+
+
 def read_sample(host) -> Sample:
     """Read one sample from a testinfra host: both units, the web process, and the system counters. Raise ConnectionError where the target does not answer."""
     boot = host.run("cat /proc/sys/kernel/random/boot_id")
@@ -145,6 +156,14 @@ def read_sample(host) -> Sample:
     vmstat = parse_key_values(run("cat /proc/vmstat").stdout)
     pressure = run("cat /proc/pressure/memory")
     zram = run("cat /sys/block/zram0/mm_stat")
+    pid = run(f"pgrep -x {WEB_PROCESS} | head -1").stdout.strip()
+    web_pid = int(pid) if pid.isdigit() else None
+    web, web_cpu_ticks = {}, None
+    if web_pid is not None:
+        rollup = run(f"cat /proc/{web_pid}/smaps_rollup")
+        web = parse_kb_lines(rollup.stdout) if rollup.rc == 0 else {}
+        stat = run(f"cat /proc/{web_pid}/stat")
+        web_cpu_ticks = parse_stat_ticks(stat.stdout) if stat.rc == 0 else None
     rollup = run(f"p=$(pgrep -x {WEB_PROCESS} | head -1); [ -n \"$p\" ] && cat /proc/$p/smaps_rollup")
     web = parse_kb_lines(rollup.stdout) if rollup.rc == 0 else {}
     scanner_rollup = run(f"p=$(pgrep -x {SCANNER_PROCESS} | head -1); [ -n \"$p\" ] && cat /proc/$p/smaps_rollup")
@@ -163,6 +182,8 @@ def read_sample(host) -> Sample:
         web_swap=web.get("Swap"),
         scanner_rss=scanner_process.get("Rss"),
         scanner_anon=scanner_process.get("Anonymous"),
+        web_pid=web_pid,
+        web_cpu_ticks=web_cpu_ticks,
         top=run("top -bn1 -o %CPU | sed -n '7,12p'").stdout,
     )
     return Sample(at=time.monotonic(), boot_id=boot.stdout.strip(), units=units, system=system)
@@ -175,8 +196,8 @@ def render_table(samples: list[Sample], limits: dict[str, str]) -> str:
     lines = [
         f"Boot id {first.boot_id}. MemTotal {mb(first.system.mem_total)} MB. Limits: {limit_text}.",
         "",
-        "| t | scanner RAM+zram | scanner anon/file | scanner rss/anon | kiosk RAM+zram | kiosk anon/file | web private dirty/swap | available | swap free | zram pool | load | Δswpin | Δswpout | Δmajflt | PSI full10 |",
-        "|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|",
+        "| t | scanner RAM+zram | scanner anon/file | scanner rss/anon | kiosk RAM+zram | kiosk anon/file | web private dirty/swap | Δweb cpu | available | swap free | zram pool | load | Δswpin | Δswpout | Δmajflt | PSI full10 |",
+        "|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|",
     ]
     previous = first
     for sample in samples:
@@ -186,7 +207,7 @@ def render_table(samples: list[Sample], limits: dict[str, str]) -> str:
             f"| {mb(s.current)}+{mb(s.swap_current)} | {mb(s.anon)}/{mb(s.file)} "
             f"| {mb(sys.scanner_rss)}/{mb(sys.scanner_anon)} "
             f"| {mb(k.current)}+{mb(k.swap_current)} | {mb(k.anon)}/{mb(k.file)} "
-            f"| {mb(sys.web_private_dirty)}/{mb(sys.web_swap)} "
+            f"| {mb(sys.web_private_dirty)}/{mb(sys.web_swap)} | {cpu_seconds(previous.system.web_cpu_ticks, sys.web_cpu_ticks)} "
             f"| {mb(sys.mem_available)} | {mb(sys.swap_free)} | {mb(sys.zram_used)} | {sys.load1:.1f} "
             f"| {sys.pswpin - previous.system.pswpin} | {sys.pswpout - previous.system.pswpout} | {sys.pgmajfault - previous.system.pgmajfault} "
             f"| {na(sys.pressure_full10)} |"
@@ -206,8 +227,13 @@ def render_summary(samples: list[Sample]) -> str:
 
     web = max((s.system.web_private_dirty for s in samples if s.system.web_private_dirty is not None), default=None)
     scanner_rss = max((s.system.scanner_rss for s in samples if s.system.scanner_rss is not None), default=None)
+    web_cpu = cpu_seconds(samples[0].system.web_cpu_ticks, samples[-1].system.web_cpu_ticks)
+    web_cpu_text = "" if web_cpu == "n/a" else f", web process cpu {web_cpu} s"
     faults = (samples[-1].system.pgmajfault - samples[0].system.pgmajfault) / max(samples[-1].at - samples[0].at, 1)
-    return f"soak: scanner peak {size(peak(SCANNER))}, scanner rss up to {size(scanner_rss)}, kiosk peak {size(peak(KIOSK))} RAM+zram, web process private dirty up to {size(web)}, {faults:.1f} major faults/s"
+    return (
+        f"soak: scanner peak {size(peak(SCANNER))}, scanner rss up to {size(scanner_rss)}, kiosk peak {size(peak(KIOSK))} RAM+zram, "
+        f"web process private dirty up to {size(web)}{web_cpu_text}, {faults:.1f} major faults/s"
+    )
 
 
 def mb(value: int | None) -> str:
@@ -216,3 +242,7 @@ def mb(value: int | None) -> str:
 
 def na(value: float | None) -> str:
     return "n/a" if value is None else f"{value:.2f}"
+
+
+def cpu_seconds(before: int | None, after: int | None) -> str:
+    return "n/a" if before is None or after is None else f"{(after - before) / CLK_TCK:.1f}"

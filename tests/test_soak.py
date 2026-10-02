@@ -41,6 +41,8 @@ class TestSoak:
             assert last.units[unit].active == "active", unit
             assert last.units[unit].restarts == first.units[unit].restarts, unit
             assert last.units[unit].oom_kills == first.units[unit].oom_kills, unit
+        if first.system.web_pid is not None:
+            assert last.system.web_pid == first.system.web_pid, f"the web process was replaced: {first.system.web_pid} → {last.system.web_pid}"
 
 
 @pytest.fixture(scope="module")
