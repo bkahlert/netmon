@@ -353,6 +353,18 @@ shows no error, but cog names the `modeset` renderer under both configurations a
 comparison. The user decided on 2026-10-02: the board keeps the sample's five lines, the memory limit stays, and GPU
 painting is not adopted.
 
+The gate, from the last row of the board soak in the kept configuration: used memory is 415 - 140 = 275 MB, the two
+units' RAM 22 + 101 = 123 MB, the zram pool 34 MB, so everything else is 275 - 123 - 34 = 118 MB. Apt's term is the VM's
+anonymous peak, 60 MB, until the board's probe runs:
+
+```
+415 (RAM) - 118 (everything else) - 60 (apt) - 40 (margin) = 197
+```
+
+The two units' RAM+zram in the row is 27 + 160 = 187 MB: within the budget by 10 MB. The kiosk's RAM+zram moved between
+130 and 160 MB over the last three rows, so the margin is the size of the row-to-row noise; the probe on the board
+decides.
+
 ## Decisions
 
 | Decision | Choice | Why |
