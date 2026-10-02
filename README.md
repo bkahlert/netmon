@@ -58,7 +58,7 @@ Ansible installer is frozen at the tag
 # Gradle runs on JDK 17 (gradle/gradle-daemon-jvm.properties) and finds or downloads one itself
 make build                                          # Gradle, then nfpm: dist/*.deb
 make test                                           # tier 0 (static checks, unit tests) and tier 1 (install into a systemd container)
-make test-tier2                                     # tier 2: boot a QEMU VM from devices/sample, scan, and show the page in WebKit
+make test-tier2                                     # tier 2: boot a QEMU VM from devices/sample, scan, show the page in WebKit and the kiosk
 make deploy TARGET=pi@netmon.local                  # the built packages onto a device, no repository involved
 ```
 
@@ -68,9 +68,11 @@ VERSION=X.Y.Z` and `git push origin vX.Y.Z`; the workflow builds, signs and publ
 
 Tier 2 needs QEMU (`brew install qemu`) and Playwright's WebKit (`make browser`, downloaded once into Playwright's cache). It
 boots the real Raspberry Pi OS root filesystem with [devices/sample/user-data](devices/sample/user-data), rendered for the VM
-by `tests/vm_device.py`, lets the scanner scan QEMU's network, and loads the page in WebKit at the panel's 800×480; the run
-leaves `dist/tier2/display.png`. `make vm` keeps the VM running for a look around, and `make display URL=…` opens any page,
-the VM's, the board's or a dev server's, in that WebKit at that size. `make release` runs tiers 0 to 2.
+by `tests/vm_device.py`, lets the scanner scan QEMU's network, loads the page in WebKit at the panel's 800×480, and lets
+`pihero-kiosk` show it on the VM's virtual display of that size; the run leaves `dist/tier2/display.png`, the page as WebKit
+renders it, and `dist/tier2/kiosk.png`, the same page as cog paints it in the VM. `make vm` keeps the VM running for a look
+around, and `make display URL=…` opens any page, the VM's, the board's or a dev server's, in that WebKit at that size.
+`make release` runs tiers 0 to 2.
 
 ### MQTT
 

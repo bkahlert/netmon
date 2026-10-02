@@ -134,11 +134,17 @@ the file tier 2 boots.
 
 ## Follow-ups, in order
 
-1. **The kiosk in the VM.** A spike in a pihero branch: give the testkit's VM a `virtio-gpu-pci` device and a QEMU monitor
-   socket, boot netmon's device file, and see whether `pihero-kiosk` starts and cog paints anything. If it does, QEMU's
-   `screendump` gives screenshots of the real kiosk and `systemctl show` gives cog's memory without touching the board; a
-   testkit release then carries the change and netmon's tier 2 grows a screenshot comparison. If cog cannot render on the
-   virtual GPU, the board stays the only place to see the kiosk.
+1. **The kiosk in the VM.** Done 2026-10-02 with pihero 2.4.0 and cog 0.18.4-1+pihero1. The testkit's VM has a
+   `virtio-gpu-pci` display, 800×480 by default, and a QMP socket; cog renders on it in software over `wl_shm`, so
+   `pihero-kiosk` is active in the VM and tier 2 asserts it has not restarted, saves QEMU's `screendump` of the real kiosk
+   as `dist/tier2/kiosk.png` next to WebKit's `display.png`, and reports cog's `MemoryCurrent` and `MemoryPeak` the way it
+   reports the scanner's. What the first two runs showed, input for 3: the kiosk's `MemoryPeak` after the first scan
+   was 315424768 and 315367424 bytes, both above the unit's `MemoryMax` of 300M, so cog was already being reclaimed
+   into swap in the VM, with `MemoryCurrent` at 227192832 and 241139712; and in both pictures the three hosts are up
+   but the header reads `MQTT::Disconnected` while "scanned 15s ago" says the scan had just arrived, a reconnect or the
+   memory pressure, not yet explained. The two pictures differ in two places, as the spike saw: cog draws a
+   missing-glyph box where WebKit draws the `❔` glyph of a host without a name, and cog clips the vendor and name text
+   that WebKit zooms to fit its column.
 2. **The board soak.** A few minutes against the running board over ssh: uptime continuity, `NRestarts` of kiosk and
    scanner, per-unit memory and swap under the caps, no OOM in the journal, and the display test above through the user's
    SSH configuration. How to see what the panel shows beyond that is a design question of its own; the display reporting
