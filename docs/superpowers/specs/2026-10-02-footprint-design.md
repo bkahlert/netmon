@@ -365,6 +365,53 @@ The two units' RAM+zram in the row is 27 + 160 = 187 MB: within the budget by 10
 130 and 160 MB over the last three rows, so the margin is the size of the row-to-row noise; the probe on the board
 decides.
 
+### The finish line
+
+The hook `/etc/apt/apt.conf.d/52netmon-dpkg` moved to `/root/52netmon-dpkg.off` on 2026-10-02 at 22:07 with both units
+running, and stayed there. Three apt runs followed on the live board, all on the same boot, none stopping a unit.
+
+The probe as designed, `apt-get update` and `netmon-display` reinstalled, 22:08 to 22:09. The summary line:
+
+```
+apt probe: ok; 71 s, apt MemoryPeak=125980672, apt anon peak=74498048, 101650 major faults, PSI full10 peak n/a
+```
+
+The last row of its table, in MB:
+
+| t | scanner RAM+zram | scanner anon/file | scanner rss/anon | kiosk RAM+zram | kiosk anon/file | web private dirty/swap | Δweb cpu | available | swap free | zram pool | load | Δswpin | Δswpout | Δmajflt | PSI full10 |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| 74 | 33+0 | 11/21 | 27/9 | 58+72 | 42/10 | 38/43 | 4.3 | 136 | 276 | 35 | 3.7 | 2474 | 1369 | 8393 | n/a |
+
+Over the six rows `available` fell to 87 MB during the cache build and load rose to 4.1; both units stayed active with
+no restart and no OOM kill, and the web process kept its PID. Apt's anonymous peak on the board is 74 MB against the
+VM's 60 MB. With the board's own term the paper budget is 415 - 118 - 74 - 40 = 183 MB against the two units' 187 MB,
+4 MB over, where the VM's term had it 10 MB under. The probe is the measure the budget approximates, and it passed.
+
+The second run, at the user's suggestion, took the pending pihero release as the victim, `--apt-package 'pihero
+kaomoji'`, 2.4.0 to 2.5.2, 22:12 to 22:15:
+
+```
+apt probe: ok; 194 s, apt MemoryPeak=131313664, apt anon peak=82952192, 389426 major faults, PSI full10 peak n/a
+```
+
+| t | scanner RAM+zram | scanner anon/file | scanner rss/anon | kiosk RAM+zram | kiosk anon/file | web private dirty/swap | Δweb cpu | available | swap free | zram pool | load | Δswpin | Δswpout | Δmajflt | PSI full10 |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| 198 | 15+2 | 9/5 | 16/8 | 79+65 | 48/24 | 38/38 | 3.4 | 137 | 276 | 35 | 5.5 | 3681 | 2543 | 11240 | n/a |
+
+Eleven rows, `available` at least 107 MB, load up to 5.7, the web process's PID unchanged, no restart on either unit.
+
+The third run, outside the probe because `pihero-kiosk`'s postinst restarts the kiosk, took the remaining seven
+packages, `openssl`, `libssl3t64`, `openssl-provider-legacy`, `pihero-avahi`, `pihero-kiosk`, `raspi-config` and
+`raspi-config-core`, by `apt-get upgrade -y` in an accounted transient unit, 22:16 to 22:18: 125 s, apt's `MemoryPeak`
+165 MB, `available` at least 125 MB in one-second samples, load up to 4.2. The kiosk stopped and started once at
+22:17:59 by its package's hand and the page had loaded 24 s later; the scanner, the broker and lighttpd ran through,
+and the boot id did not change.
+
+The finish line is reached: apt and dpkg run next to the live stack. The hook stays aside and leaves the board's device
+template in choam.de, and the fleet playbook's `apt_stop_units` for netmon goes with it. The headroom is thin, 4 to
+10 MB on paper, and a kernel upgrade with its initramfs build has not run next to the stack yet; the apt probe is the
+re-check after any change.
+
 ## Decisions
 
 | Decision | Choice | Why |
