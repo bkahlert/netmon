@@ -2,6 +2,7 @@ package com.bkahlert.netmon.mqtt
 
 import io.kotest.data.forAll
 import io.kotest.data.row
+import io.kotest.matchers.should
 import io.kotest.matchers.shouldBe
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
@@ -16,6 +17,17 @@ class MqttPublisherTest {
             row(8081, "mqtt", "ws://broker.local:8081/mqtt"),
         ) { port, path, expected ->
             MqttPublisher.url("broker.local", port, path) shouldBe expected
+        }
+    }
+
+    @Test
+    fun connect_options_reconnect_by_themselves_within_the_displays_dated_threshold() {
+        val options = MqttPublisher.connectOptions()
+
+        options should {
+            it.isCleanSession shouldBe true
+            it.isAutomaticReconnect shouldBe true
+            it.maxReconnectDelay shouldBe 30_000
         }
     }
 }

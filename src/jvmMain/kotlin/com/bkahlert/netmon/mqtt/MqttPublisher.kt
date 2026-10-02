@@ -26,10 +26,7 @@ class MqttPublisher<T>(
 
     private val client: MqttClient = MqttClient(url, identifier ?: UUID.randomUUID().toString(), MemoryPersistence()).also {
         logger.info("Connecting to {}", url)
-        it.connect(MqttConnectOptions().apply {
-            isCleanSession = true
-            isAutomaticReconnect = true
-        })
+        it.connect(connectOptions())
     }
 
     override fun publish(topic: String, event: T): Boolean {
@@ -56,5 +53,13 @@ class MqttPublisher<T>(
         /** Returns the broker URI: `ws://` for the broker's websocket ports 8080 and 8081, `tcp://` otherwise, [path] appended when given. */
         fun url(host: String, port: Int, path: String?): String =
             (if (port == 8080 || port == 8081) "ws" else "tcp") + "://$host:$port" + path?.let { "/$it" }.orEmpty()
+
+        /** Returns the connect options: a clean session that reconnects by itself, at most 30 s apart. */
+        fun connectOptions(): MqttConnectOptions = MqttConnectOptions().apply {
+            isCleanSession = true
+            isAutomaticReconnect = true
+            // Paho's 128 s default would let a reconnect outlast the display's two-minute dated threshold.
+            maxReconnectDelay = 30_000
+        }
     }
 }
