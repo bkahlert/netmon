@@ -81,8 +81,7 @@ kotlin {
                 implementation("org.jetbrains.kotlinx:kotlinx-coroutines-jdk8")
                 implementation("org.jetbrains.kotlinx:kotlinx-coroutines-slf4j")
 
-                implementation("com.hivemq:hivemq-mqtt-client:1.4.0") { because("publish scans") }
-                implementation(project.dependencies.platform("com.hivemq:hivemq-mqtt-client-websocket:1.4.0"))
+                implementation("org.eclipse.paho:org.eclipse.paho.client.mqttv3:1.2.5") { because("publish scans over MQTT 3; no transitive dependencies") }
                 implementation("org.jmdns:jmdns:3.6.3") { because("mDNS / Bonjour based hostname resolution") }
             }
             languageSettings.optIn("kotlin.io.path.ExperimentalPathApi")
@@ -158,8 +157,6 @@ tasks.named<Test>("jvmTest") {
             excludeTestsMatching("*NmapNetworkScannerTest")
             // Thread timing under a loaded CI runner; passes locally and failed once in a release run.
             excludeTestsMatching("*SlicedApplicationTest")
-            // Connects to the public test.mosquitto.org; failed a release run with UncompletedCoroutinesError.
-            excludeTestsMatching("*MqttPublisherTest")
         }
     }
 }
