@@ -1,6 +1,5 @@
 package com.bkahlert.netmon.logging
 
-import ch.qos.logback.classic.Level
 import io.kotest.data.forAll
 import io.kotest.data.row
 import io.kotest.matchers.shouldBe
@@ -40,13 +39,13 @@ class VerbosityTest {
     @Test
     fun level() = runTest {
         forAll(
-            row(Verbosity.ERRORS_AND_WARNINGS, Level.WARN),
-            row(Verbosity.VERBOSE, Level.INFO),
-            row(Verbosity.VERY_VERBOSE, Level.INFO),
-            row(Verbosity.EXTREMELY_VERBOSE, Level.DEBUG),
+            row(Verbosity.ERRORS_AND_WARNINGS, LogLevel.WARN),
+            row(Verbosity.VERBOSE, LogLevel.INFO),
+            row(Verbosity.VERY_VERBOSE, LogLevel.INFO),
+            row(Verbosity.EXTREMELY_VERBOSE, LogLevel.DEBUG),
         ) { verbosity, expected ->
-            Logback.levels(verbosity.levels)
-            Logback["com.bkahlert.netmon"].effectiveLevel shouldBe expected
+            SimpleLogger.configure(verbosity.levels)
+            SimpleLogger.level(SimpleLogger.ROOT) shouldBe expected
         }
     }
 }

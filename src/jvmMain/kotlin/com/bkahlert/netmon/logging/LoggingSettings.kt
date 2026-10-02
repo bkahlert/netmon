@@ -11,6 +11,6 @@ object LoggingSettings : Settings() {
         (Verbosity.from(*args).takeIf { it.ordinal > 0 } ?: verbosity)
             .levels
             .let { debug.apply(it) }
-            .let { Logback.levels(it) }
+            .let { SimpleLogger.configure(it) }
     }
 }

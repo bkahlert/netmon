@@ -75,8 +75,7 @@ kotlin {
 
         val jvmMain by getting {
             dependencies {
-                implementation("ch.qos.logback:logback-classic:1.6.4")
-                implementation("net.logstash.logback:logstash-logback-encoder:9.0") { because("structured log arguments, JSON logs in the integration tests") }
+                implementation("org.slf4j:slf4j-simple:2.0.20") { because("logging to the journal without XML or reflection") }
 
                 implementation("org.jetbrains.kotlinx:kotlinx-coroutines-jdk8")
                 implementation("org.jetbrains.kotlinx:kotlinx-coroutines-slf4j")

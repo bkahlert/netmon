@@ -2,8 +2,6 @@ package com.bkahlert.netmon.nmap
 
 import com.bkahlert.netmon.exec.CommandLine
 import com.bkahlert.netmon.logging.SLF4J
-import net.logstash.logback.argument.StructuredArguments.kv
-import net.logstash.logback.argument.StructuredArguments.v
 import com.bkahlert.netmon.Cidr
 import com.bkahlert.netmon.Host
 import com.bkahlert.netmon.IPv6
@@ -28,7 +26,7 @@ class NmapNetworkScanner(
         network: Cidr,
         timingTemplate: TimingTemplate = TimingTemplate.Aggressive,
     ): List<Host> {
-        logger.info("Scanning network {}", v("network", network))
+        logger.info("Scanning network {}", network)
 
         val nmapCommandLine = CommandLine(binary, buildList {
             dataDir?.also { add("--datadir"); add(it.pathString) }
@@ -65,7 +63,7 @@ class NmapNetworkScanner(
         }.getOrThrow()
 
         val hosts = NmapXml.parse(xml)
-        logger.info("Discovered {} in {}", kv("hosts", hosts), kv("network", network))
+        logger.info("Discovered hosts={} in network={}", hosts, network)
         return hosts
     }
 }

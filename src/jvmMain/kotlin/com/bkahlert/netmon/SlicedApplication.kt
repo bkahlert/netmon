@@ -1,8 +1,6 @@
 package com.bkahlert.netmon
 
 import com.bkahlert.netmon.logging.SLF4J
-import net.logstash.logback.argument.StructuredArguments.entries
-import net.logstash.logback.argument.StructuredArguments.v
 import org.slf4j.Logger
 import java.util.Collections
 import java.util.concurrent.atomic.AtomicReference
@@ -114,10 +112,10 @@ sealed interface SlicedApplicationState {
             val evictedSlices: Set<T> = workers.filterKeys { it !in requiredSlices }
                 .also { toBeEvicted ->
                     if (toBeEvicted.isNotEmpty()) {
-                        logger.debug("Evicting {}...", v("workers", toBeEvicted.values))
+                        logger.debug("Evicting {}...", toBeEvicted.values)
                         toBeEvicted.values.forEach(Started<T>.Worker::interrupt)
                         toBeEvicted.values.forEach(Started<T>.Worker::join)
-                        logger.info("Evicted {}", v("workers", toBeEvicted.values))
+                        logger.info("Evicted {}", toBeEvicted.values)
                     }
                 }
                 .keys
@@ -126,14 +124,10 @@ sealed interface SlicedApplicationState {
 
             workers = workers - evictedSlices + startedWorkers
             logger.debug(
-                "Updated workers to {}",
-                entries(
-                    mapOf(
-                        "started" to startedWorkers.keys,
-                        "existing" to workers.keys - startedWorkers.keys,
-                        "evicted" to evictedSlices,
-                    )
-                )
+                "Updated workers to started={}, existing={}, evicted={}",
+                startedWorkers.keys,
+                workers.keys - startedWorkers.keys,
+                evictedSlices,
             )
         }
 
@@ -160,27 +154,27 @@ sealed interface SlicedApplicationState {
         ) : Thread("worker:$value") {
             override fun run() {
                 start.invoke(value)
-                logger.info("Started {}", v("worker", toString()))
+                logger.info("Started {}", toString())
 
                 while (!interrupted()) {
                     try {
-                        logger.debug("Executing {}...", v("worker", toString()))
+                        logger.debug("Executing {}...", toString())
                         process.invoke(value)
-                        logger.info("Executed {}", v("worker", toString()))
+                        logger.info("Executed {}", toString())
                     } catch (e: InterruptedException) {
                         finalize.invoke(value)
-                        logger.info("Terminated {} due to interruption", v("worker", toString()))
+                        logger.info("Terminated {} due to interruption", toString())
                         return
                     } catch (e: Throwable) {
                         failed.add(value)
                         finalize.invoke(value)
-                        logger.error("Terminated {} due to failure", v("worker", toString()), e)
+                        logger.error("Terminated {} due to failure", toString(), e)
                         return
                     }
                 }
 
                 finalize.invoke(value)
-                logger.info("Terminated {}", v("worker", toString()))
+                logger.info("Terminated {}", toString())
             }
 
             override fun toString(): String = "${this::class.simpleName}($value)"

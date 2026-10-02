@@ -3,7 +3,6 @@ package com.bkahlert.netmon.nmap
 import com.bkahlert.kommons.FileCache
 import com.bkahlert.kommons.age
 import com.bkahlert.netmon.logging.SLF4J
-import net.logstash.logback.argument.StructuredArguments.kv
 import java.net.URL
 import java.nio.file.Path
 import kotlin.io.path.createDirectories
@@ -26,12 +25,12 @@ class NmapMacPrefixesProvisioner(
     fun provision(): Path =
         createTempFile(prefix = NMAP_MAC_PREFIXES_FILENAME)
             .apply { outputStream().buffered().use { data.copyTo(it) } }
-            .also { logger.info("Provisioned {} at {}", kv("file", NMAP_MAC_PREFIXES_FILENAME), kv("path", it)) }
+            .also { logger.info("Provisioned file={} at path={}", NMAP_MAC_PREFIXES_FILENAME, it) }
 
     fun provisionIn(directory: Path): Path =
         directory.createDirectories().resolve(NMAP_MAC_PREFIXES_FILENAME)
             .apply { outputStream().buffered().use { data.copyTo(it) } }
-            .also { logger.info("Provisioned {} at {}", kv("file", NMAP_MAC_PREFIXES_FILENAME), kv("path", it)) }
+            .also { logger.info("Provisioned file={} at path={}", NMAP_MAC_PREFIXES_FILENAME, it) }
 
     companion object {
         public const val NMAP_MAC_PREFIXES_FILENAME = "nmap-mac-prefixes"

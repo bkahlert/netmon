@@ -1,7 +1,6 @@
 package com.bkahlert.netmon.enrichment
 
 import com.bkahlert.netmon.logging.SLF4J
-import net.logstash.logback.argument.StructuredArguments
 import com.bkahlert.netmon.Host
 import com.bkahlert.netmon.IP
 import com.bkahlert.netmon.Status
@@ -31,13 +30,13 @@ abstract class HostPropertyEnricher<V>(
             val value = resolve(entity)
             if (value != null) {
                 entity.copy(property, value).also {
-                    logger.info("{} enriched: {}", StructuredArguments.v("host", it), StructuredArguments.kv(property.name, value))
+                    logger.info("{} enriched: {}={}", it, property.name, value)
                 }
             } else {
                 null
             }
         } else {
-            logger.debug("{} already enriched: {}", StructuredArguments.v("host", entity), StructuredArguments.kv(property.name, currentValue))
+            logger.debug("{} already enriched: {}={}", entity, property.name, currentValue)
             null
         }
     }

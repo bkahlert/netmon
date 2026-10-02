@@ -1,8 +1,6 @@
 package com.bkahlert.kommons
 
 import com.bkahlert.netmon.logging.SLF4J
-import com.bkahlert.netmon.logging.Logback
-import net.logstash.logback.argument.StructuredArguments.kv
 import java.io.InputStream
 import java.nio.file.Path
 import java.nio.file.Paths
@@ -55,7 +53,7 @@ object SystemLocations {
     }
 }
 
-private val logger = Logback[SystemLocations::class]
+private val logger by SLF4J
 
 /** The time elapsed since this file was last modified. */
 val Path.age: Duration get() = (System.currentTimeMillis() - getLastModifiedTime().toMillis()).milliseconds
@@ -91,8 +89,8 @@ class FileCache(val directory: Path) {
 
     /** Returns the [Path] to the file with the given [name] or `null` if it does not exist. */
     fun get(name: String): Path? = name.path.takeIf { it.exists() }.also {
-        if (it == null) logger.debug("Cache miss for {}", kv("name", name))
-        else logger.debug("Cache hit for {}", kv("name", name))
+        if (it == null) logger.debug("Cache miss for name={}", name)
+        else logger.debug("Cache hit for name={}", name)
     }
 
     /**
@@ -101,7 +99,7 @@ class FileCache(val directory: Path) {
      * If a file with the given [name] already exists, it is overwritten.
      */
     fun put(name: String, source: InputStream): Path = source.copyTo(name.path).also {
-        logger.debug("Updated data for {}, {}", kv("name", name), kv("reason", "unconditional"))
+        logger.debug("Updated data for name={}, reason=unconditional", name)
     }
 
     /**
@@ -110,7 +108,7 @@ class FileCache(val directory: Path) {
      * If a file with the given [name] already exists, it is overwritten.
      */
     fun put(name: String, source: Path): Path = source.copyTo(name.path).also {
-        logger.debug("Updated data for {}, {}", kv("name", name), kv("reason", "unconditional"))
+        logger.debug("Updated data for name={}, reason=unconditional", name)
     }
 
     /** Stores the contents of the given [source], if no file with the given [name] exists. */
@@ -134,18 +132,18 @@ class FileCache(val directory: Path) {
     fun update(name: String, source: () -> InputStream, predicate: (Path) -> Boolean): Path = name.path.also {
         if (!it.exists()) {
             source().copyTo(it).also {
-                logger.info("Updated data for {}, {}", kv("name", name), kv("reason", "cache-miss"))
+                logger.info("Updated data for name={}, reason=cache-miss", name)
             }
         } else if (predicate(it)) {
             source().copyTo(it).also {
-                logger.info("Updated data for {}, {}", kv("name", name), kv("reason", "predicate-match"))
+                logger.info("Updated data for name={}, reason=predicate-match", name)
             }
         }
     }
 
     fun remove(name: String): Boolean = name.path.takeIf { it.exists() }?.let {
         it.deleteRecursively()
-        logger.info("Removed data for {}, {}", kv("name", name), kv("reason", "request"))
+        logger.info("Removed data for name={}, reason=request", name)
         true
     } ?: false
 
@@ -154,7 +152,7 @@ class FileCache(val directory: Path) {
             directory.listDirectoryEntries().forEach { it.deleteRecursively() }
             directory.deleteExisting()
         }
-        logger.info("Purged all data, {}", kv("reason", "request"))
+        logger.info("Purged all data, reason=request")
     }
 
     override fun toString(): String {
