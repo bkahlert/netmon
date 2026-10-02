@@ -113,12 +113,19 @@ def read_sample(host) -> Sample:
     boot = host.run("cat /proc/sys/kernel/random/boot_id")
     if boot.rc != 0 or not boot.stdout.strip():
         raise ConnectionError(f"the target did not answer (rc {boot.rc})")
+
+    def run(command: str):
+        result = host.run(command)
+        if result.rc == 255:
+            raise ConnectionError("the target did not answer (rc 255)")
+        return result
+
     units = {}
     for unit in UNITS:
-        show = parse_show(host.run(f"systemctl show -p ActiveState -p NRestarts -p MemoryCurrent -p MemorySwapCurrent -p MemoryPeak -p MemorySwapPeak {unit}").stdout)
+        show = parse_show(run(f"systemctl show -p ActiveState -p NRestarts -p MemoryCurrent -p MemorySwapCurrent -p MemoryPeak -p MemorySwapPeak {unit}").stdout)
         cgroup = f"/sys/fs/cgroup/system.slice/{unit}"
-        stat = parse_key_values(host.run(f"cat {cgroup}/memory.stat").stdout)
-        events = parse_key_values(host.run(f"cat {cgroup}/memory.events").stdout)
+        stat = parse_key_values(run(f"cat {cgroup}/memory.stat").stdout)
+        events = parse_key_values(run(f"cat {cgroup}/memory.events").stdout)
         units[unit] = UnitSample(
             active=show.get("ActiveState", ""),
             restarts=int(show.get("NRestarts", "0")),
@@ -130,16 +137,16 @@ def read_sample(host) -> Sample:
             file=stat.get("file"),
             oom_kills=events.get("oom_kill", 0),
         )
-    meminfo = parse_kb_lines(host.run("cat /proc/meminfo").stdout)
-    vmstat = parse_key_values(host.run("cat /proc/vmstat").stdout)
-    pressure = host.run("cat /proc/pressure/memory")
-    zram = host.run("cat /sys/block/zram0/mm_stat")
-    rollup = host.run(f"p=$(pgrep -x {WEB_PROCESS} | head -1); [ -n \"$p\" ] && cat /proc/$p/smaps_rollup")
+    meminfo = parse_kb_lines(run("cat /proc/meminfo").stdout)
+    vmstat = parse_key_values(run("cat /proc/vmstat").stdout)
+    pressure = run("cat /proc/pressure/memory")
+    zram = run("cat /sys/block/zram0/mm_stat")
+    rollup = run(f"p=$(pgrep -x {WEB_PROCESS} | head -1); [ -n \"$p\" ] && cat /proc/$p/smaps_rollup")
     web = parse_kb_lines(rollup.stdout) if rollup.rc == 0 else {}
     system = SystemSample(
         mem_available=meminfo.get("MemAvailable"),
         swap_free=meminfo.get("SwapFree"),
-        load1=float(host.run("cat /proc/loadavg").stdout.split()[0]),
+        load1=float(run("cat /proc/loadavg").stdout.split()[0]),
         pswpin=vmstat.get("pswpin", 0),
         pswpout=vmstat.get("pswpout", 0),
         pgmajfault=vmstat.get("pgmajfault", 0),
@@ -147,7 +154,7 @@ def read_sample(host) -> Sample:
         zram_used=parse_zram(zram.stdout if zram.rc == 0 else None),
         web_private_dirty=web.get("Private_Dirty"),
         web_swap=web.get("Swap"),
-        top=host.run("top -bn1 -o %CPU | sed -n '7,12p'").stdout,
+        top=run("top -bn1 -o %CPU | sed -n '7,12p'").stdout,
     )
     return Sample(at=time.monotonic(), boot_id=boot.stdout.strip(), units=units, system=system)
 

@@ -112,6 +112,10 @@ class TestReadSample:
         with pytest.raises(ConnectionError, match="rc 255"):
             read_sample(DeadHost())
 
+    def test_a_connection_lost_after_the_boot_id_raises_a_connection_error(self):
+        with pytest.raises(ConnectionError, match="rc 255"):
+            read_sample(DropsAfterBootIdHost())
+
 
 def sample(
     at: float,
@@ -135,3 +139,13 @@ class DeadResult:
 class DeadHost:
     def run(self, command: str) -> DeadResult:
         return DeadResult()
+
+
+class AnswerResult:
+    rc = 0
+    stdout = "boot-1\n"
+
+
+class DropsAfterBootIdHost:
+    def run(self, command: str) -> AnswerResult | DeadResult:
+        return AnswerResult() if "boot_id" in command else DeadResult()
