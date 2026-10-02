@@ -99,6 +99,21 @@ class TestRenderTable:
         assert "| swap free | zram pool | load |" in result
         assert "| 160 | 69 | 3.1 |" in result
 
+    def test_shows_the_scanner_process_after_its_cgroup_anon_and_file(self):
+        samples = [sample(0, scanner_rss=45 * 2**20, scanner_anon=31 * 2**20)]
+
+        result = render_table(samples, {})
+
+        assert "| scanner anon/file | scanner rss/anon | kiosk RAM+zram |" in result
+        assert "| 30/10 | 45/31 | 50+100 |" in result
+
+    def test_shows_an_absent_scanner_process_as_na(self):
+        samples = [sample(0, scanner_rss=None, scanner_anon=None)]
+
+        result = render_table(samples, {})
+
+        assert "| 30/10 | n/a/n/a | 50+100 |" in result
+
     def test_summary_names_the_peaks(self):
         samples = [sample(0, kiosk_current=80 * 2**20), sample(30, kiosk_current=120 * 2**20)]
 
@@ -106,14 +121,22 @@ class TestRenderTable:
 
         assert "kiosk" in result and "220 MB" in result
 
+    def test_summary_names_the_scanner_rss_peak_after_the_scanner_peak(self):
+        samples = [sample(0, scanner_rss=40 * 2**20), sample(30, scanner_rss=46 * 2**20)]
+
+        result = render_summary(samples)
+
+        assert "scanner peak 70 MB, scanner rss up to 46 MB, kiosk peak" in result
+
     def test_summary_reports_an_unmeasured_peak_as_na(self):
-        samples = [sample(at, kiosk_current=None, kiosk_swap_current=None, web_private_dirty=None) for at in (0, 30)]
+        samples = [sample(at, kiosk_current=None, kiosk_swap_current=None, web_private_dirty=None, scanner_rss=None) for at in (0, 30)]
 
         result = render_summary(samples)
 
         assert "scanner peak 70 MB" in result
         assert "kiosk peak n/a" in result
         assert "private dirty up to n/a" in result
+        assert "scanner rss up to n/a" in result
 
 
 class TestReadSample:
@@ -133,6 +156,22 @@ class TestReadSample:
         assert result.system.mem_total == 424960 * 1024
         assert result.system.mem_available == 95312 * 1024
 
+    def test_reads_the_scanner_process_rss_and_anonymous_memory(self):
+        host = AnsweringHost({SCANNER_ROLLUP: "Rss:              46080 kB\nPss:              40000 kB\nAnonymous:        31744 kB\n"})
+
+        result = read_sample(host)
+
+        assert result.system.scanner_rss == 46080 * 1024
+        assert result.system.scanner_anon == 31744 * 1024
+
+    def test_an_absent_scanner_process_has_no_rss_or_anonymous_memory(self):
+        host = AnsweringHost({})
+
+        result = read_sample(host)
+
+        assert result.system.scanner_rss is None
+        assert result.system.scanner_anon is None
+
 
 def sample(
     at: float,
@@ -143,11 +182,16 @@ def sample(
     web_private_dirty: int | None = 60 * 2**20,
     zram_used: int | None = 69 * 2**20,
     mem_total: int | None = 415 * 2**20,
+    scanner_rss: int | None = 45 * 2**20,
+    scanner_anon: int | None = 30 * 2**20,
 ) -> Sample:
     scanner = UnitSample(active="active", restarts=0, current=40 * 2**20, swap_current=30 * 2**20, peak=60 * 2**20, swap_peak=40 * 2**20, anon=30 * 2**20, file=10 * 2**20, oom_kills=0)
     kiosk = UnitSample(active="active", restarts=0, current=kiosk_current, swap_current=kiosk_swap_current, peak=150 * 2**20, swap_peak=120 * 2**20, anon=50 * 2**20, file=20 * 2**20, oom_kills=0)
-    system = SystemSample(mem_total=mem_total, mem_available=90 * 2**20, swap_free=160 * 2**20, load1=3.1, pswpin=pswpin, pswpout=0, pgmajfault=0, pressure_full10=pressure, zram_used=zram_used, web_private_dirty=web_private_dirty, web_swap=110 * 2**20, top="")
+    system = SystemSample(mem_total=mem_total, mem_available=90 * 2**20, swap_free=160 * 2**20, load1=3.1, pswpin=pswpin, pswpout=0, pgmajfault=0, pressure_full10=pressure, zram_used=zram_used, web_private_dirty=web_private_dirty, web_swap=110 * 2**20, scanner_rss=scanner_rss, scanner_anon=scanner_anon, top="")
     return Sample(at=at, boot_id="b", units={SCANNER: scanner, KIOSK: kiosk}, system=system)
+
+
+SCANNER_ROLLUP = 'p=$(pgrep -x netmon-scanner | head -1); [ -n "$p" ] && cat /proc/$p/smaps_rollup'
 
 
 class DeadResult:

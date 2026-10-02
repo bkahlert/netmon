@@ -6,6 +6,7 @@ SCANNER = "netmon-scanner.service"
 KIOSK = "pihero-kiosk.service"
 UNITS = (SCANNER, KIOSK)
 WEB_PROCESS = "WPEWebProcess"
+SCANNER_PROCESS = "netmon-scanner"
 NOT_SET = "[not set]"
 UNIT_SECONDS = {"s": 1, "m": 60, "h": 3600}
 MIB = 2**20
@@ -37,6 +38,8 @@ class SystemSample:
     zram_used: int | None
     web_private_dirty: int | None
     web_swap: int | None
+    scanner_rss: int | None
+    scanner_anon: int | None
     top: str
 
 
@@ -144,6 +147,8 @@ def read_sample(host) -> Sample:
     zram = run("cat /sys/block/zram0/mm_stat")
     rollup = run(f"p=$(pgrep -x {WEB_PROCESS} | head -1); [ -n \"$p\" ] && cat /proc/$p/smaps_rollup")
     web = parse_kb_lines(rollup.stdout) if rollup.rc == 0 else {}
+    scanner_rollup = run(f"p=$(pgrep -x {SCANNER_PROCESS} | head -1); [ -n \"$p\" ] && cat /proc/$p/smaps_rollup")
+    scanner_process = parse_kb_lines(scanner_rollup.stdout) if scanner_rollup.rc == 0 else {}
     system = SystemSample(
         mem_total=meminfo.get("MemTotal"),
         mem_available=meminfo.get("MemAvailable"),
@@ -156,6 +161,8 @@ def read_sample(host) -> Sample:
         zram_used=parse_zram(zram.stdout if zram.rc == 0 else None),
         web_private_dirty=web.get("Private_Dirty"),
         web_swap=web.get("Swap"),
+        scanner_rss=scanner_process.get("Rss"),
+        scanner_anon=scanner_process.get("Anonymous"),
         top=run("top -bn1 -o %CPU | sed -n '7,12p'").stdout,
     )
     return Sample(at=time.monotonic(), boot_id=boot.stdout.strip(), units=units, system=system)
@@ -168,8 +175,8 @@ def render_table(samples: list[Sample], limits: dict[str, str]) -> str:
     lines = [
         f"Boot id {first.boot_id}. MemTotal {mb(first.system.mem_total)} MB. Limits: {limit_text}.",
         "",
-        "| t | scanner RAM+zram | scanner anon/file | kiosk RAM+zram | kiosk anon/file | web private dirty/swap | available | swap free | zram pool | load | Δswpin | Δswpout | Δmajflt | PSI full10 |",
-        "|---|---|---|---|---|---|---|---|---|---|---|---|---|---|",
+        "| t | scanner RAM+zram | scanner anon/file | scanner rss/anon | kiosk RAM+zram | kiosk anon/file | web private dirty/swap | available | swap free | zram pool | load | Δswpin | Δswpout | Δmajflt | PSI full10 |",
+        "|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|",
     ]
     previous = first
     for sample in samples:
@@ -177,6 +184,7 @@ def render_table(samples: list[Sample], limits: dict[str, str]) -> str:
         lines.append(
             f"| {sample.at - first.at:.0f} "
             f"| {mb(s.current)}+{mb(s.swap_current)} | {mb(s.anon)}/{mb(s.file)} "
+            f"| {mb(sys.scanner_rss)}/{mb(sys.scanner_anon)} "
             f"| {mb(k.current)}+{mb(k.swap_current)} | {mb(k.anon)}/{mb(k.file)} "
             f"| {mb(sys.web_private_dirty)}/{mb(sys.web_swap)} "
             f"| {mb(sys.mem_available)} | {mb(sys.swap_free)} | {mb(sys.zram_used)} | {sys.load1:.1f} "
@@ -197,8 +205,9 @@ def render_summary(samples: list[Sample]) -> str:
         return "n/a" if value is None else f"{mb(value)} MB"
 
     web = max((s.system.web_private_dirty for s in samples if s.system.web_private_dirty is not None), default=None)
+    scanner_rss = max((s.system.scanner_rss for s in samples if s.system.scanner_rss is not None), default=None)
     faults = (samples[-1].system.pgmajfault - samples[0].system.pgmajfault) / max(samples[-1].at - samples[0].at, 1)
-    return f"soak: scanner peak {size(peak(SCANNER))}, kiosk peak {size(peak(KIOSK))} RAM+zram, web process private dirty up to {size(web)}, {faults:.1f} major faults/s"
+    return f"soak: scanner peak {size(peak(SCANNER))}, scanner rss up to {size(scanner_rss)}, kiosk peak {size(peak(KIOSK))} RAM+zram, web process private dirty up to {size(web)}, {faults:.1f} major faults/s"
 
 
 def mb(value: int | None) -> str:
