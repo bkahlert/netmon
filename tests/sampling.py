@@ -202,12 +202,13 @@ def render_table(samples: list[Sample], limits: dict[str, str]) -> str:
     previous = first
     for sample in samples:
         s, k, sys = sample.units[SCANNER], sample.units[KIOSK], sample.system
+        web_cpu = cpu_seconds(previous.system.web_cpu_ticks, sys.web_cpu_ticks) if previous.system.web_pid == sys.web_pid else "n/a"
         lines.append(
             f"| {sample.at - first.at:.0f} "
             f"| {mb(s.current)}+{mb(s.swap_current)} | {mb(s.anon)}/{mb(s.file)} "
             f"| {mb(sys.scanner_rss)}/{mb(sys.scanner_anon)} "
             f"| {mb(k.current)}+{mb(k.swap_current)} | {mb(k.anon)}/{mb(k.file)} "
-            f"| {mb(sys.web_private_dirty)}/{mb(sys.web_swap)} | {cpu_seconds(previous.system.web_cpu_ticks, sys.web_cpu_ticks)} "
+            f"| {mb(sys.web_private_dirty)}/{mb(sys.web_swap)} | {web_cpu} "
             f"| {mb(sys.mem_available)} | {mb(sys.swap_free)} | {mb(sys.zram_used)} | {sys.load1:.1f} "
             f"| {sys.pswpin - previous.system.pswpin} | {sys.pswpout - previous.system.pswpout} | {sys.pgmajfault - previous.system.pgmajfault} "
             f"| {na(sys.pressure_full10)} |"
