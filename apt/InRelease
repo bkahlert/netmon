@@ -2,31 +2,31 @@
 Hash: SHA512
 
 Architectures: all arm64
-Date: Fri, 02 Oct 2026 01:21:59 +0000
+Date: Fri, 02 Oct 2026 21:42:28 +0000
 Description: Netmon packages
 Label: netmon
 Origin: netmon
 Suite: stable
 MD5Sum:
- 9fbefe3aa78987738563732fcfb39654             9073 Packages
- c4310bdf9e3e9cf5d6f8c9bb022e0bb9             2551 Packages.gz
- dd24d11e69cfc393855613806aa571c0              135 Release
+ 97848c39e55b2a7ebddc0bd50fa27dd9            10852 Packages
+ c16212dc24bcaf710b6faa360a3b1c92             2967 Packages.gz
+ d617c7a4ad273fc758ec6aedab7351cc              135 Release
 SHA1:
- 3aa0b26e1b2c8eb25818b7a00f50f57c6c11a0a0             9073 Packages
- 2654add7a75e22441b4146d8f6eda9fc1d9795a6             2551 Packages.gz
- 001ea1a2e65b17aea2b07f00004922bf5a2da938              135 Release
+ 5f4f987c54a9bad8cac891258513773b4047b74a            10852 Packages
+ a6b097ed278c0b7e921cd1211afec80bda09a904             2967 Packages.gz
+ 108b457a22ba11861c326c19bb74dfcd7db91900              135 Release
 SHA256:
- 3ffd188b6dd5b8e4318ce5f670d3d3bbb4ec01ed0cc1c842ae58d37016bfd847             9073 Packages
- 4977bbfa7b89a5a35789119aa698b268f23e3e3e0f84aac7504dcb2d77a52914             2551 Packages.gz
- 3a205117159930f3bb184f4d500cc773b7ffddd94c9ce55c91f3497b62a5ccbd              135 Release
+ a3a3086455bd7ef1d4bd6ad0e660bcdafc94cd31074a2672771e0a9466dd221f            10852 Packages
+ 361968017dcc31f853827392e65706c74d51342143ab4c22a96beb81cec6c907             2967 Packages.gz
+ 9348073f8b964a1fc3be12badf2bdb91fdf81dbc5bebc619823fa8e84da4390a              135 Release
 SHA512:
- df513157c53e014c308a6fa0661bc715267b7807c452ea5925d58519d4d1673de93f33e6e6bac7dd62e85a5af0056e87a42ba07706df19bf4cdcdfa25d517038             9073 Packages
- be85992c93aabccacbc93d017f752a3aea639908c24cfad7730337876199645228285b7cd83cd1cffe4e0c5689e308e6d55d5b39f15a343024178937d0e44ba2             2551 Packages.gz
- 0e64e7e3a91a89d80870134679306fa680496716faa85c56a5578ab28acf7204a59a8e887305f0c7459d638898c8f9f6fd8debd6335fb1092ae72930cddaca8f              135 Release
+ 5e9d25e9a99611b3f5ee8996686ddca8fde040079314d7e9804eee81aecd4461fe6869366b9675013d8263582e026ac7460d799f35c61b50163238e58780d276            10852 Packages
+ 3de47c63c0737d545233dedb415f230d439ad76acd9c15d2d3939f5a03276c3ea08cf87ab1cdbf4e657fd2d9a8c421ecc09224c167b6710d4e28a451c1617648             2967 Packages.gz
+ ead3618af39d4654271e115a4f83b9ae6ebc9de14e0293bf5255d83a3e95e846417d152cc90093345ec62d93a29ce58472791d54b21f7b8eefe07be57883825f              135 Release
 -----BEGIN PGP SIGNATURE-----
 
-iHUEARYKAB0WIQSY70GWmiRFNAuHYTP5X0wz9tjnFwUCar8HNwAKCRD5X0wz9tjn
-FzBvAQC2KvRTcsT6ASamJMSANFyS4099imaQusN3W4FLUwZMlAD+OsEFAwqzJkMQ
-LvWuEdUAUJcKz/HQA1GmmRbzv5GOLAs=
-=AWar
+iHUEARYKAB0WIQSY70GWmiRFNAuHYTP5X0wz9tjnFwUCasAlRQAKCRD5X0wz9tjn
+F/qtAP4vtaHNXOl0AUFk0pBZu5FWd4J8rdSC5B+/VHufT+AvuwD7BwDNQRHqRYql
+AunOAd6V8vHs1X9VSwMWCZI+E3vj5gc=
+=TICL
 -----END PGP SIGNATURE-----
