@@ -70,6 +70,7 @@ class TestKiosk:
 
         environ = host.check_output(f"tr '\\0' '\\n' < /proc/{pid}/environ").splitlines()
 
+        assert expected, conf
         assert expected <= set(environ), sorted(environ)
 
     def test_is_pictured_after_the_first_scan(self, host, target, request, capfd):
