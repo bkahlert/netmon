@@ -21,8 +21,6 @@ body::before { @apply content-[''] table h-0; }
 .divider-xs { @apply divider my-4 md:my-4 min-w-[50%] text-xs;}
 .divider-xs::before, .divider-xs::after { @apply h-[1px];}
 
-/*[data-zooming] { @apply debug; }*/
-
 .hosts { @apply m-2; }
 .host { @apply m-1 px-2 py-1 rounded; }
 
