@@ -135,6 +135,19 @@ netmon-scanner after the first scan: MemoryCurrent=36421632 MemoryPeak=36827136
 This is the JVM baseline before the native image. The scanner's `MemoryCurrent` after the first scan fell from 51 MB on
 main to 35 MB.
 
+### Scanner as a native image
+
+Tier 2 VM, 2026-10-02 16:00. The boot tests printed:
+
+```
+netmon-scanner after the first scan: MemoryCurrent=5640192 MemoryPeak=5947392
+pihero-kiosk after the first scan: MemoryCurrent=291008512 MemoryPeak=315076608
+```
+
+The binary built in 42 s with a 2.1 GB peak and is 40 MB. `MemoryCurrent` probably understates the scanner's working
+set, because the binary's 40 MB are file-backed pages that dpkg wrote and that are charged outside the scanner's cgroup,
+so the board soak of Task 13 also records the process's `smaps_rollup`.
+
 ## Decisions
 
 | Decision | Choice | Why |
@@ -246,10 +259,13 @@ tagged by the Containerfile's digest the way the testkit tags its images. The sc
 memory and prints the build's peak.
 
 Build arguments ride in the jar under `META-INF/native-image/com.bkahlert.netmon/netmon-scanner/`: `--no-fallback`,
-`-march=compatibility`, `-R:MaxHeapSize=64m`, and a resource configuration that includes
-`assets/device-model-codes.json` and JmDNS's property files. The unreferenced `sfsymbols5` directory is not included.
-Reflection metadata is expected to be empty with this classpath. If tier 1 or tier 2 shows a missing-metadata failure,
-the tracing agent in the same container, run with the agent library against a broker, is the tool that produces it.
+`-march=compatibility`, `-R:MaxHeapSize=64m`, `--enable-url-protocols=http,https`, and a resource configuration that
+includes `assets/device-model-codes.json` and JmDNS's property files. The unreferenced `sfsymbols5` directory is not
+included. The https download of the MAC prefixes needs the protocol flag; reflection entries for the protocol handlers
+alone do not enable it. Reflection metadata is not empty: Paho loads its logger and its message catalog by reflection,
+so both classes need reflection entries and its two message bundles need bundle entries. If tier 1 or tier 2 shows a
+missing-metadata failure, the tracing agent in the same container, run with the agent library against a broker, is the
+tool that produces it.
 
 The unit runs `ExecStart=/usr/lib/netmon/netmon-scanner $NETMON_SCANNER_OPTIONS` with
 `Environment=NETMON_SCANNER_OPTIONS=-Xmx48m`, overridable in `/etc/netmon/scanner.conf` as `JAVA_TOOL_OPTIONS` was.
