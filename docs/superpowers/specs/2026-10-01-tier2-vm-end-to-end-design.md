@@ -158,4 +158,6 @@ the file tier 2 boots.
    `JAVA_TOOL_OPTIONS`, tier 1 proving those options reach the JVM whole, and the display test catching a scan cadence that
    breaks the freshness threshold, metaspace and code-cache limits, WPE memory settings and a slower cadence can be tried
    with a safety net.
-4. **Weekly CI.** Tier 2 under software emulation on a schedule, as pihero's "what rotted" signal.
+4. **Weekly CI.** Done 2026-10-02: `.github/workflows/weekly.yml` runs tier 2 under software emulation on `ubuntu-latest`
+   every Monday and on manual dispatch, as root like pihero's weekly job, with Playwright's WebKit installed on the runner
+   and the pictures and serial logs kept as artifacts; a change to the file proves itself on its pull request.
