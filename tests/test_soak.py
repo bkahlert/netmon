@@ -18,9 +18,13 @@ class TestSoak:
 
         samples = [read_sample(host)]
         deadline = time.monotonic() + duration
-        while time.monotonic() < deadline:
-            time.sleep(interval)
-            samples.append(read_sample(host))
+        silent = False
+        try:
+            while time.monotonic() < deadline:
+                time.sleep(interval)
+                samples.append(read_sample(host))
+        except ConnectionError:
+            silent = True
         report.write_text(render_table(samples, limits))
 
         reporter = request.config.pluginmanager.get_plugin("terminalreporter")
@@ -28,6 +32,8 @@ class TestSoak:
             reporter.ensure_newline()
             reporter.write_line(f"{render_summary(samples)}; table in {report}")
         first, last = samples[0], samples[-1]
+        if silent:
+            pytest.fail(f"the target stopped answering {last.at - first.at:.0f} s after the first sample; a reboot is the likely cause; table in {report}")
         assert last.boot_id == first.boot_id
         for unit in UNITS:
             if unit == KIOSK and not kiosk_expected:
