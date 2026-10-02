@@ -449,10 +449,11 @@ re-check after any change.
 | Remote inspector | Switched on by hand in a kept VM when a JavaScript heap figure is wanted, never in the sample | The file users copy is the file tier 2 boots |
 | Page | Auto-reload polls once a minute; the radar icons pulse for ten seconds after a scan arrives; cards in the stable section take a one-minute clock; unused Tailwind plugins, prototyping CSS and the headless module go | The feature that reloads the panel after a display upgrade stays, at a twelfth of the requests; the infinite animation goes; the per-second work shrinks to the cards whose texts change; MQTT.js stays as documented |
 | Package | `netmon-scanner` is `arch: arm64`, depends on nmap and mosquitto, ships the binary at `/usr/lib/netmon/netmon-scanner` | No JRE, no Python |
-| The testkit | Unchanged, pinned at v2.4.0 | Its build module names every deb `_all.deb` and reuses self-built debs; both are harmless here since apt-ftparchive reads the control file and the deploy filter accepts the suffix, and the native build stays out of the testkit's self-build path |
+| The testkit | Unchanged during the plan, pinned at v2.4.0; bumped to v2.5.2 right after 2.0.0, with the tier 0 collection tests collecting against the vm target since v2.5.0 asks an ssh target which packages it has | Its build module names every deb `_all.deb` and reuses self-built debs; both are harmless here since apt-ftparchive reads the control file and the deploy filter accepts the suffix, and the native build stays out of the testkit's self-build path |
 | CI | The tier 1 matrix and the release lose `linux/arm/v7` and the QEMU setup that existed for it | The scanner no longer installs there |
 | Version | The release that ships the native scanner is 2.0.0 | Dropping 32-bit ARM and the JRE dependency is a breaking change |
 | Gate | After the board soak of step 3 and the A/Bs of step 4, the numbers go against the budget before the finish line is attempted | Short means the table names the side that is over and the escalation is a new brainstorm, not a longer list of knobs |
+| An update-aware panel | Not built: the idea of showing "Updating…" while apt runs, with the stack paused | The kiosk is the only thing that paints the panel, so a stopped kiosk cannot show an overlay, and 2.0.0 lets apt run next to the stack, so netmon is treated like every other Pi. Revive it only if the headroom closes or a kernel upgrade proves to need the stack paused; then keep cog running and let the page idle on a retained "updating" message set by a `DPkg::Pre-Invoke`/`Post-Invoke` hook that stops only the scanner |
 
 ## Commands
 
@@ -677,18 +678,29 @@ One pull request per step, every tier green at every step.
 - The soak's invariants fail on the board without any change of ours: the baseline is what it is and the number stands
   in the table.
 
-## Follow-ups, in order
+## Follow-ups
 
-1. **Weekly tier 2 CI** under software emulation, follow-up 4 of the tier 2 design.
-2. **The testkit names debs by their architecture**, a one-line change in pihero's build module, when a pihero release
-   is next due.
-3. **The native build as a CI artifact** shared between jobs, if the per-job build time hurts.
-4. **The display's rendering differences** seen in tier 2, and the `MQTT::Disconnected` header.
-5. **The web process's CPU on the board**, about one core at 800x480 under cog's `modeset` renderer against 5 % in
-   the VM, before and after the kiosk changes; the soak's Δweb cpu column shows it.
-6. **The page's auto refresh on the kiosk.** After the 2.0.0 upgrade the panel kept the previous bundle for at least ten
-   minutes while lighttpd served new ETags for the page and `netmon.js`; cog logged no load event. Whether the
-   HEAD requests happen is unknown, since lighttpd keeps no access log; a VM with the access log on settles it.
+1. **The web process's CPU on the board**, about one core at 800x480 under cog's `modeset` renderer against 5 % in
+   the VM, before and after the kiosk changes; the soak's Δweb cpu column shows it. Known and not pursued: memory and
+   the panel are fine, the cost is heat, power and the card reads. `top -H -p <web pid>` names the busy thread if it
+   is ever taken up.
+
+Closed after 2.0.0:
+
+- **Weekly tier 2 CI** runs from [.github/workflows/weekly.yml](../../../.github/workflows/weekly.yml) on Monday 05:00
+  under software emulation; its first run passed in 30 minutes.
+- **The testkit's deb names** carry `_all` for an arm64 package. Fixed in pihero's build module for its 2.6.0
+  release, not yet out; harmless here meanwhile, as the testkit decision says.
+- **The native build as a CI artifact** is not done: tier 0 and tier 1 each build it in about five minutes, and the
+  time does not hurt.
+- **The display's rendering differences** between the kiosk and Playwright's WebKit are the two engines' fonts and
+  antialiasing. The `MQTT::Disconnected` header lasts the second until MQTT.js reconnects; 20 s after a broker
+  restart the VM's kiosk shows `MQTT::Connected` again. Neither is pursued.
+- **The page's auto refresh** never worked, in any browser, since it was written in 2023: the refresher handed the
+  page's window to `RequestInit.window`, which the Fetch standard allows only as null, so every HEAD was rejected and
+  read as "no ETag". Fixed in `fix(display): poll the etag with a request the browser accepts`. In a VM with
+  lighttpd's access log on, the kiosk polled both URIs once a minute and reloaded 35 s after the script's ETag
+  changed; cog logs such a reload as a load, so the board's silent journal after the 2.0.0 upgrade meant no reload.
 
 ## Sources
 
