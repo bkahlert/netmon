@@ -42,6 +42,7 @@ class ApplicationIntegrationTest : AbstractIntegrationTest() {
             it.shouldNotBeEmpty()
             it.forAll { (level, _) -> level shouldNotBe LogMessage.Level.ERROR }
             it.forAll { (level, _) -> level shouldNotBe LogMessage.Level.WARN }
+            it.forAny { (_, message) -> message.shouldContain("Configuration: ") }
             it.forAny { (_, message) -> message.shouldContain("Settings: ") }
             it.forAny { (_, message) -> message.shouldContain("Provisioned file=nmap-mac-prefixes at path=./nmap/nmap-mac-prefixes") }
             it.forAny { (_, message) -> message.shouldContain("host(s) completed and published") }
