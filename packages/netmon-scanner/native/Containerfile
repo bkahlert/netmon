@@ -1,0 +1,7 @@
+# Builds the scanner's native image: GraalVM Community 25's native-image for linux-aarch64, pinned to the arm64 image digest.
+FROM ghcr.io/graalvm/native-image-community@sha256:649f9d929e30f8d4c7672b32426674817b687f759c61a5ed721afe73524afba2
+# One-shot build image run with `podman run --rm`; there is no long-running service to probe.
+HEALTHCHECK NONE
+# The base image's entrypoint is native-image; reset it so `podman run` can start the compile script.
+ENTRYPOINT []
+CMD ["bash"]

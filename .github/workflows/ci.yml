@@ -33,19 +33,13 @@ jobs:
 
   tier1:
     runs-on: ubuntu-24.04-arm
-    strategy:
-      fail-fast: false
-      matrix:
-        platform: [linux/arm64, linux/arm/v7]
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with: { fetch-depth: 0 }
       - uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
         with: { distribution: temurin, java-version: "17" }
       - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
-        with: { enable-cache: true, cache-suffix: "${{ matrix.platform }}" }
-      - uses: docker/setup-qemu-action@99012661954931238ded8c8b007157a8430204e1 # v4.4.0
-        if: matrix.platform != 'linux/arm64'
+        with: { enable-cache: true, cache-suffix: tier1 }
       - run: uv sync --frozen
       - run: make gradle
-      - run: make test-tier1 PLATFORM=${{ matrix.platform }}
+      - run: make test-tier1

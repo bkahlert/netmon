@@ -1,0 +1,36 @@
+#!/usr/bin/env bash
+# Purpose: Build the scanner's native image from the shadow jar, inside the GraalVM container.
+# Usage:   compile [--jar <path>] [--out <path>]
+#
+# Options:
+#   --jar <path>   The shadow jar (default: build/libs/netmon-all.jar).
+#   --out <path>   The binary to write (default: build/native/netmon-scanner).
+#   -h, --help     Show this help.
+#
+# Runs inside the image built from the Containerfile next to this script, with the repository mounted at /work.
+# The build arguments ride in the jar under META-INF/native-image. The builder's heap is 70 % of the memory the
+# container sees; the build output ends with its peak RSS.
+
+set -euo pipefail
+
+usage() { awk 'NR==1{next} /^#/{sub(/^# ?/,""); print; next} {exit}' "${BASH_SOURCE[0]}"; }
+die()   { printf '%s: %s\nSee '\''%s --help'\''\n' "${0##*/}" "$1" "${0##*/}" >&2; exit 2; }
+
+jar=build/libs/netmon-all.jar
+out=build/native/netmon-scanner
+while (( $# )); do
+  case $1 in
+    -h|--help) usage; exit 0 ;;
+    --jar)     jar=${2?--jar: missing value}; shift 2 ;;
+    --jar=*)   jar=${1#*=}; shift ;;
+    --out)     out=${2?--out: missing value}; shift 2 ;;
+    --out=*)   out=${1#*=}; shift ;;
+    -?*)       die "unknown option: $1" ;;
+    *)         die "unexpected argument: $1" ;;
+  esac
+done
+[[ -f $jar ]] || die "jar not found: $jar"
+
+memory_mib=$(( $(awk '/^MemTotal/ {print $2}' /proc/meminfo) * 7 / 10 / 1024 ))
+mkdir -p "$(dirname "$out")"
+native-image -J-Xmx"${memory_mib}m" --parallelism="$(nproc)" -jar "$jar" -o "$out"

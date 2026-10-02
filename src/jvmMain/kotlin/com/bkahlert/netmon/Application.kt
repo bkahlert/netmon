@@ -51,13 +51,7 @@ class Application(
     }
 
     fun start() {
-        logger.info(
-            "Configuration: {}",
-            listOf(
-                "hostname" to hostname,
-                "cache" to cache,
-            ).joinToString(separator = "") { (key, value) -> "\n${key.padStart(30)}: $value" },
-        )
+        logger.info("Configuration: {}", configuration(hostname, cache.toString()))
 
         logger.info(
             "Settings: {}",
@@ -181,6 +175,13 @@ class Application(
     companion object {
 
         private val logger by SLF4J
+
+        /** Returns the configuration block the start logs: the hostname, the cache, and the maximum heap the runtime allows in bytes. */
+        fun configuration(hostname: String, cache: String): String = listOf(
+            "hostname" to hostname,
+            "cache" to cache,
+            "max heap" to "${Runtime.getRuntime().maxMemory()} bytes",
+        ).joinToString(separator = "") { (key, value) -> "\n${key.padStart(30)}: $value" }
 
         @JvmStatic
         fun main(args: Array<out String>) {

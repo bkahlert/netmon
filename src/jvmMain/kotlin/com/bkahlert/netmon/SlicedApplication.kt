@@ -87,7 +87,7 @@ sealed interface SlicedApplicationState {
         private var workers: Map<T, Worker> = emptyMap()
         private val failed = Collections.synchronizedSet(mutableSetOf<T>())
 
-        private val manager = thread(name = "manager", start = true) {
+        private val manager = thread(name = "manager", start = false) {
             while (!Thread.interrupted()) {
                 updateWorkers()
                 try {
@@ -101,6 +101,7 @@ sealed interface SlicedApplicationState {
         fun waitForTermination(): Terminated<T> {
             logger.info("Waiting for {} to terminate...", this)
             manager.join()
+            workers.values.forEach(Started<T>.Worker::interrupt)
             workers.values.forEach(Started<T>.Worker::join)
             return Terminated(slices = workers.keys, failed = failed)
         }
@@ -147,30 +148,35 @@ sealed interface SlicedApplicationState {
 
         init {
             Runtime.getRuntime().addShutdownHook(Thread(this::terminate))
+            manager.start()
         }
 
         inner class Worker(
             private val value: T,
         ) : Thread("worker:$value") {
             override fun run() {
-                start.invoke(value)
-                logger.info("Started {}", toString())
+                try {
+                    start.invoke(value)
+                    logger.info("Started {}", toString())
 
-                while (!interrupted()) {
-                    try {
+                    while (!interrupted()) {
                         logger.debug("Executing {}...", toString())
                         process.invoke(value)
                         logger.info("Executed {}", toString())
-                    } catch (e: InterruptedException) {
-                        finalize.invoke(value)
-                        logger.info("Terminated {} due to interruption", toString())
-                        return
-                    } catch (e: Throwable) {
-                        failed.add(value)
+                    }
+                } catch (e: InterruptedException) {
+                    finalize.invoke(value)
+                    logger.info("Terminated {} due to interruption", toString())
+                    return
+                } catch (e: Throwable) {
+                    failed.add(value)
+                    try {
                         finalize.invoke(value)
                         logger.error("Terminated {} due to failure", toString(), e)
-                        return
+                    } finally {
+                        manager.interrupt()
                     }
+                    return
                 }
 
                 finalize.invoke(value)
