@@ -31,6 +31,18 @@ class TestPytestCollectionModifyitems:
 
         assert result.returncode == 0, result.stdout + result.stderr
 
+    def test_the_soak_collects_with_its_marker_and_options(self):
+        result = run_pytest("--collect-only", "-q", "-m", "soak", "--target=ssh", "--target-uri=pi@example", "--soak-duration=1m", "--soak-interval=5s", "tests")
+
+        assert result.returncode == 0, result.stdout + result.stderr
+        assert "test_soak.py" in result.stdout
+
+    def test_installed_or_boot_leaves_the_soak_out(self):
+        result = run_pytest("--collect-only", "-q", "-m", "installed or boot", "--target=ssh", "--target-uri=pi@example", "tests")
+
+        assert result.returncode == 0, result.stdout + result.stderr
+        assert "test_soak.py" not in result.stdout
+
 
 def run_pytest(*options: str, browsers: Path | None = None) -> subprocess.CompletedProcess:
     env = dict(os.environ)

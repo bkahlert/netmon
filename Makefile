@@ -1,7 +1,7 @@
 SHELL := /bin/bash
 .DEFAULT_GOAL := help
 # Gradle's output directory is called build, so the targets are declared phony.
-.PHONY: help gradle build browser test-jvm test-js test-tier0 test-tier1 test-tier2 test test-all vm-device vm-prepare vm display deploy device-model-codes clean release
+.PHONY: help gradle build browser test-jvm test-js test-tier0 test-tier1 test-tier2 soak test test-all vm-device vm-prepare vm display deploy device-model-codes clean release
 
 PLATFORM ?= linux/arm64
 TARGET ?=
@@ -36,6 +36,9 @@ test-tier1: ## install the packages into a systemd container and test
 
 test-tier2: ## boot a VM from the sample device file and run the installed and boot tests
 	@$(UV) pytest -m 'installed or boot' --target=vm --qemu-accel=$(QEMU_ACCEL)
+
+soak: ## sample both units for ten minutes: TARGET=pi@host for the board, else the VM; KIOSK_CONF=file for an A/B in the VM
+	@$(UV) pytest -m soak $(if $(TARGET),--target=ssh --target-uri=$(TARGET),--target=vm --qemu-accel=$(QEMU_ACCEL)) $(if $(KIOSK_CONF),--kiosk-conf=$(KIOSK_CONF)) $(SOAK_ARGS)
 
 test: test-jvm test-js test-tier0 test-tier1 ## JVM and JS unit tests, tiers 0 and 1, what CI runs
 
