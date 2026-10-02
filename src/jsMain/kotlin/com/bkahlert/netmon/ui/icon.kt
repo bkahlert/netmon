@@ -7,7 +7,6 @@ import com.bkahlert.netmon.uri.Uri
 import dev.fritz2.core.RenderContext
 import dev.fritz2.core.SvgTag
 import dev.fritz2.core.mountSimple
-import dev.fritz2.headless.foundation.Aria
 import kotlinx.browser.document
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -108,7 +107,7 @@ private fun Uri.extractSvg(
     null -> mapOf(
         "xmlns:xlink" to "http://www.w3.org/1999/xlink",
         "viewBox" to "0 0 24 24",
-        Aria.hidden to "true",
+        "aria-hidden" to "true",
     ) to """<image x="0" y="0" width="24" height="24" xlink:href="$this"/>"""
 
     else -> buildMap {

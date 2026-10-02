@@ -101,14 +101,9 @@ kotlin {
             dependencies {
                 val fritz2Version = "1.0-RC21"
                 implementation("dev.fritz2:core:$fritz2Version")
-                implementation("dev.fritz2:headless:$fritz2Version")
 
                 // tailwind
                 implementation(npm("tailwindcss", "^3.4")) { because("low-level CSS classes") }
-
-                // optional tailwind plugins
-                implementation(devNpm("@tailwindcss/typography", "^0.5")) { because("prose classes to format arbitrary text") }
-                implementation(devNpm("tailwind-heropatterns", "^0.0.8")) { because("hero-pattern like striped backgrounds") }
 
                 // webpack
                 implementation(devNpm("postcss", "^8.5")) { because("CSS post transformation, e.g. auto-prefixing") }
