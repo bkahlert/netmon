@@ -4,7 +4,7 @@ from pathlib import Path
 import pytest
 
 from aptprobe import HOOK, TERMINAL, UNIT, classify, command
-from sampling import parse_show, read_sample, render_table
+from sampling import na, parse_show, read_sample, render_table
 
 pytestmark = pytest.mark.apt
 SAMPLE_INTERVAL = 10
@@ -25,18 +25,28 @@ class TestAptNextToTheStack:
         show = {}
         while time.monotonic() - started < timeout:
             time.sleep(SAMPLE_INTERVAL)
-            samples.append(read_sample(host))
+            try:
+                samples.append(read_sample(host))
+            except ConnectionError:
+                continue
             show = parse_show(host.run(f"systemctl show -p SubState -p ExecMainStatus -p MemoryPeak -p Result {UNIT}").stdout)
             if show.get("SubState") in TERMINAL:
                 break
         elapsed = time.monotonic() - started
-        after = read_sample(host)
+        try:
+            after = read_sample(host)
+        except ConnectionError:
+            after = None
         host.run(f"systemctl stop {UNIT}; systemctl reset-failed {UNIT}")
-        outcome = classify(show.get("SubState", ""), show.get("ExecMainStatus", ""), before.boot_id, after.boot_id, before.units, after.units)
+        boot_after, units_after = (after.boot_id, after.units) if after is not None else ("", before.units)
+        outcome = classify(show.get("SubState", ""), show.get("ExecMainStatus", ""), before.boot_id, boot_after, before.units, units_after)
 
-        faults = after.system.pgmajfault - before.system.pgmajfault
-        summary = f"apt probe: {outcome}; {elapsed:.0f} s, apt MemoryPeak={show.get('MemoryPeak', 'n/a')}, {faults} major faults, PSI full10 at the end {after.system.pressure_full10}"
-        report.write_text(summary + "\n\n" + render_table(samples + [after], {}))
+        if after is not None:
+            samples.append(after)
+        faults = samples[-1].system.pgmajfault - before.system.pgmajfault
+        pressure = na(max((s.system.pressure_full10 for s in samples if s.system.pressure_full10 is not None), default=None))
+        summary = f"apt probe: {outcome}; {elapsed:.0f} s, apt MemoryPeak={show.get('MemoryPeak', 'n/a')}, {faults} major faults, PSI full10 peak {pressure}"
+        report.write_text(summary + "\n\n" + render_table(samples, {}))
         reporter = request.config.pluginmanager.get_plugin("terminalreporter")
         with capfd.disabled():
             reporter.ensure_newline()

@@ -109,7 +109,10 @@ def parse_zram(text: str | None) -> int | None:
 
 
 def read_sample(host) -> Sample:
-    """Read one sample from a testinfra host: both units, the web process, and the system counters."""
+    """Read one sample from a testinfra host: both units, the web process, and the system counters. Raise ConnectionError where the target does not answer."""
+    boot = host.run("cat /proc/sys/kernel/random/boot_id")
+    if boot.rc != 0 or not boot.stdout.strip():
+        raise ConnectionError(f"the target did not answer (rc {boot.rc})")
     units = {}
     for unit in UNITS:
         show = parse_show(host.run(f"systemctl show -p ActiveState -p NRestarts -p MemoryCurrent -p MemorySwapCurrent -p MemoryPeak -p MemorySwapPeak {unit}").stdout)
@@ -146,7 +149,7 @@ def read_sample(host) -> Sample:
         web_swap=web.get("Swap"),
         top=host.run("top -bn1 -o %CPU | sed -n '7,12p'").stdout,
     )
-    return Sample(at=time.monotonic(), boot_id=host.run("cat /proc/sys/kernel/random/boot_id").stdout.strip(), units=units, system=system)
+    return Sample(at=time.monotonic(), boot_id=boot.stdout.strip(), units=units, system=system)
 
 
 def render_table(samples: list[Sample], limits: dict[str, str]) -> str:

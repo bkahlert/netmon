@@ -13,6 +13,7 @@ from sampling import (
     parse_pressure,
     parse_show,
     parse_zram,
+    read_sample,
     render_summary,
     render_table,
 )
@@ -106,6 +107,12 @@ class TestRenderTable:
         assert "private dirty up to n/a" in result
 
 
+class TestReadSample:
+    def test_a_target_that_does_not_answer_raises_a_connection_error(self):
+        with pytest.raises(ConnectionError, match="rc 255"):
+            read_sample(DeadHost())
+
+
 def sample(
     at: float,
     pswpin: int = 0,
@@ -118,3 +125,13 @@ def sample(
     kiosk = UnitSample(active="active", restarts=0, current=kiosk_current, swap_current=kiosk_swap_current, peak=150 * 2**20, swap_peak=120 * 2**20, anon=50 * 2**20, file=20 * 2**20, oom_kills=0)
     system = SystemSample(mem_available=90 * 2**20, swap_free=160 * 2**20, load1=3.1, pswpin=pswpin, pswpout=0, pgmajfault=0, pressure_full10=pressure, zram_used=69 * 2**20, web_private_dirty=web_private_dirty, web_swap=110 * 2**20, top="")
     return Sample(at=at, boot_id="b", units={SCANNER: scanner, KIOSK: kiosk}, system=system)
+
+
+class DeadResult:
+    rc = 255
+    stdout = ""
+
+
+class DeadHost:
+    def run(self, command: str) -> DeadResult:
+        return DeadResult()
