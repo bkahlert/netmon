@@ -85,14 +85,13 @@ write_files:
   # The kiosk shows the web display; the page takes the broker from the URL. The mode hint is for a panel without EDID.
   # COG_ARGS: the document-viewer cache model; WebKit's own memory limit for the web process, checked every ten seconds,
   # so it frees caches before the kernel swaps it; a web process restart at the kill threshold as the leak guard.
-  # JSC_ and WEBKIT_ reach the web process through its environment: the upper JIT tiers off, one Skia painting thread.
+  # JSC_ and WEBKIT_ reach the web process through its environment: the JIT off, one Skia painting thread.
   - path: /etc/pihero/kiosk.conf
     content: |
       URL=http://localhost/?broker.host=localhost&broker.port=8080
       COG_PLATFORM_DRM_VIDEO_MODE=800x480
       COG_ARGS="--doc-viewer --web-mem-limit=200 --web-check-interval=10 --web-kill-threshold=0.95 --webprocess-failure=restart"
-      JSC_useDFGJIT=false
-      JSC_useFTLJIT=false
+      JSC_useJIT=false
       WEBKIT_SKIA_CPU_PAINTING_THREADS=1
 runcmd:
   - hostnamectl set-hostname --pretty "Network Monitor"

@@ -196,6 +196,41 @@ max(ceil(3 x 22 = 66 up to 80), 128) = 128 MB = 134217728 bytes
 
 Both soaks above ran under the previous cap of 320 MB, which their tables show as `memory.max=335544320`. The first
 deploy of this commit applies 128 MB, and a short board soak then confirms it.
+### Kiosk A/Bs in the VM
+
+Tier 2 VM, 2026-10-02 18:00. 1 GB VM, five-minute soaks, the page of this branch. Each soak wrote one variant into
+`/etc/pihero/kiosk.conf` on a fresh boot. The soak's summary lines:
+
+```
+00-baseline.conf:   scanner peak 47 MB, kiosk peak 254 MB RAM+zram, web process private dirty up to 126 MB, 0.0 major faults/s
+01-cog.conf:        scanner peak 47 MB, kiosk peak 252 MB RAM+zram, web process private dirty up to 127 MB, 0.0 major faults/s
+02-jit-tiers.conf:  scanner peak 47 MB, kiosk peak 223 MB RAM+zram, web process private dirty up to 117 MB, 0.0 major faults/s
+03-jit-off.conf:    scanner peak 47 MB, kiosk peak 207 MB RAM+zram, web process private dirty up to 105 MB, 0.2 major faults/s
+04-paint.conf:      scanner peak 47 MB, kiosk peak 229 MB RAM+zram, web process private dirty up to 116 MB, 0.0 major faults/s
+```
+
+The last row of each table:
+
+| variant | t | scanner RAM+zram | scanner anon/file | kiosk RAM+zram | kiosk anon/file | web private dirty/swap | available | swap free | zram pool | load | Δswpin | Δswpout | Δmajflt | PSI full10 |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| 00-baseline | 305 | 47+0 | 10/36 | 254+0 | 176/39 | 126/0 | 590 | 967 | 1 | 0.1 | 0 | 0 | 0 | 0.00 |
+| 01-cog | 305 | 47+0 | 10/36 | 245+0 | 173/44 | 123/0 | 600 | 968 | 0 | 0.5 | 0 | 0 | 0 | 0.00 |
+| 02-jit-tiers | 305 | 47+0 | 10/36 | 223+0 | 165/35 | 116/0 | 601 | 968 | 0 | 0.7 | 0 | 0 | 0 | 0.00 |
+| 03-jit-off | 305 | 47+0 | 10/36 | 205+0 | 153/32 | 104/0 | 630 | 967 | 1 | 0.7 | 0 | 0 | 0 | 0.00 |
+| 04-paint | 305 | 47+0 | 10/36 | 228+0 | 164/40 | 114/0 | 600 | 967 | 0 | 0.6 | 0 | 0 | 0 | 0.00 |
+
+No `WPEWebProcess` appeared among the five top CPU lines at the last sample of any variant, because the page was idle
+and every listed process was at 0.0 %CPU. No variant swapped: swap in and out stayed at 0 throughout, and PSI full10
+stayed at 0.00. Major faults were at most 5 per sample, except a burst of 48 at 214 s in `03-jit-off.conf`, which gives its 0.2 per second.
+All five soaks passed and every kiosk came back after the restart.
+
+The Cog flags alone moved little in the VM (254 against 252 MB), and the JIT carried the difference. `03-jit-off.conf`
+beats `02-jit-tiers.conf` on both kiosk numbers, 207 against 223 MB RAM+zram and 105 against 117 MB private dirty, and
+the acceptance tier 2 run with it passed 28 tests and 1 skipped, display test included. The sample's `kiosk.conf` now
+carries `JSC_useJIT=false` in place of the two tier lines. `04-paint.conf` sits 6 MB above `02-jit-tiers.conf` on the
+kiosk peak (229 against 223 MB), 5 MB of it file pages, and 1 MB below on private dirty, so the painting thread is not
+clearly hurting and the sample keeps `WEBKIT_SKIA_CPU_PAINTING_THREADS=1`. The A/B ran on top of the tiers rather than
+on `03-jit-off.conf`, and the VM paints in software anyway, so the board decides whether the line earns its place.
 
 ## Decisions
 
