@@ -140,6 +140,14 @@ class TestRenderTable:
 
         assert "| 60/110 | n/a | 90 |" in result
 
+    def test_shows_na_for_the_web_process_cpu_across_a_replaced_web_process(self):
+        samples = [sample(0, web_cpu_ticks=1000), sample(30, web_cpu_ticks=50, web_pid=1985)]
+
+        result = render_table(samples, {})
+
+        assert "| 60/110 | n/a | 90 |" in result
+        assert "-9.5" not in result
+
     def test_summary_names_the_web_process_cpu(self):
         samples = [sample(0, web_cpu_ticks=1000), sample(30, web_cpu_ticks=1250), sample(60, web_cpu_ticks=1420)]
 
@@ -238,10 +246,11 @@ def sample(
     scanner_rss: int | None = 45 * 2**20,
     scanner_anon: int | None = 30 * 2**20,
     web_cpu_ticks: int | None = None,
+    web_pid: int = 1234,
 ) -> Sample:
     scanner = UnitSample(active="active", restarts=0, current=40 * 2**20, swap_current=30 * 2**20, peak=60 * 2**20, swap_peak=40 * 2**20, anon=30 * 2**20, file=10 * 2**20, oom_kills=0)
     kiosk = UnitSample(active="active", restarts=0, current=kiosk_current, swap_current=kiosk_swap_current, peak=150 * 2**20, swap_peak=120 * 2**20, anon=50 * 2**20, file=20 * 2**20, oom_kills=0)
-    system = SystemSample(mem_total=mem_total, mem_available=90 * 2**20, swap_free=160 * 2**20, load1=3.1, pswpin=pswpin, pswpout=0, pgmajfault=0, pressure_full10=pressure, zram_used=zram_used, web_private_dirty=web_private_dirty, web_swap=110 * 2**20, scanner_rss=scanner_rss, scanner_anon=scanner_anon, web_pid=1234 if web_cpu_ticks is not None else None, web_cpu_ticks=web_cpu_ticks, top="")
+    system = SystemSample(mem_total=mem_total, mem_available=90 * 2**20, swap_free=160 * 2**20, load1=3.1, pswpin=pswpin, pswpout=0, pgmajfault=0, pressure_full10=pressure, zram_used=zram_used, web_private_dirty=web_private_dirty, web_swap=110 * 2**20, scanner_rss=scanner_rss, scanner_anon=scanner_anon, web_pid=web_pid if web_cpu_ticks is not None else None, web_cpu_ticks=web_cpu_ticks, top="")
     return Sample(at=at, boot_id="b", units={SCANNER: scanner, KIOSK: kiosk}, system=system)
 
 
