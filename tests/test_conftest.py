@@ -50,6 +50,13 @@ class TestPytestCollectionModifyitems:
         assert "1 skipped" in result.stdout
         assert "needs a booted system" in result.stdout
 
+    def test_the_apt_probe_collects_only_with_its_marker(self):
+        selected = run_pytest("--collect-only", "-q", "-m", "apt", "--target=ssh", "--target-uri=pi@example", "--apt-timeout=60", "tests")
+        default = run_pytest("--collect-only", "-q", "-m", "installed or boot", "--target=ssh", "--target-uri=pi@example", "tests")
+
+        assert selected.returncode == 0 and "test_apt.py" in selected.stdout, selected.stdout + selected.stderr
+        assert "test_apt.py" not in default.stdout
+
 
 def run_pytest(*options: str, browsers: Path | None = None) -> subprocess.CompletedProcess:
     env = dict(os.environ)
