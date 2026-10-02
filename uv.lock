@@ -92,7 +92,7 @@ dev = [
 
 [package.metadata.requires-dev]
 dev = [
-    { name = "pihero-testkit", git = "https://github.com/bkahlert/pihero?subdirectory=testkit&tag=v2.5.2" },
+    { name = "pihero-testkit", git = "https://github.com/bkahlert/pihero?subdirectory=testkit&tag=v2.6.0" },
     { name = "playwright", specifier = ">=1.63.0" },
 ]
 
@@ -108,7 +108,7 @@ wheels = [
 [[package]]
 name = "pihero-testkit"
 version = "2.0.0"
-source = { git = "https://github.com/bkahlert/pihero?subdirectory=testkit&tag=v2.5.2#f0668c0764e14a0edc391c9b3bc16df773422296" }
+source = { git = "https://github.com/bkahlert/pihero?subdirectory=testkit&tag=v2.6.0#eb544a5ddc4ceafc342cf238ed42a403452e6ad4" }
 dependencies = [
     { name = "pytest" },
     { name = "pytest-testinfra" },
