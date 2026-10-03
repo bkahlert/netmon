@@ -3,6 +3,7 @@ import re
 
 GUEST_HOST = "10.0.2.2"
 LOOPBACK = ("localhost", "127.0.0.1", "::1")
+INSPECTOR_PORT = 2999
 INSPECTOR = re.compile(r"window\.open\('Main\.html\?ws=' \+ window\.location\.host \+ '(?P<path>/socket/[^']+)'")
 
 
@@ -12,6 +13,10 @@ def guest_host(host: str) -> str:
 
 def page_url(dev_port: int, broker_host: str, broker_port: int) -> str:
     return f"http://{GUEST_HOST}:{dev_port}/?broker.host={guest_host(broker_host)}&broker.port={broker_port}"
+
+
+def browser_url(dev_port: int, broker_host: str, broker_port: int) -> str:
+    return f"http://localhost:{dev_port}/?broker.host={broker_host}&broker.port={broker_port}"
 
 
 def session_kiosk_conf(current: str, url: str, inspector_port: int) -> str:

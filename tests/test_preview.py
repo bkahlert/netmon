@@ -4,28 +4,23 @@ import os
 import pytest
 
 import preview
-import preview_broker
 import preview_device
 import preview_session
-from scan_fixtures import Scan
 
 
 @pytest.mark.tier0
-class TestSettings:
-    def test_defaults_to_the_managed_broker_the_standard_fixture_and_safari(self):
-        settings = preview.Settings.from_environ({})
+class TestMain:
+    def test_names_a_variable_that_does_not_fit_the_flavor_and_runs_nothing(self, capsys):
+        status = preview.main(["--on", "device"], {})
 
-        assert settings == preview.Settings(Scan(14, 39, 1), preview_broker.Broker("localhost", 8080, managed=True), "Safari")
+        assert status == 2
+        assert "preview-device needs TARGET=user@host" in capsys.readouterr().err
 
-    def test_reads_all_three_variables(self):
-        settings = preview.Settings.from_environ({"SCAN": "3+1x2", "BROKER": "netmon.local:8080", "INSPECT": "0"})
+    def test_refuses_an_unknown_flavor(self):
+        with pytest.raises(SystemExit) as exit_:
+            preview.main(["--on", "tv"], {})
 
-        assert settings == preview.Settings(Scan(3, 1, 2), preview_broker.Broker("netmon.local", 8080, managed=False), None)
-
-    @pytest.mark.parametrize("environ, message", [({"SCAN": "x"}, "SCAN must be"), ({"BROKER": "x"}, "BROKER must be")])
-    def test_names_the_malformed_variable(self, environ, message):
-        with pytest.raises(ValueError, match=message):
-            preview.Settings.from_environ(environ)
+        assert exit_.value.code == 2
 
 
 @pytest.mark.tier0
@@ -52,6 +47,39 @@ class TestStaleActions:
 
     def test_does_nothing_for_an_empty_record(self):
         assert preview.stale_actions({}, commands({})) == []
+
+    def test_ends_a_killed_previews_tunnel_and_restores_its_board(self):
+        record = {"owner": 100, "tunnel": 400, "device": "pi@netmon.local"}
+
+        actions = preview.stale_actions(record, commands({400: "ssh -N -o BatchMode=yes pi@netmon.local"}))
+
+        assert actions == [("terminate", 400), ("restore-device", "pi@netmon.local")]
+
+    def test_restores_a_board_whose_tunnel_is_already_gone(self):
+        record = {"owner": 100, "tunnel": 400, "device": "pi@netmon.local"}
+
+        actions = preview.stale_actions(record, commands({}))
+
+        assert actions == [("restore-device", "pi@netmon.local")]
+
+
+@pytest.mark.tier0
+class TestCarryOut:
+    def test_restores_a_board_through_its_board_class(self, monkeypatch):
+        restored = []
+
+        class FakeBoard:
+            def __init__(self, target):
+                self.target = target
+
+            def restore(self):
+                restored.append(self.target)
+
+        monkeypatch.setattr(preview.preview_board, "Board", FakeBoard)
+
+        preview.carry_out([("restore-device", "pi@netmon.local")], command_of=lambda pid: None)
+
+        assert restored == ["pi@netmon.local"]
 
 
 @pytest.mark.tier0

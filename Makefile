@@ -1,7 +1,7 @@
 SHELL := /bin/bash
 .DEFAULT_GOAL := help
 # Gradle's output directory is called build, so the targets are declared phony.
-.PHONY: help gradle build browser test-jvm test-js test-layout test-preview test-tier0 test-tier1 test-tier2 soak apt-probe test test-all vm-device vm-prepare vm broker preview deploy device-model-codes clean release
+.PHONY: help gradle build browser test-jvm test-js test-layout test-preview test-tier0 test-tier1 test-tier2 soak apt-probe test test-all vm-device vm-prepare vm broker preview preview-browser preview-vm preview-device deploy device-model-codes clean release
 
 PLATFORM ?= linux/arm64
 TARGET ?=
@@ -70,11 +70,19 @@ vm-prepare: ## build and cache the tier-2 base image under ~/.cache/pihero
 vm: vm-device ## boot the tier-2 VM from the sample device file and keep it running
 	@$(UV) python -m pihero_testkit.vm --keep --qemu-accel=$(QEMU_ACCEL) --device=dist/vm-device
 
-broker: ## run the preview's Mosquitto with the fixture until Ctrl-C (SCAN=14+39 sets the hosts; a BROKER of your own means there is nothing to run)
+broker: ## run the preview's Mosquitto with the fixture until Ctrl-C (SCAN=14+39 sets the hosts)
 	@$(UV) python tests/preview_broker.py
 
-preview: ## the dev server, the broker and the kiosk's WebKit in a VM window, its inspector in Safari (SCAN=14+39 BROKER=localhost:8080 INSPECT=Safari)
-	@$(UV) python tests/preview.py
+preview-browser: ## the broker, the dev server and the page in a browser tab (BROKER=fixture|HOST:PORT SCAN=14+39 INSPECT=Safari)
+	@$(UV) python tests/preview.py --on browser
+
+preview-vm: ## the broker, the dev server and the kiosk's WebKit in a VM window, its inspector in Safari (BROKER=fixture|HOST:PORT SCAN=14+39 INSPECT=Safari)
+	@$(UV) python tests/preview.py --on vm
+
+preview-device: ## the broker, the dev server and the kiosk of a real Pi, its inspector in Safari (TARGET=pi@host BROKER=fixture|device|HOST:PORT SCAN=14+39 INSPECT=Safari)
+	@$(UV) python tests/preview.py --on device
+
+preview: preview-vm ## the same as preview-vm
 
 deploy: build ## install the built packages on TARGET over SSH
 	@test -n "$(TARGET)" || { echo "usage: make deploy TARGET=pi@host"; exit 2; }

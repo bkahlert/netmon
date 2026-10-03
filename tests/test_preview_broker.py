@@ -4,39 +4,66 @@ import subprocess
 import pytest
 
 import preview_broker
-from preview_broker import Broker
+from preview_broker import DEVICE, EXTERNAL, FIXTURE, Broker
 from scan_fixtures import Scan
 
 
 @pytest.mark.tier0
 class TestParseBroker:
-    def test_manages_only_the_default(self):
-        broker = preview_broker.parse_broker("localhost:8080")
-
-        assert broker == Broker("localhost", 8080, managed=True)
-
-    @pytest.mark.parametrize("text", ["127.0.0.1:8080", "localhost:9000", "netmon.local:8080"])
-    def test_leaves_any_other_broker_alone(self, text):
+    @pytest.mark.parametrize("text", [None, "", "fixture"])
+    def test_is_the_fixture_on_the_macs_8080_by_default(self, text):
         broker = preview_broker.parse_broker(text)
 
-        assert broker.managed is False
+        assert broker == Broker(FIXTURE, "localhost", 8080)
 
-    @pytest.mark.parametrize("text", ["", "netmon.local", ":8080", "host:", "host:abc", "host:0", "host:70000", "host:-1"])
-    def test_rejects_anything_but_host_and_port(self, text):
-        with pytest.raises(ValueError, match="BROKER must be"):
+    def test_is_the_boards_own_broker_on_its_loopback_for_device(self):
+        broker = preview_broker.parse_broker("device")
+
+        assert broker == Broker(DEVICE, "127.0.0.1", 8080)
+
+    @pytest.mark.parametrize("text", ["localhost:8080", "127.0.0.1:8080", "localhost:9000", "netmon.local:8080"])
+    def test_uses_a_host_and_port_as_it_is(self, text):
+        broker = preview_broker.parse_broker(text)
+
+        assert broker.kind == EXTERNAL
+        assert broker.managed is False
+        assert broker.address == text
+
+    @pytest.mark.parametrize("text", ["netmon.local", ":8080", "host:", "host:abc", "host:0", "host:70000", "host:-1", "Fixture", "mock"])
+    def test_rejects_anything_but_the_three_forms(self, text):
+        with pytest.raises(ValueError, match="BROKER must be fixture, device or HOST:PORT"):
             preview_broker.parse_broker(text)
+
+
+@pytest.mark.tier0
+class TestBroker:
+    @pytest.mark.parametrize("text, described", [("fixture", "fixture on localhost:8080"), ("device", "the device's own, 127.0.0.1:8080 on the board"), ("netmon.local:8080", "netmon.local:8080")])
+    def test_describes_itself_for_the_ready_message(self, text, described):
+        assert preview_broker.parse_broker(text).describe() == described
+
+
+@pytest.mark.tier0
+class TestEnsure:
+    def test_refuses_a_port_that_already_answers_and_names_the_way_to_use_it(self):
+        with socket.socket() as server:
+            server.bind(("127.0.0.1", 0))
+            server.listen()
+            port = server.getsockname()[1]
+
+            with pytest.raises(RuntimeError, match=f"port {port} is taken; to use the broker there, run with BROKER=localhost:{port}"):
+                preview_broker.ensure(Broker(FIXTURE, "127.0.0.1", port), Scan(1, 1, 1))
 
 
 @pytest.mark.tier0
 class TestCommands:
     def test_run_publishes_the_websocket_listener_on_the_loopback_only(self):
-        command = preview_broker.run_command(Broker("localhost", 8080, managed=True))
+        command = preview_broker.run_command(Broker(FIXTURE, "localhost", 8080))
 
         assert command[command.index("--publish") + 1] == "127.0.0.1:8080:8080"
         assert command[-1] == "docker.io/library/eclipse-mosquitto:2"
 
     def test_run_mounts_the_boards_configuration_read_only(self):
-        command = preview_broker.run_command(Broker("localhost", 8080, managed=True))
+        command = preview_broker.run_command(Broker(FIXTURE, "localhost", 8080))
 
         volume = command[command.index("--volume") + 1]
         assert volume.endswith("packages/netmon-scanner/conf/mosquitto-netmon.conf:/mosquitto/config/mosquitto.conf:ro")
@@ -69,9 +96,9 @@ class TestMain:
 @pytest.mark.preview
 class TestBrokerContainer:
     def test_serves_the_fixture_as_retained_messages_over_websockets(self):
-        broker = Broker("127.0.0.1", free_port(), managed=True)
+        broker = Broker(FIXTURE, "127.0.0.1", free_port())
 
-        started = preview_broker.ensure(broker, Scan(2, 1, 2))
+        preview_broker.ensure(broker, Scan(2, 1, 2))
         try:
             retained = subprocess.run(
                 ["podman", "exec", preview_broker.CONTAINER, "mosquitto_sub", "-h", "127.0.0.1", "-p", "1883", "-t", "dt/netmon/#", "-C", "2", "-W", "10", "-v"],
@@ -81,19 +108,17 @@ class TestBrokerContainer:
         finally:
             preview_broker.stop()
 
-        assert started is True
         assert len(retained.stdout.splitlines()) == 2
         assert handshake.startswith("HTTP/1.1 101")
 
-    def test_leaves_a_broker_that_already_answers_alone(self):
-        broker = Broker("127.0.0.1", free_port(), managed=True)
-        assert preview_broker.ensure(broker, Scan(1, 1, 1)) is True
+    def test_refuses_a_broker_that_already_answers(self):
+        broker = Broker(FIXTURE, "127.0.0.1", free_port())
+        preview_broker.ensure(broker, Scan(1, 1, 1))
         try:
-            started_again = preview_broker.ensure(broker, Scan(1, 1, 1))
+            with pytest.raises(RuntimeError, match="is taken"):
+                preview_broker.ensure(broker, Scan(1, 1, 1))
         finally:
             preview_broker.stop()
-
-        assert started_again is False
 
 
 def free_port() -> int:
