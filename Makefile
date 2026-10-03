@@ -7,6 +7,7 @@ PLATFORM ?= linux/arm64
 TARGET ?=
 QEMU_ACCEL ?= hvf
 URL ?=
+BROWSER_ARGS ?=
 UV := uv run --frozen
 GRADLE_ARGS ?= --no-daemon --console=plain
 
@@ -27,7 +28,7 @@ build: gradle ## build the .deb packages into dist/
 	@$(UV) python -m pihero_testkit.build
 
 browser: ## download Playwright's WebKit, the kiosk's engine family, for the display tests
-	@$(UV) playwright install webkit
+	@$(UV) playwright install $(BROWSER_ARGS) webkit
 
 test-jvm: ## the scanner's JVM unit tests (those that need Docker, macOS bundles, nmap or quiet thread timing are left out)
 	./gradlew $(GRADLE_ARGS) jvmTest -PunitOnly
