@@ -49,20 +49,20 @@ Everything below is CSS, in [styles.css](../../../src/jsMain/resources/styles.cs
 
 - The natural cell is 11.5625 rem by 5.25 rem (185 by 84 px at 16 px), times the section's scale `--sigma`: 1 for unstable,
   0.75 for stable.
-- The area's width-to-height ratio comes from container units: `tan(atan2(100cqw, 100cqh))`. CSS cannot divide two
-  lengths, but the angle of the pair gives the number.
+- The hosts area's width-to-height ratio comes from nine container queries on `min-aspect-ratio`; each sets `--ratio` to
+  the middle of its step. CSS cannot divide two lengths. The first attempt, `tan(atan2(100cqw, 100cqh))`, is correct in
+  Playwright's WebKit but wrong in WPE 2.48.3: the kiosk evaluated it to 0.69 where the ratio was 2, and to an invalid
+  value for `vw` and `rem` arguments.
 - Equal scale for both sections needs `balanced = sqrt(ratio / aspect * (unstable + stable * sigma^2))` columns for the
   unstable cells and `balanced / sigma` for the stable ones, where `aspect` is the natural cell's width to height.
-- Columns: `min(count, max(round(balanced / sigma), floor(width / natural width)))`. The second term keeps the old
-  look when everything fits at natural size: as many natural columns as the width allows.
-- Rows: `ceil(count / columns)`.
-- The tracks are `minmax(0, natural)`, so a cell never grows past its natural size, and `justify-content: space-around`
-  spreads the leftover width as before.
-- A section's height is `flex: 0 1 rows * sigma * natural height`. At natural size the sections stack at the top; when
-  space is short they shrink in proportion to their rows times scale, which is what equal scale needs.
+- Columns: `repeat(auto-fill, minmax(min(natural width * sigma, width / round(balanced / sigma)), 1fr))`. The browser
+  turns the minimum width into a count, so the section gets the larger of the balanced count and as many natural columns
+  as the width holds. That keeps the old look when everything fits at natural size.
+- A section's height is `flex: 0 1 auto`: its rows at natural size, so a short list stacks at the top as before. When
+  space is short the sections shrink in proportion to their rows times scale, which is what equal scale needs.
 
 A simulation over 72 combinations of area size and counts, against an exhaustive search of both column counts, put this
-formula at 99 % of the best scale on average and 88 % at the worst.
+at 98 % of the best scale on average and 86 % at the worst.
 
 ### Cell
 
@@ -73,9 +73,12 @@ Each `li` is a size container (`container-type: size`) with its track as size. T
 ### Text lines
 
 The old code shrank each line that overflowed. The text column is 7.06 em wide, so a line of `len` characters at an
-estimated 0.56 to 0.6 em per character fits when its font size is at most `7.06 em / (len * 0.6)`. Kotlin writes `len` as a
-custom property on a span in the line; CSS takes `max(floor, min(1em, 7.06em / (len * 0.6)))`, and `overflow: hidden;
-text-overflow: ellipsis` ends what still does not fit. The model label under the icon uses the longest word.
+estimated `char` em per character fits when its font size is at most `7.06 em / (len * char)`. `char` is 0.68 for the
+bold name, 0.6 for the vendor, the address and the status, and 0.62 for the model label; the kiosk's DejaVu is wider than
+the fonts of a Mac, so the estimates err on the wide side. Kotlin writes `len` as a custom property on a span in the line;
+CSS takes `clamp(0.6em, 7.06em / (max(len, 1) * char), 1em)`, and `overflow: hidden; text-overflow: ellipsis` ends what
+still does not fit. The model label under the icon uses the longest word and may wrap, but its height stops at two
+lines: a longer description would grow the card past its row (the layout test has descriptions of four and six words).
 
 ### What goes
 
@@ -88,22 +91,23 @@ write, and the `resetZoomed` subscriptions.
 |---|---|
 | A `ResizeObserver` that writes `--cols` | Works everywhere, costs a script and a test, and the CSS formula reaches 99 % of its result. It is the fallback if the kiosk's WebKit lacks a function |
 | `repeat(auto-fit, minmax(8rem, 1fr))` alone | The browser picks the column count by the minimum width, not by the count of items, so 53 cards leave rows of unequal fill and one size for both sections |
-| Container breakpoints on the aspect ratio | Needs a rule per bucket; `atan2` gives the ratio exactly |
+| `tan(atan2(100cqw, 100cqh))` for the ratio | Wrong in WPE 2.48.3, see above |
 | Scaling the whole list with `transform: scale()` | Blurs text on the CPU renderer and still needs the factor |
 
 ## Browser support
 
 WPE WebKit 2.48.3 and cog 0.18.4 on the board (the footprint spec's Sources). In the 2.48.3 tag,
-`CSSCalcTree+Parser.cpp` accepts `atan2()` with consistent dimensions and the grid parser takes a calculated repeat count.
-`dvh` is Safari 15.4, container queries and units are Safari 16, `round()`, `sqrt()` and `tan()` are Safari 15.4. The VM
-kiosk runs the same WPE; its picture settles it.
+`CSSCalcTree+Parser.cpp` parses `atan2()`, which the kiosk then evaluates wrongly for container units, see above. A page of
+feature probes in the VM kiosk passed `cqw`, `sqrt()`, `round()` with and without a step, `min()` and `clamp()` with
+units, calculated grid tracks, `dvh` and calculated line heights. The VM kiosk runs the board's WPE; its picture settles
+what the probes cannot.
 
 ## Tests
 
 - Kotlin (Karma): a card writes `--unstable` and `--stable`, updates them when hosts move between sections, writes `--len`
   on every fitted line, and no element carries a `zoom` style or a `data-zoomed` attribute.
-- Layout (`make test-layout`, Playwright's WebKit against the built page with a scripted MQTT broker): for 1, 14, 53 and
-  120 hosts and for one and three scans at 800 by 480, 1440 by 900 and 390 by 844, the page does not scroll, no card
+- Layout (`make test-layout`, Playwright's WebKit against the built page with a scripted MQTT broker): for 1 to 120
+  hosts in one scan and for two and three scans of 53 hosts at 800 by 480, 1440 by 900 and 390 by 844, the page does not scroll, no card
   leaves its scan, no two cards overlap, and at 3 hosts the cards have their natural font size.
 - The VM kiosk (`make test-tier2`) pictures the page after the first scan; a hand-fed scan of 53 hosts pictures the
   dense case in WPE itself.

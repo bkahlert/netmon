@@ -3,6 +3,7 @@ package com.bkahlert.netmon.ui
 import dev.fritz2.core.RenderContext
 import dev.fritz2.core.render
 import kotlinx.browser.document
+import kotlinx.browser.window
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withTimeoutOrNull
 import org.w3c.dom.HTMLElement
@@ -37,4 +38,31 @@ suspend fun HTMLElement.textOnce(part: String, timeout: Duration = 2.seconds): S
         }
     }
     return textContent.orEmpty()
+}
+
+suspend fun <T> HTMLElement.awaited(read: HTMLElement.() -> T, timeout: Duration = 2.seconds, until: (T) -> Boolean): T {
+    val arrived = withTimeoutOrNull(timeout) {
+        suspendCancellableCoroutine { continuation ->
+            val observer = MutationObserver { _, observer ->
+                if (continuation.isActive && until(read())) {
+                    observer.disconnect()
+                    continuation.resume(Unit)
+                }
+            }
+            observer.observe(this@awaited, MutationObserverInit(childList = true, subtree = true, characterData = true, attributes = true))
+            continuation.invokeOnCancellation { observer.disconnect() }
+            if (until(read())) {
+                observer.disconnect()
+                continuation.resume(Unit)
+            }
+        }
+    }
+    if (arrived == null) throw AssertionError("The element did not reach the awaited state within $timeout; it reads ${read()}")
+    return read()
+}
+
+suspend fun nextFrames(count: Int) {
+    repeat(count) {
+        suspendCancellableCoroutine { continuation -> window.requestAnimationFrame { continuation.resume(Unit) } }
+    }
 }
