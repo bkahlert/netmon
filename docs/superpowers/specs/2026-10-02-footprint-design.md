@@ -429,6 +429,10 @@ board's device template in choam.de, and the fleet playbook's `apt_stop_units` f
 10 MB on paper, and a kernel upgrade with its initramfs build has not run next to the stack yet; the apt probe is the
 re-check after any change.
 
+**After 2.0.0.** The status bar's three pills come from `netmon-display-stats`, a bash loop in the display package under
+`MemoryMax=16M` that samples the kiosk's cgroup and web process every 5 s into tmpfs; it counts toward the budget's
+"everything else", and the first board soak after its release measures it.
+
 ## Decisions
 
 | Decision | Choice | Why |
