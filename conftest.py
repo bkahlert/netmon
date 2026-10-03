@@ -19,6 +19,7 @@ def pytest_addoption(parser):
 
 def pytest_configure(config):
     config.addinivalue_line("markers", "soak: samples both units' memory for minutes on a booted VM or device (vm, ssh), opt-in")
+    config.addinivalue_line("markers", "layout: loads the built page in Playwright's WebKit against a scripted broker, opt-in (make test-layout)")
     config.addinivalue_line("markers", "apt: runs apt next to the live stack on a booted VM or device (vm, ssh), opt-in")
     if config.getoption("--target") == "vm" and not config.getoption("--device"):
         config.option.device = str(vm_device.write())
@@ -32,5 +33,5 @@ def pytest_collection_modifyitems(config, items):
             if any(marker in item.keywords for marker in BOOTED_ONLY):
                 item.add_marker(pytest.mark.skip(reason="needs a booted system"))
         return
-    if any(item.path.name == "test_display.py" for item in items) and not booted.webkit_installed():
+    if any(item.path.name in ("test_display.py", "test_layout.py") for item in items) and not booted.webkit_installed():
         raise pytest.UsageError("Playwright's WebKit is not installed; run `make browser`")
