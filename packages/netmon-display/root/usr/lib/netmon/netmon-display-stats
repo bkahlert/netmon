@@ -52,13 +52,12 @@ kiosk_memory() {
   echo $(( ram + swap ))
 }
 
-# The PID of the kiosk's web process, empty without one.
+# The PID of the kiosk's web process, empty without one; the cgroup may go between any two reads.
 web_pid() {
   local pid
-  [[ -r $cgroup/cgroup.procs ]] || return 0
   while read -r pid; do
     if [[ $(cat "$proc/$pid/comm" 2>/dev/null) == WPEWebProcess ]]; then echo "$pid"; return; fi
-  done < "$cgroup/cgroup.procs"
+  done 2>/dev/null < "$cgroup/cgroup.procs" || true
 }
 
 # The CPU ticks of PID $1 in user and kernel mode, empty when it is gone.
