@@ -18,8 +18,8 @@ data class KioskStats(
     val webCpu: Int? = null,
     val kioskMemory: Long? = null,
 ) {
-    /** Returns whether the sample is less than three intervals old at [now]. */
-    fun isFreshAt(now: Instant): Boolean = now - Instant.fromEpochSeconds(at) < interval.seconds * 3
+    /** Returns whether the sample is less than three intervals away from [now], behind it or, on a viewer whose clock lags the kiosk's, ahead of it. */
+    fun isFreshAt(now: Instant): Boolean = (now - Instant.fromEpochSeconds(at)).absoluteValue < interval.seconds * 3
 
     companion object {
         /** The sampler's interval, which the page polls at as well. */
