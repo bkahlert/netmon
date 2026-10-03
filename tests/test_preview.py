@@ -24,6 +24,32 @@ class TestMain:
 
 
 @pytest.mark.tier0
+class TestForget:
+    def test_deletes_the_record(self, tmp_path, monkeypatch):
+        monkeypatch.setattr(preview, "RECORD", tmp_path / "session.json")
+        preview.RECORD.write_text(json.dumps({"owner": 1, "gradle": 2}))
+
+        preview.forget()
+
+        assert not preview.RECORD.exists()
+
+    def test_keeps_only_a_board_that_still_runs_the_session(self, tmp_path, monkeypatch):
+        monkeypatch.setattr(preview, "RECORD", tmp_path / "session.json")
+        preview.RECORD.write_text(json.dumps({"owner": 1, "gradle": 2, "device": "pi@netmon.local"}))
+
+        preview.forget()
+
+        assert json.loads(preview.RECORD.read_text()) == {"device": "pi@netmon.local"}
+
+    def test_is_done_on_a_missing_record(self, tmp_path, monkeypatch):
+        monkeypatch.setattr(preview, "RECORD", tmp_path / "session.json")
+
+        preview.forget()
+
+        assert not preview.RECORD.exists()
+
+
+@pytest.mark.tier0
 class TestStaleActions:
     def test_refuses_to_start_next_to_a_running_preview(self):
         record = {"owner": 100}

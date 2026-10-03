@@ -53,6 +53,16 @@ class TestDevice:
 
         assert shown == preview_flavors.Shown("http://localhost:8081/", "127.0.0.1:2999")
         assert calls == ["check_kiosk", "session_conf", "open_tunnel", "install", "restore", "close_tunnel"]
+        assert updates == [{"tunnel": 77}, {"device": "pi@netmon.local"}, {"device": None}]
+
+    def test_keeps_the_board_in_the_record_when_it_could_not_be_restored(self, monkeypatch):
+        calls, updates = [], []
+        install_board(monkeypatch, calls, restored=False)
+        settings = Settings.from_environ("device", {"TARGET": "pi@netmon.local"})
+
+        with ExitStack() as cleanup:
+            preview_flavors.Device().show(cleanup, settings, lambda **fields: updates.append(fields))
+
         assert updates == [{"tunnel": 77}, {"device": "pi@netmon.local"}]
 
     def test_restores_the_board_and_closes_the_tunnel_when_the_install_fails(self, monkeypatch):
@@ -124,7 +134,7 @@ class TestDevice:
         assert isinstance(picked, preview_flavors.Device)
 
 
-def install_board(monkeypatch, calls, install_error=None, check_error=None, conf_error=None, tunnel_error=None):
+def install_board(monkeypatch, calls, install_error=None, check_error=None, conf_error=None, tunnel_error=None, restored=True):
     state = {"problem": None}
 
     class FakeBoard:
@@ -158,6 +168,7 @@ def install_board(monkeypatch, calls, install_error=None, check_error=None, conf
 
         def restore(self):
             calls.append("restore")
+            return restored
 
         def tunnel_problem(self, tunnel):
             return state["problem"]

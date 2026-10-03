@@ -100,6 +100,15 @@ def update(**fields) -> None:
     RECORD.write_text(json.dumps(record))
 
 
+def forget() -> None:
+    """Deletes the record, keeping only a board that still runs the session so the next start retries its restore."""
+    device = json.loads(RECORD.read_text()).get("device") if RECORD.exists() else None
+    if device:
+        RECORD.write_text(json.dumps({"device": device}))
+    else:
+        RECORD.unlink(missing_ok=True)
+
+
 def fetch_listing(address: str) -> str:
     try:
         return urllib.request.urlopen(f"http://{address}/", timeout=2).read().decode()
@@ -122,7 +131,7 @@ def run(settings: preview_settings.Settings, flavor: preview_flavors.Flavor) -> 
     preview_process.raise_on_sigterm()
     claim()
     with ExitStack() as cleanup:
-        cleanup.callback(RECORD.unlink, missing_ok=True)
+        cleanup.callback(forget)
         if settings.broker.managed:
             preview_broker.ensure(settings.broker, settings.scan)
             cleanup.callback(preview_broker.stop)
