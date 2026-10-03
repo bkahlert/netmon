@@ -159,7 +159,8 @@ table, and says that only one runs at a time.
   the tunnel and the board's drop-in, and the next start ended and removed them; `BROKER=device` gave `broker.port=8080`
   and started no container; `BROKER=localhost:8080` next to `make broker` forwarded `18080`, used the running container
   and left it running.
-- Not seen by eye: the panel's pixels and the Web Inspector in Safari (all runs used `INSPECT=0`).
+- Seen by eye by the maintainer on a real board with the default `INSPECT=Safari`: it works, but the dev bundle makes the
+  panel very slow.
 - One run of `BROKER=device`, seconds after the end of another session, failed with `the ssh tunnel … did not come up
   within 15 s`; the tunnel log was empty and the next run passed. A login to an idle board takes about 3 s, and the board
   restarts its kiosk at the end of a session. Cause not proven; if it recurs, raise the 15 s in `Board.open_tunnel`.
