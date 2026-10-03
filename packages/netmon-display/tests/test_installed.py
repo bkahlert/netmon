@@ -19,6 +19,9 @@ class TestPackage:
         assert package.is_installed
         assert package.version == version
 
+    def test_ships_no_source_map(self, host):
+        assert host.run("ls /usr/share/netmon/web/*.map").rc != 0
+
     def test_pulls_in_lighttpd_and_the_kiosk(self, host):
         assert host.package("lighttpd").is_installed
         assert host.package("pihero-kiosk").is_installed
