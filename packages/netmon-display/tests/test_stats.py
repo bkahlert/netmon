@@ -1,5 +1,6 @@
 import json
 import os
+import shutil
 import subprocess
 import sys
 import time
@@ -67,6 +68,20 @@ class TestSample:
         assert sample["kioskCpu"] == 118
         assert sample["webCpu"] == 114
 
+    def test_needs_no_command_but_bash_sleep_mv_and_getconf(self, tmp_path):
+        root = kiosk_root(tmp_path, usec=1_000_000, ticks=500, pid=42, ram=160_000_000, swap=8_820_736)
+
+        sample = sample_once(
+            root,
+            tmp_path / "stats.json",
+            lambda: write_counters(root, usec=2_180_000, ticks=500 + 114 * CLK_TCK // 100, pid=42, uptime="1001.00"),
+            env={"PATH": str(path_with(tmp_path, "bash", "sleep", "mv", "getconf"))},
+        )
+
+        assert sample["kioskCpu"] == 118
+        assert sample["webCpu"] == 114
+        assert sample["kioskMemory"] == 168_820_736
+
     @pytest.mark.parametrize(
         "file, figure",
         [
@@ -108,6 +123,14 @@ def sample_once(root: Path, out: Path, advance: Callable[[], None] | None = None
         advance()
     assert process.wait(timeout=10) == 0
     return json.loads(out.read_text())
+
+
+def path_with(tmp_path: Path, *commands: str) -> Path:
+    bin_dir = tmp_path / "bin"
+    bin_dir.mkdir()
+    for command in commands:
+        (bin_dir / command).symlink_to(shutil.which(command))
+    return bin_dir
 
 
 def file_that_cannot_be_opened(path: Path) -> None:
