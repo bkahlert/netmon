@@ -51,9 +51,25 @@ Updates are `sudo apt upgrade`. Pi Hero 1's Ansible installer is frozen at the t
 
 #### Run the web display component locally
 
+There are two ways to look at the page while you edit it. Both read the page from Gradle's dev server on port 8081 and
+the hosts from one Mosquitto on port 8080 that holds a fixture of 14 recent and 39 stable hosts.
+
 ```shell
+# the browser way: any browser, the fastest. The IDE run configuration "netmon-web-display [jsBrowserDevelopmentRun --continuous]"
+# does the same. Then open http://localhost:8081/
+make broker
 ./gradlew jsBrowserDevelopmentRun --continuous
+
+# the kiosk way: the page in the kiosk's own WPE WebKit, 800 by 480, in a VM window; the Web Inspector opens in Safari
+make preview
 ```
+
+`SCAN=14+39x2` publishes two scans, `BROKER=netmon.local:8080` shows a real device's hosts and starts no broker of its own,
+and `INSPECT=0` leaves Safari alone. The broker is a container, so a host can be taken down by hand while you watch (see
+[Publish to the preview's broker](#publish-to-the-previews-broker)). The first `make preview` builds a base disk (about 2.5
+minutes, cached under `~/.cache/pihero/preview`); later ones start in about 10 seconds. It needs QEMU, Podman and
+Accessibility permission for your terminal (to size the window). Both ways keep a Gradle build running, and Gradle allows one
+build per project directory: stop them before `make test-js`, `make test-layout` or any other `./gradlew`.
 
 ### Build and test the packages
 
@@ -62,6 +78,7 @@ Updates are `sudo apt upgrade`. Pi Hero 1's Ansible installer is frozen at the t
 make build                                          # Gradle, the native binary in a podman container, then nfpm: dist/*.deb
 make test                                           # tier 0 (static checks, unit tests) and tier 1 (install into a systemd container)
 make test-tier2                                     # tier 2: boot a QEMU VM from devices/sample, scan, show the page in WebKit and the kiosk
+make test-preview                                   # the preview's broker container and VM session (QEMU, Podman, a window server)
 make deploy TARGET=pi@netmon.local                  # the built packages onto a device, no repository involved
 make soak TARGET=pi@netmon.local                    # ten minutes of memory samples of both units: dist/ssh/soak.md (the VM without TARGET)
 make apt-probe TARGET=pi@netmon.local               # apt update and a reinstall next to the live stack, timed, with apt's peak
@@ -107,6 +124,19 @@ mqtt pub -t "dt/netmon/test/en0/10.10.10.0/24/host" -m '{
       "since": 1692455344
     }
 }' -r -h "$BROKER_HOST" -p "$BROKER_PORT"
+```
+
+#### Publish to the preview's broker
+
+The preview's broker is published as websockets on 8080 only, so the `mqtt` client above cannot reach it. Publish from
+inside the container instead:
+
+```shell
+podman exec netmon-preview-broker mosquitto_pub -h 127.0.0.1 -r -t "dt/netmon/node/wlan0/10.0.0.1/24/host" -m '{
+    "event": "host",
+    "type": "down",
+    "host": {"ip": "10.0.0.2", "name": "printer.local.", "status": "down", "since": 1692455344}
+}'
 ```
 
 #### Subscribe to host events

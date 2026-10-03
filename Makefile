@@ -1,7 +1,7 @@
 SHELL := /bin/bash
 .DEFAULT_GOAL := help
 # Gradle's output directory is called build, so the targets are declared phony.
-.PHONY: help gradle build browser test-jvm test-js test-layout test-tier0 test-tier1 test-tier2 soak apt-probe test test-all vm-device vm-prepare vm display deploy device-model-codes clean release
+.PHONY: help gradle build browser test-jvm test-js test-layout test-preview test-tier0 test-tier1 test-tier2 soak apt-probe test test-all vm-device vm-prepare vm broker preview display deploy device-model-codes clean release
 
 PLATFORM ?= linux/arm64
 TARGET ?=
@@ -40,6 +40,9 @@ test-layout: ## the page's geometry in Playwright's WebKit at three sizes and se
 	./gradlew $(GRADLE_ARGS) jsBrowserDistribution
 	@$(UV) pytest -m layout
 
+test-preview: ## the preview's broker container and VM session on this Mac (needs Podman, QEMU and a window server)
+	@$(UV) pytest -m preview
+
 test-tier0: ## unit tests and static checks
 	@$(UV) pytest -m tier0
 
@@ -67,6 +70,12 @@ vm-prepare: ## build and cache the tier-2 base image under ~/.cache/pihero
 
 vm: vm-device ## boot the tier-2 VM from the sample device file and keep it running
 	@$(UV) python -m pihero_testkit.vm --keep --qemu-accel=$(QEMU_ACCEL) --device=dist/vm-device
+
+broker: ## run the preview's Mosquitto with the fixture until Ctrl-C (SCAN=14+39 sets the hosts; a BROKER of your own means there is nothing to run)
+	@$(UV) python tests/preview_broker.py
+
+preview: ## the dev server, the broker and the kiosk's WebKit in a VM window, its inspector in Safari (SCAN=14+39 BROKER=localhost:8080 INSPECT=Safari)
+	@$(UV) python tests/preview.py
 
 display: ## open URL in Playwright's WebKit at the panel's 800x480 (make display URL='http://netmon.local/?broker.host=netmon.local&broker.port=8080')
 	@test -n "$(URL)" || { echo "usage: make display URL='http://host/?broker.host=host&broker.port=8080'"; exit 2; }
