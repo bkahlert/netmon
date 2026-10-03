@@ -51,25 +51,35 @@ Updates are `sudo apt upgrade`. Pi Hero 1's Ansible installer is frozen at the t
 
 #### Run the web display component locally
 
-There are two ways to look at the page while you edit it. Both read the page from Gradle's dev server on port 8081 and
-the hosts from one Mosquitto on port 8080 that holds a fixture of 14 recent and 39 stable hosts.
+Three make targets show the page while you edit it. All read it from Gradle's dev server on port 8081, take the same
+variables and have a Web Inspector on the page. They differ in where the page is shown:
 
 ```shell
-# the browser way: any browser, the fastest. The IDE run configuration "netmon-web-display [jsBrowserDevelopmentRun --continuous]"
-# does the same. Then open http://localhost:8081/
-make broker
-./gradlew jsBrowserDevelopmentRun --continuous
-
-# the kiosk way: the page in the kiosk's own WPE WebKit, 800 by 480, in a VM window; the Web Inspector opens in Safari
-make preview
+make preview-browser                         # any browser: the fastest, with that browser's rendering and its own developer tools
+make preview-vm                              # the kiosk's own WPE WebKit, 800 by 480, in a QEMU window: exact rendering, the Mac's speed (also: make preview)
+make preview-device TARGET=pi@netmon.local   # the kiosk of a real Pi: the panel's own CPU use, the slowest
 ```
 
-`SCAN=14+39x2` publishes two scans, `BROKER=netmon.local:8080` shows a real device's hosts and starts no broker of its own,
-and `INSPECT=0` leaves Safari alone. The broker is a container, so a scan can be replaced by hand while you watch (see
-[Publish a scan to the preview's broker](#publish-a-scan-to-the-previews-broker)). The first `make preview` builds a base disk (about 2.5
-minutes, cached under `~/.cache/pihero/preview`); later ones start in about 10 seconds. It needs QEMU, Podman and
-Accessibility permission for your terminal (to size the window). Both ways keep a Gradle build running, and Gradle allows one
-build per project directory: stop them before `make test-js`, `make test-layout` or any other `./gradlew`.
+| Variable  | Default   | Meaning                                                                                                                         |
+|-----------|-----------|---------------------------------------------------------------------------------------------------------------------------------|
+| `BROKER`  | `fixture` | `fixture`: a Mosquitto container holding the `SCAN` hosts, started and stopped by the command. `device`: the Pi's own broker (`preview-device` only). `HOST:PORT`: that broker, nothing started; `localhost` is the Mac |
+| `SCAN`    | `14+39`   | Recent and stable hosts of the fixture; `14+39x2` publishes two scans                                                           |
+| `INSPECT` | `Safari`  | What opens once the session is up: the page (`preview-browser`) or the kiosk's Web Inspector; `INSPECT=0` opens nothing         |
+| `TARGET`  |           | `preview-device` only: `user@host[:port]` of the Pi, which needs Pi Hero's `pihero-kiosk` and ssh access without a prompt       |
+
+The broker is a container, so a scan can be replaced by hand while you watch (see
+[Publish a scan to the preview's broker](#publish-a-scan-to-the-previews-broker)). Only one of the three runs at a time:
+Gradle allows one build per project directory, so stop them before `make test-js`, `make test-layout` or any other
+`./gradlew`. `make broker` runs only the fixture, for the IDE's dev server run configuration.
+
+The first `make preview-vm` builds a base disk (about 2.5 minutes, cached under `~/.cache/pihero/preview`); later ones start
+in about 10 seconds. It needs QEMU, Podman and Accessibility permission for your terminal (to size the window).
+
+`make preview-device` changes nothing lasting on the Pi. One `ssh` connection carries the page, the fixture broker and the
+inspector between the Mac and the Pi, and the kiosk reads its session settings from a drop-in under `/run`, which Ctrl-C
+removes and a reboot wipes. The page is the development bundle, so its CPU and memory use is higher than what `make deploy`
+installs; compare flavors and edits with each other, not with the production figures. The status bar's CPU figure is the
+Pi's own, proxied from its `stats.json`.
 
 ### Build and test the packages
 

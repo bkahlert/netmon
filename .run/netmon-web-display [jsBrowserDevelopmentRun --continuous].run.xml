@@ -1,7 +1,0 @@
-<component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="netmon-web-display [jsBrowserDevelopmentRun --continuous]" type="CompoundRunConfigurationType">
-    <toRun type="ShConfigurationType" name="broker" />
-    <toRun type="GradleRunConfiguration" name="netmon-web-display dev server" />
-    <method v="2" />
-  </configuration>
-</component>
