@@ -1,22 +1,22 @@
 Architectures: all arm64
-Date: Sat, 03 Oct 2026 08:17:01 +0000
+Date: Sat, 03 Oct 2026 14:55:52 +0000
 Description: Netmon packages
 Label: netmon
 Origin: netmon
 Suite: stable
 MD5Sum:
- 6dc799dc439be79a42f30ef3cfdc25a4            16195 Packages
- 14a997915d91eac62897520baceb3ced             4107 Packages.gz
- 521aae06ba0177563eac12595b96dcc9              135 Release
+ 84164dc2c9b395d566f8f71ebdcd1374            17976 Packages
+ f987c18aa505befd964042a3ee82f05a             4504 Packages.gz
+ 9c8568419002d304ebaf1feb560e0ccc              135 Release
 SHA1:
- 13ae81c7b6e1c91e188874bb6ea064428e10677c            16195 Packages
- 237cd29856a33713faf40e2a5058cea29b93cf2d             4107 Packages.gz
- cc82767217249fcf2b2213d9b8b2fb204b70ab76              135 Release
+ 45ea557583632ae3ad08b472cb513083ffe5533d            17976 Packages
+ cf8a50d7aa60606ec0beda5827ee60d70c0acdb1             4504 Packages.gz
+ 682a843a7aa0e668128f6793c0dc737421d2f624              135 Release
 SHA256:
- bd2ff3233f76e934a3ad59fd8533b7cd28f501eda524d1708b81befa281fb3b7            16195 Packages
- 1629516d68445ca138f91e9c4af8762afdd85aee1890873cc577f901ddc30770             4107 Packages.gz
- e95aed75d1d6a8f9549e2a5cf29aa10743a51836cf26bf663648f729d763a32f              135 Release
+ 2630fa066bcb7fd8b0d646f68d966c813b0832795f684acf16737be50deaf5a2            17976 Packages
+ bef28dccaf22202428e8c8903afeac7f060d99374b3e3074cc2242157a732931             4504 Packages.gz
+ 16e65d7005256f8c8958b6fb1ee60aba83dc9778572b6afb196deee8f9ef13c7              135 Release
 SHA512:
- ff887a9bc46a4d3903bf77d959413a5e5bb72bc839367329680ccfa5490e83536f4ffeb2ec94cae25ca367137dadcc358e1783ec1f1b3d953eb518d10c878380            16195 Packages
- 492ba6caafd38957b2d96b36e808add8ded6b82049c8e5446ef7f2f0339f993c7fd260f1ba841b5f7006b486271a1252af4d41494b7a4b30c01dd2d2552101f9             4107 Packages.gz
- d2d0330def251531a68f69f320c5cfa980df1f0cceb545753914ae29c077155caac518a7e955fcf631d75b3277686dcc36fa9b5d2ef03cac5c1cc8cfb758c1b6              135 Release
+ ac072ccfc2662f768a2ced5d1f7b0c1980ead800d3d5778615adc3153ae669202efecdeb890becfd6a39f39eb1dd51dff744bfb7f65d9a31196c45bd118e98e8            17976 Packages
+ a7fa675285cfb36949a662351c40330dfc47f3f08cb06cefb449325f983f8951cbb7e75678bedf4bf5cf30199941f59d87a46815995245c263796a2237d9c20a             4504 Packages.gz
+ 1f50e9b8fd249826fef5f77cf06339c7712ab5a71924321e397a62a64d50e8268e604639777fcaa997f40f684d78de16d91a70c321ea379afb71b2cba9efb653              135 Release
