@@ -87,6 +87,15 @@ class TestTunnelCommand:
         assert command[-1] == TARGET
 
 
+class TestSsh:
+    def test_names_a_board_that_does_not_answer_in_time(self):
+        def hangs(argv, **kwargs):
+            raise subprocess.TimeoutExpired(argv, 60)
+
+        with pytest.raises(TimeoutError, match=r"pi@netmon.local did not answer within 60 s"):
+            preview_board.Board(TARGET, run=hangs).ssh("true")
+
+
 class TestCheckKiosk:
     def test_passes_a_board_with_the_kiosk(self):
         preview_board.Board(TARGET, run=Script({})).check_kiosk()
@@ -229,6 +238,21 @@ class TestOpenTunnel:
 
         with pytest.raises(RuntimeError, match=r"the ssh tunnel to pi@netmon.local ended: pi@netmon.local: Permission denied \(publickey\)."):
             preview_board.Board(TARGET, run=Script({}), tunnel_log=log).open_tunnel(FIXTURE_BROKER, 8081, 2999)
+
+    def test_ends_the_tunnel_on_an_interrupt_before_it_came_up(self, monkeypatch, tmp_path):
+        ended = []
+        running = SimpleNamespace(poll=lambda: None, terminate=lambda: ended.append("terminate"), wait=lambda timeout: 0)
+        monkeypatch.setattr(preview_board.subprocess, "Popen", lambda argv, **kwargs: running)
+
+        def interrupted(host, port):
+            raise KeyboardInterrupt
+
+        monkeypatch.setattr(preview_board.preview_process, "answers", interrupted)
+
+        with pytest.raises(KeyboardInterrupt):
+            preview_board.Board(TARGET, run=Script({}), tunnel_log=tmp_path / "tunnel.log").open_tunnel(FIXTURE_BROKER, 8081, 2999)
+
+        assert ended == ["terminate"]
 
 
 class TestRestore:

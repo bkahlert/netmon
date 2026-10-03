@@ -73,7 +73,10 @@ class Board:
         self.target, self._run, self.tunnel_log = target, run, tunnel_log
 
     def ssh(self, remote: str, input: str | None = None, timeout: float = 60) -> subprocess.CompletedProcess:
-        return self._run(ssh.command(self.target, remote), input=input, text=True, capture_output=True, check=False, timeout=timeout)
+        try:
+            return self._run(ssh.command(self.target, remote), input=input, text=True, capture_output=True, check=False, timeout=timeout)
+        except subprocess.TimeoutExpired:
+            raise TimeoutError(f"{self.target} did not answer within {timeout:g} s") from None
 
     def check_kiosk(self) -> None:
         result = self.ssh("dpkg-query -W pihero-kiosk")
@@ -112,7 +115,7 @@ class Board:
         """Removes the session's files and restarts the kiosk; returns whether the board answered, else warns."""
         try:
             result = self.ssh(RESTORE, timeout=30)
-        except (subprocess.TimeoutExpired, OSError) as error:
+        except OSError as error:
             print(f"could not restore the kiosk on {self.target}: {error}; a reboot of the board removes the session's files", file=sys.stderr)
             return False
         if result.returncode != 0:
@@ -125,15 +128,18 @@ class Board:
         self.tunnel_log.parent.mkdir(parents=True, exist_ok=True)
         with self.tunnel_log.open("w") as log:
             tunnel = subprocess.Popen(tunnel_command(self.target, forwards(broker, dev_port, inspector_port)), stdout=subprocess.DEVNULL, stderr=log, text=True)
-        deadline = time.monotonic() + 15
-        while time.monotonic() < deadline:
-            if tunnel.poll() is not None:
-                raise RuntimeError(self.tunnel_ended(tunnel))
-            if preview_process.answers("127.0.0.1", inspector_port):
-                return tunnel
-            time.sleep(0.25)
-        self.close_tunnel(tunnel)
-        raise TimeoutError(f"the ssh tunnel to {self.target} did not come up within 15 s; see {self.tunnel_log}")
+        try:
+            deadline = time.monotonic() + 15
+            while time.monotonic() < deadline:
+                if tunnel.poll() is not None:
+                    raise RuntimeError(self.tunnel_ended(tunnel))
+                if preview_process.answers("127.0.0.1", inspector_port):
+                    return tunnel
+                time.sleep(0.25)
+            raise TimeoutError(f"the ssh tunnel to {self.target} did not come up within 15 s; see {self.tunnel_log}")
+        except BaseException:
+            self.close_tunnel(tunnel)
+            raise
 
     def tunnel_problem(self, tunnel: subprocess.Popen) -> str | None:
         """Returns why the tunnel ended, or None while it runs."""

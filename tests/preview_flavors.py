@@ -63,8 +63,13 @@ class Device:
         tunnel = board.open_tunnel(settings.broker, DEV_PORT, preview_kiosk.INSPECTOR_PORT)
         cleanup.callback(board.close_tunnel, tunnel)
         update(tunnel=tunnel.pid)
-        cleanup.callback(board.restore)
         update(device=settings.target)
+
+        def restore() -> None:
+            if board.restore():
+                update(device=None)
+
+        cleanup.callback(restore)
         board.install(conf, tunnel)
         return Shown(f"http://localhost:{DEV_PORT}/", f"127.0.0.1:{preview_kiosk.INSPECTOR_PORT}", lambda: board.tunnel_problem(tunnel))
 
