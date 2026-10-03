@@ -12,15 +12,15 @@ from scan_fixtures import Scan
 
 @pytest.mark.tier0
 class TestSettings:
-    def test_defaults_to_the_managed_broker_the_standard_fixture_and_safari(self):
+    def test_defaults_to_the_fixture_the_standard_scan_and_safari(self):
         settings = preview.Settings.from_environ({})
 
-        assert settings == preview.Settings(Scan(14, 39, 1), preview_broker.Broker("localhost", 8080, managed=True), "Safari")
+        assert settings == preview.Settings(Scan(14, 39, 1), preview_broker.Broker(preview_broker.FIXTURE, "localhost", 8080), "Safari")
 
     def test_reads_all_three_variables(self):
         settings = preview.Settings.from_environ({"SCAN": "3+1x2", "BROKER": "netmon.local:8080", "INSPECT": "0"})
 
-        assert settings == preview.Settings(Scan(3, 1, 2), preview_broker.Broker("netmon.local", 8080, managed=False), None)
+        assert settings == preview.Settings(Scan(3, 1, 2), preview_broker.Broker(preview_broker.EXTERNAL, "netmon.local", 8080), None)
 
     @pytest.mark.parametrize("environ, message", [({"SCAN": "x"}, "SCAN must be"), ({"BROKER": "x"}, "BROKER must be")])
     def test_names_the_malformed_variable(self, environ, message):

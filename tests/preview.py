@@ -42,7 +42,7 @@ class Settings:
     def from_environ(environ) -> "Settings":
         return Settings(
             scan_fixtures.parse_scan(environ.get("SCAN") or "14+39"),
-            preview_broker.parse_broker(environ.get("BROKER") or preview_broker.DEFAULT_BROKER),
+            preview_broker.parse_broker(environ.get("BROKER")),
             preview_kiosk.inspect_app(environ.get("INSPECT", "Safari")),
         )
 
@@ -133,7 +133,8 @@ def run(settings: Settings) -> int:
     claim()
     with ExitStack() as cleanup:
         cleanup.callback(RECORD.unlink, missing_ok=True)
-        if settings.broker.managed and preview_broker.ensure(settings.broker, settings.scan):
+        if settings.broker.managed:
+            preview_broker.ensure(settings.broker, settings.scan)
             cleanup.callback(preview_broker.stop)
             update(broker=True)
         print(f"dev server: Gradle on port {DEV_PORT}, log in {preview_dev_server.LOG}", file=sys.stderr, flush=True)
