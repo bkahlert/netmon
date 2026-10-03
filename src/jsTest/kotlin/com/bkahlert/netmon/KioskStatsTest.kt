@@ -30,6 +30,14 @@ class KioskStatsTest {
     }
 
     @Test
+    fun is_stale_when_dated_three_intervals_ahead_of_the_clock() {
+        val stats = KioskStats(at = 1_015, interval = 5)
+
+        stats.isFreshAt(Instant.fromEpochSeconds(1_001)) shouldBe true
+        stats.isFreshAt(Instant.fromEpochSeconds(1_000)) shouldBe false
+    }
+
+    @Test
     fun formats_cpu_and_memory_as_the_panel_shows_them() {
         cpuText(114) shouldBe "114 %"
         memoryText(168_820_736) shouldBe "161 MB"
