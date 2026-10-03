@@ -454,6 +454,29 @@ its 16 MiB cap. Rewritten with bash builtins, `perf(display): read the kiosk's c
 0.5 % of a core, 25 ms per sample, with the old and the new script each measured for a minute under `CPUAccounting`
 next to the live kiosk.
 
+Release 2.1.1, the rewritten sampler and its sandbox, went onto the board the same way on 2026-10-03, 05:25 to 05:30:
+apt's `MemoryPeak` 118 MiB, `available` at least 99 MB in one-second samples, load up to 5.1; the sandboxed unit
+started without a complaint and took 0.43 % of a core over 64 s next to the live kiosk, as the bench had said. The
+kiosk, restarted by hand, had loaded the new page 17 s later.
+
+Release 2.1.2, the CSS layout and the content-named bundle, followed the same morning, 10:24 to 10:27: apt's
+`MemoryPeak` 113 MiB, `available` at least 113 MB, load up to 5.1; the kiosk, restarted by hand, had loaded the new
+page 14 s later. The board's Wi-Fi dropped four times that morning, at 09:48, 10:20, 10:22 and 10:29, after a day
+without a drop; two attempts failed before apt had fetched anything and left the board unchanged, and the cause is
+open. Pihero 2.5.2 to 2.6.1, four packages, went on next to the stack at 10:33 to 10:39 in the same accounted unit:
+apt's `MemoryPeak` 120 MiB, `available` at least 103 MB, load up to 5.4; the kiosk was restarted once by its
+package's postinst and had loaded the page 12 s later, and the boot id did not change.
+
+The first board soak on 2.1.2, 10:40 to 10:51, right after that upgrade: the kiosk's peak 172 MB RAM+zram and
+50 MB private dirty, the scanner's 41 MB, `available` at least 122 MB, load up to 2.8 in the first sample and
+2.5 after, the web process's PID unchanged and its CPU 692 s in 612 s, 1.1 cores as on 2.1.0: the CSS layout and
+the content-named bundle moved nothing on the board's web CPU, so where it goes is still open. The sampler took 2.7 s
+of CPU in 618 s, 0.44 % of a core, with a 4.0 MB peak. Its last row:
+
+| t | scanner RAM+zram | scanner anon/file | scanner rss/anon | kiosk RAM+zram | kiosk anon/file | web private dirty/swap | Δweb cpu | available | swap free | zram pool | load | Δswpin | Δswpout | Δmajflt | PSI full10 |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| 612 | 16+2 | 10/4 | 15/6 | 90+56 | 60/24 | 47/36 | 37.7 | 131 | 264 | 35 | 1.7 | 7007 | 7033 | 15502 | n/a |
+
 ## Decisions
 
 | Decision | Choice | Why |
