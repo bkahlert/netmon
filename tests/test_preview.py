@@ -9,6 +9,21 @@ import preview_session
 
 
 @pytest.mark.tier0
+class TestMain:
+    def test_names_a_variable_that_does_not_fit_the_flavor_and_runs_nothing(self, capsys):
+        status = preview.main(["--on", "device"], {})
+
+        assert status == 2
+        assert "preview-device needs TARGET=user@host" in capsys.readouterr().err
+
+    def test_refuses_an_unknown_flavor(self):
+        with pytest.raises(SystemExit) as exit_:
+            preview.main(["--on", "tv"], {})
+
+        assert exit_.value.code == 2
+
+
+@pytest.mark.tier0
 class TestStaleActions:
     def test_refuses_to_start_next_to_a_running_preview(self):
         record = {"owner": 100}

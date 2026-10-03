@@ -81,3 +81,20 @@ class TestOpenCommand:
         command = preview_kiosk.open_command("Safari", "http://127.0.0.1:2999/")
 
         assert command == ["open", "-a", "Safari", "http://127.0.0.1:2999/"]
+
+
+class TestBrowserUrl:
+    def test_names_the_dev_server_and_the_broker_as_the_macs_browser_reaches_them(self):
+        url = preview_kiosk.browser_url(8081, "localhost", 8080)
+
+        assert url == "http://localhost:8081/?broker.host=localhost&broker.port=8080"
+
+    def test_passes_a_remote_broker_unchanged(self):
+        url = preview_kiosk.browser_url(8081, "netmon.local", 8080)
+
+        assert url == "http://localhost:8081/?broker.host=netmon.local&broker.port=8080"
+
+
+class TestInspectorPort:
+    def test_is_2999(self):
+        assert preview_kiosk.INSPECTOR_PORT == 2999
