@@ -15,6 +15,9 @@ pytestmark = pytest.mark.tier0
 ROOT = Path.cwd()
 # The units call binaries the tools container does not have; verify only needs them to exist and be executable.
 STUBBED_COMMANDS = ("/usr/lib/netmon/netmon-scanner", "/usr/lib/netmon/netmon-display-stats")
+# The exposure level systemd-analyze security grants a unit, on its printed 0 to 10 scale; above it, the unit has lost
+# part of its sandbox.
+EXPOSURE_LEVELS = {"netmon-display-stats.service": 1.0}
 STRIP_RPI_KEYS = (
     "import sys, yaml; d = yaml.safe_load(open(sys.argv[1])); "
     "[d.pop(k, None) for k in ('rpi', 'enable_ssh')]; "
@@ -59,6 +62,17 @@ def test_unit_passes_systemd_analyze_verify(unit):
         mounts.append(f"{stub}:{command}:ro")
 
     result = tools.run(["systemd-analyze", "verify", "--man=no", f"/work/{unit.relative_to(ROOT)}"], mounts=mounts, check=False, capture=True)
+
+    assert result.returncode == 0, result.stdout + result.stderr
+
+
+@pytest.mark.parametrize("unit, level", sorted(EXPOSURE_LEVELS.items()), ids=str)
+def test_unit_stays_within_its_exposure_level(unit, level):
+    path = next(path for path in unit_files() if path.name == unit)
+
+    command = ["systemd-analyze", "security", "--offline=true", "--no-pager", f"--threshold={int(level * 10)}", f"/work/{path.relative_to(ROOT)}"]
+
+    result = tools.run(command, check=False, capture=True)
 
     assert result.returncode == 0, result.stdout + result.stderr
 
