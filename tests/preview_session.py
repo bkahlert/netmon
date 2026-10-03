@@ -69,7 +69,8 @@ class Session:
         raise TimeoutError(f"the kiosk did not load its page within {timeout:g} s; see {self.vm.serial_log}")
 
     def open_tunnel(self, local_port: int, remote_port: int) -> None:
-        self.tunnel = subprocess.Popen(self._ssh(None, "-N", "-L", f"127.0.0.1:{local_port}:127.0.0.1:{remote_port}"), stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        forward = f"127.0.0.1:{local_port}:127.0.0.1:{remote_port}"
+        self.tunnel = subprocess.Popen(self._ssh(None, "-N", "-L", forward), stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
     def stop(self) -> None:
         if self.tunnel and self.tunnel.poll() is None:

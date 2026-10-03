@@ -136,7 +136,8 @@ def run(settings: Settings) -> int:
         inspector = wait_for_inspector(f"127.0.0.1:{INSPECTOR_PORT}")
         if settings.inspect:
             subprocess.run(preview_kiosk.open_command(settings.inspect, inspector), check=False)
-        print(f"preview ready\n  page       http://localhost:{DEV_PORT}/\n  broker     {settings.broker.address}\n  inspector  http://127.0.0.1:{INSPECTOR_PORT}/\nCtrl-C ends it.", file=sys.stderr, flush=True)
+        ready = f"preview ready\n  page       http://localhost:{DEV_PORT}/\n  broker     {settings.broker.address}\n  inspector  http://127.0.0.1:{INSPECTOR_PORT}/"
+        print(f"{ready}\nCtrl-C ends it.", file=sys.stderr, flush=True)
         preview_process.until_interrupted()
     return 0
 
