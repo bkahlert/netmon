@@ -20,6 +20,7 @@ def pytest_addoption(parser):
 def pytest_configure(config):
     config.addinivalue_line("markers", "soak: samples both units' memory for minutes on a booted VM or device (vm, ssh), opt-in")
     config.addinivalue_line("markers", "layout: loads the built page in Playwright's WebKit against a scripted broker, opt-in (make test-layout)")
+    config.addinivalue_line("markers", "preview: starts the preview's broker container or VM session on this Mac (Podman, QEMU), opt-in (make test-preview)")
     config.addinivalue_line("markers", "apt: runs apt next to the live stack on a booted VM or device (vm, ssh), opt-in")
     if config.getoption("--target") == "vm" and not config.getoption("--device"):
         config.option.device = str(vm_device.write())
