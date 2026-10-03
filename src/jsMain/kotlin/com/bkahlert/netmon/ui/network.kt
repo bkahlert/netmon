@@ -11,7 +11,6 @@ import com.bkahlert.netmon.ScanEventSettings
 import com.bkahlert.netmon.ScanEventsStore
 import com.bkahlert.netmon.UiSettings
 import com.bkahlert.netmon.fritz2.partition
-import com.bkahlert.netmon.fritz2.resizes
 import com.bkahlert.netmon.getElapsedTime
 import com.bkahlert.netmon.hosts
 import com.bkahlert.netmon.model_identification.DeviceModelCodes
@@ -21,25 +20,20 @@ import dev.fritz2.core.Store
 import dev.fritz2.core.joinClasses
 import dev.fritz2.core.mapByElement
 import dev.fritz2.core.mapByKey
-import kotlinx.browser.window
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
-import org.w3c.dom.HTMLDivElement
 import org.w3c.dom.HTMLElement
+import org.w3c.dom.HTMLUListElement
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.ZERO
-import kotlin.time.Duration.Companion.seconds
 import kotlin.time.Instant
 
 fun RenderContext.networks(scanEventsStore: ScanEventsStore) {
-    div("h-full overflow-y-hidden sm:grid grid-cols-[repeat(auto-fit,minmax(min(15rem,100%),1fr))] gap-4") {
-        window.resizes.debounce(.5.seconds) handledBy { resetZoomed() }
-        val sources = scanEventsStore.data.map { it.keys.toList() }
-        sources.map { it.size }.distinctUntilChanged() handledBy { resetZoomed() }
-        sources
+    div("h-full grid grid-cols-[repeat(auto-fit,minmax(min(15rem,100%),1fr))] auto-rows-[minmax(0,1fr)] gap-4") {
+        scanEventsStore.data
+            .map { it.keys.toList() }
             .renderEach(into = this) { source ->
                 scan(source, scanEventsStore.mapByKey(source))
             }
@@ -52,10 +46,9 @@ fun RenderContext.scan(
     stabilizedThreshold: Duration = HostEventSettings.stabilizedThreshold,
 ): HtmlTag<HTMLElement> = div(
     joinClasses(
-        "space-y-5 pt-4 sm:pb-4 sm:px-4 sm:rounded-xl",
+        "flex flex-col min-h-0 min-w-0 space-y-5 pt-4 sm:pb-4 sm:px-4 sm:rounded-xl",
         "sm:border sm:border-white/20",
-        "grid grid-rows-[1fr_minmax(1px,100%)]",
-        "overflow-y-hidden",
+        "overflow-hidden",
     ),
 ) {
     meta(source, events)
@@ -69,8 +62,13 @@ fun RenderContext.scan(
             }
         }
 
-    div("flex flex-col") {
-        hosts(unstableHosts)
+    div("scan__hosts") {
+        inlineStyle(sectionSizes(unstableHosts.current.size, stableHosts.current.size))
+        inlineStyle(
+            unstableHosts.data.map { it.size }
+                .combine(stableHosts.data.map { it.size }, ::sectionSizes)
+        )
+        hosts(unstableHosts, classes = "hosts--unstable")
         unstableHosts.data.map { it.isNotEmpty() }
             .combine(stableHosts.data.map { it.isNotEmpty() }) { a, b ->
                 a && b
@@ -81,11 +79,13 @@ fun RenderContext.scan(
                     }
                 }
             }
-        hosts(stableHosts, clock = MinuteClock.data, classes = "opacity-50 [zoom:0.75]")
+        hosts(stableHosts, clock = MinuteClock.data, classes = "hosts--stable")
     }
 }
 
-private fun HtmlTag<HTMLDivElement>.meta(
+private fun sectionSizes(unstable: Int, stable: Int): String = "--unstable: $unstable; --stable: $stable"
+
+private fun HtmlTag<HTMLElement>.meta(
     source: EventSource,
     events: Store<ScanEvent>,
     datedThreshold: Duration = ScanEventSettings.datedThreshold,
@@ -123,20 +123,17 @@ private fun HtmlTag<HTMLDivElement>.meta(
     }
 }
 
+/**
+ * Renders the [hosts] as a grid of cards that the stylesheet sizes: the section's class in [classes] sets the
+ * cards' scale, the enclosing `.scan__hosts` carries the section sizes.
+ */
 fun RenderContext.hosts(
     hosts: Store<List<Host>>,
     clock: Flow<Instant> = CurrentTimeStore.data,
     classes: String? = null,
-): HtmlTag<HTMLDivElement> = div {
-    // "clip" is like "hidden" but with a margin to not cut-off animated content
-    inlineStyle("overflow: clip; overflow-clip-margin: 100px; overflow-y: hidden;")
-    zoomedToFitClientHeight()
-    hosts.data.map { it.size }.distinctUntilChanged() handledBy { resetZoomed() }
-
-    ul(joinClasses("hosts grid grid-cols-[repeat(auto-fill,185px)] justify-around", classes)) {
-        hosts.data.renderEach(Host::ip, into = this) { value ->
-            li { host(hosts.mapByElement(value, Host::ip), clock) }
-        }
+): HtmlTag<HTMLUListElement> = ul(joinClasses("hosts", classes)) {
+    hosts.data.renderEach(Host::ip, into = this) { value ->
+        li { host(hosts.mapByElement(value, Host::ip), clock) }
     }
 }
 
@@ -160,32 +157,32 @@ fun RenderContext.host(
 
     val captions = hostNames.combine(modelNames) { h, m -> h?.substringBefore(".") ?: m }
 
-    div("host flex justify-center sm:justify-start gap-x-2") {
+    div("host") {
         className(elapsedTime.map { if (it != null && it < highlightDuration) "host--highlighted" else "" })
         attr("data-status", statuses.map { it?.toString()?.lowercase() ?: "" })
 
-        div("shrink-0 w-10") {
+        div("host__aside") {
             icon("host__icon w-full", modelIcons)
             modelNames.render {
-                if (it != null) div("opacity-60 text-sm leading-none text-center mt-1") { +it }.zoomToFitClientWidth()
+                if (it != null) div("host__model") { fitted(it, length = it.longestWord()) }
             }
         }
 
-        div("truncate") {
+        div("host__body") {
             captions.render {
-                if (it != null) div("text-sm font-bold") { +it }.zoomToFitClientWidth()
-                else div("text-sm font-bold") { +"❔" }
+                if (it != null) div("host__name") { fitted(it) }
+                else div("host__name") { +"❔" }
             }
             vendors.render {
-                if (it != null) div("text-xs") { +it }.zoomToFitClientWidth()
-                else div("text-xs italic") { +"<unknown vendor>" }.zoomToFitClientWidth()
+                if (it != null) div("host__vendor") { fitted(it) }
+                else div("host__vendor italic") { fitted("<unknown vendor>") }
             }
             ips.render {
-                div("text-xs font-mono") { +it.toString() }.zoomToFitClientWidth()
+                div("host__ip font-mono") { fitted(it.toString()) }
             }
             statuses.render { status ->
                 if (status != null) {
-                    div("text-xs") {
+                    div("host__status") {
                         +status.toString()
                         elapsedTime
                             .map { it?.toMomentString(descriptive = false) }

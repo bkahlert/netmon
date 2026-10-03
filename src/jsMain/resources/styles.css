@@ -6,7 +6,7 @@
 @tailwind utilities;
 
 html { @apply h-full bg-default text-default; }
-body { @apply min-h-full overflow-y-auto; }
+body { @apply h-full overflow-hidden; }
 
 /* pseudo-element to create a zero-height barrier at the top to avoid collapsing margins */
 body::before { @apply content-[''] table h-0; }
@@ -18,11 +18,81 @@ body::before { @apply content-[''] table h-0; }
 .divider:not(:empty)::before { @apply rounded-r mr-2;}
 .divider:not(:empty)::after { @apply rounded-l ml-2;}
 
-.divider-xs { @apply divider my-4 md:my-4 min-w-[50%] text-xs;}
+.divider-xs { @apply divider flex-none my-4 md:my-4 min-w-[50%] text-xs;}
 .divider-xs::before, .divider-xs::after { @apply h-[1px];}
 
-.hosts { @apply m-2; }
-.host { @apply m-1 px-2 py-1 rounded; }
+/*
+ * The hosts of a scan fill the room they are given; no script measures anything. Kotlin writes the number of
+ * cards of each section as --unstable and --stable on .scan__hosts, a size container, and the rules below turn
+ * that and the container's size into columns, rows and a font size per card.
+ *
+ * A card is 11.5625rem by 5.25rem at its natural size and lays itself out in em, so one font size scales it.
+ * The stable section is 0.75 of that (--sigma). For both sections to end up at one scale, the unstable one gets
+ * --balanced columns and the stable one --balanced / --sigma. --balanced follows from the number of cards and the
+ * container's width to height ratio, which a container query sorts into steps (--ratio): CSS cannot divide two
+ * lengths, and WPE WebKit 2.48.3 gets tan(atan2(w, h)) wrong for container units. auto-fill turns the column's
+ * minimum width into a count, so the cards use as many natural columns as the width holds where they fit at
+ * natural size; the .5px keeps floor(width / minimum) from losing a column to rounding. The section's height is that of
+ * its rows at natural size and shrinks in proportion to it.
+ */
+.scan__hosts {
+  --sigma-stable: .75;
+  --cell-width: 11.5625rem;
+  --cell-height: 5.25rem;
+  --aspect: 2.2;
+  --ratio: 1;
+  @apply flex flex-1 flex-col min-h-0;
+  container-type: size;
+}
+
+@container (min-aspect-ratio: 9/20) { .hosts { --ratio: .5; } }
+@container (min-aspect-ratio: 63/100) { .hosts { --ratio: .75; } }
+@container (min-aspect-ratio: 22/25) { .hosts { --ratio: 1.05; } }
+@container (min-aspect-ratio: 123/100) { .hosts { --ratio: 1.45; } }
+@container (min-aspect-ratio: 173/100) { .hosts { --ratio: 2.05; } }
+@container (min-aspect-ratio: 242/100) { .hosts { --ratio: 2.85; } }
+@container (min-aspect-ratio: 339/100) { .hosts { --ratio: 4; } }
+@container (min-aspect-ratio: 474/100) { .hosts { --ratio: 5.6; } }
+@container (min-aspect-ratio: 664/100) { .hosts { --ratio: 8; } }
+
+.hosts {
+  --sigma: 1;
+  --balanced: sqrt(var(--ratio) / var(--aspect) * (var(--unstable, 0) + var(--stable, 0) * var(--sigma-stable) * var(--sigma-stable)));
+  --columns: max(1, round(var(--balanced) / var(--sigma), 1));
+  @apply grid min-h-0 list-none m-0 p-0;
+  flex: 0 1 auto;
+  grid-template-columns: repeat(auto-fill, minmax(min(calc(var(--cell-width) * var(--sigma)), calc(100cqw / var(--columns) - .5px)), 1fr));
+  grid-auto-rows: minmax(0, calc(var(--cell-height) * var(--sigma)));
+  align-content: start;
+}
+
+.hosts--stable { --sigma: var(--sigma-stable); @apply opacity-50; }
+
+.hosts > li { @apply grid place-items-center min-w-0 min-h-0; container-type: size; }
+
+.host {
+  font-size: min(1rem * var(--sigma), 100cqw / 11.5625, 100cqh / 5.25);
+  @apply flex rounded-[.25em];
+  gap: .5em;
+  width: 11.0625em;
+  margin: .25em;
+  padding: .25em .5em;
+}
+
+.host__aside { @apply flex-none; width: 2.5em; }
+.host__icon { @apply block; }
+.host__body { @apply flex-1 min-w-0 overflow-hidden; }
+
+.host__model, .host__name, .host__vendor, .host__ip, .host__status { @apply overflow-hidden; }
+.host__name, .host__vendor, .host__ip, .host__status { @apply whitespace-nowrap text-ellipsis; }
+
+.host__model { --room: 2.857; --char: .62; @apply text-center opacity-60; margin-top: .25em; max-height: 2em; font-size: .875em; line-height: 1; }
+.host__name { --room: 8.07; --char: .68; @apply font-bold; font-size: .875em; line-height: calc(20 / 14); }
+.host__vendor, .host__ip, .host__status { --room: 9.417; --char: .6; font-size: .75em; line-height: calc(16 / 12); }
+.host__ip { --char: .6; }
+
+/* A line shrinks by its length (--len) until it fits the text column, but not below .6 of its size; the rest ends in an ellipsis. */
+.fit { font-size: clamp(.6em, calc(var(--room) * 1em / (max(var(--len), 1) * var(--char))), 1em); }
 
 :root {
   --HOST_STATE_CHANGE_HIGHLIGHT_DURATION: 60s;
