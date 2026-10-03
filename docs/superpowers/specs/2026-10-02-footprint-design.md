@@ -431,7 +431,28 @@ re-check after any change.
 
 **After 2.0.0.** The status bar's three pills come from `netmon-display-stats`, a bash loop in the display package under
 `MemoryMax=16M` that samples the kiosk's cgroup and web process every 5 s into tmpfs; it counts toward the budget's
-"everything else", and the first board soak after its release measures it.
+"everything else".
+
+Release 2.1.0 went onto the board next to the live stack on 2026-10-03, 03:29 to 03:33, `apt-get update` and the two
+packages in an accounted transient unit: 15.2 MB over Wi-Fi in 17 s, apt's `MemoryPeak` 113 MiB, `available` at least
+103 MB in one-second samples, load up to 5.4; lighttpd, the broker and the scanner restarted once each by their
+packages' postinst, the sampler started with them, and the boot id did not change. The page could not pick the new
+bundle up by itself, the running one still had the broken refresher, so the kiosk was restarted by hand and had loaded
+the new page 16 s later.
+
+The first board soak on 2.1.0, 03:45 to 03:55: the kiosk's peak 172 MB RAM+zram and 52 MB private dirty, the scanner's
+37 MB, `available` at least 112 MB, load up to 2.5, the web process's PID unchanged and its CPU 666 s in 609 s, 1.1
+cores, as the pills show. Its last row:
+
+| t | scanner RAM+zram | scanner anon/file | scanner rss/anon | kiosk RAM+zram | kiosk anon/file | web private dirty/swap | Δweb cpu | available | swap free | zram pool | load | Δswpin | Δswpout | Δmajflt | PSI full10 |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| 609 | 26+2 | 13/16 | 15/9 | 97+57 | 59/33 | 52/30 | 40.1 | 134 | 275 | 33 | 2.3 | 5265 | 5311 | 13989 | n/a |
+
+The sampler's own cgroup over the same ten minutes: 14.0 s of CPU in 623 s, 2.2 % of a core or 112 ms per sample, most
+of it system time from the fifteen or so processes each sample forked; memory 1.7 to 3.0 MB with a peak of 6.8 MB under
+its 16 MiB cap. Rewritten with bash builtins, `perf(display): read the kiosk's counters with bash builtins`, it takes
+0.5 % of a core, 25 ms per sample, with the old and the new script each measured for a minute under `CPUAccounting`
+next to the live kiosk.
 
 ## Decisions
 
