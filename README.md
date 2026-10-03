@@ -65,8 +65,8 @@ make preview
 ```
 
 `SCAN=14+39x2` publishes two scans, `BROKER=netmon.local:8080` shows a real device's hosts and starts no broker of its own,
-and `INSPECT=0` leaves Safari alone. The broker is a container, so a host can be taken down by hand while you watch (see
-[Publish to the preview's broker](#publish-to-the-previews-broker)). The first `make preview` builds a base disk (about 2.5
+and `INSPECT=0` leaves Safari alone. The broker is a container, so a scan can be replaced by hand while you watch (see
+[Publish a scan to the preview's broker](#publish-a-scan-to-the-previews-broker)). The first `make preview` builds a base disk (about 2.5
 minutes, cached under `~/.cache/pihero/preview`); later ones start in about 10 seconds. It needs QEMU, Podman and
 Accessibility permission for your terminal (to size the window). Both ways keep a Gradle build running, and Gradle allows one
 build per project directory: stop them before `make test-js`, `make test-layout` or any other `./gradlew`.
@@ -126,16 +126,21 @@ mqtt pub -t "dt/netmon/test/en0/10.10.10.0/24/host" -m '{
 }' -r -h "$BROKER_HOST" -p "$BROKER_PORT"
 ```
 
-#### Publish to the preview's broker
+#### Publish a scan to the preview's broker
 
-The preview's broker is published as websockets on 8080 only, so the `mqtt` client above cannot reach it. Publish from
-inside the container instead:
+The display shows scan events. The preview's broker is published as websockets on 8080 only, so the `mqtt` client above
+cannot reach it; publish from inside the container. A retained scan replaces the fixture of its topic until the broker ends:
 
 ```shell
-podman exec netmon-preview-broker mosquitto_pub -h 127.0.0.1 -r -t "dt/netmon/node/wlan0/10.0.0.1/24/host" -m '{
-    "event": "host",
-    "type": "down",
-    "host": {"ip": "10.0.0.2", "name": "printer.local.", "status": "down", "since": 1692455344}
+now=$(date +%s)
+podman exec netmon-preview-broker mosquitto_pub -h 127.0.0.1 -r -t "dt/netmon/node/wlan0/10.0.0.1/24/scan" -m '{
+    "event": "scan",
+    "type": "completed",
+    "timestamp": '"$now"',
+    "hosts": [
+      {"ip": "10.0.0.1", "name": "printer.local.", "status": "up", "since": '"$((now - 30))"'},
+      {"ip": "10.0.0.2", "name": "indoorcam", "status": "down", "since": '"$((now - 5))"'}
+    ]
 }'
 ```
 
