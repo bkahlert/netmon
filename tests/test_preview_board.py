@@ -87,6 +87,15 @@ class TestTunnelCommand:
         assert command[-1] == TARGET
 
 
+class TestSsh:
+    def test_names_a_board_that_does_not_answer_in_time(self):
+        def hangs(argv, **kwargs):
+            raise subprocess.TimeoutExpired(argv, 60)
+
+        with pytest.raises(TimeoutError, match=r"pi@netmon.local did not answer within 60 s"):
+            preview_board.Board(TARGET, run=hangs).ssh("true")
+
+
 class TestCheckKiosk:
     def test_passes_a_board_with_the_kiosk(self):
         preview_board.Board(TARGET, run=Script({})).check_kiosk()

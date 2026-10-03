@@ -73,7 +73,10 @@ class Board:
         self.target, self._run, self.tunnel_log = target, run, tunnel_log
 
     def ssh(self, remote: str, input: str | None = None, timeout: float = 60) -> subprocess.CompletedProcess:
-        return self._run(ssh.command(self.target, remote), input=input, text=True, capture_output=True, check=False, timeout=timeout)
+        try:
+            return self._run(ssh.command(self.target, remote), input=input, text=True, capture_output=True, check=False, timeout=timeout)
+        except subprocess.TimeoutExpired:
+            raise TimeoutError(f"{self.target} did not answer within {timeout:g} s") from None
 
     def check_kiosk(self) -> None:
         result = self.ssh("dpkg-query -W pihero-kiosk")
@@ -112,7 +115,7 @@ class Board:
         """Removes the session's files and restarts the kiosk; returns whether the board answered, else warns."""
         try:
             result = self.ssh(RESTORE, timeout=30)
-        except (subprocess.TimeoutExpired, OSError) as error:
+        except OSError as error:
             print(f"could not restore the kiosk on {self.target}: {error}; a reboot of the board removes the session's files", file=sys.stderr)
             return False
         if result.returncode != 0:
