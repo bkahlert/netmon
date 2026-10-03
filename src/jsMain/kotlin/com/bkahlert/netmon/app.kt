@@ -22,7 +22,7 @@ fun app(
 ) {
     render(statusSelector) {
         val consoleLogStore = ConsoleLogStore("info" to "Starting...")
-        status(consoleLogStore)
+        status(consoleLogStore, KioskStatsStore().data)
     }
 
     render(networksSelector) {
