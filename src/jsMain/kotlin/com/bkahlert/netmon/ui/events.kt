@@ -30,7 +30,7 @@ fun mqttMessageFlow(
 
     val client = MQTT.connect("ws://$brokerHost:$brokerPort").apply {
         com.bkahlert.kommons.js.console.info("MQTT::Connecting to [%s]...", options.url)
-        onConnect { packet -> com.bkahlert.kommons.js.console.info("MQTT::Connected", packet) }
+        onConnect { com.bkahlert.kommons.js.console.info("MQTT::Connected") }
         onError { com.bkahlert.kommons.js.console.error("MQTT", it) }
         onDisconnect { com.bkahlert.kommons.js.console.warn("MQTT::Disconnection packet received from broker", it) }
         onClose { com.bkahlert.kommons.js.console.warn("MQTT::Disconnected") }
