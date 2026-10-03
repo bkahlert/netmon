@@ -48,6 +48,39 @@ class TestStaleActions:
     def test_does_nothing_for_an_empty_record(self):
         assert preview.stale_actions({}, commands({})) == []
 
+    def test_ends_a_killed_previews_tunnel_and_restores_its_board(self):
+        record = {"owner": 100, "tunnel": 400, "device": "pi@netmon.local"}
+
+        actions = preview.stale_actions(record, commands({400: "ssh -N -o BatchMode=yes pi@netmon.local"}))
+
+        assert actions == [("terminate", 400), ("restore-device", "pi@netmon.local")]
+
+    def test_restores_a_board_whose_tunnel_is_already_gone(self):
+        record = {"owner": 100, "tunnel": 400, "device": "pi@netmon.local"}
+
+        actions = preview.stale_actions(record, commands({}))
+
+        assert actions == [("restore-device", "pi@netmon.local")]
+
+
+@pytest.mark.tier0
+class TestCarryOut:
+    def test_restores_a_board_through_its_board_class(self, monkeypatch):
+        restored = []
+
+        class FakeBoard:
+            def __init__(self, target):
+                self.target = target
+
+            def restore(self):
+                restored.append(self.target)
+
+        monkeypatch.setattr(preview.preview_board, "Board", FakeBoard)
+
+        preview.carry_out([("restore-device", "pi@netmon.local")], command_of=lambda pid: None)
+
+        assert restored == ["pi@netmon.local"]
+
 
 @pytest.mark.tier0
 class TestWaitForInspector:

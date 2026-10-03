@@ -12,6 +12,7 @@ from contextlib import ExitStack
 from pathlib import Path
 from typing import Callable
 
+import preview_board
 import preview_broker
 import preview_dev_server
 import preview_flavors
@@ -30,32 +31,38 @@ class AlreadyRunning(RuntimeError):
     pass
 
 
-def stale_actions(record: dict, command_of: Callable[[int], str | None]) -> list[tuple[str, int | None]]:
+def stale_actions(record: dict, command_of: Callable[[int], str | None]) -> list[tuple[str, int | str | None]]:
     """Returns what a killed preview left behind that must be ended; raises AlreadyRunning if its owner is still alive."""
     owner = record.get("owner")
     if owner and "preview.py" in (command_of(owner) or ""):
         raise AlreadyRunning(f"a preview is already running (process {owner}); end it with Ctrl-C first")
-    actions: list[tuple[str, int | None]] = []
-    qemu, gradle = record.get("qemu"), record.get("gradle")
+    actions: list[tuple[str, int | str | None]] = []
+    qemu, gradle, tunnel = record.get("qemu"), record.get("gradle"), record.get("tunnel")
     if qemu and "qemu-system" in (command_of(qemu) or ""):
         actions.append(("terminate", qemu))
     if gradle and "gradle" in (command_of(gradle) or "").lower():
         actions.append(("terminate-group", gradle))
+    if tunnel and "ssh" in (command_of(tunnel) or ""):
+        actions.append(("terminate", tunnel))
+    if record.get("device"):
+        actions.append(("restore-device", record["device"]))
     if record.get("broker"):
         actions.append(("stop-broker", None))
     return actions
 
 
-def carry_out(actions: list[tuple[str, int | None]], command_of: Callable[[int], str | None] = preview_process.command_of) -> None:
+def carry_out(actions: list[tuple[str, int | str | None]], command_of: Callable[[int], str | None] = preview_process.command_of) -> None:
     ended = []
-    for action, pid in actions:
+    for action, subject in actions:
         try:
             if action == "terminate":
-                os.kill(pid, signal.SIGTERM)
-                ended.append(pid)
+                os.kill(subject, signal.SIGTERM)
+                ended.append(subject)
             elif action == "terminate-group":
-                os.killpg(os.getpgid(pid), signal.SIGTERM)
-                ended.append(pid)
+                os.killpg(os.getpgid(subject), signal.SIGTERM)
+                ended.append(subject)
+            elif action == "restore-device":
+                preview_board.Board(subject).restore()
             elif action == "stop-broker":
                 preview_broker.stop()
         except ProcessLookupError:

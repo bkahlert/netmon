@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Callable, Protocol
 
+import preview_board
 import preview_dev_server
 import preview_device
 import preview_kiosk
@@ -53,9 +54,25 @@ class Vm:
         return None
 
 
+class Device:
+    def show(self, cleanup: ExitStack, settings: Settings, update: Callable[..., None]) -> Shown:
+        board = preview_board.Board(settings.target)
+        board.check_kiosk()
+        update(device=settings.target)
+        cleanup.callback(board.restore)
+        tunnel = board.open_tunnel(settings.broker, DEV_PORT, preview_kiosk.INSPECTOR_PORT)
+        cleanup.callback(board.close_tunnel, tunnel)
+        update(tunnel=tunnel.pid)
+        board.install(settings.broker)
+        return Shown(f"http://localhost:{DEV_PORT}/", f"127.0.0.1:{preview_kiosk.INSPECTOR_PORT}")
+
+    def stats_origin(self, settings: Settings) -> str | None:
+        return preview_board.stats_origin(settings.target)
+
+
 def flavor_for(settings: Settings, session_dir: Path) -> Flavor:
     if settings.flavor == "browser":
         return Browser()
     if settings.flavor == "vm":
         return Vm(session_dir)
-    raise ValueError(f"no flavor {settings.flavor!r} yet")
+    return Device()
