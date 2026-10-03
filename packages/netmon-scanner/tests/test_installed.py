@@ -49,6 +49,15 @@ class TestUnit:
         assert "AmbientCapabilities=cap_net_admin cap_net_raw" in show
         assert "MemoryMax=134217728" in show
 
+    def test_runs_with_the_raw_socket_capabilities_nmap_inherits(self, host):
+        pid = host.check_output("systemctl show -p MainPID --value netmon-scanner.service").strip()
+
+        status = host.file(f"/proc/{pid}/status").content_string
+
+        ambient = int(re.search(r"^CapAmb:\s*([0-9a-f]+)$", status, re.M)[1], 16)
+        assert ambient & CAP_NET_RAW, status
+        assert ambient & CAP_NET_ADMIN, status
+
     def test_starts_with_the_shipped_heap_cap(self, host):
         log = journal_until(host, "max heap: ")
         match = re.search(r"max heap: (?P<bytes>\d+) bytes", log)
@@ -131,3 +140,7 @@ def journal_until(host, needle: str, attempts: int = 45) -> str:
             return log
         time.sleep(2)
     return log
+
+
+CAP_NET_ADMIN = 1 << 12
+CAP_NET_RAW = 1 << 13
