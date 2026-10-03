@@ -49,7 +49,10 @@ class TestUnit:
         assert "AmbientCapabilities=cap_net_admin cap_net_raw" in show
         assert "MemoryMax=134217728" in show
 
-    def test_runs_with_the_raw_socket_capabilities_nmap_inherits(self, host):
+    def test_runs_with_the_raw_socket_capabilities_nmap_inherits(self, host, request):
+        if request.config.getoption("--target") == "podman":
+            pytest.skip("systemd in the container cannot raise ambient capabilities; proven in the VM and on a device")
+
         pid = host.check_output("systemctl show -p MainPID --value netmon-scanner.service").strip()
 
         status = host.file(f"/proc/{pid}/status").content_string
