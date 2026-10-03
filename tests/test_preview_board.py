@@ -1,0 +1,191 @@
+import subprocess
+
+import pytest
+from pihero_testkit import ssh
+
+import preview_board
+import preview_kiosk
+from preview_broker import DEVICE, EXTERNAL, FIXTURE, Broker
+
+pytestmark = pytest.mark.tier0
+TARGET = "pi@netmon.local"
+FIXTURE_BROKER = Broker(FIXTURE, "localhost", 8080)
+DEVICE_BROKER = Broker(DEVICE, "127.0.0.1", 8080)
+SAMPLE_CONF = """\
+URL=http://localhost/?broker.host=localhost&broker.port=8080
+COG_ARGS="--doc-viewer --web-mem-limit=200"
+JSC_useJIT=false
+"""
+
+
+class TestHostOf:
+    @pytest.mark.parametrize("target", ["pi@netmon.local", "pi@netmon.local:2222", "netmon.local"])
+    def test_is_the_host_of_user_host_and_port(self, target):
+        assert preview_board.host_of(target) == "netmon.local"
+
+
+class TestStatsOrigin:
+    def test_is_the_boards_web_server_whatever_the_ssh_port(self):
+        assert preview_board.stats_origin("pi@netmon.local:2222") == "http://netmon.local"
+
+
+class TestOnTheMac:
+    @pytest.mark.parametrize("broker, expected", [
+        (FIXTURE_BROKER, True),
+        (Broker(EXTERNAL, "localhost", 9000), True),
+        (Broker(EXTERNAL, "127.0.0.1", 9000), True),
+        (Broker(EXTERNAL, "::1", 9000), True),
+        (Broker(EXTERNAL, "netmon.local", 9000), False),
+        (DEVICE_BROKER, False),
+    ])
+    def test_is_true_for_the_fixture_and_a_loopback_host_port(self, broker, expected):
+        assert preview_board.on_the_mac(broker) is expected
+
+
+class TestPageUrl:
+    def test_reaches_a_broker_on_the_mac_through_the_reverse_port(self):
+        url = preview_board.page_url(Broker(EXTERNAL, "localhost", 9000))
+
+        assert url == "http://127.0.0.1:18081/?broker.host=127.0.0.1&broker.port=18080"
+
+    def test_reaches_the_boards_own_broker_on_its_loopback(self):
+        assert preview_board.page_url(DEVICE_BROKER) == "http://127.0.0.1:18081/?broker.host=127.0.0.1&broker.port=8080"
+
+    def test_passes_a_remote_broker_unchanged(self):
+        url = preview_board.page_url(Broker(EXTERNAL, "netmon.local", 9000))
+
+        assert url == "http://127.0.0.1:18081/?broker.host=netmon.local&broker.port=9000"
+
+
+class TestForwards:
+    def test_forwards_the_dev_server_the_inspector_and_a_broker_on_the_mac(self):
+        args = preview_board.forwards(Broker(EXTERNAL, "localhost", 9000), 8081, 2999)
+
+        assert args == ["-R", "127.0.0.1:18081:127.0.0.1:8081", "-L", "127.0.0.1:2999:127.0.0.1:2999", "-R", "127.0.0.1:18080:127.0.0.1:9000"]
+
+    @pytest.mark.parametrize("broker", [DEVICE_BROKER, Broker(EXTERNAL, "netmon.local", 9000)])
+    def test_forwards_no_broker_that_is_not_on_the_mac(self, broker):
+        args = preview_board.forwards(broker, 8081, 2999)
+
+        assert args == ["-R", "127.0.0.1:18081:127.0.0.1:8081", "-L", "127.0.0.1:2999:127.0.0.1:2999"]
+
+
+class TestTunnelCommand:
+    def test_holds_the_forwards_open_without_a_command_and_fails_on_a_forward_that_cannot_be_made(self):
+        command = preview_board.tunnel_command("pi@netmon.local:2222", ["-R", "a"])
+
+        assert command == [
+            "ssh", "-N", "-o", "BatchMode=yes", "-o", "ExitOnForwardFailure=yes", "-o", "ConnectTimeout=10",
+            *ssh.KEEPALIVE, "-p", "2222", "-R", "a", "pi@netmon.local",
+        ]
+
+    def test_leaves_the_port_out_without_one(self):
+        command = preview_board.tunnel_command(TARGET, [])
+
+        assert "-p" not in command
+        assert command[-1] == TARGET
+
+
+class TestCheckKiosk:
+    def test_passes_a_board_with_the_kiosk(self):
+        preview_board.Board(TARGET, run=Script({})).check_kiosk()
+
+    def test_names_an_unreachable_board(self):
+        board = preview_board.Board(TARGET, run=Script({"dpkg-query": (255, "", "ssh: connect to host netmon.local port 22: Connection refused")}))
+
+        with pytest.raises(RuntimeError, match="cannot reach pi@netmon.local over ssh: .*Connection refused"):
+            board.check_kiosk()
+
+    def test_names_a_board_without_the_kiosk(self):
+        board = preview_board.Board(TARGET, run=Script({"dpkg-query": (1, "", "no packages found")}))
+
+        with pytest.raises(RuntimeError, match="pi@netmon.local has no pihero-kiosk"):
+            board.check_kiosk()
+
+
+class TestInstall:
+    def test_writes_the_session_conf_and_the_drop_in_in_one_command_and_waits_for_the_page(self):
+        script = Script(replies())
+        board = preview_board.Board(TARGET, run=script)
+
+        board.install(FIXTURE_BROKER, sleep=lambda s: None)
+
+        sent = [(remote, stdin) for remote, stdin in script.calls if stdin]
+        expected = preview_kiosk.session_kiosk_conf(SAMPLE_CONF, "http://127.0.0.1:18081/?broker.host=127.0.0.1&broker.port=18080", 2999)
+        assert [stdin for _, stdin in sent] == [expected]
+        remote = sent[0][0]
+        assert "/run/netmon-preview/kiosk.conf" in remote
+        assert "/run/systemd/system/pihero-kiosk.service.d/preview.conf" in remote
+        assert "EnvironmentFile=/run/netmon-preview/kiosk.conf" in remote
+        assert "daemon-reload" in remote and "restart pihero-kiosk" in remote
+
+    def test_changes_nothing_on_a_kiosk_conf_it_cannot_use(self):
+        script = Script(replies(conf="URL=http://localhost/\n"))
+        board = preview_board.Board(TARGET, run=script)
+
+        with pytest.raises(ValueError, match="kiosk.conf"):
+            board.install(FIXTURE_BROKER, sleep=lambda s: None)
+
+        assert [stdin for _, stdin in script.calls if stdin] == []
+
+    def test_reports_the_command_that_failed(self):
+        board = preview_board.Board(TARGET, run=Script(replies(install=(1, "", "sudo: a password is required"))))
+
+        with pytest.raises(RuntimeError, match="a password is required"):
+            board.install(FIXTURE_BROKER, sleep=lambda s: None)
+
+    def test_gives_up_on_a_page_the_kiosk_never_loads(self):
+        now = iter(range(0, 1000, 10))
+        board = preview_board.Board(TARGET, run=Script(replies(loaded="0\n")))
+
+        with pytest.raises(TimeoutError, match="did not load"):
+            board.install(FIXTURE_BROKER, timeout=30, sleep=lambda s: None, clock=lambda: next(now))
+
+
+class TestRestore:
+    def test_removes_the_session_files_and_restarts_the_kiosk(self):
+        script = Script({})
+
+        restored = preview_board.Board(TARGET, run=script).restore()
+
+        remote = script.calls[0][0]
+        assert restored is True
+        assert "rm -rf /run/netmon-preview /run/systemd/system/pihero-kiosk.service.d/preview.conf" in remote
+        assert "daemon-reload" in remote and "restart pihero-kiosk" in remote
+
+    def test_warns_and_says_a_reboot_helps_on_a_board_that_does_not_answer(self, capsys):
+        restored = preview_board.Board(TARGET, run=Script({"rm -rf": (255, "", "Connection timed out")})).restore()
+
+        assert restored is False
+        assert "a reboot of the board removes the session's files" in capsys.readouterr().err
+
+    def test_warns_on_a_command_that_hangs(self, capsys):
+        def hangs(argv, **kwargs):
+            raise subprocess.TimeoutExpired(argv, 30)
+
+        restored = preview_board.Board(TARGET, run=hangs).restore()
+
+        assert restored is False
+        assert "could not restore the kiosk on pi@netmon.local" in capsys.readouterr().err
+
+
+class Script:
+    def __init__(self, replies):
+        self.replies, self.calls = replies, []
+
+    def __call__(self, argv, input=None, **kwargs):
+        remote = argv[-1]
+        self.calls.append((remote, input))
+        for needle, (code, out, err) in self.replies.items():
+            if needle in remote:
+                return subprocess.CompletedProcess(argv, code, out, err)
+        return subprocess.CompletedProcess(argv, 0, "", "")
+
+
+def replies(conf=SAMPLE_CONF, install=(0, "", ""), loaded="1\n"):
+    return {
+        "cat /etc/pihero/kiosk.conf": (0, conf, ""),
+        "date '+": (0, "2026-10-03 10:00:00\n", ""),
+        "tee /run/netmon-preview/kiosk.conf": install,
+        "grep -c": (0, loaded, ""),
+    }
