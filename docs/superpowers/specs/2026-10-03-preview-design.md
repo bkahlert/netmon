@@ -167,8 +167,9 @@ second `make preview` while one runs fails and names the first.
 ### The fixture
 
 `scans()` and its helpers move from [layout.py](../../../tests/layout.py) to a module that both the layout test and the
-broker command import, so there is one definition. The README's `mqtt pub` examples work against the same broker, so a
-host can be taken down by hand while the animations are watched; they stay.
+broker command import, so there is one definition. The display subscribes to scan events only, and the container
+publishes websockets only, so the README's `mqtt pub` examples for host events do not reach it. A scan published with
+`podman exec … mosquitto_pub` replaces the fixture by hand while the animations are watched; the README shows one.
 
 `main.kt`'s unused `scan()` and the commented-out block that calls it are removed.
 
@@ -176,7 +177,10 @@ host can be taken down by hand while the animations are watched; they stay.
 
 The dev server listens on the Mac's loopback only. It still has to accept the guest's `Host: 10.0.2.2:8081`
 header, which webpack-dev-server rejects by default; the spike set `allowedHosts` to `all`. Whether a narrower value
-works is untested, see Open.
+works is untested, see Open. With `host` set, the dev bundle's live-reload client is built for that host, which is the
+guest's own loopback in the VM and shows as "Trying to reconnect" on the kiosk's screen; `client.webSocketURL` set to
+`auto://0.0.0.0:0/ws` makes the client use the address the page came from. A CSS edit then reaches the kiosk's screen
+after 1.9 s.
 
 ### QEMU from the testkit
 
@@ -229,17 +233,17 @@ had.
 
 ## Open
 
-- Whether the preview's device file can leave out the netmon packages. The kiosk is `pihero-kiosk`, which the sample
-  installs from Pi Hero's own source; whether it installs without the netmon source is unchecked. The fallback is the
-  spike's layer, built from the debs in `dist/`, which needs `make build` and its podman step before a first preview.
-- Whether the container's Mosquitto reaches the guest. The guest reaches a loopback-only HTTP server, which suggests it;
-  a websocket to the published port is untested, as is the board's configuration inside the container.
+- Settled: the preview's device file can leave out the netmon packages, but it must name `pihero-kiosk`. The sample gets
+  the kiosk only as a dependency of `netmon-display`; without that, no `pihero-kiosk` unit exists and nothing shows.
+  The debs from `dist/` are not needed.
+- Settled: the container's Mosquitto reaches the guest. The kiosk shows the fixture from the broker at `10.0.2.2:8080`,
+  and a websocket handshake to the published port answers `101` with the board's configuration.
 - Whether `allowedHosts` can be narrower than `all`.
 - Whether an open inspector survives the page's reloads and a kiosk restart. The target ids in the inspector's URL
   (`/socket/1/1/WebPage` in the spike, with one page) may change when the kiosk restarts; a dead tab then needs a reload of
   the list. The preview does not reopen it.
 - The cost of the dev bundle in a no-JIT WPE. Not measured; the spike's CPU probe read the wrong process.
-- The Kotlin edit time, 1.9 to 9.5 s, is unexplained.
+- The Kotlin edit time, 1.9 to 9.5 s, is unexplained and was not measured again.
 - The VM runs at the Mac's speed. It shows what the panel draws, not how loaded the Pi Zero 2 W is.
 - Whether anyone uses `make display` by hand. The repo shows no caller; the spec removes it.
 - A first `make preview` on a machine without the cached base image also downloads it; not measured.
