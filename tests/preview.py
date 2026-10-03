@@ -42,7 +42,7 @@ def stale_actions(record: dict, command_of: Callable[[int], str | None]) -> list
         actions.append(("terminate", qemu))
     if gradle and "gradle" in (command_of(gradle) or "").lower():
         actions.append(("terminate-group", gradle))
-    if tunnel and "ssh" in (command_of(tunnel) or ""):
+    if tunnel and "ssh -N" in (command_of(tunnel) or ""):
         actions.append(("terminate", tunnel))
     if record.get("device"):
         actions.append(("restore-device", record["device"]))

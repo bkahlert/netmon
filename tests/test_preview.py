@@ -81,6 +81,14 @@ class TestStaleActions:
 
         assert actions == [("terminate", 400), ("restore-device", "pi@netmon.local")]
 
+    @pytest.mark.parametrize("command", ["/usr/bin/ssh-agent -l", "sshd: pi@notty", "ssh pi@netmon.local"])
+    def test_spares_a_process_that_reused_the_tunnels_pid(self, command):
+        record = {"owner": 100, "tunnel": 400}
+
+        actions = preview.stale_actions(record, commands({400: command}))
+
+        assert actions == []
+
     def test_restores_a_board_whose_tunnel_is_already_gone(self):
         record = {"owner": 100, "tunnel": 400, "device": "pi@netmon.local"}
 
