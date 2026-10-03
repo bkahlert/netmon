@@ -13,6 +13,7 @@ import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.types.shouldBeInstanceOf
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
+import org.junit.jupiter.api.Assumptions.assumeTrue
 import java.nio.file.Path
 import java.nio.file.attribute.PosixFilePermissions
 import kotlin.io.path.createFile
@@ -46,6 +47,7 @@ class NmapNetworkScannerTest {
         val dataDir = createTempDirectory("nmap-data").also {
             NmapMacPrefixesProvisioner(FileCache.of("netmon-test")).provisionIn(it)
         }
+        assumeTrue(System.getProperty("user.name") == "root", "nmap reads MAC addresses, and so vendors, only with raw socket privileges")
         val scanner = NmapNetworkScanner(dataDir = dataDir)
         scanner.scan(cidr).forAtLeastOne {
             it.vendor.shouldNotBeNull()
