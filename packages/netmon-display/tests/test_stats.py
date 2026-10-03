@@ -16,11 +16,13 @@ class TestSample:
     def test_reports_the_kiosks_cpu_the_web_processs_cpu_and_the_memory(self, tmp_path):
         root = kiosk_root(tmp_path, usec=1_000_000, ticks=500, pid=42, ram=160_000_000, swap=8_820_736)
 
-        sample = sample_once(root, tmp_path / "stats.json", lambda: write_counters(root, usec=2_180_000, ticks=500 + int(1.14 * CLK_TCK), pid=42))
+        sample = sample_once(
+            root, tmp_path / "stats.json", lambda: write_counters(root, usec=2_180_000, ticks=500 + 114 * CLK_TCK // 100, pid=42, uptime="1001.00")
+        )
 
         assert sample["interval"] == 1
-        assert abs(sample["kioskCpu"] - 118) <= 6
-        assert abs(sample["webCpu"] - 114) <= 6
+        assert sample["kioskCpu"] == 118
+        assert sample["webCpu"] == 114
         assert sample["kioskMemory"] == 168_820_736
         assert abs(sample["at"] - time.time()) < 5
 
@@ -28,6 +30,7 @@ class TestSample:
         root = tmp_path / "root"
         (root / "proc").mkdir(parents=True)
         (root / "proc" / "stat").write_text("cpu  1 2 3 4\ncpu0 1 2 3 4\n")
+        (root / "proc" / "uptime").write_text("1000.00 4000.00\n")
 
         sample = sample_once(root, tmp_path / "stats.json")
 
@@ -36,10 +39,32 @@ class TestSample:
     def test_a_replaced_web_process_has_no_cpu_figure_for_that_sample(self, tmp_path):
         root = kiosk_root(tmp_path, usec=0, ticks=500, pid=42, ram=1, swap=0)
 
-        sample = sample_once(root, tmp_path / "stats.json", lambda: write_counters(root, usec=100_000, ticks=10, pid=43))
+        sample = sample_once(root, tmp_path / "stats.json", lambda: write_counters(root, usec=100_000, ticks=10, pid=43, uptime="1001.00"))
 
         assert sample["webCpu"] is None
         assert sample["kioskCpu"] is not None
+
+    def test_a_restarted_kiosk_has_no_cpu_figure_for_that_sample(self, tmp_path):
+        root = kiosk_root(tmp_path, usec=5_000_000, ticks=500, pid=42, ram=1, swap=0)
+
+        sample = sample_once(root, tmp_path / "stats.json", lambda: write_counters(root, usec=20_000, ticks=400, pid=42, uptime="1001.00"))
+
+        assert sample["kioskCpu"] is None
+        assert sample["webCpu"] is None
+        assert sample["kioskMemory"] == 1
+
+    def test_samples_the_same_under_a_decimal_comma_locale(self, tmp_path):
+        root = kiosk_root(tmp_path, usec=1_000_000, ticks=500, pid=42, ram=1, swap=0)
+
+        sample = sample_once(
+            root,
+            tmp_path / "stats.json",
+            lambda: write_counters(root, usec=2_180_000, ticks=500 + 114 * CLK_TCK // 100, pid=42, uptime="1001.00"),
+            env={"LC_ALL": "de_DE.UTF-8"},
+        )
+
+        assert sample["kioskCpu"] == 118
+        assert sample["webCpu"] == 114
 
 
 class TestUsage:
@@ -56,8 +81,8 @@ class TestUsage:
         assert "--help" in result.stderr
 
 
-def sample_once(root: Path, out: Path, advance: Callable[[], None] | None = None) -> dict:
-    process = subprocess.Popen([str(SCRIPT), "--root", str(root), "--out", str(out), "--interval", "1", "--once"])
+def sample_once(root: Path, out: Path, advance: Callable[[], None] | None = None, env: dict[str, str] | None = None) -> dict:
+    process = subprocess.Popen([str(SCRIPT), "--root", str(root), "--out", str(out), "--interval", "1", "--once"], env={**os.environ, **(env or {})})
     if advance is not None:
         time.sleep(0.4)
         advance()
@@ -77,8 +102,9 @@ def kiosk_root(tmp_path: Path, usec: int, ticks: int, pid: int, ram: int, swap: 
     return root
 
 
-def write_counters(root: Path, usec: int, ticks: int, pid: int) -> None:
+def write_counters(root: Path, usec: int, ticks: int, pid: int, uptime: str = "1000.00") -> None:
     cgroup = root / "sys/fs/cgroup/system.slice/pihero-kiosk.service"
+    (root / "proc" / "uptime").write_text(f"{uptime} 4000.00\n")
     (cgroup / "cpu.stat").write_text(f"usage_usec {usec}\nuser_usec {usec}\nsystem_usec 0\n")
     (cgroup / "cgroup.procs").write_text(f"1\n{pid}\n")
     proc = root / "proc" / str(pid)
