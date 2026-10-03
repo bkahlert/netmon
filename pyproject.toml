@@ -8,7 +8,7 @@ requires-python = ">=3.13"
 package = false
 
 [tool.uv.sources]
-pihero-testkit = { git = "https://github.com/bkahlert/pihero", subdirectory = "testkit", tag = "v2.6.1" }
+pihero-testkit = { git = "https://github.com/bkahlert/pihero", subdirectory = "testkit", tag = "v2.7.0" }
 
 [dependency-groups]
 dev = [
