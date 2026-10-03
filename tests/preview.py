@@ -139,9 +139,8 @@ def run(settings: Settings) -> int:
             update(broker=True)
         print(f"dev server: Gradle on port {DEV_PORT}, log in {preview_dev_server.LOG}", file=sys.stderr, flush=True)
         server = preview_dev_server.ensure()
-        if server:
-            cleanup.callback(preview_dev_server.stop, server)
-            update(gradle=server.pid)
+        cleanup.callback(preview_dev_server.stop, server)
+        update(gradle=server.pid)
         layer = preview_device.ensure_layer()
         session = preview_session.Session(layer, SESSION_DIR)
         cleanup.callback(session.stop)

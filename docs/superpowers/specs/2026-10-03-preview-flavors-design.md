@@ -136,7 +136,8 @@ table, and says that only one runs at a time.
 
 - Whether the board's `sshd` allows remote forwards (`AllowTcpForwarding`). The default does; the sample device file
   does not change it.
-- Whether the webpack dev server's proxy sees the environment variable through Gradle's webpack task. Untested.
+- Settled: Gradle's webpack task sees `NETMON_STATS_PROXY`. Against a stand-in on 127.0.0.1:8099, the dev server answered
+  `/stats.json` with the stand-in's file. Without a reachable target the proxy answers 504, not 404.
 - The dev bundle costs more CPU and memory than the production one, and the kiosk unit has `MemoryMax=300M`. The device
   flavor shows a relative figure; absolute numbers still need `make deploy`.
 - The reverse tunnel adds the board's `sshd` to the CPU the board spends. It does not count in the kiosk's cgroup.
