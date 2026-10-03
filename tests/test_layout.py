@@ -39,6 +39,12 @@ class TestLayout:
         assert layout.outside(found["hosts"], found["scans"]) == []
         assert layout.overlapping(found["hosts"]) == []
 
+    def test_a_slow_page_is_measured_once_it_has_rendered(self, browser, page_server):
+        found = open_page(browser, page_server, PANEL, sources=3, counts=(14, 39), slowdown=1)
+
+        assert layout.outside(found["hosts"], found["scans"]) == []
+        assert layout.overlapping(found["hosts"]) == []
+
     def test_the_utility_classes_of_the_kotlin_code_are_styled(self, browser, page_server):
         found = open_page(browser, page_server, PANEL, sources=1, counts=(3, 0))
 
@@ -96,22 +102,16 @@ def browser():
         engine.close()
 
 
-def open_page(browser, page_server, size, sources, counts):
+def open_page(browser, page_server, size, sources, counts, slowdown=0):
     page = browser.new_page(viewport={"width": size[0], "height": size[1]})
     try:
-        page.route_web_socket("ws://127.0.0.1:1/", layout.broker(scan_fixtures.scans(sources, *counts)))
+        if slowdown:
+            page.add_init_script(layout.slowed(slowdown))
+        scans = scan_fixtures.scans(sources, *counts)
+        page.route_web_socket("ws://127.0.0.1:1/", layout.broker(scans))
         page.goto(page_server.url)
-        page.wait_for_function(f"document.querySelectorAll('.host').length >= {sources * sum(counts)}", timeout=20_000)
-        return settled(page)
+        expected = {"hosts": sources * sum(counts), "models": sum("model" in host for scan in scans.values() for host in scan["hosts"])}
+        page.wait_for_function(layout.RENDERED, arg=expected, timeout=20_000)
+        return page.evaluate(layout.GEOMETRY)
     finally:
         page.close()
-
-
-def settled(page):
-    previous, found = None, page.evaluate(layout.GEOMETRY)
-    for _ in range(50):
-        if found == previous:
-            return found
-        page.wait_for_timeout(100)
-        previous, found = found, page.evaluate(layout.GEOMETRY)
-    raise AssertionError("the page's layout did not settle within five seconds")
