@@ -38,8 +38,8 @@ cgroup="${root%/}/sys/fs/cgroup/system.slice/pihero-kiosk.service"
 proc="${root%/}/proc"
 tick=$(getconf CLK_TCK)
 
-# Microseconds since the epoch.
-now_usec() { local t=$EPOCHREALTIME; echo "${t%.*}${t#*.}"; }
+# Uptime in centiseconds: a monotonic clock that no time sync steps and no locale formats.
+uptime_csec() { local up rest; read -r up rest < "$proc/uptime"; echo "${up/./}"; }
 
 # The kiosk cgroup's CPU time in microseconds, empty without the cgroup.
 kiosk_usec() { awk '/^usage_usec/ {print $2}' "$cgroup/cpu.stat" 2>/dev/null || true; }
@@ -73,17 +73,21 @@ web_ticks() {
 
 json() { printf '{"at":%s,"interval":%s,"kioskCpu":%s,"webCpu":%s,"kioskMemory":%s}\n' "$1" "$interval" "${2:-null}" "${3:-null}" "${4:-null}"; }
 
-prev_time=$(now_usec); prev_usec=$(kiosk_usec); prev_pid=$(web_pid); prev_ticks=$(web_ticks "$prev_pid")
+prev_up=$(uptime_csec); prev_usec=$(kiosk_usec); prev_pid=$(web_pid); prev_ticks=$(web_ticks "$prev_pid")
 while :; do
   sleep "$interval"
-  time=$(now_usec); usec=$(kiosk_usec); pid=$(web_pid); ticks=$(web_ticks "$pid")
-  elapsed=$(( time - prev_time ))
+  up=$(uptime_csec); usec=$(kiosk_usec); pid=$(web_pid); ticks=$(web_ticks "$pid")
+  elapsed=$(( (up - prev_up) * 10000 ))
   kiosk_cpu=""; web_cpu=""
-  if [[ -n $usec && -n $prev_usec ]]; then kiosk_cpu=$(( (usec - prev_usec) * 100 / elapsed )); fi
-  if [[ -n $pid && $pid == "$prev_pid" && -n $ticks && -n $prev_ticks ]]; then
-    web_cpu=$(( (ticks - prev_ticks) * 100 * 1000000 / (tick * elapsed) ))
+  # A counter below its last value belongs to a new cgroup or process, so that sample has no figure.
+  if (( elapsed > 0 )); then
+    if [[ -n $usec && -n $prev_usec ]] && (( usec >= prev_usec )); then kiosk_cpu=$(( (usec - prev_usec) * 100 / elapsed )); fi
+    if [[ -n $pid && $pid == "$prev_pid" && -n $ticks && -n $prev_ticks ]] && (( ticks >= prev_ticks )); then
+      web_cpu=$(( (ticks - prev_ticks) * 100 * 1000000 / (tick * elapsed) ))
+    fi
   fi
-  json "$(( time / 1000000 ))" "$kiosk_cpu" "$web_cpu" "$(kiosk_memory)" > "$out.tmp" && mv -f "$out.tmp" "$out"
-  prev_time=$time; prev_usec=$usec; prev_pid=$pid; prev_ticks=$ticks
+  printf -v at '%(%s)T' -1
+  json "$at" "$kiosk_cpu" "$web_cpu" "$(kiosk_memory)" > "$out.tmp" && mv -f "$out.tmp" "$out"
+  prev_up=$up; prev_usec=$usec; prev_pid=$pid; prev_ticks=$ticks
   if $once; then exit 0; fi
 done
