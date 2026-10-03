@@ -82,6 +82,13 @@ write_files:
     content: |
       PRODUCT="Network Monitor"
       CIDR=10.10.10.10/29
+  # Raspberry Pi OS Lite keeps the journal in RAM, so a board that hangs or loses power takes its last log lines with it.
+  # Storage=persistent writes it to /var/log/journal, capped so it stays a small share of the card.
+  - path: /etc/systemd/journald.conf.d/persistent.conf
+    content: |
+      [Journal]
+      Storage=persistent
+      SystemMaxUse=64M
   # The kiosk shows the web display; the page takes the broker from the URL. The mode hint is for a panel without EDID.
   # COG_ARGS: the document-viewer cache model; WebKit's memory limit, above half of which the web process drops its
   # caches and JavaScript code and collects garbage on every ten-second check; a relaunch if the web process dies. No
@@ -97,6 +104,7 @@ write_files:
       WEBKIT_SKIA_CPU_PAINTING_THREADS=1
 runcmd:
   - hostnamectl set-hostname --pretty "Network Monitor"
+  - systemctl restart systemd-journald.service
   - systemctl restart pihero-avahi-render.service
   # A panel without EDID (the HAMTYSAN 7-inch) needs its mode forced on; MemoryMax= binds only with the memory controller on.
   - /usr/lib/pihero/bootconfig add cmdline video=HDMI-A-1:800x480M@60e --package netmon-display

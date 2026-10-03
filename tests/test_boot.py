@@ -27,6 +27,11 @@ class TestProvisioning:
 
         assert failed == ""
 
+    def test_the_journal_is_configured_to_stay_on_disk(self, host):
+        config = host.check_output("systemd-analyze cat-config systemd/journald.conf")
+
+        assert "Storage=persistent" in config.splitlines()
+
     def test_the_bootconfig_lines_reached_the_kernel(self, host):
         cmdline = host.file("/proc/cmdline").content_string.split()
 
