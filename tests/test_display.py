@@ -1,3 +1,4 @@
+import re
 from pathlib import Path
 
 import pytest
@@ -27,6 +28,14 @@ class TestDisplay:
 
         assert shown.count() == 1
         assert screenshot.stat().st_size > 0
+
+    def test_shows_the_kiosks_load_in_the_status_bar(self, page, tunnel):
+        page.goto(f"http://127.0.0.1:{tunnel.http}/?broker.host=127.0.0.1&broker.port={tunnel.ws}")
+
+        pill = page.locator(".status span", has_text=re.compile(r"^web \d+ %$"))
+
+        pill.first.wait_for(timeout=20_000)
+        assert page.locator(".status span", has_text=re.compile(r"^kiosk \d+ MB$")).count() == 1
 
 
 @pytest.fixture(scope="module")
