@@ -1,0 +1,21 @@
+[Unit]
+Description=Netmon: samples the kiosk's CPU and memory for the panel's status bar
+Documentation=https://github.com/bkahlert/netmon
+After=pihero-kiosk.service
+
+[Service]
+User=www-data
+Group=www-data
+RuntimeDirectory=netmon-display
+ExecStart=/usr/lib/netmon/netmon-display-stats
+Restart=always
+RestartSec=10
+Nice=10
+MemoryMax=16M
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+
+[Install]
+WantedBy=multi-user.target
