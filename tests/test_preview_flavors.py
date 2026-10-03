@@ -100,6 +100,19 @@ class TestDevice:
 
         assert calls == ["check_kiosk", "session_conf", "open_tunnel"]
 
+    def test_lets_the_session_watch_the_tunnel(self, monkeypatch):
+        calls = []
+        board = install_board(monkeypatch, calls)
+        settings = Settings.from_environ("device", {"TARGET": "pi@netmon.local"})
+
+        with ExitStack() as cleanup:
+            shown = preview_flavors.Device().show(cleanup, settings, lambda **fields: None)
+            alive = shown.watch()
+            board["problem"] = "the ssh tunnel to pi@netmon.local ended: Timeout"
+            ended = shown.watch()
+
+        assert (alive, ended) == (None, "the ssh tunnel to pi@netmon.local ended: Timeout")
+
     def test_names_the_boards_web_server_for_the_stats(self):
         settings = Settings.from_environ("device", {"TARGET": "pi@netmon.local:2222"})
 
@@ -112,6 +125,8 @@ class TestDevice:
 
 
 def install_board(monkeypatch, calls, install_error=None, check_error=None, conf_error=None, tunnel_error=None):
+    state = {"problem": None}
+
     class FakeBoard:
         def __init__(self, target):
             self.target = target
@@ -144,7 +159,11 @@ def install_board(monkeypatch, calls, install_error=None, check_error=None, conf
         def restore(self):
             calls.append("restore")
 
+        def tunnel_problem(self, tunnel):
+            return state["problem"]
+
     monkeypatch.setattr(preview_flavors.preview_board, "Board", FakeBoard)
+    return state
 
 
 def fail_on_update(**fields):

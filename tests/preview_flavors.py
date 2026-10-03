@@ -1,6 +1,6 @@
 """The places a preview shows the page: a browser tab, the kiosk in a VM window and, below, the kiosk of a real board."""
 from contextlib import ExitStack
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Callable, Protocol
 
@@ -16,10 +16,11 @@ DEV_PORT = preview_dev_server.PORT
 
 @dataclass(frozen=True)
 class Shown:
-    """What a flavor put up: the page's URL as the Mac's browser loads it, and the kiosk's Web Inspector address, None where the page's own tools inspect it."""
+    """What a flavor put up: the page's URL as the Mac's browser loads it, the kiosk's Web Inspector address (None where the page's own tools inspect it) and a check the session asks while it runs."""
 
     page: str
     inspector: str | None = None
+    watch: Callable[[], str | None] | None = field(default=None, compare=False)
 
 
 class Flavor(Protocol):
@@ -65,7 +66,7 @@ class Device:
         cleanup.callback(board.restore)
         update(device=settings.target)
         board.install(conf, tunnel)
-        return Shown(f"http://localhost:{DEV_PORT}/", f"127.0.0.1:{preview_kiosk.INSPECTOR_PORT}")
+        return Shown(f"http://localhost:{DEV_PORT}/", f"127.0.0.1:{preview_kiosk.INSPECTOR_PORT}", lambda: board.tunnel_problem(tunnel))
 
     def stats_origin(self, settings: Settings) -> str | None:
         return preview_board.stats_origin(settings.target)

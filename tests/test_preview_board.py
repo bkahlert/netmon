@@ -76,7 +76,7 @@ class TestTunnelCommand:
         command = preview_board.tunnel_command("pi@netmon.local:2222", ["-R", "a"])
 
         assert command == [
-            "ssh", "-N", "-o", "BatchMode=yes", "-o", "ExitOnForwardFailure=yes", "-o", "ConnectTimeout=10",
+            "ssh", "-N", "-4", "-o", "BatchMode=yes", "-o", "ExitOnForwardFailure=yes", "-o", "ConnectTimeout=10",
             *ssh.KEEPALIVE, "-p", "2222", "-R", "a", "pi@netmon.local",
         ]
 
@@ -164,13 +164,61 @@ class TestInstall:
             board.install("URL=x\n", SimpleNamespace(poll=lambda: 255), sleep=lambda s: None)
 
 
+class TestTunnelProblem:
+    def test_is_none_while_the_tunnel_runs(self):
+        board = preview_board.Board(TARGET)
+
+        assert board.tunnel_problem(SimpleNamespace(poll=lambda: None)) is None
+
+    def test_names_why_an_ended_tunnel_ended(self, tmp_path):
+        log = tmp_path / "tunnel.log"
+        log.write_text("Timeout, server netmon.local not responding.\n")
+        board = preview_board.Board(TARGET, tunnel_log=log)
+
+        problem = board.tunnel_problem(SimpleNamespace(poll=lambda: 255))
+
+        assert problem == "the ssh tunnel to pi@netmon.local ended: Timeout, server netmon.local not responding."
+
+
+class TestTunnelEnded:
+    def test_skips_the_per_connection_noise_for_the_reason(self, tmp_path):
+        log = tmp_path / "tunnel.log"
+        log.write_text("Timeout, server netmon.local not responding.\nchannel 3: open failed: connect failed: Connection refused\n")
+        board = preview_board.Board(TARGET, tunnel_log=log)
+
+        problem = board.tunnel_problem(SimpleNamespace(poll=lambda: 255))
+
+        assert problem == "the ssh tunnel to pi@netmon.local ended: Timeout, server netmon.local not responding."
+
+    def test_gives_the_exit_status_when_ssh_said_nothing_but_noise(self, tmp_path):
+        log = tmp_path / "tunnel.log"
+        log.write_text("channel 2: open failed: connect failed: Connection refused\n")
+        board = preview_board.Board(TARGET, tunnel_log=log)
+
+        problem = board.tunnel_problem(SimpleNamespace(poll=lambda: -15))
+
+        assert problem == f"the ssh tunnel to pi@netmon.local ended with status -15 and no message; see {log}"
+
+
 class TestOpenTunnel:
+    def test_ends_the_board_side_of_a_dead_tunnel_before_it_asks_for_the_same_ports_again(self, monkeypatch, tmp_path):
+        script = Script({})
+        launched = fake_ssh(monkeypatch, status=None, message="", script=script)
+        monkeypatch.setattr(preview_board.preview_process, "answers", lambda host, port: True)
+
+        preview_board.Board(TARGET, run=script, tunnel_log=tmp_path / "tunnel.log").open_tunnel(FIXTURE_BROKER, 8081, 2999)
+
+        remote = launched["calls_before_launch"][0][0]
+        assert "127\\.0\\.0\\.1:(18081|18080) " in remote
+        assert "grep sshd" in remote and "xargs -r sudo kill" in remote
+
+
     def test_sends_the_tunnels_messages_to_a_file_instead_of_a_pipe_nobody_reads(self, monkeypatch, tmp_path):
         log = tmp_path / "tunnel.log"
         launched = fake_ssh(monkeypatch, status=None, message="connect_to 127.0.0.1 port 8080: failed.\n")
         monkeypatch.setattr(preview_board.preview_process, "answers", lambda host, port: True)
 
-        preview_board.Board(TARGET, tunnel_log=log).open_tunnel(FIXTURE_BROKER, 8081, 2999)
+        preview_board.Board(TARGET, run=Script({}), tunnel_log=log).open_tunnel(FIXTURE_BROKER, 8081, 2999)
 
         assert launched["stderr"] is not subprocess.PIPE
         assert log.read_text() == "connect_to 127.0.0.1 port 8080: failed.\n"
@@ -180,7 +228,7 @@ class TestOpenTunnel:
         fake_ssh(monkeypatch, status=255, message="pi@netmon.local: Permission denied (publickey).\n")
 
         with pytest.raises(RuntimeError, match=r"the ssh tunnel to pi@netmon.local ended: pi@netmon.local: Permission denied \(publickey\)."):
-            preview_board.Board(TARGET, tunnel_log=log).open_tunnel(FIXTURE_BROKER, 8081, 2999)
+            preview_board.Board(TARGET, run=Script({}), tunnel_log=log).open_tunnel(FIXTURE_BROKER, 8081, 2999)
 
 
 class TestRestore:
@@ -213,10 +261,11 @@ class TestRestore:
 ALIVE = SimpleNamespace(poll=lambda: None)
 
 
-def fake_ssh(monkeypatch, status, message):
+def fake_ssh(monkeypatch, status, message, script=None):
     launched = {}
 
     def popen(argv, **kwargs):
+        launched["calls_before_launch"] = list(script.calls) if script else []
         kwargs["stderr"].write(message)
         kwargs["stderr"].flush()
         launched.update(kwargs)

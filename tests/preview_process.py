@@ -2,6 +2,8 @@
 import signal
 import socket
 import subprocess
+import time
+from typing import Callable
 
 
 def answers(host: str, port: int, timeout: float = 1.0) -> bool:
@@ -28,8 +30,15 @@ def raise_on_sigterm() -> None:
     signal.signal(signal.SIGTERM, interrupt)
 
 
-def until_interrupted() -> None:
+def until_interrupted(watch: Callable[[], str | None] | None = None, interval: float = 1.0, sleep=time.sleep) -> None:
+    """Waits for Ctrl-C; with a `watch`, asks it every `interval` seconds and raises RuntimeError with the problem it reports."""
     try:
-        signal.pause()
+        if watch is None:
+            signal.pause()
+        while True:
+            problem = watch()
+            if problem:
+                raise RuntimeError(problem)
+            sleep(interval)
     except KeyboardInterrupt:
         pass

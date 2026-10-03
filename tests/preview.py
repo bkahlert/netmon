@@ -138,7 +138,7 @@ def run(settings: preview_settings.Settings, flavor: preview_flavors.Flavor) -> 
         inspector = f"\n  inspector  http://{shown.inspector}/" if shown.inspector else ""
         ready = f"preview ready ({settings.flavor})\n  page       {shown.page}\n  broker     {settings.broker.describe()}{inspector}"
         print(f"{ready}\nCtrl-C ends it.", file=sys.stderr, flush=True)
-        preview_process.until_interrupted()
+        preview_process.until_interrupted(shown.watch)
     return 0
 
 

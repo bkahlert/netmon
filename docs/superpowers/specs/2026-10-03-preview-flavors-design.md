@@ -93,6 +93,15 @@ tunnel for long. While the tunnel is down the kiosk waits for its URL instead of
 the status bar shows the board's real sampler. `webpack.config.d/dev-server.js` reads the address from an environment
 variable the session sets for Gradle; without it nothing is proxied.
 
+**The tunnel is watched.** The session asks every second whether `ssh -N` still runs. When it ends, the session prints
+the tunnel's last message from `dist/preview/tunnel.log` (or its exit status) and ends like Ctrl-C, so the board is
+restored instead of left on a dead URL. The tunnel uses IPv4 (`-4`): a tunnel over the Mac's IPv6 path died when that
+path dropped, and `ssh -v` then showed `Network is unreachable` for the IPv6 address while IPv4 worked.
+
+**Dead tunnels leave the board's ports taken.** The board's `sshd` keeps `18081` and `18080` until it notices that the
+Mac is gone, which a broken path never tells it. Before it opens a tunnel, the session ends every `sshd` process that
+listens on those two ports. Two Macs cannot preview on the same board at once.
+
 **Recovery.** The record gains the board's `TARGET` and the tunnel's process id. After a killed session, the next start
 ends the tunnel, and removes the drop-in and restarts the kiosk if the board answers over ssh. If it does not, the
 reboot is the fallback and the message says so.

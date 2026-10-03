@@ -47,3 +47,17 @@ class TestCommandOf:
             child.wait()
 
         assert command is None
+
+
+class TestUntilInterrupted:
+    def test_ends_with_the_problem_the_watch_reports(self):
+        reports = iter([None, None, "the ssh tunnel to pi@netmon.local ended: Timeout"])
+
+        with pytest.raises(RuntimeError, match="the ssh tunnel to pi@netmon.local ended: Timeout"):
+            preview_process.until_interrupted(lambda: next(reports), sleep=lambda s: None)
+
+    def test_ends_quietly_on_ctrl_c_while_it_waits(self):
+        def interrupted(seconds):
+            raise KeyboardInterrupt
+
+        preview_process.until_interrupted(lambda: None, sleep=interrupted)

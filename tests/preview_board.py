@@ -1,4 +1,5 @@
 """The preview's real board: the page's address on it, the ssh tunnel to the Mac, and the session files the kiosk reads from /run."""
+import re
 import subprocess
 import sys
 import time
@@ -10,6 +11,7 @@ import preview_broker
 import preview_kiosk
 import preview_process
 
+CHANNEL_NOISE = re.compile(r"channel \d+: open failed")
 TUNNEL_LOG = Path(__file__).resolve().parents[1] / "dist" / "preview" / "tunnel.log"
 DEV_REMOTE_PORT = 18081
 BROKER_REMOTE_PORT = 18080
@@ -21,6 +23,10 @@ INSTALL = (
     f"sudo install -d {RUN_DIR} {DROPIN_DIR} && sudo tee {CONF} >/dev/null && "
     f"printf '[Service]\\nEnvironmentFile={CONF}\\n' | sudo tee {DROPIN} >/dev/null && "
     "sudo systemctl daemon-reload && sudo systemctl restart pihero-kiosk"
+)
+END_STALE_FORWARDS = (
+    f"sudo ss -ltnpH | grep -E '127\\.0\\.0\\.1:({DEV_REMOTE_PORT}|{BROKER_REMOTE_PORT}) ' | grep sshd | "
+    "grep -o 'pid=[0-9]*' | cut -d= -f2 | sort -u | xargs -r sudo kill"
 )
 RESTORE = (
     f"sudo rm -rf {RUN_DIR} {DROPIN}; sudo rmdir --ignore-fail-on-non-empty {DROPIN_DIR} 2>/dev/null; "
@@ -57,7 +63,7 @@ def forwards(broker: preview_broker.Broker, dev_port: int, inspector_port: int) 
 def tunnel_command(target: str, forward_args: list[str]) -> list[str]:
     user_host, _, port = target.partition(":")
     return [
-        "ssh", "-N", "-o", "BatchMode=yes", "-o", "ExitOnForwardFailure=yes", "-o", "ConnectTimeout=10",
+        "ssh", "-N", "-4", "-o", "BatchMode=yes", "-o", "ExitOnForwardFailure=yes", "-o", "ConnectTimeout=10",
         *ssh.KEEPALIVE, *(["-p", port] if port else []), *forward_args, user_host,
     ]
 
@@ -95,7 +101,7 @@ class Board:
         deadline = clock() + timeout
         while clock() < deadline:
             if tunnel.poll() is not None:
-                raise RuntimeError(self.tunnel_ended())
+                raise RuntimeError(self.tunnel_ended(tunnel))
             loaded = self.ssh(f"sudo journalctl -u pihero-kiosk --since '{since}' --no-pager | grep -c 'Loaded successfully'").stdout.strip()
             if loaded not in ("", "0"):
                 return
@@ -114,22 +120,31 @@ class Board:
         return result.returncode == 0
 
     def open_tunnel(self, broker: preview_broker.Broker, dev_port: int, inspector_port: int) -> subprocess.Popen:
+        """Opens the tunnel after ending the board's side of a dead one, which keeps the reverse ports until sshd notices; raises RuntimeError when it ends early."""
+        self.ssh(END_STALE_FORWARDS, timeout=30)
         self.tunnel_log.parent.mkdir(parents=True, exist_ok=True)
         with self.tunnel_log.open("w") as log:
             tunnel = subprocess.Popen(tunnel_command(self.target, forwards(broker, dev_port, inspector_port)), stdout=subprocess.DEVNULL, stderr=log, text=True)
         deadline = time.monotonic() + 15
         while time.monotonic() < deadline:
             if tunnel.poll() is not None:
-                raise RuntimeError(self.tunnel_ended())
+                raise RuntimeError(self.tunnel_ended(tunnel))
             if preview_process.answers("127.0.0.1", inspector_port):
                 return tunnel
             time.sleep(0.25)
         self.close_tunnel(tunnel)
         raise TimeoutError(f"the ssh tunnel to {self.target} did not come up within 15 s; see {self.tunnel_log}")
 
-    def tunnel_ended(self) -> str:
+    def tunnel_problem(self, tunnel: subprocess.Popen) -> str | None:
+        """Returns why the tunnel ended, or None while it runs."""
+        return self.tunnel_ended(tunnel) if tunnel.poll() is not None else None
+
+    def tunnel_ended(self, tunnel: subprocess.Popen) -> str:
         lines = self.tunnel_log.read_text(errors="replace").strip().splitlines() if self.tunnel_log.exists() else []
-        return f"the ssh tunnel to {self.target} ended: {lines[-1] if lines else 'no message, see ' + str(self.tunnel_log)}"
+        reasons = [line for line in lines if not CHANNEL_NOISE.match(line)]
+        if reasons:
+            return f"the ssh tunnel to {self.target} ended: {reasons[-1]}"
+        return f"the ssh tunnel to {self.target} ended with status {tunnel.poll()} and no message; see {self.tunnel_log}"
 
     def close_tunnel(self, tunnel: subprocess.Popen) -> None:
         if tunnel.poll() is None:
