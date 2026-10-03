@@ -66,7 +66,7 @@ class TestLayout:
 
 @pytest.fixture(scope="module")
 def page_server():
-    if not (DIST / "netmon.js").exists():
+    if not list(DIST.glob("netmon.*.js")):
         pytest.fail(f"{DIST} has no page; run `./gradlew jsBrowserDistribution` (make test-layout does)")
     server = layout.Page(DIST)
     yield server
