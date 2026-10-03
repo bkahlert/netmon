@@ -13,6 +13,8 @@ import kotlinx.coroutines.await
 import org.w3c.fetch.NO_STORE
 import org.w3c.fetch.RequestCache
 import org.w3c.fetch.RequestInit
+import org.w3c.fetch.Response
+import kotlin.js.Promise
 import kotlin.time.Clock
 import com.bkahlert.netmon.Event.ScanEvent
 import dev.fritz2.core.Handler
@@ -100,9 +102,12 @@ class KioskStatsStore(
     }
 }
 
-/** Returns the sample lighttpd serves next to the page, or `null` when it is missing, unreadable or not a sample. */
-suspend fun loadKioskStats(): KioskStats? = runCatching {
-    val response = window.fetch("stats.json", RequestInit(cache = RequestCache.NO_STORE)).await()
+/**
+ * Returns the sample lighttpd serves next to the page, requested through [fetch], or `null` when it is missing,
+ * unreadable or not a sample.
+ */
+suspend fun loadKioskStats(fetch: (String, RequestInit) -> Promise<Response> = { input, init -> window.fetch(input, init) }): KioskStats? = runCatching {
+    val response = fetch("stats.json", RequestInit(cache = RequestCache.NO_STORE)).await()
     if (response.ok) JsonFormat.decodeFromString<KioskStats>(response.text().await()) else null
 }.getOrNull()
 
