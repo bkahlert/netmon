@@ -7,6 +7,12 @@ import com.bkahlert.kommons.js.DefaultConsoleLogFormatter
 import com.bkahlert.kommons.js.console
 import com.bkahlert.kommons.js.format
 import com.bkahlert.kommons.js.tee
+import com.bkahlert.netmon.serialization.JsonFormat
+import kotlinx.browser.window
+import kotlinx.coroutines.await
+import org.w3c.fetch.NO_STORE
+import org.w3c.fetch.RequestCache
+import org.w3c.fetch.RequestInit
 import kotlin.time.Clock
 import com.bkahlert.netmon.Event.ScanEvent
 import dev.fritz2.core.Handler
@@ -75,6 +81,30 @@ class ScanEventsStore(
         CurrentTimeStore.data.map { } handledBy cleanUp
     }
 }
+
+/** Store of the kiosk's latest sample that is fresh by [clock], `null` while there is none, polled every [interval] through [load]. */
+class KioskStatsStore(
+    interval: Duration = KioskStats.INTERVAL,
+    load: suspend () -> KioskStats? = ::loadKioskStats,
+    clock: () -> Instant = Clock.System::now,
+    job: Job = Job(),
+) : RootStore<KioskStats?>(null, job = job) {
+
+    init {
+        flow {
+            while (true) {
+                emit(load()?.takeIf { it.isFreshAt(clock()) })
+                delay(interval)
+            }
+        } handledBy update
+    }
+}
+
+/** Returns the sample lighttpd serves next to the page, or `null` when it is missing, unreadable or not a sample. */
+suspend fun loadKioskStats(): KioskStats? = runCatching {
+    val response = window.fetch("stats.json", RequestInit(cache = RequestCache.NO_STORE)).await()
+    if (response.ok) JsonFormat.decodeFromString<KioskStats>(response.text().await()) else null
+}.getOrNull()
 
 /** Store that is attached to the specified [console] storing log messages of the specified [levels]. */
 class ConsoleLogStore(
