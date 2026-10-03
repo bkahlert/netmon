@@ -34,3 +34,8 @@ class TestWebpackConfig:
 
         match = re.search(r"port:\s*(?P<port>\d+)", config)
         assert match and int(match["port"]) == preview_dev_server.PORT
+
+    def test_has_the_page_reach_the_dev_server_where_it_was_loaded_from(self):
+        config = (preview_dev_server.ROOT / "webpack.config.d" / "dev-server.js").read_text()
+
+        assert "webSocketURL: 'auto://0.0.0.0:0/ws'" in config
