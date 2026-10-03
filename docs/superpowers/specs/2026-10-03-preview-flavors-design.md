@@ -29,8 +29,8 @@ Pi, the slowest and the only one whose CPU use is the panel's. It also makes the
 | `make preview-vm`              | The kiosk in a QEMU window                                |
 | `make preview-device TARGET=…` | The kiosk of the Pi at `TARGET` (`user@host`, as `deploy`) |
 
-`make preview` stays and is `preview-vm`. All three call `tests/preview.py --on browser|vm|device`; the Makefile has no
-logic of its own. `make broker` stays for running only the fixture by hand.
+`make preview` stays and is `preview-vm`. All three call [tests/preview.py](../../../tests/preview.py) with `--on browser`, `--on vm` or `--on device`; the
+Makefile has no logic of its own. `make broker` stays for running only the fixture by hand.
 
 All three need the dev server, and Gradle allows one build per project directory, so **only one flavor runs at a time**.
 A second one fails and names the first (`a preview is already running (process N)`), as `make preview` does today. A
@@ -62,7 +62,7 @@ inspector; the VM and device flavors open the kiosk's Web Inspector (`Main.html?
 ### One flavor, four steps
 
 A flavor is the part of a session that differs. Everything else (the record, the fixture, the dev server, the inspector
-wait, the `INSPECT` command, the ready message, the cleanup stack) stays in `preview.py` and is shared.
+wait, the `INSPECT` command, the ready message, the cleanup stack) stays in [tests/preview.py](../../../tests/preview.py) and is shared.
 
 | Step              | Browser                      | VM                                                     | Device                                                         |
 |-------------------|------------------------------|--------------------------------------------------------|----------------------------------------------------------------|
@@ -90,8 +90,9 @@ developer extras in front of the board's own `COG_ARGS`, the inspector address, 
 tunnel for long. While the tunnel is down the kiosk waits for its URL instead of crashing.
 
 **The CPU figure.** The dev server proxies `/stats.json` to `http://<host of TARGET>/stats.json` in this flavor only, so
-the status bar shows the board's real sampler. `webpack.config.d/dev-server.js` reads the address from an environment
-variable the session sets for Gradle; without it nothing is proxied.
+the status bar shows the board's real sampler. The dev server's config,
+[webpack.config.d/dev-server.js](../../../webpack.config.d/dev-server.js), reads the address from an environment variable
+the session sets for Gradle; without it nothing is proxied.
 
 **The tunnel is watched.** The session asks every second whether `ssh -N` still runs. When it ends, the session prints
 the tunnel's last message from `dist/preview/tunnel.log` (or its exit status) and ends like Ctrl-C, so the board is
@@ -108,10 +109,10 @@ reboot is the fallback and the message says so.
 
 ### Run configurations
 
-`preview.run.xml` stays and calls `make preview`. New shell configurations call `make preview-browser`,
-`make preview-vm` and `make preview-device`. The compound configuration `netmon-web-display
-[jsBrowserDevelopmentRun --continuous]` is replaced by `preview-browser`. `netmon-web-display dev server` stays as the
-IDE's way to debug the Kotlin/JS build.
+The shell configurations `preview-browser`, `preview-vm` and `preview-device` call the make target of the same name;
+`preview-device` sets `TARGET`. There is none for `make preview`, which is only an alias. The compound configuration
+`netmon-web-display [jsBrowserDevelopmentRun --continuous]` of before is gone: the Gradle configuration of that name is
+the IDE's way to run and debug the Kotlin/JS build, and it needs `make broker` for hosts.
 
 ### The README
 

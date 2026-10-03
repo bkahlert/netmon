@@ -54,11 +54,11 @@ Updates are `sudo apt upgrade`. Pi Hero 1's Ansible installer is frozen at the t
 Three make targets show the page while you edit it. All read it from Gradle's dev server on port 8081, take the same
 variables and have a Web Inspector on the page. They differ in where the page is shown:
 
-```shell
-make preview-browser                         # any browser: the fastest, with that browser's rendering and its own developer tools
-make preview-vm                              # the kiosk's own WPE WebKit, 800 by 480, in a QEMU window: exact rendering, the Mac's speed (also: make preview)
-make preview-device TARGET=pi@netmon.local   # the kiosk of a real Pi: the panel's own CPU use, the slowest
-```
+| Target                                       | Shows the page in                                                                          |
+|----------------------------------------------|--------------------------------------------------------------------------------------------|
+| `make preview-browser`                       | Any browser: the fastest, with that browser's rendering and its own developer tools        |
+| `make preview-vm` (also `make preview`)      | The kiosk's own WPE WebKit, 800 by 480, in a QEMU window: exact rendering, the Mac's speed |
+| `make preview-device TARGET=pi@netmon.local` | The kiosk of a real Pi: the panel's own CPU use, the slowest                               |
 
 | Variable  | Default   | Meaning                                                                                                                         |
 |-----------|-----------|---------------------------------------------------------------------------------------------------------------------------------|
@@ -70,7 +70,7 @@ make preview-device TARGET=pi@netmon.local   # the kiosk of a real Pi: the panel
 The broker is a container, so a scan can be replaced by hand while you watch (see
 [Publish a scan to the preview's broker](#publish-a-scan-to-the-previews-broker)). Only one of the three runs at a time:
 Gradle allows one build per project directory, so stop them before `make test-js`, `make test-layout` or any other
-`./gradlew`. `make broker` runs only the fixture, for the IDE's dev server run configuration.
+`./gradlew`. `make broker` runs only the fixture, for the IDE's run configuration `netmon-web-display [jsBrowserDevelopmentRun --continuous]`.
 
 The first `make preview-vm` builds a base disk (about 2.5 minutes, cached under `~/.cache/pihero/preview`); later ones start
 in about 10 seconds. It needs QEMU, Podman and Accessibility permission for your terminal (to size the window).
