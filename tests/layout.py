@@ -1,16 +1,12 @@
 """A scripted MQTT broker for Playwright's WebKit and the geometry helpers of the layout test."""
 import json
 import threading
-import time
 from functools import partial
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
 CONNACK = bytes([0x20, 0x02, 0x00, 0x00])
 PINGRESP = bytes([0xD0, 0x00])
-VENDORS = ["Apple", "Espressif", "Raspberry Pi Foundation", "AVM Audiovisuelles Marketing und Computersysteme GmbH", None, "HP"]
-NAMES = ["printer.local.", "NPID96FF6", None, "openclaw-(690).local.", "indoorcam", "52540003C3310000.local.", "Shi"]
-MODELS = ["Mac14,8", None, "AppleTV3,2", "AirPort10,115", None, "AirPods3,1"]
 
 
 class Page:
@@ -38,25 +34,6 @@ class Page:
 class QuietHandler(SimpleHTTPRequestHandler):
     def log_message(self, *args):
         pass
-
-
-def scans(sources: int, recent: int, stable: int, now: int | None = None) -> dict[str, dict]:
-    now = now or int(time.time())
-    result = {}
-    for s in range(sources):
-        topic = "dt/netmon/node/wlan0/10.0.0.1/24/scan" if s == 0 else f"dt/netmon/node{s}/eth{s}/10.{s}.0.1/24/scan"
-        hosts = [host(s, i, now - 30 - i) for i in range(recent)] + [host(s, recent + i, now - 7200 - i) for i in range(stable)]
-        result[topic] = {"event": "scan", "type": "completed", "hosts": hosts, "timestamp": now - 1}
-    return result
-
-
-def host(source: int, index: int, since: int) -> dict:
-    entry = {"ip": f"10.{source}.{index // 250}.{index % 250 + 1}", "status": "down" if index % 7 == 3 else "up", "since": since}
-    for key, values in (("name", NAMES), ("vendor", VENDORS), ("model", MODELS)):
-        value = values[index % len(values)]
-        if value:
-            entry[key] = value
-    return entry
 
 
 def broker(scan_by_topic: dict[str, dict]):
