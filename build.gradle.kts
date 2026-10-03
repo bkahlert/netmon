@@ -173,9 +173,19 @@ tasks {
     }
 }
 
-// webpack emits the images and JSON it bundles next to netmon.js; the distribution gets the identical files from the resources.
-// The stylesheets and mqtt.js are bundled into netmon.js and not served on their own.
+// The production bundle and the images and JSON it uses carry a hash of their content in their names (webpack.config.d).
+// webpack emits them next to the bundle, so the unhashed copies from the resources are dropped, and index.html, which
+// names the unhashed files, is pointed at the hashed ones. The stylesheets and mqtt.js are bundled into the bundle.
 tasks.named<Sync>("jsBrowserDistribution") {
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
     exclude("*.css", "mqtt.js")
+    doLast {
+        val hashed = Regex("""\.[0-9a-f]{8}\.""")
+        File(destinationDir, "images").listFiles().orEmpty().filterNot { hashed.containsMatchIn(it.name) }.forEach { it.delete() }
+        File(destinationDir, "assets").listFiles().orEmpty().filterNot { hashed.containsMatchIn(it.name) }.forEach { it.delete() }
+        val bundle = destinationDir.listFiles().orEmpty().single { it.name.matches(Regex("""netmon\.[0-9a-f]{8}\.js""")) }
+        val loading = File(destinationDir, "images").listFiles().orEmpty().single { it.name.matches(Regex("""loading\.[0-9a-f]{8}\.svg""")) }
+        val index = File(destinationDir, "index.html")
+        index.writeText(index.readText().replace("netmon.js", bundle.name).replace("images/loading.svg", "images/${loading.name}"))
+    }
 }
