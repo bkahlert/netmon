@@ -58,12 +58,13 @@ class Device:
     def show(self, cleanup: ExitStack, settings: Settings, update: Callable[..., None]) -> Shown:
         board = preview_board.Board(settings.target)
         board.check_kiosk()
-        update(device=settings.target)
-        cleanup.callback(board.restore)
+        conf = board.session_conf(settings.broker)
         tunnel = board.open_tunnel(settings.broker, DEV_PORT, preview_kiosk.INSPECTOR_PORT)
         cleanup.callback(board.close_tunnel, tunnel)
         update(tunnel=tunnel.pid)
-        board.install(settings.broker)
+        cleanup.callback(board.restore)
+        update(device=settings.target)
+        board.install(conf, tunnel)
         return Shown(f"http://localhost:{DEV_PORT}/", f"127.0.0.1:{preview_kiosk.INSPECTOR_PORT}")
 
     def stats_origin(self, settings: Settings) -> str | None:

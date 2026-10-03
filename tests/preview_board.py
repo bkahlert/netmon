@@ -2,6 +2,7 @@
 import subprocess
 import sys
 import time
+from pathlib import Path
 
 from pihero_testkit import ssh
 
@@ -9,6 +10,7 @@ import preview_broker
 import preview_kiosk
 import preview_process
 
+TUNNEL_LOG = Path(__file__).resolve().parents[1] / "dist" / "preview" / "tunnel.log"
 DEV_REMOTE_PORT = 18081
 BROKER_REMOTE_PORT = 18080
 RUN_DIR = "/run/netmon-preview"
@@ -61,8 +63,8 @@ def tunnel_command(target: str, forward_args: list[str]) -> list[str]:
 
 
 class Board:
-    def __init__(self, target: str, run=subprocess.run):
-        self.target, self._run = target, run
+    def __init__(self, target: str, run=subprocess.run, tunnel_log: Path = TUNNEL_LOG):
+        self.target, self._run, self.tunnel_log = target, run, tunnel_log
 
     def ssh(self, remote: str, input: str | None = None, timeout: float = 60) -> subprocess.CompletedProcess:
         return self._run(ssh.command(self.target, remote), input=input, text=True, capture_output=True, check=False, timeout=timeout)
@@ -74,21 +76,26 @@ class Board:
         if result.returncode != 0:
             raise RuntimeError(f"{self.target} has no pihero-kiosk; flash a Pi Hero device file first")
 
-    def install(self, broker: preview_broker.Broker, timeout: float = 90, sleep=time.sleep, clock=time.monotonic) -> None:
-        """Points the board's kiosk at the dev server through the tunnel, with the inspector on; raises ValueError for a kiosk.conf it cannot change."""
+    def session_conf(self, broker: preview_broker.Broker) -> str:
+        """Returns the board's kiosk.conf pointed at the dev server through the tunnel, with the inspector on, changing nothing on the board; raises ValueError for a kiosk.conf it cannot change."""
         current = self.ssh("cat /etc/pihero/kiosk.conf")
         if current.returncode != 0:
             raise RuntimeError(f"cannot read /etc/pihero/kiosk.conf on {self.target}: {current.stderr.strip()}")
-        conf = preview_kiosk.session_kiosk_conf(current.stdout, page_url(broker), preview_kiosk.INSPECTOR_PORT)
+        return preview_kiosk.session_kiosk_conf(current.stdout, page_url(broker), preview_kiosk.INSPECTOR_PORT)
+
+    def install(self, conf: str, tunnel: subprocess.Popen, timeout: float = 90, sleep=time.sleep, clock=time.monotonic) -> None:
+        """Puts the session on the board and waits for the kiosk to load its page, failing early with the tunnel's own message if the tunnel ends."""
         since = self.ssh("date '+%Y-%m-%d %H:%M:%S'").stdout.strip()
         result = self.ssh(INSTALL, input=conf)
         if result.returncode != 0:
             raise RuntimeError(f"could not put the session on {self.target}: {result.stderr.strip()}")
-        self.wait_loaded(since, timeout, sleep, clock)
+        self.wait_loaded(since, tunnel, timeout, sleep, clock)
 
-    def wait_loaded(self, since: str, timeout: float, sleep, clock) -> None:
+    def wait_loaded(self, since: str, tunnel: subprocess.Popen, timeout: float, sleep, clock) -> None:
         deadline = clock() + timeout
         while clock() < deadline:
+            if tunnel.poll() is not None:
+                raise RuntimeError(self.tunnel_ended())
             loaded = self.ssh(f"sudo journalctl -u pihero-kiosk --since '{since}' --no-pager | grep -c 'Loaded successfully'").stdout.strip()
             if loaded not in ("", "0"):
                 return
@@ -107,16 +114,22 @@ class Board:
         return result.returncode == 0
 
     def open_tunnel(self, broker: preview_broker.Broker, dev_port: int, inspector_port: int) -> subprocess.Popen:
-        tunnel = subprocess.Popen(tunnel_command(self.target, forwards(broker, dev_port, inspector_port)), stdout=subprocess.DEVNULL, stderr=subprocess.PIPE, text=True)
+        self.tunnel_log.parent.mkdir(parents=True, exist_ok=True)
+        with self.tunnel_log.open("w") as log:
+            tunnel = subprocess.Popen(tunnel_command(self.target, forwards(broker, dev_port, inspector_port)), stdout=subprocess.DEVNULL, stderr=log, text=True)
         deadline = time.monotonic() + 15
         while time.monotonic() < deadline:
             if tunnel.poll() is not None:
-                raise RuntimeError(f"the ssh tunnel to {self.target} ended: {tunnel.stderr.read().strip()}")
+                raise RuntimeError(self.tunnel_ended())
             if preview_process.answers("127.0.0.1", inspector_port):
                 return tunnel
             time.sleep(0.25)
         self.close_tunnel(tunnel)
-        raise TimeoutError(f"the ssh tunnel to {self.target} did not come up within 15 s")
+        raise TimeoutError(f"the ssh tunnel to {self.target} did not come up within 15 s; see {self.tunnel_log}")
+
+    def tunnel_ended(self) -> str:
+        lines = self.tunnel_log.read_text(errors="replace").strip().splitlines() if self.tunnel_log.exists() else []
+        return f"the ssh tunnel to {self.target} ended: {lines[-1] if lines else 'no message, see ' + str(self.tunnel_log)}"
 
     def close_tunnel(self, tunnel: subprocess.Popen) -> None:
         if tunnel.poll() is None:

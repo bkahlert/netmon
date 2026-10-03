@@ -1,4 +1,5 @@
 import subprocess
+from types import SimpleNamespace
 
 import pytest
 from pihero_testkit import ssh
@@ -103,43 +104,83 @@ class TestCheckKiosk:
             board.check_kiosk()
 
 
+class TestSessionConf:
+    def test_is_the_boards_kiosk_conf_pointed_at_the_tunnel_and_asks_nothing_to_be_written(self):
+        script = Script(replies())
+
+        conf = preview_board.Board(TARGET, run=script).session_conf(FIXTURE_BROKER)
+
+        assert conf == preview_kiosk.session_kiosk_conf(SAMPLE_CONF, "http://127.0.0.1:18081/?broker.host=127.0.0.1&broker.port=18080", 2999)
+        assert [stdin for _, stdin in script.calls if stdin] == []
+        assert [remote for remote, _ in script.calls] == ["cat /etc/pihero/kiosk.conf"]
+
+    def test_refuses_a_kiosk_conf_it_cannot_use(self):
+        board = preview_board.Board(TARGET, run=Script(replies(conf="URL=http://localhost/\n")))
+
+        with pytest.raises(ValueError, match="kiosk.conf"):
+            board.session_conf(FIXTURE_BROKER)
+
+    def test_names_a_kiosk_conf_it_cannot_read(self):
+        board = preview_board.Board(TARGET, run=Script({"cat /etc/pihero/kiosk.conf": (1, "", "No such file")}))
+
+        with pytest.raises(RuntimeError, match="cannot read /etc/pihero/kiosk.conf on pi@netmon.local: No such file"):
+            board.session_conf(FIXTURE_BROKER)
+
+
 class TestInstall:
     def test_writes_the_session_conf_and_the_drop_in_in_one_command_and_waits_for_the_page(self):
         script = Script(replies())
         board = preview_board.Board(TARGET, run=script)
 
-        board.install(FIXTURE_BROKER, sleep=lambda s: None)
+        board.install("URL=x\n", ALIVE, sleep=lambda s: None)
 
         sent = [(remote, stdin) for remote, stdin in script.calls if stdin]
-        expected = preview_kiosk.session_kiosk_conf(SAMPLE_CONF, "http://127.0.0.1:18081/?broker.host=127.0.0.1&broker.port=18080", 2999)
-        assert [stdin for _, stdin in sent] == [expected]
+        assert [stdin for _, stdin in sent] == ["URL=x\n"]
         remote = sent[0][0]
         assert "/run/netmon-preview/kiosk.conf" in remote
         assert "/run/systemd/system/pihero-kiosk.service.d/preview.conf" in remote
         assert "EnvironmentFile=/run/netmon-preview/kiosk.conf" in remote
         assert "daemon-reload" in remote and "restart pihero-kiosk" in remote
 
-    def test_changes_nothing_on_a_kiosk_conf_it_cannot_use(self):
-        script = Script(replies(conf="URL=http://localhost/\n"))
-        board = preview_board.Board(TARGET, run=script)
-
-        with pytest.raises(ValueError, match="kiosk.conf"):
-            board.install(FIXTURE_BROKER, sleep=lambda s: None)
-
-        assert [stdin for _, stdin in script.calls if stdin] == []
-
     def test_reports_the_command_that_failed(self):
         board = preview_board.Board(TARGET, run=Script(replies(install=(1, "", "sudo: a password is required"))))
 
         with pytest.raises(RuntimeError, match="a password is required"):
-            board.install(FIXTURE_BROKER, sleep=lambda s: None)
+            board.install("URL=x\n", ALIVE, sleep=lambda s: None)
 
     def test_gives_up_on_a_page_the_kiosk_never_loads(self):
         now = iter(range(0, 1000, 10))
         board = preview_board.Board(TARGET, run=Script(replies(loaded="0\n")))
 
         with pytest.raises(TimeoutError, match="did not load"):
-            board.install(FIXTURE_BROKER, timeout=30, sleep=lambda s: None, clock=lambda: next(now))
+            board.install("URL=x\n", ALIVE, timeout=30, sleep=lambda s: None, clock=lambda: next(now))
+
+    def test_names_why_the_tunnel_ended_instead_of_waiting_for_a_page_that_cannot_come(self, tmp_path):
+        log = tmp_path / "tunnel.log"
+        log.write_text("Warning: remote port forwarding failed for listen port 18081\n")
+        board = preview_board.Board(TARGET, run=Script(replies(loaded="0\n")), tunnel_log=log)
+
+        with pytest.raises(RuntimeError, match="the ssh tunnel to pi@netmon.local ended: Warning: remote port forwarding failed for listen port 18081"):
+            board.install("URL=x\n", SimpleNamespace(poll=lambda: 255), sleep=lambda s: None)
+
+
+class TestOpenTunnel:
+    def test_sends_the_tunnels_messages_to_a_file_instead_of_a_pipe_nobody_reads(self, monkeypatch, tmp_path):
+        log = tmp_path / "tunnel.log"
+        launched = fake_ssh(monkeypatch, status=None, message="connect_to 127.0.0.1 port 8080: failed.\n")
+        monkeypatch.setattr(preview_board.preview_process, "answers", lambda host, port: True)
+
+        preview_board.Board(TARGET, tunnel_log=log).open_tunnel(FIXTURE_BROKER, 8081, 2999)
+
+        assert launched["stderr"] is not subprocess.PIPE
+        assert log.read_text() == "connect_to 127.0.0.1 port 8080: failed.\n"
+
+    def test_names_why_the_tunnel_ended_before_it_came_up(self, monkeypatch, tmp_path):
+        log = tmp_path / "tunnel.log"
+        fake_ssh(monkeypatch, status=255, message="pi@netmon.local: Permission denied (publickey).\n")
+
+        with pytest.raises(RuntimeError, match=r"the ssh tunnel to pi@netmon.local ended: pi@netmon.local: Permission denied \(publickey\)."):
+            preview_board.Board(TARGET, tunnel_log=log).open_tunnel(FIXTURE_BROKER, 8081, 2999)
 
 
 class TestRestore:
@@ -167,6 +208,22 @@ class TestRestore:
 
         assert restored is False
         assert "could not restore the kiosk on pi@netmon.local" in capsys.readouterr().err
+
+
+ALIVE = SimpleNamespace(poll=lambda: None)
+
+
+def fake_ssh(monkeypatch, status, message):
+    launched = {}
+
+    def popen(argv, **kwargs):
+        kwargs["stderr"].write(message)
+        kwargs["stderr"].flush()
+        launched.update(kwargs)
+        return SimpleNamespace(poll=lambda: status, pid=1)
+
+    monkeypatch.setattr(preview_board.subprocess, "Popen", popen)
+    return launched
 
 
 class Script:

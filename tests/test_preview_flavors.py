@@ -52,8 +52,8 @@ class TestDevice:
             shown = preview_flavors.Device().show(cleanup, settings, lambda **fields: updates.append(fields))
 
         assert shown == preview_flavors.Shown("http://localhost:8081/", "127.0.0.1:2999")
-        assert calls == ["check_kiosk", "open_tunnel", "install", "close_tunnel", "restore"]
-        assert updates == [{"device": "pi@netmon.local"}, {"tunnel": 77}]
+        assert calls == ["check_kiosk", "session_conf", "open_tunnel", "install", "restore", "close_tunnel"]
+        assert updates == [{"tunnel": 77}, {"device": "pi@netmon.local"}]
 
     def test_restores_the_board_and_closes_the_tunnel_when_the_install_fails(self, monkeypatch):
         calls = []
@@ -64,7 +64,7 @@ class TestDevice:
             with ExitStack() as cleanup:
                 preview_flavors.Device().show(cleanup, settings, lambda **fields: None)
 
-        assert calls == ["check_kiosk", "open_tunnel", "install", "close_tunnel", "restore"]
+        assert calls == ["check_kiosk", "session_conf", "open_tunnel", "install", "restore", "close_tunnel"]
 
     def test_touches_nothing_on_a_board_without_the_kiosk(self, monkeypatch):
         calls = []
@@ -77,6 +77,29 @@ class TestDevice:
 
         assert calls == ["check_kiosk"]
 
+    def test_neither_opens_a_tunnel_nor_restarts_the_kiosk_for_a_kiosk_conf_it_cannot_use(self, monkeypatch):
+        calls, updates = [], []
+        install_board(monkeypatch, calls, conf_error=ValueError("kiosk.conf has no URL= line"))
+        settings = Settings.from_environ("device", {"TARGET": "pi@netmon.local"})
+
+        with pytest.raises(ValueError, match="kiosk.conf"):
+            with ExitStack() as cleanup:
+                preview_flavors.Device().show(cleanup, settings, lambda **fields: updates.append(fields))
+
+        assert calls == ["check_kiosk", "session_conf"]
+        assert updates == []
+
+    def test_does_not_restart_the_kiosk_when_the_tunnel_does_not_come_up(self, monkeypatch):
+        calls = []
+        install_board(monkeypatch, calls, tunnel_error=RuntimeError("the ssh tunnel to pi@netmon.local ended"))
+        settings = Settings.from_environ("device", {"TARGET": "pi@netmon.local"})
+
+        with pytest.raises(RuntimeError, match="tunnel"):
+            with ExitStack() as cleanup:
+                preview_flavors.Device().show(cleanup, settings, lambda **fields: None)
+
+        assert calls == ["check_kiosk", "session_conf", "open_tunnel"]
+
     def test_names_the_boards_web_server_for_the_stats(self):
         settings = Settings.from_environ("device", {"TARGET": "pi@netmon.local:2222"})
 
@@ -88,7 +111,7 @@ class TestDevice:
         assert isinstance(picked, preview_flavors.Device)
 
 
-def install_board(monkeypatch, calls, install_error=None, check_error=None):
+def install_board(monkeypatch, calls, install_error=None, check_error=None, conf_error=None, tunnel_error=None):
     class FakeBoard:
         def __init__(self, target):
             self.target = target
@@ -98,11 +121,19 @@ def install_board(monkeypatch, calls, install_error=None, check_error=None):
             if check_error:
                 raise check_error
 
+        def session_conf(self, broker):
+            calls.append("session_conf")
+            if conf_error:
+                raise conf_error
+            return "URL=x\n"
+
         def open_tunnel(self, broker, dev_port, inspector_port):
             calls.append("open_tunnel")
+            if tunnel_error:
+                raise tunnel_error
             return SimpleNamespace(pid=77)
 
-        def install(self, broker):
+        def install(self, conf, tunnel):
             calls.append("install")
             if install_error:
                 raise install_error
