@@ -15,6 +15,7 @@ MODELS = ["Mac14,8", None, "AppleTV3,2", "AirPort10,115", None, "AirPods3,1"]
 
 class Page:
     def __init__(self, directory: Path):
+        self.directory = directory
         handler = partial(QuietHandler, directory=str(directory))
         self.server = ThreadingHTTPServer(("127.0.0.1", 0), handler)
         threading.Thread(target=self.server.serve_forever, daemon=True).start()
@@ -23,6 +24,12 @@ class Page:
     @property
     def url(self) -> str:
         return f"http://127.0.0.1:{self.port}/?broker.host=127.0.0.1&broker.port=1"
+
+    def url_of(self, path: str) -> str:
+        return f"http://127.0.0.1:{self.port}/{path}"
+
+    def loading_image(self) -> str:
+        return next((self.directory / "images").glob("loading.*.svg")).relative_to(self.directory).as_posix()
 
     def close(self):
         self.server.shutdown()
