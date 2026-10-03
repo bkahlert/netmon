@@ -72,6 +72,26 @@ class TestWaitForInspector:
 
 
 @pytest.mark.tier0
+class TestWaitUntilGone:
+    def test_returns_once_every_process_is_gone(self):
+        alive = {200: 2, 300: 1}
+
+        def command_of(pid):
+            alive[pid] -= 1
+            return "qemu" if alive[pid] > 0 else None
+
+        preview.wait_until_gone([200, 300], command_of, sleep=lambda s: None)
+
+        assert alive == {200: 0, 300: 0}
+
+    def test_gives_up_on_a_process_that_stays(self):
+        now = iter(range(0, 1000, 10))
+
+        with pytest.raises(TimeoutError, match="200"):
+            preview.wait_until_gone([200], lambda pid: "qemu", timeout=30, sleep=lambda s: None, clock=lambda: next(now))
+
+
+@pytest.mark.tier0
 class TestDevServerPort:
     def test_is_the_port_the_pages_use(self):
         assert preview.DEV_PORT == 8081

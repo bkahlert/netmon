@@ -1,10 +1,12 @@
 import http.server
+import re
 import socket
 import struct
 import sys
 import threading
 import time
 import urllib.request
+from types import SimpleNamespace
 
 import pytest
 
@@ -27,16 +29,33 @@ class TestSessionStop:
         assert not directory.exists()
 
 
+@pytest.mark.tier0
+class TestSessionFailure:
+    def test_keeps_the_serial_log_of_a_kiosk_that_did_not_load(self, tmp_path):
+        directory = tmp_path / "session"
+        directory.mkdir()
+        (directory / "serial.log").write_text("boot messages")
+        session = preview_session.Session(preview_device.Layer(tmp_path / "r", tmp_path / "b"), directory)
+        session.vm = SimpleNamespace(ssh=lambda command: SimpleNamespace(stdout=""), serial_log=directory / "serial.log", process=None)
+
+        with pytest.raises(TimeoutError, match=re.escape(str(tmp_path / "serial.log"))):
+            session.restart_kiosk(timeout=0)
+        session.stop()
+
+        assert (tmp_path / "serial.log").read_text() == "boot messages"
+        assert not directory.exists()
+
+
 @pytest.mark.preview
 @MAC_ONLY
 class TestSession:
     def test_keeps_the_guest_at_800_by_480_whatever_the_window_does(self, session):
-        session.resize_window(1000, 700)
+        resized = session.resize_window(1000, 700)
         session.restart_kiosk()
 
         size = picture_size(session)
 
-        assert size == (800, 480)
+        assert (resized, size) == (True, (800, 480))
 
     def test_tunnels_the_inspector_of_a_page_served_from_the_macs_loopback(self, session):
         port = free_port()

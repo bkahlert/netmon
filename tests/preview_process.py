@@ -13,8 +13,10 @@ def answers(host: str, port: int, timeout: float = 1.0) -> bool:
 
 
 def command_of(pid: int) -> str | None:
-    result = subprocess.run(["ps", "-p", str(pid), "-o", "command="], capture_output=True, text=True, check=False)
-    return result.stdout.strip() or None
+    """Returns the command line of a running process; None if it is gone or has ended and only waits to be reaped."""
+    result = subprocess.run(["ps", "-p", str(pid), "-o", "stat=,command="], capture_output=True, text=True, check=False)
+    state, _, command = result.stdout.strip().partition(" ")
+    return None if not command or state.startswith("Z") else command.strip()
 
 
 def raise_on_sigterm() -> None:
