@@ -14,8 +14,7 @@ cards, the unchanged hosts one step smaller and dimmer under "1h+ unchanged", th
 
 ## Current mechanism
 
-[network.kt](../../../src/jsMain/kotlin/com/bkahlert/netmon/ui/network.kt) and
-[zoom.kt](../../../src/jsMain/kotlin/com/bkahlert/netmon/ui/zoom.kt):
+`ui/network.kt` and `ui/zoom.kt`, the latter removed by this change:
 
 - Each section's `ul` is a grid of `repeat(auto-fill, 185px)` cells inside a `div` that clips and carries a `zoom`.
 - `zoomedToFitClientHeight` observes the `div` for child changes, reads `scrollHeight`, and lowers `zoom` by the square
