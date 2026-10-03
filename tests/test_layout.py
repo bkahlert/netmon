@@ -5,6 +5,7 @@ from playwright.sync_api import Error as PlaywrightError
 from playwright.sync_api import sync_playwright
 
 import layout
+import scan_fixtures
 
 pytestmark = pytest.mark.layout
 DIST = Path.cwd() / "build" / "dist" / "js" / "productionExecutable"
@@ -98,7 +99,7 @@ def browser():
 def open_page(browser, page_server, size, sources, counts):
     page = browser.new_page(viewport={"width": size[0], "height": size[1]})
     try:
-        page.route_web_socket("ws://127.0.0.1:1/", layout.broker(layout.scans(sources, *counts)))
+        page.route_web_socket("ws://127.0.0.1:1/", layout.broker(scan_fixtures.scans(sources, *counts)))
         page.goto(page_server.url)
         page.wait_for_function(f"document.querySelectorAll('.host').length >= {sources * sum(counts)}", timeout=20_000)
         return settled(page)
