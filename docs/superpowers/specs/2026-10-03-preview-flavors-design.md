@@ -134,14 +134,25 @@ table, and says that only one runs at a time.
 
 ## Open
 
-- Whether the board's `sshd` allows remote forwards (`AllowTcpForwarding`). The default does; the sample device file
-  does not change it.
+- Settled: the board's `sshd` allows the remote forwards. On a Pi with the sample device file, `18081` and `18080` listened
+  on the board's loopback during a session and were gone after it.
 - Settled: Gradle's webpack task sees `NETMON_STATS_PROXY`. Against a stand-in on 127.0.0.1:8099, the dev server answered
   `/stats.json` with the stand-in's file. Without a reachable target the proxy answers 504, not 404.
 - The dev bundle costs more CPU and memory than the production one, and the kiosk unit has `MemoryMax=300M`. The device
   flavor shows a relative figure; absolute numbers still need `make deploy`.
 - The reverse tunnel adds the board's `sshd` to the CPU the board spends. It does not count in the kiosk's cgroup.
-- Whether the inspector's page list names a target on the board as it does in the VM. Likely, same cog and WPE.
+- Settled: the inspector's page list on the board names a target (`Main.html?ws=…`), as in the VM.
+- Settled: the status bar's CPU figure is the board's own. `/stats.json` through the dev server returned the sampler's
+  numbers (`kioskCpu` 62 with the dev bundle running).
+- Settled, by a run on a real board: ready in 40 to 60 s; a CSS edit reached the board's dev server within seconds; Ctrl-C
+  left no `/run/netmon-preview`, no drop-in and the kiosk on its own `URL`; `kill -9` of the session left the container,
+  the tunnel and the board's drop-in, and the next start ended and removed them; `BROKER=device` gave `broker.port=8080`
+  and started no container; `BROKER=localhost:8080` next to `make broker` forwarded `18080`, used the running container
+  and left it running.
+- Not seen by eye: the panel's pixels and the Web Inspector in Safari (all runs used `INSPECT=0`).
+- One run of `BROKER=device`, seconds after the end of another session, failed with `the ssh tunnel … did not come up
+  within 15 s`; the tunnel log was empty and the next run passed. A login to an idle board takes about 3 s, and the board
+  restarts its kiosk at the end of a session. Cause not proven; if it recurs, raise the 15 s in `Board.open_tunnel`.
 - The board's kiosk restarts twice per session (start, end): the panel is blank for the length of the restart.
 
 ## Out of scope
