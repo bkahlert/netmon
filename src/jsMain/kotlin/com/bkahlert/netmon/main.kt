@@ -1,6 +1,5 @@
 package com.bkahlert.netmon
 
-import com.bkahlert.kommons.browser.AutoRefreshers
 import com.bkahlert.kommons.js.OnScreenConsole
 import com.bkahlert.netmon.model_identification.DeviceModelCodes
 import com.bkahlert.netmon.model_identification.load
@@ -19,8 +18,6 @@ suspend fun main() {
     val onScreenConsole = OnScreenConsole(com.bkahlert.kommons.js.console)
         .apply { enable() }
         .also { com.bkahlert.kommons.js.console.info("On-screen console enabled") }
-
-    AutoRefreshers().also { com.bkahlert.kommons.js.console.info("Auto refresh enabled for %s", it.uris) }
 
     runCatching {
         DeviceModelCodes.set(DeviceModelCodes.load(DeviceModelCodes.resource))
