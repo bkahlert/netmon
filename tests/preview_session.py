@@ -31,7 +31,10 @@ class Session:
         self.vm = Vm(prepare.prepare(), bootfs, self.directory, accel=self.accel, window=self.window, backing=self.layer.rootfs, repo_port=0).start()
         if on_qemu:
             on_qemu(self.vm.process.pid)
-        self.vm.wait_ssh()
+        try:
+            self.vm.wait_ssh()
+        except Exception as error:
+            raise RuntimeError(f"{error}\nthe serial log is kept at {self.keep_serial_log()}") from error
         return self.vm
 
     def place_window(self, attempts: int = 20) -> bool:
@@ -66,7 +69,13 @@ class Session:
             if loaded.stdout.strip() not in ("", "0"):
                 return
             time.sleep(1)
-        raise TimeoutError(f"the kiosk did not load its page within {timeout:g} s; see {self.vm.serial_log}")
+        raise TimeoutError(f"the kiosk did not load its page within {timeout:g} s; see {self.keep_serial_log()}")
+
+    def keep_serial_log(self) -> Path:
+        """Copies the guest's serial log next to the session directory, which stop() deletes, and returns the copy."""
+        kept = self.directory.parent / "serial.log"
+        shutil.copy(self.vm.serial_log, kept)
+        return kept
 
     def open_tunnel(self, local_port: int, remote_port: int) -> None:
         forward = f"127.0.0.1:{local_port}:127.0.0.1:{remote_port}"

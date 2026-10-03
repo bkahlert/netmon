@@ -63,17 +63,32 @@ def stale_actions(record: dict, command_of: Callable[[int], str | None]) -> list
     return actions
 
 
-def carry_out(actions: list[tuple[str, int | None]]) -> None:
+def carry_out(actions: list[tuple[str, int | None]], command_of: Callable[[int], str | None] = preview_process.command_of) -> None:
+    ended = []
     for action, pid in actions:
         try:
             if action == "terminate":
                 os.kill(pid, signal.SIGTERM)
+                ended.append(pid)
             elif action == "terminate-group":
                 os.killpg(os.getpgid(pid), signal.SIGTERM)
+                ended.append(pid)
             elif action == "stop-broker":
                 preview_broker.stop()
         except ProcessLookupError:
             pass
+    wait_until_gone(ended, command_of)
+
+
+def wait_until_gone(pids: list[int], command_of: Callable[[int], str | None], timeout: float = 30, sleep=time.sleep, clock=time.monotonic) -> None:
+    """Returns once none of `pids` runs any more, so the next start does not adopt a server that is still shutting down."""
+    deadline = clock() + timeout
+    running = [pid for pid in pids if command_of(pid)]
+    while running:
+        if clock() >= deadline:
+            raise TimeoutError(f"process {running[0]} of a killed preview did not end within {timeout:g} s")
+        sleep(0.5)
+        running = [pid for pid in running if command_of(pid)]
 
 
 def claim() -> None:

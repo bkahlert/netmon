@@ -1,5 +1,7 @@
 import os
 import socket
+import subprocess
+import time
 
 import pytest
 
@@ -34,3 +36,14 @@ class TestCommandOf:
 
     def test_is_none_for_a_process_that_is_gone(self):
         assert preview_process.command_of(2**22 + 12345) is None
+
+    def test_is_none_for_a_process_that_ended_but_was_not_reaped(self):
+        child = subprocess.Popen(["true"])
+        try:
+            time.sleep(0.5)
+
+            command = preview_process.command_of(child.pid)
+        finally:
+            child.wait()
+
+        assert command is None
