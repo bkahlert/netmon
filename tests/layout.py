@@ -91,6 +91,26 @@ def publish(topic: str, payload: str) -> bytes:
     return bytes([0x30]) + bytes(remaining) + body
 
 
+def slowed(milliseconds: int) -> str:
+    """Return a script that delays every task the page schedules by `milliseconds`, as a slower machine would."""
+    return f"""(() => {{
+  const delay = {milliseconds};
+  const later = window.setTimeout.bind(window);
+  window.setTimeout = (callback, wait, ...args) => later(callback, (wait || 0) + delay, ...args);
+  const postWindow = window.postMessage.bind(window);
+  window.postMessage = (...args) => later(() => postWindow(...args), delay);
+  const postPort = MessagePort.prototype.postMessage;
+  MessagePort.prototype.postMessage = function (...args) {{ later(() => postPort.apply(this, args), delay); }};
+}})()"""
+
+
+RENDERED = """({hosts, models}) => {
+  const cards = [...document.querySelectorAll('.host')];
+  return cards.length === hosts
+    && cards.every(card => ['.host__name', '.host__vendor', '.host__ip', '.host__status'].every(part => card.querySelector(part)))
+    && document.querySelectorAll('.host__model').length === models;
+}"""
+
 GEOMETRY = """() => {
   const box = e => { const r = e.getBoundingClientRect(); return {l: r.left, t: r.top, r: r.right, b: r.bottom}; };
   const scans = [...document.querySelectorAll('.scan__hosts')].map(e => e.closest('.networks > div > div'));
