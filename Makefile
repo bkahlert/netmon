@@ -1,12 +1,11 @@
 SHELL := /bin/bash
 .DEFAULT_GOAL := help
 # Gradle's output directory is called build, so the targets are declared phony.
-.PHONY: help gradle build browser test-jvm test-js test-layout test-preview test-tier0 test-tier1 test-tier2 soak apt-probe test test-all vm-device vm-prepare vm broker preview display deploy device-model-codes clean release
+.PHONY: help gradle build browser test-jvm test-js test-layout test-preview test-tier0 test-tier1 test-tier2 soak apt-probe test test-all vm-device vm-prepare vm broker preview deploy device-model-codes clean release
 
 PLATFORM ?= linux/arm64
 TARGET ?=
 QEMU_ACCEL ?= hvf
-URL ?=
 BROWSER_ARGS ?=
 UV := uv run --frozen
 GRADLE_ARGS ?= --no-daemon --console=plain
@@ -76,10 +75,6 @@ broker: ## run the preview's Mosquitto with the fixture until Ctrl-C (SCAN=14+39
 
 preview: ## the dev server, the broker and the kiosk's WebKit in a VM window, its inspector in Safari (SCAN=14+39 BROKER=localhost:8080 INSPECT=Safari)
 	@$(UV) python tests/preview.py
-
-display: ## open URL in Playwright's WebKit at the panel's 800x480 (make display URL='http://netmon.local/?broker.host=netmon.local&broker.port=8080')
-	@test -n "$(URL)" || { echo "usage: make display URL='http://host/?broker.host=host&broker.port=8080'"; exit 2; }
-	@$(UV) playwright open -b webkit --viewport-size=800,480 "$(URL)"
 
 deploy: build ## install the built packages on TARGET over SSH
 	@test -n "$(TARGET)" || { echo "usage: make deploy TARGET=pi@host"; exit 2; }
