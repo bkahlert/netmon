@@ -1,6 +1,7 @@
 import json
 import os
 import subprocess
+import sys
 import time
 from collections.abc import Callable
 from pathlib import Path
@@ -66,6 +67,25 @@ class TestSample:
         assert sample["kioskCpu"] == 118
         assert sample["webCpu"] == 114
 
+    @pytest.mark.parametrize(
+        "file, figure",
+        [
+            ("sys/fs/cgroup/system.slice/pihero-kiosk.service/cgroup.procs", "webCpu"),
+            ("sys/fs/cgroup/system.slice/pihero-kiosk.service/cpu.stat", "kioskCpu"),
+            ("sys/fs/cgroup/system.slice/pihero-kiosk.service/memory.current", "kioskMemory"),
+            ("proc/42/comm", "webCpu"),
+            ("proc/42/stat", "webCpu"),
+        ],
+    )
+    def test_a_kiosk_file_that_fails_to_open_is_a_missing_figure(self, tmp_path, file, figure):
+        root = kiosk_root(tmp_path, usec=1_000_000, ticks=500, pid=42, ram=1, swap=0)
+        file_that_cannot_be_opened(root / file)
+
+        sample = sample_once(root, tmp_path / "stats.json", lambda: (root / "proc" / "uptime").write_text("1001.00 4000.00\n"))
+
+        assert sample[figure] is None
+        assert set(sample) == {"at", "interval", "kioskCpu", "webCpu", "kioskMemory"}
+
 
 class TestUsage:
     def test_help_prints_the_header(self):
@@ -88,6 +108,12 @@ def sample_once(root: Path, out: Path, advance: Callable[[], None] | None = None
         advance()
     assert process.wait(timeout=10) == 0
     return json.loads(out.read_text())
+
+
+def file_that_cannot_be_opened(path: Path) -> None:
+    # A socket passes the readable test and fails to open, the state of a file gone between the test and the open.
+    path.unlink()
+    subprocess.run([sys.executable, "-c", f"import socket; socket.socket(socket.AF_UNIX).bind({path.name!r})"], cwd=path.parent, check=True)
 
 
 def kiosk_root(tmp_path: Path, usec: int, ticks: int, pid: int, ram: int, swap: int) -> Path:
