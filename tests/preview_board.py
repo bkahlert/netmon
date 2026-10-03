@@ -128,15 +128,18 @@ class Board:
         self.tunnel_log.parent.mkdir(parents=True, exist_ok=True)
         with self.tunnel_log.open("w") as log:
             tunnel = subprocess.Popen(tunnel_command(self.target, forwards(broker, dev_port, inspector_port)), stdout=subprocess.DEVNULL, stderr=log, text=True)
-        deadline = time.monotonic() + 15
-        while time.monotonic() < deadline:
-            if tunnel.poll() is not None:
-                raise RuntimeError(self.tunnel_ended(tunnel))
-            if preview_process.answers("127.0.0.1", inspector_port):
-                return tunnel
-            time.sleep(0.25)
-        self.close_tunnel(tunnel)
-        raise TimeoutError(f"the ssh tunnel to {self.target} did not come up within 15 s; see {self.tunnel_log}")
+        try:
+            deadline = time.monotonic() + 15
+            while time.monotonic() < deadline:
+                if tunnel.poll() is not None:
+                    raise RuntimeError(self.tunnel_ended(tunnel))
+                if preview_process.answers("127.0.0.1", inspector_port):
+                    return tunnel
+                time.sleep(0.25)
+            raise TimeoutError(f"the ssh tunnel to {self.target} did not come up within 15 s; see {self.tunnel_log}")
+        except BaseException:
+            self.close_tunnel(tunnel)
+            raise
 
     def tunnel_problem(self, tunnel: subprocess.Popen) -> str | None:
         """Returns why the tunnel ended, or None while it runs."""
