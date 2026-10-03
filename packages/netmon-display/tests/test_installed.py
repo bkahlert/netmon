@@ -57,6 +57,11 @@ class TestCaching:
 
             assert "Cache-Control: public, max-age=31536000, immutable" in headers, (path, headers)
 
+    def test_the_loading_image_is_fetched_with_high_priority(self, host):
+        page = fetch_until(host, "http://localhost/", "Netmon Web Display")
+
+        assert re.search(r'<link rel="preload" as="image" href="images/loading\.[0-9a-f]{8}\.svg" fetchpriority="high">', page), page
+
 
 class TestKiosk:
     def test_survives_a_web_server_restart(self, host):
