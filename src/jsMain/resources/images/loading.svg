@@ -16,7 +16,7 @@
         rgba(105, 183, 69, 1), rgba(4, 169, 113, 1), rgba(0, 151, 139, 1),
         rgba(1, 129, 143, 1), rgba(0, 144, 170, 1), rgba(0, 158, 198, 1), rgba(41, 171, 226, 1));
         background-size: 1500% 1500%;
-        animation: background-movement 11s ease infinite; /* slow: 60s; fast: 11s */
+        animation: background-movement 11s ease 3; /* slow: 60s; fast: 11s */
         }
 
         .fg {
@@ -30,7 +30,7 @@
 
         .magic {
         background-size: 800% 800%;
-        animation: background-movement 11s ease infinite;
+        animation: background-movement 11s ease 3;
         }
 
         h1, h2, h3, h4, h5, h6, div, span, p {
@@ -65,8 +65,8 @@
         }
 
         @media screen and (prefers-reduced-motion: reduce) {
-        .bg { animation: background-movement 180s ease infinite; }
-        .magic { animation: background-movement 120s ease infinite; }
+        .bg { animation: background-movement 180s ease 1; }
+        .magic { animation: background-movement 120s ease 1; }
         }
     </style>
     <foreignObject width="100%" height="100%">

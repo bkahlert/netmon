@@ -44,6 +44,17 @@ class TestLayout:
         assert found["card"]["borderTopWidth"] == "1px"
         assert found["card"]["borderTopLeftRadius"] != "0px"
 
+    def test_the_loading_animation_ends(self, browser, page_server):
+        page = browser.new_page(viewport={"width": PANEL[0], "height": PANEL[1]})
+        try:
+            page.goto(page_server.url_of(page_server.loading_image()))
+            iterations = page.evaluate("document.getAnimations().map(a => a.effect.getComputedTiming().iterations)")
+        finally:
+            page.close()
+
+        assert iterations
+        assert all(count != float("inf") for count in iterations), iterations
+
     def test_a_few_hosts_keep_their_natural_size(self, browser, page_server):
         found = open_page(browser, page_server, PANEL, sources=1, counts=(3, 0))
 
