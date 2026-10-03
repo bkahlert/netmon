@@ -1,7 +1,7 @@
 SHELL := /bin/bash
 .DEFAULT_GOAL := help
 # Gradle's output directory is called build, so the targets are declared phony.
-.PHONY: help gradle build browser test-jvm test-js test-tier0 test-tier1 test-tier2 soak apt-probe test test-all vm-device vm-prepare vm display deploy device-model-codes clean release
+.PHONY: help gradle build browser test-jvm test-js test-layout test-tier0 test-tier1 test-tier2 soak apt-probe test test-all vm-device vm-prepare vm display deploy device-model-codes clean release
 
 PLATFORM ?= linux/arm64
 TARGET ?=
@@ -34,6 +34,10 @@ test-jvm: ## the scanner's JVM unit tests (those that need Docker, macOS bundles
 
 test-js: ## the display's JS unit tests (Karma, headless Chrome)
 	./gradlew $(GRADLE_ARGS) jsBrowserTest
+
+test-layout: ## the page's geometry in Playwright's WebKit at three sizes and several host counts (needs make browser)
+	./gradlew $(GRADLE_ARGS) jsBrowserDistribution
+	@$(UV) pytest -m layout
 
 test-tier0: ## unit tests and static checks
 	@$(UV) pytest -m tier0
