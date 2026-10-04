@@ -17,6 +17,8 @@ data class Host(
     @SerialName("model") val model: String? = null,
     @SerialName("vendor") val vendor: String? = null,
     @SerialName("services") val services: Set<String>? = null,
+    /** The time of the last scan that found the host up. */
+    @SerialName("lastSeen") @Serializable(InstantAsEpochSecondsSerializer::class) val lastSeen: Instant? = null,
 ) {
     companion object
 }
