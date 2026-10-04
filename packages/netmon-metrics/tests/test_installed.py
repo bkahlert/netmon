@@ -79,6 +79,17 @@ class TestKiosk:
         assert "systemd.unit.cpu.utilization" in names(unit(request, "pihero-kiosk.service"))
 
 
+class TestUnknownUnit:
+    @pytest.mark.mutating
+    def test_leaves_out_a_unit_systemd_does_not_know(self, host, mosquitto_clients):
+        host.check_output("sudo systemd-run --unit=netmon-metrics-unknown --property=User=netmon-metrics /usr/lib/netmon/netmon-metrics"
+                          " --node unknown --unit no-such.service")
+        out = host.run("mosquitto_sub -h 127.0.0.1 -t dt/netmon/unknown/metrics -C 1 -W 10").stdout.strip()
+        host.check_output("sudo systemctl stop netmon-metrics-unknown.service")
+
+        assert unit(json.loads(out), "no-such.service") is None
+
+
 class TestBrokerRestart:
     @pytest.mark.mutating
     def test_publishes_again_after_the_broker_restarted(self, host, mosquitto_clients):
