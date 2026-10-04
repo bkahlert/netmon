@@ -13,14 +13,21 @@ import kotlin.test.Test
 class NmapXmlTest {
 
     @Test
-    fun hosts_with_ip_name_status_and_vendor() {
+    fun hosts_with_ip_name_status_vendor_and_mac() {
         val result = NmapXml.parse(nmapRun(UP_WITH_NAME, UP_WITHOUT_NAME, LOCALHOST))
 
         result.shouldContainExactly(
-            Host(ip = IP.of("192.168.42.180"), name = "foo.bar", status = Status.UP, vendor = "Raspberry Pi Trading"),
-            Host(ip = IP.of("192.168.42.190"), name = null, status = Status.UP, vendor = "Raspberry Pi Trading"),
-            Host(ip = IP.of("192.168.42.33"), name = null, status = Status.UP, vendor = null),
+            Host(ip = IP.of("192.168.42.180"), name = "foo.bar", status = Status.UP, vendor = "Raspberry Pi Trading", mac = "dc:a6:32:a5:ba:b6"),
+            Host(ip = IP.of("192.168.42.190"), name = null, status = Status.UP, vendor = "Raspberry Pi Trading", mac = "e4:5f:01:34:81:39"),
+            Host(ip = IP.of("192.168.42.33"), name = null, status = Status.UP, vendor = null, mac = null),
         )
+    }
+
+    @Test
+    fun a_private_mac_has_no_vendor_but_is_read() {
+        val result = NmapXml.parse(nmapRun(PRIVATE_MAC))
+
+        result.single() shouldBe Host(ip = IP.of("192.168.42.9"), name = null, status = Status.UP, vendor = null, mac = "de:ad:be:ef:00:01")
     }
 
     @Test
@@ -125,5 +132,12 @@ private val IPV6 = """
 private val DOWN = """
     <host><status state="down" reason="no-response" reason_ttl="0"/>
     <address addr="192.168.42.8" addrtype="ipv4"/>
+    </host>
+""".trimIndent()
+
+private val PRIVATE_MAC = """
+    <host><status state="up" reason="arp-response" reason_ttl="0"/>
+    <address addr="192.168.42.9" addrtype="ipv4"/>
+    <address addr="DE:AD:BE:EF:00:01" addrtype="mac"/>
     </host>
 """.trimIndent()

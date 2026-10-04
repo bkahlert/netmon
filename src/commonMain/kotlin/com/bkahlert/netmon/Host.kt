@@ -19,6 +19,8 @@ data class Host(
     @SerialName("services") val services: Set<String>? = null,
     /** The time of the last scan that found the host up. */
     @SerialName("lastSeen") @Serializable(InstantAsEpochSecondsSerializer::class) val lastSeen: Instant? = null,
+    /** The hardware address, lowercase with colons; it identifies the device across IP changes. */
+    @SerialName("mac") val mac: String? = null,
 ) {
     companion object
 }

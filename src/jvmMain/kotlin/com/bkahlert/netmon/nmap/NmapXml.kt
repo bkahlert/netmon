@@ -20,8 +20,8 @@ object NmapXml {
     /**
      * Returns the hosts of the nmap run in [xml], in document order.
      *
-     * A host without an IPv4 or IPv6 address is left out. The name is the first `hostname` element's name and the
-     * vendor the MAC address's `vendor` attribute; both are `null` when absent.
+     * A host without an IPv4 or IPv6 address is left out. The name is the first `hostname` element's name; the vendor
+     * and the MAC (lowercase) come from the MAC address element. Each is `null` when absent.
      */
     fun parse(xml: String): List<Host> {
         val reader = factory.createXMLStreamReader(xml.reader())
@@ -42,6 +42,7 @@ object NmapXml {
         var state: String? = null
         var address: String? = null
         var vendor: String? = null
+        var mac: String? = null
         var name: String? = null
         var depth = 1
         while (depth > 0 && hasNext()) {
@@ -52,7 +53,10 @@ object NmapXml {
                         "status" -> state = getAttributeValue(null, "state")
                         "address" -> when (getAttributeValue(null, "addrtype")) {
                             "ipv4", "ipv6" -> if (address == null) address = getAttributeValue(null, "addr")
-                            "mac" -> vendor = getAttributeValue(null, "vendor")
+                            "mac" -> {
+                                vendor = getAttributeValue(null, "vendor")
+                                mac = getAttributeValue(null, "addr")?.lowercase()
+                            }
                         }
                         "hostname" -> if (name == null) name = getAttributeValue(null, "name")
                     }
@@ -60,6 +64,6 @@ object NmapXml {
                 XMLStreamConstants.END_ELEMENT -> depth--
             }
         }
-        return address?.let { Host(ip = IP.of(it), name = name, status = state?.let(Status::of), vendor = vendor) }
+        return address?.let { Host(ip = IP.of(it), name = name, status = state?.let(Status::of), vendor = vendor, mac = mac) }
     }
 }
