@@ -104,7 +104,7 @@ def run_timeline(
     stream.pending()
     clear()
     before = receive()
-    load_time = install()
+    loaded_in = install()
     load = []
     for sample, payload in stream.pending():
         load.append(sample)
@@ -119,7 +119,7 @@ def run_timeline(
         boundaries.append(len(samples) - 1)
     while samples[-1].at < t0 + end_at:
         samples.append(receive())
-    return Timeline(before, load, samples, boundaries, load_time)
+    return Timeline(before, load, samples, boundaries, loaded_in)
 
 
 def load_time(journal: str) -> float | None:
