@@ -176,12 +176,12 @@ A restore or start that fails prints its message; a reboot removes the session's
     more, `median (min–max)`. Δ is the relative change of the medians in %; `about the same` when both variants have
     more than one run and their ranges overlap; `n/a` without a value or against a zero. Example:
 
-    |                                    | a33715a               | 28a4cf3            | Δ 28a4cf3 |
-    |------------------------------------|-----------------------|--------------------|-----------|
-    | valid runs                         | 3 of 3                | 3 of 3             |           |
-    | **scan 2 (90 s): 8 hosts change**  |                       |                    |           |
-    | CPU usage                          | 117 % · 127 % · 127 % | 59 % · 58 % · 55 % | -54 %     |
-    | busy                               | 100 % · 100 % · 100 % | 72 % · 72 % · 78 % | -28 %     |
+    |                                   | a33715a               | 28a4cf3            | Δ 28a4cf3 |
+    |-----------------------------------|-----------------------|--------------------|-----------|
+    | valid runs                        | 3 of 3                | 3 of 3             |           |
+    | **scan 2 (90 s): 8 hosts change** |                       |                    |           |
+    | CPU usage                         | 119 % · 120 % · 121 % | 57 % · 55 % · 60 % | -52 %     |
+    | busy                              | 100 % · 100 % · 100 % | 59 % · 59 % · 61 % | -41 %     |
 
   - The details: every run's figures in the order they ran, every figure above included, failed runs with their
     reason, so drift shows.
@@ -221,6 +221,29 @@ Each behaviour at the lowest level that catches its defect.
 - **Not automated:** building a ref in a worktree (Gradle) and the board end to end. The acceptance run is
   `make bench TARGET=pi@netmon.local VARIANTS="a33715a 28a4cf3"`: each phase has its figures, and 28a4cf3 is clearly
   ahead of its parent in scan 2's CPU usage and busy share. Its report goes into a Numbers section here.
+
+## Numbers
+
+Measured on the board on 2026-10-04 with `make bench TARGET=pi@netmon.local VARIANTS="a33715a 28a4cf3" RUNS=3`:
+
+|  | a33715a | 28a4cf3 | Δ 28a4cf3 |
+|---|---|---|---|
+| valid runs | 3 of 3 | 3 of 3 |  |
+| **page load** |  |  |  |
+| load time | 20 s · 21 s · 20 s | 20 s · 20 s · 20 s | about the same |
+| CPU usage | 45 % · 45 % · 55 % | 53 % · 56 % · 51 % | about the same |
+| memory peak | 171 MB · 167 MB · 173 MB | 173 MB · 171 MB · 179 MB | about the same |
+| **scan 1 (60 s): 53 hosts appear** |  |  |  |
+| CPU usage | 116 % · 116 % · 116 % | 76 % · 76 % · 81 % | -34 % |
+| busy | 100 % · 100 % · 100 % | 46 % · 46 % · 58 % | -54 % |
+| memory peak | 174 MB · 173 MB · 166 MB | 175 MB · 167 MB · 179 MB | about the same |
+| **scan 2 (90 s): 8 hosts change** |  |  |  |
+| CPU usage | 119 % · 120 % · 121 % | 57 % · 55 % · 60 % | -52 % |
+| busy | 100 % · 100 % · 100 % | 59 % · 59 % · 61 % | -41 % |
+| memory peak | 166 MB · 160 MB · 171 MB | 175 MB · 171 MB · 183 MB | about the same |
+
+a33715a keeps the renderer above one core through both scans, so it is busy for all of each; on the panel its nodes
+appear one by one. 28a4cf3 calms down about halfway through each scan.
 
 ## Out of scope
 
