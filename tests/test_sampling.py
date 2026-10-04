@@ -35,9 +35,10 @@ class TestDecode:
     def test_reads_the_units(self):
         result = decode(GOLDEN.read_bytes())
 
-        assert result.units[SCANNER] == UnitSample(active="active", restarts=0, current=41943040, swap_current=31457280, peak=62914560, swap_peak=41943040, anon=31457280, file=10485760, oom_kills=0)
+        assert result.units[SCANNER] == UnitSample(active="active", restarts=0, current=41943040, swap_current=31457280, peak=62914560, swap_peak=41943040, anon=31457280, file=10485760, oom_kills=0, cpu_seconds=120)
         assert result.units[KIOSK].restarts == 1
         assert result.units[KIOSK].current == 160000000
+        assert result.units[KIOSK].cpu_seconds == pytest.approx(6.9)
 
     def test_reads_the_system_and_the_processes(self):
         result = decode(GOLDEN.read_bytes())
@@ -51,7 +52,7 @@ class TestDecode:
     def test_an_absent_unit_is_empty_and_not_active(self):
         result = decode(b'{"resourceMetrics":[]}')
 
-        assert result.units[KIOSK] == UnitSample(active="", restarts=0, current=None, swap_current=None, peak=None, swap_peak=None, anon=None, file=None, oom_kills=0)
+        assert result.units[KIOSK] == UnitSample(active="", restarts=0, current=None, swap_current=None, peak=None, swap_peak=None, anon=None, file=None, oom_kills=0, cpu_seconds=None)
 
     def test_an_empty_payload_is_no_sample(self):
         assert decode(b"") is None
@@ -250,8 +251,8 @@ def sample(
     load1: float | None = 3.1,
     boot_id: str = "b",
 ) -> Sample:
-    scanner = UnitSample(active="active", restarts=0, current=40 * 2**20, swap_current=30 * 2**20, peak=60 * 2**20, swap_peak=40 * 2**20, anon=30 * 2**20, file=10 * 2**20, oom_kills=0)
-    kiosk = UnitSample(active="active", restarts=0, current=kiosk_current, swap_current=kiosk_swap_current, peak=150 * 2**20, swap_peak=120 * 2**20, anon=50 * 2**20, file=20 * 2**20, oom_kills=0)
+    scanner = UnitSample(active="active", restarts=0, current=40 * 2**20, swap_current=30 * 2**20, peak=60 * 2**20, swap_peak=40 * 2**20, anon=30 * 2**20, file=10 * 2**20, oom_kills=0, cpu_seconds=120)
+    kiosk = UnitSample(active="active", restarts=0, current=kiosk_current, swap_current=kiosk_swap_current, peak=150 * 2**20, swap_peak=120 * 2**20, anon=50 * 2**20, file=20 * 2**20, oom_kills=0, cpu_seconds=7)
     system = SystemSample(
         mem_total=mem_total, mem_available=90 * 2**20, swap_free=160 * 2**20, load1=load1, pswpin=pswpin, pswpout=0, pgmajfault=pgmajfault,
         pressure_full_seconds=pressure, zram_used=zram_used, web_anon=web_anon, web_swap=110 * 2**20, scanner_rss=scanner_rss, scanner_anon=scanner_anon,

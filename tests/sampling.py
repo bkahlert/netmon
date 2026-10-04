@@ -35,6 +35,7 @@ class UnitSample:
     anon: int | None
     file: int | None
     oom_kills: int
+    cpu_seconds: float | None
 
 
 @dataclass(frozen=True)
@@ -118,7 +119,7 @@ def decode(payload: bytes) -> Sample | None:
         web_cpu_seconds=sum(p.value for p in cpu_time) if cpu_time else None,
     )
     at = max((p.time for _, by_name in entities for found in by_name.values() for p in found), default=0) / 1e9
-    empty = UnitSample(active="", restarts=0, current=None, swap_current=None, peak=None, swap_peak=None, anon=None, file=None, oom_kills=0)
+    empty = UnitSample(active="", restarts=0, current=None, swap_current=None, peak=None, swap_peak=None, anon=None, file=None, oom_kills=0, cpu_seconds=None)
     return Sample(at=at, boot_id=host_attributes.get("host.boot.id", ""), units={unit: units.get(unit, empty) for unit in UNITS}, system=system)
 
 
@@ -162,6 +163,7 @@ def unit_sample(by_name: dict[str, list[Point]]) -> UnitSample:
         anon=value(by_name, "systemd.unit.memory.usage", {"type": "anon"}),
         file=value(by_name, "systemd.unit.memory.usage", {"type": "file"}),
         oom_kills=int(value(by_name, "systemd.unit.memory.oom_kills") or 0),
+        cpu_seconds=value(by_name, "systemd.unit.cpu.time"),
     )
 
 
