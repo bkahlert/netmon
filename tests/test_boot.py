@@ -10,6 +10,7 @@ from booted import journal_until, kiosk_conf, unexpected_recoverable_errors
 from sampling import subscribed
 
 pytestmark = pytest.mark.boot
+WEB_PROCESS_SAMPLES = 20
 
 
 class TestProvisioning:
@@ -120,7 +121,7 @@ def png_size(path: Path) -> tuple[int, int]:
 
 def wait_until_the_page_shows_the_kiosks_load(target) -> None:
     with subscribed(target) as stream:
-        while stream.next().system.web_pid is None:
-            pass
+        if all(stream.next().system.web_pid is None for _ in range(WEB_PROCESS_SAMPLES)):
+            pytest.fail(f"none of {WEB_PROCESS_SAMPLES} metrics samples named the web process")
         stream.next()
     time.sleep(1)

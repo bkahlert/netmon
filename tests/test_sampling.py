@@ -102,6 +102,13 @@ class TestThin:
 
         assert [s.at for s in result] == [0, 14.998, 29.995]
 
+    def test_keeps_one_sample_per_interval_off_the_sampling_grid(self):
+        samples = [sample(at) for at in (0, 5, 10, 15, 20, 25, 30, 35)]
+
+        result = thin(samples, 12)
+
+        assert [s.at for s in result] == [0, 15, 30]
+
 
 class TestRenderTable:
     def test_has_a_row_per_sample_with_deltas_and_na_for_missing_values(self):
@@ -156,6 +163,15 @@ class TestRenderTable:
         assert "| 60/110 | n/a | 90 |" in result
         assert "-9.5" not in result
 
+    def test_shows_na_for_the_host_deltas_across_a_reboot(self):
+        samples = [sample(0, pswpin=100, pgmajfault=1000, pressure=4.0), sample(30, pswpin=10, pgmajfault=20, pressure=0.1, boot_id="c")]
+
+        result = render_table(samples, {})
+
+        last = result.rstrip().splitlines()[-1]
+        assert last.endswith("| n/a | n/a | n/a | n/a |")
+        assert "-" not in last
+
     def test_shows_na_for_an_unknown_load(self):
         samples = [sample(0, load1=None)]
 
@@ -183,6 +199,13 @@ class TestRenderSummary:
         result = render_summary(samples)
 
         assert "web process cpu" not in result
+
+    def test_shows_na_for_the_major_faults_across_a_reboot(self):
+        samples = [sample(0, pgmajfault=1000), sample(30, pgmajfault=20, boot_id="c")]
+
+        result = render_summary(samples)
+
+        assert result.endswith(", n/a major faults/s")
 
     def test_names_the_peaks(self):
         samples = [sample(0, kiosk_current=80 * 2**20), sample(30, kiosk_current=120 * 2**20)]
@@ -213,6 +236,7 @@ class TestRenderSummary:
 def sample(
     at: float,
     pswpin: int = 0,
+    pgmajfault: int = 0,
     pressure: float | None = None,
     kiosk_current: int | None = 50 * 2**20,
     kiosk_swap_current: int | None = 100 * 2**20,
@@ -224,12 +248,13 @@ def sample(
     web_cpu: float | None = None,
     web_start: int = 1,
     load1: float | None = 3.1,
+    boot_id: str = "b",
 ) -> Sample:
     scanner = UnitSample(active="active", restarts=0, current=40 * 2**20, swap_current=30 * 2**20, peak=60 * 2**20, swap_peak=40 * 2**20, anon=30 * 2**20, file=10 * 2**20, oom_kills=0)
     kiosk = UnitSample(active="active", restarts=0, current=kiosk_current, swap_current=kiosk_swap_current, peak=150 * 2**20, swap_peak=120 * 2**20, anon=50 * 2**20, file=20 * 2**20, oom_kills=0)
     system = SystemSample(
-        mem_total=mem_total, mem_available=90 * 2**20, swap_free=160 * 2**20, load1=load1, pswpin=pswpin, pswpout=0, pgmajfault=0,
+        mem_total=mem_total, mem_available=90 * 2**20, swap_free=160 * 2**20, load1=load1, pswpin=pswpin, pswpout=0, pgmajfault=pgmajfault,
         pressure_full_seconds=pressure, zram_used=zram_used, web_anon=web_anon, web_swap=110 * 2**20, scanner_rss=scanner_rss, scanner_anon=scanner_anon,
         web_pid=1234 if web_cpu is not None else None, web_start=web_start if web_cpu is not None else None, web_cpu_seconds=web_cpu,
     )
-    return Sample(at=at, boot_id="b", units={SCANNER: scanner, KIOSK: kiosk}, system=system)
+    return Sample(at=at, boot_id=boot_id, units={SCANNER: scanner, KIOSK: kiosk}, system=system)

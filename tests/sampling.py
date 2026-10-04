@@ -19,6 +19,7 @@ SERVICE = "netmon-metrics"
 TOPIC = "dt/netmon/+/metrics"
 INTERVAL = 5
 SILENCE = 3 * INTERVAL
+JITTER = 1
 UNIT_SECONDS = {"s": 1, "m": 60, "h": 3600}
 MIB = 2**20
 
@@ -203,11 +204,11 @@ def subscribed(target) -> Iterator[Samples]:
 
 
 def thin(samples: list[Sample], every: float) -> list[Sample]:
-    """Return the first sample and then the first one at least `every` seconds, less half an interval, after the one kept before."""
+    """Return the first sample and then the first one at least `every` seconds, less a second of jitter, after the one kept before."""
     kept = []
     for sample in samples:
         # A sample is stamped when the sampler wakes, a few milliseconds either side of the interval.
-        if not kept or sample.at - kept[-1].at >= every - INTERVAL / 2:
+        if not kept or sample.at - kept[-1].at >= every - JITTER:
             kept.append(sample)
     return kept
 
@@ -232,7 +233,7 @@ def render_table(samples: list[Sample], limits: dict[str, str]) -> str:
             f"| {mb(k.current)}+{mb(k.swap_current)} | {mb(k.anon)}/{mb(k.file)} "
             f"| {mb(sys.web_anon)}/{mb(sys.web_swap)} | {web_cpu(previous.system, sys)} "
             f"| {mb(sys.mem_available)} | {mb(sys.swap_free)} | {mb(sys.zram_used)} | {load(sys.load1)} "
-            f"| {sys.pswpin - previous.system.pswpin} | {sys.pswpout - previous.system.pswpout} | {sys.pgmajfault - previous.system.pgmajfault} "
+            f"| {delta(previous, sample, 'pswpin')} | {delta(previous, sample, 'pswpout')} | {delta(previous, sample, 'pgmajfault')} "
             f"| {stalled(previous, sample)} |"
         )
         previous = sample
@@ -251,10 +252,11 @@ def render_summary(samples: list[Sample]) -> str:
     scanner_rss = max((s.system.scanner_rss for s in samples if s.system.scanner_rss is not None), default=None)
     cpu = web_cpu(samples[0].system, samples[-1].system)
     cpu_text = "" if cpu == "n/a" else f", web process cpu {cpu} s"
-    faults = (samples[-1].system.pgmajfault - samples[0].system.pgmajfault) / max(samples[-1].at - samples[0].at, 1)
+    first, last = samples[0], samples[-1]
+    faults = "n/a" if first.boot_id != last.boot_id else f"{(last.system.pgmajfault - first.system.pgmajfault) / max(last.at - first.at, 1):.1f}"
     return (
         f"soak: scanner peak {size(peak(SCANNER))}, scanner rss up to {size(scanner_rss)}, kiosk peak {size(peak(KIOSK))} RAM+zram, "
-        f"web process anon up to {size(web)}{cpu_text}, {faults:.1f} major faults/s"
+        f"web process anon up to {size(web)}{cpu_text}, {faults} major faults/s"
     )
 
 
@@ -265,10 +267,17 @@ def web_cpu(before: SystemSample, after: SystemSample) -> str:
     return f"{after.web_cpu_seconds - before.web_cpu_seconds:.1f}"
 
 
+def delta(before: Sample, after: Sample, counter: str) -> str:
+    """Return the change of a host counter of `SystemSample` between two samples, or n/a across a reboot."""
+    if before.boot_id != after.boot_id:
+        return "n/a"
+    return str(getattr(after.system, counter) - getattr(before.system, counter))
+
+
 def stalled(before: Sample, after: Sample) -> str:
-    """Return the percentage of the time between two samples that every task waited for memory."""
+    """Return the percentage of the time between two samples that every task waited for memory, or n/a without the stall time or across a reboot."""
     first, last = before.system.pressure_full_seconds, after.system.pressure_full_seconds
-    if first is None or last is None or after.at <= before.at:
+    if first is None or last is None or after.at <= before.at or before.boot_id != after.boot_id:
         return "n/a"
     return f"{(last - first) / (after.at - before.at) * 100:.2f}"
 
