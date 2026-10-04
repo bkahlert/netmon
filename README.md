@@ -58,24 +58,24 @@ variables and have a Web Inspector on the page. They differ in where the page is
 |----------------------------------------------|--------------------------------------------------------------------------------------------|
 | `make preview-browser`                       | Any browser: the fastest, with that browser's rendering and its own developer tools        |
 | `make preview-vm` (also `make preview`)      | The kiosk's own WPE WebKit, 800 by 480, in a QEMU window: exact rendering, the Mac's speed |
-| `make preview-device TARGET=pi@netmon.local` | The kiosk of a real Pi: the panel's own CPU use, the slowest                               |
+| `make preview-board TARGET=pi@netmon.local`  | The kiosk of a real Pi: the panel's own CPU use, the slowest                               |
 
 | Variable  | Default   | Meaning                                                                                                                         |
 |-----------|-----------|---------------------------------------------------------------------------------------------------------------------------------|
-| `BROKER`  | `fixture` | `fixture`: a Mosquitto container holding the `SCAN` hosts, started and stopped by the command. `device`: the Pi's own broker (`preview-device` only). `HOST:PORT`: that broker, nothing started; `localhost` is the Mac |
-| `SCAN`    | `14+39`   | Recent and stable hosts of the fixture; `14+39x2` publishes two scans                                                           |
+| `BROKER`  | `fake`    | `fake`: a Mosquitto container holding the `SCAN` hosts, started and stopped by the command. `board`: the Pi's own broker (`preview-board` only). `HOST:PORT`: that broker, nothing started; `localhost` is the Mac. `fixture` and `device` still work for `fake` and `board` for one release |
+| `SCAN`    | `14+39`   | Recent and stable hosts of the fake; `14+39x2` publishes two scans                                                           |
 | `INSPECT` | `Safari`  | What opens once the session is up: the page (`preview-browser`) or the kiosk's Web Inspector; `INSPECT=0` opens nothing         |
-| `TARGET`  |           | `preview-device` only: `user@host[:port]` of the Pi, which needs Pi Hero's `pihero-kiosk` and ssh access without a prompt       |
+| `TARGET`  |           | `preview-board` only: `user@host[:port]` of the Pi, which needs Pi Hero's `pihero-kiosk` and ssh access without a prompt       |
 
 The broker is a container, so a scan can be replaced by hand while you watch (see
 [Publish a scan to the preview's broker](#publish-a-scan-to-the-previews-broker)). Only one of the three runs at a time:
 Gradle allows one build per project directory, so stop them before `make test-js`, `make test-layout` or any other
-`./gradlew`. `make broker` runs only the fixture, for the IDE's run configuration `netmon-web-display [jsBrowserDevelopmentRun --continuous]`.
+`./gradlew`. `make broker` runs only the fake, for the IDE's run configuration `netmon-web-display [jsBrowserDevelopmentRun --continuous]`.
 
 The first `make preview-vm` builds a base disk (about 2.5 minutes, cached under `~/.cache/pihero/preview`); later ones start
 in about 10 seconds. It needs QEMU, Podman and Accessibility permission for your terminal (to size the window).
 
-`make preview-device` changes nothing lasting on the Pi. One `ssh` connection carries the page, the fixture broker and the
+`make preview-board` changes nothing lasting on the Pi. One `ssh` connection carries the page, the fake broker and the
 inspector between the Mac and the Pi, and the kiosk reads its session settings from a drop-in under `/run`, which Ctrl-C
 removes and a reboot wipes. The page is the development bundle, so its CPU and memory use is higher than what `make deploy`
 installs; compare flavors and edits with each other, not with the production figures. The status bar's CPU figure is the
@@ -88,7 +88,7 @@ Pi's own, proxied from its `stats.json`.
 make build                                          # Gradle, the native binary in a podman container, then nfpm: dist/*.deb
 make test                                           # tier 0 (static checks, unit tests) and tier 1 (install into a systemd container)
 make test-tier2                                     # tier 2: boot a QEMU VM from devices/sample, scan, show the page in WebKit and the kiosk
-make test-preview                                   # the preview's broker container and VM session (QEMU, Podman, a window server)
+make test-preview                                   # the preview's fake broker container (Podman)
 make deploy TARGET=pi@netmon.local                  # the built packages onto a device, no repository involved
 make soak TARGET=pi@netmon.local                    # ten minutes of memory samples of both units: dist/ssh/soak.md (the VM without TARGET)
 make apt-probe TARGET=pi@netmon.local               # apt update and a reinstall next to the live stack, timed, with apt's peak
