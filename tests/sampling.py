@@ -35,6 +35,7 @@ class UnitSample:
     anon: int | None
     file: int | None
     oom_kills: int
+    cpu_seconds: float | None
 
 
 @dataclass(frozen=True)
@@ -118,7 +119,7 @@ def decode(payload: bytes) -> Sample | None:
         web_cpu_seconds=sum(p.value for p in cpu_time) if cpu_time else None,
     )
     at = max((p.time for _, by_name in entities for found in by_name.values() for p in found), default=0) / 1e9
-    empty = UnitSample(active="", restarts=0, current=None, swap_current=None, peak=None, swap_peak=None, anon=None, file=None, oom_kills=0)
+    empty = UnitSample(active="", restarts=0, current=None, swap_current=None, peak=None, swap_peak=None, anon=None, file=None, oom_kills=0, cpu_seconds=None)
     return Sample(at=at, boot_id=host_attributes.get("host.boot.id", ""), units={unit: units.get(unit, empty) for unit in UNITS}, system=system)
 
 
@@ -162,6 +163,7 @@ def unit_sample(by_name: dict[str, list[Point]]) -> UnitSample:
         anon=value(by_name, "systemd.unit.memory.usage", {"type": "anon"}),
         file=value(by_name, "systemd.unit.memory.usage", {"type": "file"}),
         oom_kills=int(value(by_name, "systemd.unit.memory.oom_kills") or 0),
+        cpu_seconds=value(by_name, "systemd.unit.cpu.time"),
     )
 
 
@@ -172,17 +174,34 @@ class Samples:
         self.payloads = payloads
         self.clock = clock
 
-    def next(self, timeout: float = SILENCE) -> Sample:
-        """Return the next sample less than three intervals from the clock; raise ConnectionError when none arrives within `timeout` seconds."""
+    def receive(self, timeout: float = SILENCE) -> tuple[Sample, bytes]:
+        """Return the next sample less than three intervals from the clock with its payload; raise ConnectionError when none arrives within `timeout` seconds."""
         deadline = time.monotonic() + timeout
         while (left := deadline - time.monotonic()) > 0:
             try:
-                sample = decode(self.payloads.get(timeout=left))
+                payload = self.payloads.get(timeout=left)
             except queue.Empty:
                 break
+            sample = decode(payload)
             if sample is not None and abs(self.clock() - sample.at) < SILENCE:
-                return sample
+                return sample, payload
         raise ConnectionError(f"no metrics for {timeout:.0f} s")
+
+    def next(self, timeout: float = SILENCE) -> Sample:
+        """Return the next sample less than three intervals from the clock; raise ConnectionError when none arrives within `timeout` seconds."""
+        return self.receive(timeout)[0]
+
+    def pending(self) -> list[tuple[Sample, bytes]]:
+        """Return the samples received and not yet returned, with their payloads, without waiting, however long they waited."""
+        result = []
+        while True:
+            try:
+                payload = self.payloads.get_nowait()
+            except queue.Empty:
+                return result
+            sample = decode(payload)
+            if sample is not None:
+                result.append((sample, payload))
 
 
 @contextmanager

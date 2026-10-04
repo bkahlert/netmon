@@ -68,13 +68,24 @@ def publish_command(topic: str, scan: dict) -> list[str]:
     return ["podman", "exec", CONTAINER, "mosquitto_pub", "-h", "127.0.0.1", "-p", "1883", "-r", "-t", topic, "-m", json.dumps(scan)]
 
 
+def clear_command(topic: str) -> list[str]:
+    return ["podman", "exec", CONTAINER, "mosquitto_pub", "-h", "127.0.0.1", "-p", "1883", "-r", "-t", topic, "-n"]
+
+
+def start(broker: Broker) -> None:
+    """Start the container with no message in it; raise RuntimeError when something already answers on the broker's port or podman fails."""
+    if preview_process.answers(broker.host, broker.port):
+        raise RuntimeError(f"port {broker.port} is taken; end what serves there first")
+    result = subprocess.run(run_command(broker), capture_output=True, text=True, check=False)
+    if result.returncode != 0:
+        raise RuntimeError(f"podman could not start the broker on {broker.address}: {result.stderr.strip()}")
+
+
 def ensure(broker: Broker, scan: scan_fixtures.Scan) -> None:
     """Starts the container and publishes the fixture; raises RuntimeError when something already answers on the broker's port."""
     if preview_process.answers(broker.host, broker.port):
         raise RuntimeError(f"port {broker.port} is taken; to use the broker there, run with BROKER=localhost:{broker.port}")
-    result = subprocess.run(run_command(broker), capture_output=True, text=True, check=False)
-    if result.returncode != 0:
-        raise RuntimeError(f"podman could not start the broker on {broker.address}: {result.stderr.strip()}")
+    start(broker)
     try:
         publish(scan_fixtures.scans(scan.sources, scan.recent, scan.stable))
     except BaseException:
@@ -84,13 +95,21 @@ def ensure(broker: Broker, scan: scan_fixtures.Scan) -> None:
 
 def publish(scan_by_topic: dict[str, dict], attempts: int = 40, pause: float = 0.25) -> None:
     for topic, scan in scan_by_topic.items():
-        for _ in range(attempts):
-            result = subprocess.run(publish_command(topic, scan), capture_output=True, text=True, check=False)
-            if result.returncode == 0:
-                break
-            time.sleep(pause)
-        else:
-            raise RuntimeError(f"the broker did not accept {topic}: {result.stderr.strip()}")
+        retried(publish_command(topic, scan), topic, attempts, pause)
+
+
+def clear(topic: str, attempts: int = 40, pause: float = 0.25) -> None:
+    """Remove the retained message of `topic`, waiting for the broker as `publish` does; raise RuntimeError when it never accepts."""
+    retried(clear_command(topic), topic, attempts, pause)
+
+
+def retried(command: list[str], topic: str, attempts: int, pause: float) -> None:
+    for _ in range(attempts):
+        result = subprocess.run(command, capture_output=True, text=True, check=False)
+        if result.returncode == 0:
+            return
+        time.sleep(pause)
+    raise RuntimeError(f"the broker did not accept {topic}: {result.stderr.strip()}")
 
 
 def stop() -> None:

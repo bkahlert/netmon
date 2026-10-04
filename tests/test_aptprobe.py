@@ -80,6 +80,6 @@ class TestParseAnonPeak:
 
 def units(scanner_active: str = "active", kiosk_active: str = "active", kiosk_restarts: int = 0, kiosk_oom_kills: int = 0) -> dict[str, UnitSample]:
     def unit(active: str, restarts: int, oom_kills: int) -> UnitSample:
-        return UnitSample(active=active, restarts=restarts, current=1, swap_current=1, peak=1, swap_peak=1, anon=1, file=1, oom_kills=oom_kills)
+        return UnitSample(active=active, restarts=restarts, current=1, swap_current=1, peak=1, swap_peak=1, anon=1, file=1, oom_kills=oom_kills, cpu_seconds=1)
 
     return {SCANNER: unit(scanner_active, 0, 0), KIOSK: unit(kiosk_active, kiosk_restarts, kiosk_oom_kills)}

@@ -1,0 +1,255 @@
+# A benchmark of the display on the board
+
+## Intent
+
+Compare two builds of the display on a real Pi, the same scripted scans for each, and see which costs less and is busy
+for less of each scan. An A/B check for edits such as [28a4cf3](https://github.com/bkahlert/netmon/commit/28a4cf34f0f84637de49a0425e8a46fce1b00fe4),
+not an absolute footprint and not a CI gate: one run by default for a quick look, more runs for a figure with its noise.
+
+## Today
+
+- The [footprint](2026-10-02-footprint-design.md) and [page load](2026-10-03-page-load-design.md) figures came from soaks
+  and from a feeder publishing 53 hosts every 37 s, read by hand in windows after a settling time. Each comparison was set
+  up anew.
+- `make preview-board` points the board's kiosk at a page served from the workstation through one ssh tunnel and a drop-in under
+  `/run` ([pihero-testkit's `board.Session`][board]); the page is the development bundle, whose cost differs from what
+  `make deploy` installs.
+- [netmon-metrics](2026-10-04-metrics-design.md) publishes the board's figures every 5 s as OTLP/JSON on
+  `dt/netmon/<node>/metrics`; [sampling.py](../../../tests/sampling.py)'s `subscribed(target)` streams them as `Sample`s
+  over a tunnel, and `UnitSample.cpu_seconds` carries each unit's `systemd.unit.cpu.time`.
+
+[board]: https://github.com/bkahlert/pihero/tree/main/testkit
+
+## Decisions
+
+Settled with the user on 2026-10-04:
+
+1. **A/B regression.** The figures compare variants with each other, run interleaved on one board in one sitting.
+2. **Cost per phase and how long each scan keeps the page busy**, both from netmon-metrics. Nothing in the page changes for the benchmark.
+3. **Bundles served from the workstation.** Each variant is a production bundle (`jsBrowserDistribution`) the workstation builds and
+   serves through `board.Session`'s tunnel. Nothing persistent changes on the board.
+4. **The representative scenario** below: 53 hosts, then 8 changes 60 s later, then 90 s more.
+5. **The board's scanner stops** for the benchmark, so nmap does not compete with the kiosk; cleanup starts it again.
+6. **A standalone script**, [tests/bench.py](../../../tests/bench.py) behind `make bench`, not a pytest test and not a
+   testkit flavor: a benchmark has no pass or fail, and the scenario and figures are netmon's own.
+7. **One run per variant by default**; `RUNS` sets more.
+
+## Design
+
+### The command
+
+```shell
+make bench TARGET=pi@netmon.local VARIANTS="main ." RUNS=3
+```
+
+| Variable   | Default | Meaning                                                                        |
+|------------|---------|--------------------------------------------------------------------------------|
+| `TARGET`   |         | `user@host[:port]` of the Pi, required, as for `preview-board`                 |
+| `VARIANTS` | `.`     | Space-separated git refs; `.` is the working tree. The first is the reference  |
+| `RUNS`     | `1`     | Runs per variant, at least 1                                                   |
+
+Every ref is resolved to its commit before anything is built; an unknown ref ends the command. A variant's label is the
+ref as given with its short sha (`main a33715a`), the working tree's `. f5320cb+dirty` when it has changes; a ref that
+is the commit's sha reads as the short sha alone (`a33715a`).
+
+### Bundles
+
+A ref is checked out with `git worktree add --detach dist/bench/src/<sha> <sha>`, built there with `./gradlew
+jsBrowserDistribution`, its `build/dist/js/productionExecutable/` copied to `dist/bench/bundles/<sha>/` and the worktree
+removed. A bundle that exists is reused. The working tree is built in place every time, into
+`dist/bench/bundles/working-tree/`; Gradle allows one build per project directory, so no preview may run meanwhile. All
+builds finish before the board is touched.
+
+One static HTTP server on a free port of the workstation serves `dist/bench/bundles/`, so a variant's page is
+`/<directory>/index.html`. The page's assets are relative to it ([index.html](../../../src/jsMain/resources/index.html)).
+
+### Once per benchmark
+
+1. The board answers over ssh, has `pihero-kiosk` (`board.Session.check_kiosk`) and an active `netmon-metrics.service`.
+   The workstation's port 8080 is free for the fake broker.
+2. The fake broker starts: [preview_broker.py](../../../tests/preview_broker.py)'s container, with no fixture published.
+3. The static server starts.
+4. `board.Session` with the name `netmon-bench` opens one tunnel with reverse forwards for the static server and the
+   broker (`board.forwards`).
+5. `sampling.subscribed(target)` streams the board's metrics.
+6. `sudo systemctl stop netmon-scanner.service`. The terminal says once that a killed benchmark leaves the scanner
+   stopped until the next reboot.
+
+### One run
+
+Runs go interleaved, variant after variant: with `VARIANTS="main ."` and `RUNS=3` the order is `main . main . main .`.
+
+1. The scan topic `dt/netmon/node/wlan0/10.0.0.1/24/scan` is cleared with an empty retained message, so the new page
+   finds no scan of the run before.
+2. `board.Session.install` writes the session conf with the variant's page URL and the broker's address as the board
+   reaches them, restarts the kiosk and waits until its journal shows the page loaded. The restart gives every run a new
+   cgroup and a new web process.
+3. Scan 1 is published, retained, right after the first metrics sample after the load is seen. That sample's time is
+   **t0**.
+4. Scan 2 is published, retained, right after the first sample at or after t0 + 60 s.
+5. The run ends at the first sample at or after t0 + 150 s.
+
+The phases:
+
+| Phase     | From                     | To                       |
+|-----------|--------------------------|--------------------------|
+| page load | the kiosk's restart      | the sample at t0         |
+| scan 1    | the sample at t0         | the sample before scan 2 |
+| scan 2    | the sample before scan 2 | the run's last sample    |
+
+Tying each publish to a sample makes every boundary exact to a sample. The load phase needs no first boundary: the
+counters of the new cgroup and process start at zero.
+
+### The scenario
+
+Built from [scan_fixtures.py](../../../tests/scan_fixtures.py), every timestamp is t0 plus an offset, so every run sees the
+same ages and the same highlight windows, and the same t0 gives the same payloads byte for byte. The scenario is a list
+of `(offset, scan)` steps in `bench.py`; another scenario is another list.
+
+- **Scan 1, offset 0:** the `14+39` fixture of source 0, 53 hosts. Its 14 recent hosts changed 30 to 43 s before t0, so
+  their 60 s highlight ends during the phase.
+- **Scan 2, offset 60 s:** the same hosts with 8 changes, their `since` the scan's time: 3 hosts up to down, 3 down to up,
+  1 new host, 1 gone. The changes span the recent and the stable hosts, so every partition move happens. Eight is the
+  count of highlighted hosts 28a4cf3 measured against.
+- **End, offset 150 s:** the radar pulse ends at 70 s, the highlights at 120 s; the last 30 s are the idle baseline.
+
+The display drops a scan older than 5 minutes (`ScanEventSettings.outdatedThreshold`); a run is 150 s.
+
+### Figures
+
+Per phase and run:
+
+| Figure          | Phases    | Source                                                                                         |
+|-----------------|-----------|------------------------------------------------------------------------------------------------|
+| load time       | page load | from the journal's `Started pihero-kiosk.service` to cog's `Loaded successfully`, both on the board's clock |
+| CPU usage       | all       | the renderer's (`WPEWebProcess`) CPU time over the phase's elapsed time, in % of one core as `top` shows it |
+| busy            | scans     | below                                                                                          |
+| memory peak     | all       | the highest `current + swap_current` of the kiosk among the phase's samples                    |
+| memory at end   | all       | the kiosk's `current + swap_current` at the phase's end                                       |
+| renderer memory | all       | `SystemSample.web_anon` at the phase's end                                                     |
+| kiosk CPU time  | all       | delta of `UnitSample.cpu_seconds` of `pihero-kiosk.service`: cog, renderer and network process |
+| major faults    | all       | delta of `SystemSample.pgmajfault`                                                             |
+
+The page load's CPU usage runs from the renderer's start, the start of its `process.cpu.time`, to t0. The memory peak is
+the phase's own, from its samples: the cgroup's `memory.peak` counts since the unit's start.
+
+**Busy.** A scan is busy until the renderer's CPU usage over the next three intervals (15 s) is below 50 % of one core.
+The figure is that time in % of the phase's length; 100 % means the renderer was still busy when the phase ended. The
+resolution is the 5 s of the samples, 8 % of scan 1 and 6 % of scan 2.
+
+The idle page's single 5 s intervals swing between 5 and 35 %, a busy one runs above 100 %. Three intervals and a
+threshold between the two read through that noise. The threshold is fixed rather than each variant's own idle level: a
+variant busy all the time then reads 100 %, not 0.
+
+### A run that does not count
+
+A run fails, with its reason, when between t0 and its end:
+
+- the web process's PID changes,
+- the kiosk's restarts or OOM kills grow,
+- the boot id changes,
+- no sample arrives for three intervals (`sampling.Samples.next` raises),
+- or the page does not load within `board.Session.install`'s 90 s.
+
+A failed run keeps its payloads and its row in the per-run table, and counts toward no median. The benchmark goes on
+with the next run unless the board stopped answering, which ends it.
+
+### Cleanup
+
+On every exit, Ctrl-C and failures included, in this order: `board.Session.restore` (the kiosk shows the board's own
+page again), `systemctl start netmon-scanner.service`, the tunnel closed, the static server and the container stopped.
+A restore or start that fails prints its message; a reboot removes the session's files and starts the scanner.
+
+### The report
+
+`dist/bench/<YYYY-MM-DD-HHMM>/`:
+
+- **`report.md`**
+  - The header: target, date, boot id, runs per variant, the run order, "scanner stopped".
+  - A legend: what each phase and figure means, in plain words, and why the status bar's pills stay empty.
+  - The summary: a column per variant, and per further variant a Δ column against the first. A row per figure under a
+    heading row per phase: `page load`, `scan 1 (60 s): 53 hosts appear`, `scan 2 (90 s): 8 hosts change`. The page load
+    shows load time, CPU usage and memory peak; each scan CPU usage, busy and memory peak. A first row counts the valid
+    runs (`3 of 3`).
+
+    A cell lists the valid runs' values in the order they ran, with their unit, up to five (`50 % · 50 % · 58 %`); with
+    more, `median (min–max)`. Δ is the relative change of the medians in %; `about the same` when both variants have
+    more than one run and their ranges overlap; `n/a` without a value or against a zero. Example:
+
+    |                                   | a33715a               | 28a4cf3            | Δ 28a4cf3 |
+    |-----------------------------------|-----------------------|--------------------|-----------|
+    | valid runs                        | 3 of 3                | 3 of 3             |           |
+    | **scan 2 (90 s): 8 hosts change** |                       |                    |           |
+    | CPU usage                         | 119 % · 120 % · 121 % | 57 % · 55 % · 60 % | -52 %     |
+    | busy                              | 100 % · 100 % · 100 % | 59 % · 59 % · 61 % | -41 %     |
+
+  - The details: every run's figures in the order they ran, every figure above included, failed runs with their
+    reason, so drift shows.
+- **`runs/<n>-<directory>.jsonl`**: the raw metrics payloads of each run, with t0, the phase boundaries and the load
+  time, so a changed rule or a new figure is computed again without the board. The directory is the bundle's:
+  `working-tree` or the commit's sha.
+
+The terminal prints a line per finished run (`run 2/6 28a4cf3: page load 21 s, 52 % CPU; scan 1 79 % CPU, busy 50 %;
+…`) and the path of the report at the end.
+
+### What else changes
+
+- The [Makefile](../../../Makefile) gains `bench` with its help line.
+- The [README](../../../README.md) gains `make bench` under "Build and test the packages".
+
+## Tests
+
+Each behaviour at the lowest level that catches its defect.
+
+- **[tests/test_bench.py](../../../tests/test_bench.py), tier 0**, pure logic, no board, container or sleep:
+  - the scenario: 53 hosts; scan 2 differs by exactly 3 down, 3 up, 1 new and 1 gone; timestamps are t0 plus offsets;
+    the same t0 gives the same payloads;
+  - `VARIANTS` and `RUNS`: refs and `.`, `RUNS` defaulting to 1 and rejecting 0, the interleaved order;
+  - the timeline against a fake sample stream and publisher: scan 2 on the first sample at or after t0 + 60 s, the end
+    on the first at or after t0 + 150 s, silence raising;
+  - the figures from built `Sample`s: CPU usage per phase, the page load's from the renderer's start, the peak and end
+    memory, the fault delta;
+  - the load time from the kiosk's journal;
+  - busy: three intervals under 50 %, not one, and 100 % when the renderer never gets there;
+  - a failed run per reason: PID change, kiosk restart, OOM kill, boot id;
+  - the report: the runs' values listed, `median (min–max)` beyond five, `about the same` on overlapping ranges, failed
+    runs excluded with `n of m`, the details in run order.
+- **[tests/test_makefile.py](../../../tests/test_makefile.py)**: the `bench` target and its help line.
+- **`-m preview`, Podman**, next to [test_preview_broker.py](../../../tests/test_preview_broker.py): a cleared retained
+  topic leaves nothing for a new subscriber; the static server answers a variant's `index.html` and its assets under the
+  variant's directory.
+- **Not automated:** building a ref in a worktree (Gradle) and the board end to end. The acceptance run is
+  `make bench TARGET=pi@netmon.local VARIANTS="a33715a 28a4cf3"`: each phase has its figures, and 28a4cf3 is clearly
+  ahead of its parent in scan 2's CPU usage and busy share. Its report goes into a Numbers section here.
+
+## Numbers
+
+Measured on the board on 2026-10-04 with `make bench TARGET=pi@netmon.local VARIANTS="a33715a 28a4cf3" RUNS=3`:
+
+|  | a33715a | 28a4cf3 | Δ 28a4cf3 |
+|---|---|---|---|
+| valid runs | 3 of 3 | 3 of 3 |  |
+| **page load** |  |  |  |
+| load time | 20 s · 21 s · 20 s | 20 s · 20 s · 20 s | about the same |
+| CPU usage | 45 % · 45 % · 55 % | 53 % · 56 % · 51 % | about the same |
+| memory peak | 171 MB · 167 MB · 173 MB | 173 MB · 171 MB · 179 MB | about the same |
+| **scan 1 (60 s): 53 hosts appear** |  |  |  |
+| CPU usage | 116 % · 116 % · 116 % | 76 % · 76 % · 81 % | -34 % |
+| busy | 100 % · 100 % · 100 % | 46 % · 46 % · 58 % | -54 % |
+| memory peak | 174 MB · 173 MB · 166 MB | 175 MB · 167 MB · 179 MB | about the same |
+| **scan 2 (90 s): 8 hosts change** |  |  |  |
+| CPU usage | 119 % · 120 % · 121 % | 57 % · 55 % · 60 % | -52 % |
+| busy | 100 % · 100 % · 100 % | 59 % · 59 % · 61 % | -41 % |
+| memory peak | 166 MB · 160 MB · 171 MB | 175 MB · 171 MB · 183 MB | about the same |
+
+a33715a keeps the renderer above one core through both scans, so it is busy for all of each; on the panel its nodes
+appear one by one. 28a4cf3 calms down about halfway through each scan.
+
+## Out of scope
+
+- The page's own responsiveness (marks, long tasks): the user chose the metrics' figures.
+- A CI gate or thresholds, and the VM: the board is the only place whose CPU is the panel's.
+- Comparing two benchmarks of different days; the raw payloads keep it possible.
+- Refs before #54 against refs after it: the older pages poll `stats.json`, which the static server answers with 404, so
+  their cost differs by that. Within either side the comparison holds.
+- The status bar's pills: the fake broker carries no metrics, so they stay empty for every variant.

@@ -89,6 +89,29 @@ class TestEnsure:
 
 
 @pytest.mark.tier0
+class TestStart:
+    def test_refuses_a_port_that_already_answers(self):
+        with socket.socket() as server:
+            server.bind(("127.0.0.1", 0))
+            server.listen()
+            port = server.getsockname()[1]
+
+            with pytest.raises(RuntimeError, match=f"port {port} is taken"):
+                preview_broker.start(Broker(FAKE, "127.0.0.1", port))
+
+    def test_names_no_preview_variable_for_a_taken_port(self):
+        with socket.socket() as server:
+            server.bind(("127.0.0.1", 0))
+            server.listen()
+            port = server.getsockname()[1]
+
+            with pytest.raises(RuntimeError) as raised:
+                preview_broker.start(Broker(FAKE, "127.0.0.1", port))
+
+        assert "BROKER" not in str(raised.value)
+
+
+@pytest.mark.tier0
 class TestCommands:
     def test_run_publishes_the_websocket_listener_on_the_loopback_only(self):
         command = preview_broker.run_command(Broker(FAKE, "localhost", 8080))
@@ -109,6 +132,15 @@ class TestCommands:
         assert command[command.index("-t") + 1] == "dt/netmon/x/scan"
         assert command[command.index("-m") + 1] == '{"event": "scan"}'
         assert "-r" in command
+
+    def test_clear_sends_an_empty_retained_message(self):
+        command = preview_broker.clear_command("dt/netmon/x/scan")
+
+        assert command[:3] == ["podman", "exec", "netmon-preview-broker"]
+        assert command[command.index("-t") + 1] == "dt/netmon/x/scan"
+        assert "-r" in command
+        assert "-n" in command
+        assert "-m" not in command
 
 
 @pytest.mark.tier0
@@ -154,6 +186,21 @@ class TestBrokerContainer:
         finally:
             preview_broker.stop()
 
+    def test_starts_empty_and_clears_a_retained_scan(self):
+        broker = Broker(FAKE, "127.0.0.1", free_port())
+
+        preview_broker.start(broker)
+        try:
+            empty = retained_messages()
+            preview_broker.publish({"dt/netmon/x/scan": {"event": "scan"}})
+            published = retained_messages()
+            preview_broker.clear("dt/netmon/x/scan")
+            cleared = retained_messages()
+        finally:
+            preview_broker.stop()
+
+        assert (empty, published, cleared) == ("", 'dt/netmon/x/scan {"event": "scan"}\n', "")
+
 
 class Served:
     """Reaches the Mac's ports at `host`, as the VM's kiosk does."""
@@ -181,3 +228,10 @@ def websocket_handshake(broker: Broker) -> str:
     with socket.create_connection((broker.host, broker.port), timeout=5) as s:
         s.sendall(request.encode())
         return s.recv(200).decode(errors="replace")
+
+
+def retained_messages() -> str:
+    return subprocess.run(
+        ["podman", "exec", preview_broker.CONTAINER, "mosquitto_sub", "-h", "127.0.0.1", "-p", "1883", "-t", "dt/netmon/#", "-C", "1", "-W", "2", "-v"],
+        capture_output=True, text=True, check=False,
+    ).stdout
