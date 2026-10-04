@@ -20,14 +20,25 @@ import dev.fritz2.core.Store
 import dev.fritz2.core.joinClasses
 import dev.fritz2.core.mapByElement
 import dev.fritz2.core.mapByKey
+import kotlinx.browser.document
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.MainScope
+import kotlinx.coroutines.plus
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.drop
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.flow.transformWhile
 import org.w3c.dom.HTMLElement
 import org.w3c.dom.HTMLUListElement
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.ZERO
+import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Instant
 
 fun RenderContext.networks(scanEventsStore: ScanEventsStore) {
@@ -68,7 +79,7 @@ fun RenderContext.scan(
             unstableHosts.data.map { it.size }
                 .combine(stableHosts.data.map { it.size }, ::sectionSizes)
         )
-        hosts(unstableHosts, classes = "hosts--unstable")
+        hosts(unstableHosts, slowClock = MinuteClock.data, classes = "hosts--unstable")
         unstableHosts.data.map { it.isNotEmpty() }
             .combine(stableHosts.data.map { it.isNotEmpty() }) { a, b ->
                 a && b
@@ -81,6 +92,26 @@ fun RenderContext.scan(
             }
         hosts(stableHosts, clock = MinuteClock.data, classes = "hosts--stable")
     }
+}
+
+/**
+ * The time passed since this host changed its status, following [clock] while it is below a minute and shown in
+ * seconds, then [slowClock]; a single `null` for a host without a status change.
+ *
+ * A clock replays its latest tick on collection. That tick of [slowClock] can be a minute old, so it is skipped.
+ */
+@OptIn(ExperimentalCoroutinesApi::class)
+private fun Host.elapsedTimes(clock: Flow<Instant>, slowClock: Flow<Instant>): Flow<Duration?> = flow {
+    if (since == null) {
+        emit(null)
+        return@flow
+    }
+    clock.transformWhile { now ->
+        val elapsedTime = getElapsedTime(now)
+        emit(elapsedTime)
+        elapsedTime != null && elapsedTime < 1.minutes
+    }.collect(this)
+    slowClock.drop(1).collect { emit(getElapsedTime(it)) }
 }
 
 private fun sectionSizes(unstable: Int, stable: Int): String = "--unstable: $unstable; --stable: $stable"
@@ -130,20 +161,22 @@ private fun HtmlTag<HTMLElement>.meta(
 fun RenderContext.hosts(
     hosts: Store<List<Host>>,
     clock: Flow<Instant> = CurrentTimeStore.data,
+    slowClock: Flow<Instant> = clock,
     classes: String? = null,
 ): HtmlTag<HTMLUListElement> = ul(joinClasses("hosts", classes)) {
     hosts.data.renderEach(Host::ip, into = this) { value ->
-        li { host(hosts.mapByElement(value, Host::ip), clock) }
+        li { host(hosts.mapByElement(value, Host::ip), clock, slowClock) }
     }
 }
 
 fun RenderContext.host(
     host: Store<Host>,
     clock: Flow<Instant>,
+    slowClock: Flow<Instant>,
     highlightDuration: Duration = UiSettings.HOST_STATE_CHANGE_HIGHLIGHT_DURATION,
 ) {
 
-    val elapsedTime: Flow<Duration?> = clock.combine(host.data) { now, h -> h.getElapsedTime(now) }
+    val elapsedTime: Flow<Duration?> = host.data.flatMapLatest { it.elapsedTimes(clock, slowClock) }
 
     val ips = host.data.map { it.ip }.distinctUntilChanged()
     val hostNames = host.data.map { it.name }.distinctUntilChanged()
@@ -184,14 +217,13 @@ fun RenderContext.host(
                 if (status != null) {
                     div("host__status") {
                         +status.toString()
+                        // One text node that is written, not rendered anew, as every tick of a fresh card would launch and replace one.
+                        val since = document.createTextNode("")
+                        domNode.appendChild(since)
                         elapsedTime
-                            .map { it?.toMomentString(descriptive = false) }
-                            .render {
-                                if (it != null) {
-                                    +" since "
-                                    +it
-                                }
-                            }
+                            .map { it?.toMomentString(descriptive = false)?.let { moment -> " since $moment" }.orEmpty() }
+                            .onEach { since.data = it }
+                            .launchIn(MainScope() + job)
                     }
                 }
             }

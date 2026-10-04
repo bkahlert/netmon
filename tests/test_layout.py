@@ -62,6 +62,32 @@ class TestLayout:
         assert iterations
         assert all(count != float("inf") for count in iterations), iterations
 
+    @pytest.mark.parametrize("status", ["up", "down"])
+    def test_a_highlighted_host_only_fades_in_opacity_so_it_is_not_repainted(self, browser, page_server, status):
+        page = browser.new_page(viewport={"width": PANEL[0], "height": PANEL[1]})
+        try:
+            page.route_web_socket("ws://127.0.0.1:1/", layout.broker({}))
+            page.goto(page_server.url)
+            page.evaluate(
+                """status => {
+                    const host = document.createElement('div')
+                    host.className = 'host host--highlighted'
+                    host.dataset.status = status
+                    document.body.append(host)
+                }""",
+                status,
+            )
+            animated = page.evaluate(
+                """document.querySelector('.host--highlighted').getAnimations({ subtree: true })
+                    .flatMap(a => a.effect.getKeyframes().flatMap(k => Object.keys(k)))
+                    .filter(name => !['offset', 'computedOffset', 'easing', 'composite'].includes(name))"""
+            )
+        finally:
+            page.close()
+
+        assert animated
+        assert set(animated) == {"opacity"}, animated
+
     def test_a_few_hosts_keep_their_natural_size(self, browser, page_server):
         found = open_page(browser, page_server, PANEL, sources=1, counts=(3, 0))
 

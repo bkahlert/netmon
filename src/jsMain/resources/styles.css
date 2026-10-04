@@ -113,21 +113,49 @@ body::before { @apply content-[''] table h-0; }
 
 .host__icon { color: var(--status-color); }
 
-.host--highlighted[data-status=up] {
-  animation: fading-up ease-out var(--HOST_STATE_CHANGE_HIGHLIGHT_DURATION) both;
+/*
+ * The glow and the ring of a highlighted host are pseudo-elements of their own that only fade in opacity, once a second.
+ * Fading a box-shadow repaints the card in every frame and kept the Pi's software painter at a fifth of a core while one
+ * host was highlighted, which scans keep up; fading the opacity smoothly keeps its compositor at 15 %.
+ */
+.host--highlighted { position: relative; }
+
+.host--highlighted::before,
+.host--highlighted::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  will-change: opacity;
 }
 
-.host--highlighted[data-status=down] {
-  animation: fading-down ease-out var(--HOST_STATE_CHANGE_HIGHLIGHT_DURATION) both;
+.host--highlighted::after { box-shadow: 0 0 0 2px var(--status-color); }
+
+.host--highlighted[data-status=up]::before {
+  box-shadow: 0 0 4px 4px var(--status-color-bright, var(--status-color));
+  animation: host-glow steps(10) calc(var(--HOST_STATE_CHANGE_HIGHLIGHT_DURATION) / 6) both;
 }
 
-@keyframes fading-up {
-  0% { box-shadow: 0 0 4px 4px var(--status-color-bright, var(--status-color)); }
-  16.6% { box-shadow: 0 0 0 2px var(--status-color); }
-  100% { box-shadow: 0 0 0 2px transparent; }
+.host--highlighted[data-status=up]::after {
+  animation: host-ring-up steps(60) var(--HOST_STATE_CHANGE_HIGHLIGHT_DURATION) both;
 }
 
-@keyframes fading-down {
-  0% { box-shadow: 0 0 0 2px var(--status-color); }
-  100% { box-shadow: 0 0 0 2px transparent; }
+.host--highlighted[data-status=down]::after {
+  animation: host-ring-down steps(60) var(--HOST_STATE_CHANGE_HIGHLIGHT_DURATION) both;
+}
+
+@keyframes host-glow {
+  0% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+@keyframes host-ring-up {
+  0%, 16.6% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+@keyframes host-ring-down {
+  0% { opacity: 1; }
+  100% { opacity: 0; }
 }

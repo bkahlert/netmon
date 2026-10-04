@@ -9,15 +9,18 @@ import com.bkahlert.netmon.Status
 import com.bkahlert.netmon.fritz2.runTest
 import com.bkahlert.netmon.model_identification.DeviceModelCodes
 import dev.fritz2.core.RootStore
+import io.kotest.matchers.collections.shouldContainAll
 import io.kotest.matchers.collections.shouldContainExactly
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldContain
 import kotlinx.coroutines.flow.MutableStateFlow
 import org.w3c.dom.HTMLElement
+import org.w3c.dom.Node
 import org.w3c.dom.asList
 import kotlin.test.Test
 import kotlin.time.Clock
 import kotlin.time.Duration.Companion.hours
+import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
 import kotlin.time.Instant
 
@@ -34,6 +37,64 @@ class NetworkKtTest {
         clock.value = now + 90.seconds
 
         container.textOnce("since 2m") shouldContain "since 2m"
+        container.remove()
+    }
+
+    @Test
+    fun a_cards_since_text_is_updated_in_place_not_rendered_anew() = runTest {
+        val now = Clock.System.now()
+        val clock = MutableStateFlow(now)
+        val store = RootStore(listOf(Host(ip = IP.of("192.168.1.1"), status = Status.UP, since = now - 30.seconds)), job = job)
+        val container = rendered { hosts(store, clock = clock) }
+        container.textOnce("since 30s")
+        val before = container.querySelector(".host__status")!!.nodes()
+
+        clock.value = now + 5.seconds
+
+        container.textOnce("since 35s")
+        container.querySelector(".host__status")!!.nodes() shouldContainAll before
+        container.remove()
+    }
+
+    @Test
+    fun a_card_unchanged_for_a_minute_follows_the_slow_clock() = runTest {
+        val now = Clock.System.now()
+        val fast = MutableStateFlow(now)
+        val slow = MutableStateFlow(now)
+        val store = RootStore(listOf(Host(ip = IP.of("192.168.1.1"), status = Status.UP, since = now - 5.minutes)), job = job)
+        val container = rendered { hosts(store, clock = fast, slowClock = slow) }
+        container.textOnce("since 5m") shouldContain "since 5m"
+
+        fast.value = now + 60.seconds
+        nextFrames(3)
+
+        container.textContent.orEmpty() shouldContain "since 5m"
+
+        slow.value = now + 60.seconds
+
+        container.textOnce("since 6m") shouldContain "since 6m"
+        container.remove()
+    }
+
+    @Test
+    fun a_card_hands_over_to_the_slow_clock_once_a_minute_old() = runTest {
+        val now = Clock.System.now()
+        val fast = MutableStateFlow(now)
+        val slow = MutableStateFlow(now)
+        val store = RootStore(listOf(Host(ip = IP.of("192.168.1.1"), status = Status.UP, since = now - 30.seconds)), job = job)
+        val container = rendered { hosts(store, clock = fast, slowClock = slow) }
+        container.textOnce("since 30s") shouldContain "since 30s"
+
+        fast.value = now + 40.seconds
+        container.textOnce("since 1m") shouldContain "since 1m"
+        fast.value = now + 100.seconds
+        nextFrames(3)
+
+        container.textContent.orEmpty() shouldContain "since 1m"
+
+        slow.value = now + 150.seconds
+
+        container.textOnce("since 3m") shouldContain "since 3m"
         container.remove()
     }
 
@@ -147,3 +208,5 @@ private fun HTMLElement.hostIps(section: String): List<String> =
 
 private fun HTMLElement.fitLengths(): List<String> =
     querySelectorAll(".fit").asList().map { (it as HTMLElement).style.getPropertyValue("--len").trim() }
+
+private fun Node.nodes(): List<Node> = childNodes.asList().flatMap { listOf(it) + it.nodes() }
