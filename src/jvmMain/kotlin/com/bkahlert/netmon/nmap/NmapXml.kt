@@ -3,19 +3,12 @@ package com.bkahlert.netmon.nmap
 import com.bkahlert.netmon.Host
 import com.bkahlert.netmon.IP
 import com.bkahlert.netmon.Status
-import javax.xml.XMLConstants
-import javax.xml.stream.XMLInputFactory
+import com.bkahlert.netmon.xml.SecureXml
 import javax.xml.stream.XMLStreamConstants
 import javax.xml.stream.XMLStreamReader
 
 /** nmap's XML output (`-oX`) read into [Host] instances. */
 object NmapXml {
-
-    private val factory: XMLInputFactory = XMLInputFactory.newDefaultFactory().apply {
-        setProperty(XMLInputFactory.SUPPORT_DTD, false)
-        setProperty(XMLInputFactory.IS_SUPPORTING_EXTERNAL_ENTITIES, false)
-        setProperty(XMLConstants.ACCESS_EXTERNAL_DTD, "")
-    }
 
     /**
      * Returns the hosts of the nmap run in [xml], in document order.
@@ -24,7 +17,7 @@ object NmapXml {
      * and the MAC (lowercase) come from the MAC address element. Each is `null` when absent.
      */
     fun parse(xml: String): List<Host> {
-        val reader = factory.createXMLStreamReader(xml.reader())
+        val reader = SecureXml.reader(xml)
         try {
             return buildList {
                 while (reader.hasNext()) {
