@@ -1,4 +1,5 @@
 import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
+import org.jetbrains.kotlin.gradle.targets.js.webpack.KotlinWebpack
 import org.jetbrains.kotlin.gradle.targets.js.webpack.KotlinWebpackConfig
 import org.jetbrains.kotlin.gradle.targets.js.yarn.YarnLockMismatchReport
 import org.jetbrains.kotlin.gradle.targets.js.yarn.YarnPlugin
@@ -171,6 +172,16 @@ tasks {
     assemble {
         finalizedBy("shadowJar")
     }
+}
+
+// The display shows the version it was built from (webpack.config.d/build-version.js). As a task input it keeps a new commit
+// from reusing a bundle that names the previous one; webpack asks git itself.
+val buildVersion = providers
+    .exec { commandLine("git", "describe", "--tags", "--always", "--dirty"); isIgnoreExitValue = true }
+    .standardOutput.asText.map { it.trim().ifEmpty { "unknown" } }
+
+tasks.withType<KotlinWebpack>().configureEach {
+    inputs.property("buildVersion", buildVersion)
 }
 
 // The production bundle and the images and JSON it uses carry a hash of their content in their names (webpack.config.d).

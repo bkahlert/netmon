@@ -1,5 +1,6 @@
 package com.bkahlert.netmon.ui
 
+import com.bkahlert.netmon.BUILD_VERSION
 import com.bkahlert.netmon.ConsoleLogStore
 import com.bkahlert.netmon.CurrentTimeStore
 import com.bkahlert.netmon.KioskStats
@@ -10,8 +11,9 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import kotlin.time.Clock
 
-fun RenderContext.status(consoleLogStore: ConsoleLogStore, kioskStats: Flow<KioskStats?>) {
+fun RenderContext.status(consoleLogStore: ConsoleLogStore, kioskStats: Flow<KioskStats?>, version: String = BUILD_VERSION) {
     h1("font-bold") { +"Network Monitor" }
+    pill(null, version, "the version this display was built from")
     div("flex items-baseline gap-1 empty:hidden") {
         kioskStats.render(this) { stats ->
             if (stats != null) {
@@ -44,10 +46,10 @@ fun RenderContext.status(consoleLogStore: ConsoleLogStore, kioskStats: Flow<Kios
     }
 }
 
-private fun RenderContext.pill(label: String, value: String, explanation: String) {
+private fun RenderContext.pill(label: String?, value: String, explanation: String) {
     span("rounded-full border border-slate-100/25 px-1.5 leading-none tabular-nums") {
         attr("title", explanation)
-        span("opacity-50") { +"$label " }
+        label?.let { span("opacity-50") { +"$it " } }
         +value
     }
 }
