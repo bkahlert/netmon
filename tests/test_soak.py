@@ -4,28 +4,28 @@ from pathlib import Path
 
 import pytest
 
-from sampling import KIOSK, UNITS, parse_duration, read_sample, render_summary, render_table
+from sampling import KIOSK, UNITS, parse_duration, render_summary, render_table, subscribed, thin
 
 pytestmark = pytest.mark.soak
 
 
 class TestSoak:
-    def test_both_units_hold_for_the_duration(self, host, request, capfd, report, kiosk_variant):
+    def test_both_units_hold_for_the_duration(self, host, target, request, capfd, report, kiosk_variant):
         duration = parse_duration(request.config.getoption("--soak-duration"))
         interval = parse_duration(request.config.getoption("--soak-interval"))
         kiosk_expected = host.file("/dev/dri").exists
         limits = {unit: host.run(f"cat /sys/fs/cgroup/system.slice/{unit}/memory.max").stdout.strip() or "missing" for unit in UNITS}
 
-        samples = [read_sample(host)]
-        deadline = time.monotonic() + duration
-        silent = False
-        try:
-            while time.monotonic() < deadline:
-                time.sleep(interval)
-                samples.append(read_sample(host))
-        except ConnectionError:
-            silent = True
-        report.write_text(render_table(samples, limits))
+        with subscribed(target) as stream:
+            samples = [stream.next()]
+            deadline = time.monotonic() + duration
+            silent = False
+            try:
+                while time.monotonic() < deadline:
+                    samples.append(stream.next())
+            except ConnectionError:
+                silent = True
+        report.write_text(render_table(thin(samples, interval), limits))
 
         reporter = request.config.pluginmanager.get_plugin("terminalreporter")
         with capfd.disabled():
@@ -33,7 +33,7 @@ class TestSoak:
             reporter.write_line(f"{render_summary(samples)}; table in {report}")
         first, last = samples[0], samples[-1]
         if silent:
-            pytest.fail(f"the target stopped answering {last.at - first.at:.0f} s after the first sample; a reboot is the likely cause; table in {report}")
+            pytest.fail(f"no metrics arrived {last.at - first.at:.0f} s after the first sample; a reboot is the likely cause; table in {report}")
         assert last.boot_id == first.boot_id
         for unit in UNITS:
             if unit == KIOSK and not kiosk_expected:

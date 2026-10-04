@@ -12,6 +12,7 @@ pihero-testkit = { git = "https://github.com/bkahlert/pihero", subdirectory = "t
 
 [dependency-groups]
 dev = [
+    "paho-mqtt>=2.1",
     "pihero-testkit",
     "playwright>=1.63.0",
 ]

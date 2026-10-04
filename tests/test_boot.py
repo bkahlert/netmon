@@ -1,16 +1,15 @@
 import json
 import shlex
 import time
-from collections.abc import Callable
 from pathlib import Path
 
 import pytest
 from pihero_testkit.ssh import SshTarget
 
 from booted import journal_until, kiosk_conf, unexpected_recoverable_errors
+from sampling import subscribed
 
 pytestmark = pytest.mark.boot
-SAMPLE_INTERVAL = 5
 
 
 class TestProvisioning:
@@ -81,21 +80,12 @@ class TestKiosk:
         assert expected, conf
         assert expected <= set(environ), sorted(environ)
 
-    def test_the_sampler_reports_the_web_process(self, host):
-        if not host.file("/dev/dri").exists:
-            pytest.skip("no display adapter")
-
-        sample = sample_until(host, lambda s: s.get("webCpu") is not None)
-
-        assert sample["kioskCpu"] is not None
-        assert sample["kioskMemory"] > 0
-
     def test_is_pictured_after_the_first_scan(self, host, target, request, capfd):
         if getattr(target, "display", None) is None:
             pytest.skip("no virtual display")
         log = journal_until(host, "completed and published to", attempts=90)
         assert "completed and published to" in log
-        wait_until_the_page_polled_a_sample(host)
+        wait_until_the_page_shows_the_kiosks_load(target)
 
         picture = target.screenshot(Path.cwd() / "dist" / "tier2" / "kiosk.png")
         show = host.check_output("systemctl show -p MemoryCurrent -p MemoryPeak pihero-kiosk.service").splitlines()
@@ -128,18 +118,9 @@ def png_size(path: Path) -> tuple[int, int]:
     return int.from_bytes(header[16:20], "big"), int.from_bytes(header[20:24], "big")
 
 
-def wait_until_the_page_polled_a_sample(host) -> None:
-    sample_until(host, lambda s: s.get("webCpu") is not None)
-    time.sleep(SAMPLE_INTERVAL + 1)
-
-
-def sample_until(host, ready: Callable[[dict], bool], attempts: int = 20) -> dict:
-    sample = {}
-    for _ in range(attempts):
-        text = host.run("python3 -c 'import urllib.request; print(urllib.request.urlopen(\"http://localhost/stats.json\", timeout=5).read().decode())'").stdout
-        if text.strip():
-            sample = json.loads(text)
-            if ready(sample):
-                return sample
-        time.sleep(1)
-    return sample
+def wait_until_the_page_shows_the_kiosks_load(target) -> None:
+    with subscribed(target) as stream:
+        while stream.next().system.web_pid is None:
+            pass
+        stream.next()
+    time.sleep(1)
