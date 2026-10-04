@@ -1,8 +1,8 @@
 # Device files
 
 `sample/` is a complete Netmon device for [Pi Hero 2](https://github.com/bkahlert/pihero): pihero's sample device plus the
-netmon apt source (its key inline, so the device trusts nothing else), the packages `netmon-scanner` and `netmon-display`,
-and `/etc/pihero/kiosk.conf` with the page the kiosk shows. Every other key is explained in pihero's
+netmon apt source (its key inline, so the device trusts nothing else), the packages `netmon-scanner`, `netmon-display` and
+`netmon-metrics`, and `/etc/pihero/kiosk.conf` with the page the kiosk shows. Every other key is explained in pihero's
 [devices/README.md](https://github.com/bkahlert/pihero/blob/main/devices/README.md). Directories other than `sample/`
 are gitignored: keep your own here or in a private repository. `sample/` is also what tier 2 boots: `make test-tier2`
 renders it for the VM with the testkit's user and the local package repository and nothing else, so the file users copy is

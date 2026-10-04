@@ -17,7 +17,7 @@ The application consists of three independent parts:
 - a network scanner, Kotlin compiled to a native arm64 binary with GraalVM, that publishes appearing and disappearing
   hosts using MQTT,
 - a Kotlin/JS and [Fritz2](https://github.com/jwstegemann/fritz2) based web interface that display the results, by subscribing to MQTT, and
-- two Debian packages, `netmon-scanner` and `netmon-display`, from a signed apt repository at
+- three Debian packages, `netmon-scanner`, `netmon-display` and `netmon-metrics`, from a signed apt repository at
   [bkahlert.github.io/netmon](https://bkahlert.github.io/netmon/), installed on a Raspberry Pi by a
   [Pi Hero](https://github.com/bkahlert/pihero) device file.
 

@@ -9,9 +9,9 @@ import kotlin.time.Duration.Companion.seconds
 import kotlin.time.Instant
 
 /**
- * A sample of the kiosk published by `netmon-metrics`: taken [at] the epoch second, [interval] seconds after the one
- * before; [kioskCpu] and [webCpu] in percent of one core, [kioskMemory] RAM plus zram in bytes, each `null` when its
- * source was absent.
+ * A sample of the kiosk from a `netmon-metrics` message: taken [at] the epoch second by a sampler that publishes every
+ * [interval] seconds; [kioskCpu] and [webCpu] in percent of one core, [kioskMemory] the unit's RAM plus swap usage in
+ * bytes, each `null` when its source was absent.
  */
 data class KioskStats(
     val at: Long,
@@ -24,7 +24,7 @@ data class KioskStats(
     fun isFreshAt(now: Instant): Boolean = (now - Instant.fromEpochSeconds(at)).absoluteValue < interval.seconds * 3
 
     companion object {
-        /** The sampler's interval, which the page polls at as well. */
+        /** The sampler's interval, at which the page checks the sample's freshness again. */
         val INTERVAL: Duration = 5.seconds
     }
 }

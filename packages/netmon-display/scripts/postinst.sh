@@ -1,5 +1,5 @@
 # shellcheck shell=sh
-# Up to 2.x this package ran netmon-display-stats.service; dpkg removes its file on upgrade but not the running
+# Up to 2.2 this package ran netmon-display-stats.service; dpkg removes its file on upgrade but not the running
 # process or its enablement. netmon-metrics publishes the figures now.
 if [ -d /run/systemd/system ]; then
   deb-systemd-invoke stop netmon-display-stats.service >/dev/null || true

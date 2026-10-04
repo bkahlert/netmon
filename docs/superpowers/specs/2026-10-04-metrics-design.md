@@ -9,14 +9,16 @@ samplers with different figures.
 
 ## Today
 
-- [netmon-display-stats](../../../packages/netmon-display/root/usr/lib/netmon/netmon-display-stats) is a bash loop in
-  `netmon-display`. Every 5 s it writes three figures to `/run/netmon-display/stats.json`: the kiosk's CPU, the web
-  process's CPU and the kiosk's RAM plus zram. lighttpd serves the file through a symlink, the page polls it
+- [netmon-display-stats][netmon-display-stats] is a bash loop in `netmon-display`. Every 5 s it writes three figures to
+  `/run/netmon-display/stats.json`: the kiosk's CPU, the web process's CPU and the kiosk's RAM plus zram. lighttpd
+  serves the file through a symlink, the page polls it
   ([stores.kt](../../../src/jsMain/kotlin/com/bkahlert/netmon/stores.kt), `KioskStatsStore`).
 - [tests/sampling.py](../../../tests/sampling.py) is a second, richer sampler on the Mac. Over ssh it reads both units'
   memory, swap, peaks, restarts and OOM kills, the web and scanner processes' `smaps_rollup`, meminfo, vmstat, PSI, zram
   and `top`, for [the soak](../../../tests/test_soak.py) and [the apt probe](../../../tests/test_apt.py).
 - The two share neither figures nor format.
+
+[netmon-display-stats]: https://github.com/bkahlert/netmon/blob/28a4cf34f0f84637de49a0425e8a46fce1b00fe4/packages/netmon-display/root/usr/lib/netmon/netmon-display-stats
 
 ## Decisions
 
@@ -48,17 +50,19 @@ Settled with the user on 2026-10-04:
 
 ### Package and unit
 
-`packages/netmon-metrics/`, laid out as the two existing packages: `nfpm.yaml` (`arch: arm64`, depends on `mosquitto` and `dbus`),
-`root/usr/lib/systemd/system/netmon-metrics.service`, `units.txt`, `scripts/`, `tests/test_installed.py`. The binary is
-`/usr/lib/netmon/netmon-metrics`. [devices/sample/user-data](../../../devices/sample/user-data) installs the package
-next to the other two.
+`packages/netmon-metrics/`, laid out as the two existing packages: `nfpm.yaml` (`arch: arm64`, depends on `mosquitto`
+and `dbus`), `root/usr/lib/systemd/system/netmon-metrics.service`, `units.txt`, `scripts/`, `tests/test_installed.py`.
+The binary is `/usr/lib/netmon/netmon-metrics`. [devices/sample/user-data](../../../devices/sample/user-data) installs
+the package next to the other two. `netmon-display` depends on it, so `apt upgrade` on a board installs the sampler
+together with the display that retires `netmon-display-stats`.
 
 The unit runs as the static system user `netmon-metrics`, which the package's maintainer scripts create and remove as
 `netmon-scanner`'s do. It is not `DynamicUser=yes` because systemd starts dbus-daemon with
 `SYSTEMD_NSS_DYNAMIC_BYPASS=1`, so the bus cannot resolve a dynamic user and drops its connection. The unit runs
-`Restart=always`, `Nice=10`, `MemoryMax=24M` with `GOMEMLIMIT=16MiB`, and keeps the sandbox of `netmon-display-stats.service` with these changes: `PrivateNetwork=` goes; `RestrictAddressFamilies=AF_UNIX
-AF_INET AF_INET6`; `IPAddressAllow=localhost` next to `IPAddressDeny=any`. AF_UNIX is for systemd's D-Bus API. The
-command line names what it watches:
+`Restart=always`, `Nice=10`, `MemoryMax=24M` with `GOMEMLIMIT=16MiB`, and keeps the sandbox of
+`netmon-display-stats.service` with these changes: `PrivateNetwork=` goes; `RestrictAddressFamilies=AF_UNIX AF_INET
+AF_INET6`; `IPAddressAllow=localhost` next to `IPAddressDeny=any`. AF_UNIX is for systemd's D-Bus API. The command
+line names what it watches:
 
 ```
 ExecStart=/usr/lib/netmon/netmon-metrics \
@@ -109,6 +113,10 @@ Every data point carries `timeUnixNano`, the time of the sample. Counters and up
 `ActiveEnterTimestamp` (unit) or the process's start from field 22 of `/proc/<pid>/stat` (process). A new start time is
 OTel's reset signal: consumers never take a delta across it.
 
+`systemd.unit.restarts` takes the boot time as its start. systemd counts `NRestarts` across the unit's automatic
+restarts, each of which moves `ActiveEnterTimestamp`, but zeroes it on every other start and on `reset-failed`. So a
+consumer may see the counter drop under an unchanged start time after a manual start or restart.
+
 `*.cpu.utilization` is the CPU time's delta to the previous sample of the same start time, divided by the elapsed
 time and by `system.cpu.logical.count`, as the semantic conventions define it. A sample without such a predecessor has
 no utilization point.
@@ -157,6 +165,8 @@ column and summary are renamed to say anon.
 - A counter below its previous value under the same start time yields no utilization point for that sample.
 - The broker is down: autopaho reconnects; samples meanwhile are dropped, not queued. Sampling goes on, so the
   utilization deltas stay continuous.
+- The system bus is down at the start: the units go without their state. Lost later: the sampler exits, and
+  `Restart=always` connects it anew.
 - The sampler is dead: the Last Will clears the topic. After a reboot Mosquitto's persistence may still hold an old
   retained message, so every consumer drops a message whose `timeUnixNano` is three intervals or more from its clock.
 
@@ -176,7 +186,8 @@ column and summary are renamed to say anon.
 ### The soak and the apt probe
 
 - The soak opens [booted.py](../../../tests/booted.py)'s ssh tunnel to the target's 8080 and subscribes to
-  `dt/netmon/+/metrics` with `paho-mqtt` over websockets, a new dev dependency, recording every message for the duration.
+  `dt/netmon/+/metrics` with `paho-mqtt` over websockets, a new dev dependency, recording every message for the
+  duration.
 - [sampling.py](../../../tests/sampling.py) decodes OTLP messages into its `Sample` dataclasses and keeps
   `render_table` and `render_summary`; its ssh readers go. The deltas (Δswpin, Δswpout, Δmajflt, Δweb cpu) come from
   the counters and are `n/a` across a new start time. PSI full10 becomes the share of the interval stalled, from the
@@ -189,11 +200,11 @@ column and summary are renamed to say anon.
 
 Each behaviour at the lowest level that catches its defect:
 
-- **Go, `go test`.** The readers against a fake root, ported from
-  [test_stats.py](../../../packages/netmon-display/tests/test_stats.py): counters, a web process restarted between two
-  samples, a missing kiosk, a `comm` with spaces and parentheses. The builder's output round-trips through
-  `protojson.Unmarshal` into `MetricsData` with the catalogue's names, instruments, units and temporality. The
-  utilization on a first sample, a restart and a counter going backwards, with an injected clock and no sleeps.
+- **Go, `go test`.** The readers against a fake root, ported from [test_stats.py][test_stats.py]: counters, a web
+  process restarted between two samples, a missing kiosk, a `comm` with spaces and parentheses. The builder's output
+  round-trips through `protojson.Unmarshal` into `MetricsData` with the catalogue's names, instruments, units and
+  temporality. The utilization on a first sample, a restart and a counter going backwards, with an injected clock and no
+  sleeps.
 - **Contract fixture.** A Go test writes a golden message to `metrics/testdata/metrics.json` and fails when the file
   is out of date, unless run with `-update`. The JS and Python decoder tests read that file, so no decoder drifts from
   the producer.
@@ -204,6 +215,8 @@ Each behaviour at the lowest level that catches its defect:
 - **Tier 1, installed.** The package at the built version, the unit active, a retained message on the topic with the
   host and `netmon-scanner.service` resources, the topic empty after `systemctl stop`.
 - **Tier 2, VM.** The `pihero-kiosk.service` and `WPEWebProcess` resources present; the panel shows the pills.
+
+[test_stats.py]: https://github.com/bkahlert/netmon/blob/28a4cf34f0f84637de49a0425e8a46fce1b00fe4/packages/netmon-display/tests/test_stats.py
 
 ## Numbers
 
@@ -229,4 +242,5 @@ cases of `netmon-display`'s `test_installed.py`, `loadKioskStats`, and every oth
 
 - A bridge from the topic to an OTel collector or Grafana. The message is the body `/v1/metrics` accepts, so it stays a
   few lines whenever it is wanted.
-- Metrics in the preview: the fake broker publishes none, so the pills stay empty with it; `preview-board` with `BROKER=board` shows the Pi's own.
+- Metrics in the preview: the fake broker publishes none, so the pills stay empty with it; `preview-board` with
+  `BROKER=board` shows the Pi's own.
