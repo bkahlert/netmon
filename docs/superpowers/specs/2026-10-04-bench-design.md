@@ -11,7 +11,7 @@ not an absolute footprint and not a CI gate: one run by default for a quick look
 - The [footprint](2026-10-02-footprint-design.md) and [page load](2026-10-03-page-load-design.md) figures came from soaks
   and from a feeder publishing 53 hosts every 37 s, read by hand in windows after a settling time. Each comparison was set
   up anew.
-- `make preview-board` points the board's kiosk at a page served from the Mac through one ssh tunnel and a drop-in under
+- `make preview-board` points the board's kiosk at a page served from the workstation through one ssh tunnel and a drop-in under
   `/run` ([pihero-testkit's `board.Session`][board]); the page is the development bundle, whose cost differs from what
   `make deploy` installs.
 - [netmon-metrics](2026-10-04-metrics-design.md) publishes the board's figures every 5 s as OTLP/JSON on
@@ -26,7 +26,7 @@ Settled with the user on 2026-10-04:
 
 1. **A/B regression.** The figures compare variants with each other, run interleaved on one board in one sitting.
 2. **Cost per phase and settle time**, both from netmon-metrics. Nothing in the page changes for the benchmark.
-3. **Bundles served from the Mac.** Each variant is a production bundle (`jsBrowserDistribution`) the Mac builds and
+3. **Bundles served from the workstation.** Each variant is a production bundle (`jsBrowserDistribution`) the workstation builds and
    serves through `board.Session`'s tunnel. Nothing persistent changes on the board.
 4. **The representative scenario** below: 53 hosts, then 8 changes 60 s later, then 90 s more.
 5. **The board's scanner stops** for the benchmark, so nmap does not compete with the kiosk; cleanup starts it again.
@@ -59,13 +59,13 @@ removed. A bundle that exists is reused. The working tree is built in place ever
 `dist/bench/bundles/working-tree/`; Gradle allows one build per project directory, so no preview may run meanwhile. All
 builds finish before the board is touched.
 
-One static HTTP server on a free port of the Mac serves `dist/bench/bundles/`, so a variant's page is
+One static HTTP server on a free port of the workstation serves `dist/bench/bundles/`, so a variant's page is
 `/<directory>/index.html`. The page's assets are relative to it ([index.html](../../../src/jsMain/resources/index.html)).
 
 ### Once per benchmark
 
 1. The board answers over ssh, has `pihero-kiosk` (`board.Session.check_kiosk`) and an active `netmon-metrics.service`.
-   The Mac's port 8080 is free for the fake broker.
+   The workstation's port 8080 is free for the fake broker.
 2. The fake broker starts: [preview_broker.py](../../../tests/preview_broker.py)'s container, with no fixture published.
 3. The static server starts.
 4. `board.Session` with the name `netmon-bench` opens one tunnel with reverse forwards for the static server and the
