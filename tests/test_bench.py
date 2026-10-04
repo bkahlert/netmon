@@ -4,7 +4,8 @@ import subprocess
 import pytest
 
 import scan_fixtures
-from bench import SCAN_TOPIC, Variant, order, parse_runs, parse_variants, scenario
+from bench import SCAN_TOPIC, Variant, order, parse_runs, parse_variants, run_timeline, scenario
+from bench_fixtures import sample
 
 pytestmark = pytest.mark.tier0
 
@@ -105,6 +106,88 @@ class TestOrder:
         result = order([a, b], 3)
 
         assert result == [a, b, a, b, a, b]
+
+
+class TestRunTimeline:
+    def test_clears_the_scan_before_the_kiosk_restarts(self):
+        events, stream = [], FakeStream(every_five_seconds(0, 200), arriving_during_install=3)
+
+        run_timeline(stream, clear=lambda: events.append("clear"), install=lambda: (events.append("install"), stream.install()), publish=lambda scan: events.append("publish"), payloads=[])
+
+        assert events == ["clear", "install", "publish", "publish"]
+
+    def test_takes_the_samples_of_the_restart_as_the_load(self):
+        stream = FakeStream(every_five_seconds(0, 200), arriving_during_install=3)
+
+        result = run_timeline(stream, clear=lambda: None, install=stream.install, publish=lambda scan: None, payloads=[])
+
+        assert result.before.at == 0
+        assert [s.at for s in result.load] == [5, 10, 15]
+        assert result.samples[0].at == 20
+
+    def test_publishes_each_scan_right_after_its_sample_and_ends_on_one(self):
+        published, stream = [], FakeStream(every_five_seconds(0, 200), arriving_during_install=3)
+
+        result = run_timeline(stream, clear=lambda: None, install=stream.install, publish=lambda scan: published.append((stream.received, scan)), payloads=[])
+
+        assert [result.samples[i].at for i in result.boundaries] == [20, 80]
+        assert published == [(5, scenario(20)[0][1]), (17, scenario(20)[1][1])]
+        assert result.samples[-1].at == 170
+
+    def test_waits_past_a_missing_sample(self):
+        samples = [s for s in every_five_seconds(0, 200) if s.at != 80]
+        stream = FakeStream(samples, arriving_during_install=3)
+
+        result = run_timeline(stream, clear=lambda: None, install=stream.install, publish=lambda scan: None, payloads=[])
+
+        assert result.samples[result.boundaries[1]].at == 85
+
+    def test_drops_what_arrived_before_the_run(self):
+        stream = FakeStream(every_five_seconds(0, 200), arriving_during_install=3, queued=[sample(-5)])
+        payloads = []
+
+        result = run_timeline(stream, clear=lambda: None, install=stream.install, publish=lambda scan: None, payloads=payloads)
+
+        assert result.before.at == 0
+        assert payloads[0] == b"0"
+
+    def test_raises_on_silence_and_keeps_the_payloads(self):
+        stream = FakeStream(every_five_seconds(0, 100), arriving_during_install=3)
+        payloads = []
+
+        with pytest.raises(ConnectionError):
+            run_timeline(stream, clear=lambda: None, install=stream.install, publish=lambda scan: None, payloads=payloads)
+
+        assert payloads[-1] == b"100"
+
+
+class FakeStream:
+    def __init__(self, samples, arriving_during_install: int, queued=()):
+        self.future, self.queued, self.during_install, self.received = list(samples), list(queued), arriving_during_install, 0
+
+    def install(self):
+        self.queued += self.future[:self.during_install]
+        del self.future[:self.during_install]
+
+    def receive(self):
+        if self.queued:
+            return self.give(self.queued.pop(0))
+        if not self.future:
+            raise ConnectionError("no metrics for 15 s")
+        return self.give(self.future.pop(0))
+
+    def pending(self):
+        result = [self.give(s) for s in self.queued]
+        self.queued = []
+        return result
+
+    def give(self, s):
+        self.received += 1
+        return s, str(int(s.at)).encode()
+
+
+def every_five_seconds(first: int, last: int):
+    return [sample(at) for at in range(first, last + 1, 5)]
 
 
 def fake_git(dirty: str = ""):

@@ -6,6 +6,8 @@ from dataclasses import dataclass
 from pathlib import Path
 
 import scan_fixtures
+from bench_figures import Timeline
+from sampling import Sample
 
 SCAN_TOPIC = "dt/netmon/node/wlan0/10.0.0.1/24/scan"
 SCAN_TWO_AT = 60
@@ -46,6 +48,47 @@ def changed(scan: dict, at: int) -> dict:
     hosts = [host for index, host in enumerate(hosts) if index != GONE]
     hosts.append(scan_fixtures.host(0, len(scan["hosts"]), at))
     return {**scan, "hosts": hosts, "timestamp": at}
+
+
+def run_timeline(
+    stream,
+    clear: Callable[[], None],
+    install: Callable[[], None],
+    publish: Callable[[dict], None],
+    payloads: list[bytes],
+    steps: Callable[[int], list[tuple[int, dict]]] = scenario,
+    end_at: float = END_AT,
+) -> Timeline:
+    """Run the scenario once and return its samples, every payload of the run appended to `payloads`; raise ConnectionError on silence.
+
+    The scan is cleared, then `install` restarts the kiosk on the page and returns once it loaded. The first sample after
+    that is t0. Each scan goes out right after the first sample at or after its offset from t0, and the run ends at the
+    first sample at or after `end_at`."""
+
+    def receive() -> Sample:
+        sample, payload = stream.receive()
+        payloads.append(payload)
+        return sample
+
+    stream.pending()
+    clear()
+    before = receive()
+    install()
+    load = []
+    for sample, payload in stream.pending():
+        load.append(sample)
+        payloads.append(payload)
+    samples = [receive()]
+    t0 = samples[0].at
+    boundaries = []
+    for offset, scan in steps(int(t0)):
+        while samples[-1].at < t0 + offset:
+            samples.append(receive())
+        publish(scan)
+        boundaries.append(len(samples) - 1)
+    while samples[-1].at < t0 + end_at:
+        samples.append(receive())
+    return Timeline(before, load, samples, boundaries)
 
 
 def parse_variants(text: str | None, git: Callable[..., str]) -> list[Variant]:
