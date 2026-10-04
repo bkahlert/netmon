@@ -3,9 +3,7 @@ package mqtt
 /**
  * Entrypoint for the [MQTT client](https://github.com/mqttjs/MQTT.js/#api)
  */
-@JsModule("./mqtt")
-@JsNonModule
-external object MQTT {
+external interface MqttApi {
     /**
      * Connects to the broker specified by the given [url] and [options],
      * and returns a [MqttClient].
@@ -14,6 +12,16 @@ external object MQTT {
      */
     fun connect(url: String, options: dynamic = definedExternally): MqttClient
 }
+
+// Only mqtt.esm.js exports anything under webpack: the package's `browser` entry, mqtt.min.js, is a script-tag IIFE.
+// webpack hands out the ES module's namespace object, whose `default` is the client API.
+@JsModule("mqtt/dist/mqtt.esm")
+@JsNonModule
+private external object MqttModule {
+    val default: MqttApi
+}
+
+val MQTT: MqttApi get() = MqttModule.default
 
 external interface IClientOptions {
     /** CLIENT PROPERTIES */

@@ -103,6 +103,8 @@ kotlin {
                 val fritz2Version = "1.0-RC21"
                 implementation("dev.fritz2:core:$fritz2Version")
 
+                implementation(npm("mqtt", "5.16.0")) { because("MQTT client for the browser; imported as mqtt/dist/mqtt.esm") }
+
                 // tailwind
                 implementation(npm("tailwindcss", "^3.4")) { because("low-level CSS classes") }
 
@@ -186,11 +188,11 @@ tasks.withType<KotlinWebpack>().configureEach {
 
 // The production bundle and the images and JSON it uses carry a hash of their content in their names (webpack.config.d).
 // webpack emits them next to the bundle, so the unhashed copies from the resources are dropped, and index.html, which
-// names the unhashed files, is pointed at the hashed ones. The stylesheets and mqtt.js are bundled into the bundle,
+// names the unhashed files, is pointed at the hashed ones. The stylesheets are bundled into the bundle,
 // and the source map, which the kiosk never loads, stays out of the package.
 tasks.named<Sync>("jsBrowserDistribution") {
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
-    exclude("*.css", "mqtt.js", "*.map")
+    exclude("*.css", "*.map")
     doLast {
         val hashed = Regex("""\.[0-9a-f]{8}\.""")
         File(destinationDir, "images").listFiles().orEmpty().filterNot { hashed.containsMatchIn(it.name) }.forEach { it.delete() }
