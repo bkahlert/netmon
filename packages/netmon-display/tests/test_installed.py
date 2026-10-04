@@ -25,6 +25,11 @@ class TestPackage:
         assert host.package("lighttpd").is_installed
         assert host.package("pihero-kiosk").is_installed
 
+    def test_depends_on_the_metrics_sampler_for_the_status_bar(self, host):
+        depends = host.check_output("dpkg-query -W -f '${Depends}' netmon-display")
+
+        assert "netmon-metrics" in [d.split()[0] for d in depends.split(", ")]
+
 
 class TestServing:
     def test_the_display_answers_at_the_root(self, host):
