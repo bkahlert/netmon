@@ -22,6 +22,11 @@ class TestRender:
         assert "netmon-scanner" not in text
         assert "netmon-display" not in text
 
+    def test_leaves_out_every_package_of_netmon_the_sample_lists(self):
+        text = preview.render(SAMPLE, KEY)
+
+        assert [line for line in text.splitlines() if line.startswith("  - netmon-")] == []
+
     def test_installs_the_kiosk_from_pi_heros_own_source(self):
         text = preview.render(SAMPLE, KEY)
 
@@ -52,7 +57,7 @@ class TestRender:
         kept = preview.render(SAMPLE, KEY).splitlines()
 
         assert [line for line in kept if line not in rendered] == ["  - pihero-kiosk"]
-        assert len(rendered) - len(kept) == 9
+        assert len(rendered) - len(kept) == 10
 
 
 class TestApp:
