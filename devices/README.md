@@ -29,5 +29,5 @@ from 235 to 160 MB of RAM and zram with the panel looking the same.
 The scanner's overrides go into `/etc/netmon/scanner.conf` (`BROKER_HOST`, `BROKER_PORT`, `NMAP_DATA_DIR`,
 `NETMON_SCANNER_OPTIONS` (the native image's runtime options, `-Xmx48m` by default), the
 `NETWORK_MIN_HOST_BITS`/`NETWORK_MAX_HOST_BITS` filter, and `SCANNER_DOWN_AFTER`, how long a host may stay unseen before
-it shows as down, 3 minutes by default), written with `write_files` like the kiosk's. A network the
+it shows as down, as an ISO 8601 duration, `PT3M` by default), written with `write_files` like the kiosk's. A network the
 board reaches over Wi-Fi and a cable at once is scanned once, over the cable.
