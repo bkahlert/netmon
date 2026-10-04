@@ -38,7 +38,7 @@ Settled with the user on 2026-10-04:
 
 ### Package and unit
 
-`packages/netmon-metrics/`, laid out as the two existing packages: `nfpm.yaml` (`arch: arm64`, depends on `mosquitto`),
+`packages/netmon-metrics/`, laid out as the two existing packages: `nfpm.yaml` (`arch: arm64`, depends on `mosquitto` and `dbus`),
 `root/usr/lib/systemd/system/netmon-metrics.service`, `units.txt`, `scripts/`, `tests/test_installed.py`. The binary is
 `/usr/lib/netmon/netmon-metrics`. [devices/sample/user-data](../../../devices/sample/user-data) installs the package
 next to the other two.
@@ -82,7 +82,7 @@ Processes are found in the watched units' `cgroup.procs` by `comm`; the first ma
 ### The message
 
 One `ResourceMetrics` per entity, each with one `ScopeMetrics` named `netmon-metrics` at the build version, and the
-request's `schemaUrl` the semconv package's `SchemaURL`.
+`schemaUrl` of every `ResourceMetrics` the semconv package's `SchemaURL`.
 
 | Entity  | Resource attributes                                                                     |
 |---------|-----------------------------------------------------------------------------------------|
@@ -200,4 +200,4 @@ cases of `netmon-display`'s `test_installed.py`, `loadKioskStats`, and every oth
 
 - A bridge from the topic to an OTel collector or Grafana. The message is the body `/v1/metrics` accepts, so it stays a
   few lines whenever it is wanted.
-- Metrics in the preview: the fake broker publishes none, so the pills stay empty there, as today.
+- Metrics in the preview: the fake broker publishes none, so the pills stay empty with it; `preview-board` with `BROKER=board` shows the Pi's own.
