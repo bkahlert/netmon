@@ -1,4 +1,5 @@
 """Static checks over the packages, as pihero's own tier 0 runs them: shellcheck, systemd-analyze verify, cloud-init schema."""
+import re
 import shlex
 import shutil
 from importlib.resources import files
@@ -18,6 +19,9 @@ ROOT = Path.cwd()
 STUBBED_COMMANDS = ("/usr/lib/netmon/netmon-scanner", "/usr/lib/netmon/netmon-metrics")
 # The exposure level systemd-analyze security grants a unit, on its printed 0 to 10 scale; above it, the unit has lost
 # part of its sandbox.
+# The Unicode blocks the kiosk's only font, DejaVu Sans, covers: Basic Latin, Latin-1, General Punctuation, Mathematical
+# Operators, Box Drawing, Geometric Shapes and Miscellaneous Symbols. Anything else renders as a fallback glyph.
+KIOSK_FONT_BLOCKS = ((0x20, 0x7E), (0xA0, 0xFF), (0x2000, 0x206F), (0x2200, 0x22FF), (0x2500, 0x25FF), (0x2600, 0x26FF))
 EXPOSURE_LEVELS = {"netmon-metrics.service": 1.1}
 STRIP_RPI_KEYS = (
     "import sys, yaml; d = yaml.safe_load(open(sys.argv[1])); "
@@ -109,3 +113,13 @@ def test_unit_environment_assignments_are_well_formed(unit):
             if not sep or not name.isidentifier():
                 malformed.append(f"{line!r}: {word!r} is not NAME=value")
     assert malformed == []
+
+
+class TestLoadingGraphic:
+    def test_text_uses_only_characters_the_kiosk_font_has(self):
+        svg = (ROOT / "src/jsMain/resources/images/loading.svg").read_text(encoding="utf-8")
+        text = re.sub(r"<[^>]+>", "", re.search(r"<h1[^>]*>(.*?)</h1>", svg, re.S).group(1))
+
+        missing = {c for c in text if not any(lo <= ord(c) <= hi for lo, hi in KIOSK_FONT_BLOCKS) and not c.isspace()}
+
+        assert missing == set()
