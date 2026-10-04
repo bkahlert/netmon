@@ -42,24 +42,19 @@ data class ScanResult(
         return ScanResult(
             `interface` = `interface`,
             cidr = cidr,
-            hosts = buildSet {
-                hosts.forEach { add(it.ip) }
-                currentResult.hosts.forEach { add(it.ip) }
-            }
-                .sorted()
-                .map { ip ->
-                    val recordedHost = hosts.find { it.ip == ip }
-                    val scannedHost = currentResult.hosts.find { it.ip == ip } // TODO improve detection, e.g. by MAC address and/or hostname
+            hosts = pair(hosts, currentResult.hosts)
+                .map { (recordedHost, scannedHost) ->
                     val mergedHost = mergeHost(recordedHost, scannedHost, currentResult.timestamp, downAfter, notBefore)
                     if (recordedHost == null || recordedHost.status != mergedHost.status) onChange(mergedHost)
                     mergedHost
-                },
+                }
+                .sortedBy { it.ip },
             timestamp = currentResult.timestamp,
         )
     }
 
     private fun mergeHost(recorded: Host?, scanned: Host?, scanTime: Instant, downAfter: Duration, notBefore: Instant): Host = when {
-        scanned != null && (scanned.status == null || scanned.status == Status.UP) -> scanned.copy(
+        scanned != null && scanned.seenUp -> scanned.copy(
             name = scanned.name ?: recorded?.name,
             status = Status.UP,
             since = if (recorded != null && recorded.status == Status.UP) recorded.since ?: scanTime else scanTime,
@@ -67,6 +62,7 @@ data class ScanResult(
             model = scanned.model ?: recorded?.model,
             vendor = scanned.vendor ?: recorded?.vendor,
             services = scanned.services ?: recorded?.services,
+            mac = scanned.mac ?: recorded?.mac,
         )
 
         recorded == null -> checkNotNull(scanned).copy(status = Status.DOWN, since = scanTime, lastSeen = null)
@@ -81,6 +77,33 @@ data class ScanResult(
 
         else -> recorded.copy(status = Status.DOWN, since = scanTime)
     }
+
+    /**
+     * Pairs each scanned host with the recorded host it is, and each recorded host the scan did not match with `null`.
+     *
+     * A recorded host that no scanned host matched is left out when a scanned host that is up holds its IP:
+     * another device took it over, and the list must not hold two hosts with one IP.
+     */
+    private fun pair(recorded: List<Host>, scanned: List<Host>): List<Pair<Host?, Host?>> {
+        val unmatchedRecorded = recorded.toMutableList()
+        val pairs = mutableListOf<Pair<Host?, Host?>>()
+        val unmatchedScanned = mutableListOf<Host>()
+
+        scanned.forEach { host ->
+            val index = host.mac?.let { mac -> unmatchedRecorded.indexOfFirst { it.mac == mac } } ?: -1
+            if (index >= 0) pairs += unmatchedRecorded.removeAt(index) to host else unmatchedScanned += host
+        }
+        unmatchedScanned.forEach { host ->
+            val index = unmatchedRecorded.indexOfFirst { it.ip == host.ip && (it.mac == null || host.mac == null) }
+            pairs += (if (index >= 0) unmatchedRecorded.removeAt(index) else null) to host
+        }
+
+        val takenIps = scanned.filter { it.seenUp }.map { it.ip }.toSet()
+        unmatchedRecorded.filter { it.ip !in takenIps }.forEach { pairs += it to null }
+        return pairs
+    }
+
+    private val Host.seenUp: Boolean get() = status == null || status == Status.UP
 
     fun save(
         file: Path,
