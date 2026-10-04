@@ -1,9 +1,10 @@
 import json
+import subprocess
 
 import pytest
 
 import scan_fixtures
-from bench import SCAN_TOPIC, scenario
+from bench import SCAN_TOPIC, Variant, order, parse_runs, parse_variants, scenario
 
 pytestmark = pytest.mark.tier0
 
@@ -52,4 +53,75 @@ class TestScenario:
         assert result == json.dumps(scenario(T0))
 
 
+class TestParseVariants:
+    def test_is_the_working_tree_by_default(self):
+        result = parse_variants(None, fake_git(dirty=""))
+
+        assert result == [Variant(".", HEAD)]
+
+    def test_resolves_refs_to_their_commits_in_the_order_given(self):
+        result = parse_variants("main .", fake_git(dirty=" M README.md"))
+
+        assert result == [Variant("main", MAIN), Variant(".", HEAD, dirty=True)]
+
+    def test_rejects_an_unknown_ref(self):
+        with pytest.raises(ValueError, match="'nope', which is no commit here"):
+            parse_variants("main nope", fake_git())
+
+    def test_rejects_two_refs_of_one_commit(self):
+        with pytest.raises(ValueError, match="twice"):
+            parse_variants("main origin/main", fake_git())
+
+
+class TestVariant:
+    def test_labels_a_ref_with_its_short_sha(self):
+        assert Variant("main", MAIN).label == "main a33715a"
+
+    def test_labels_a_changed_working_tree_dirty(self):
+        assert Variant(".", HEAD, dirty=True).label == ". f5320cb+dirty"
+
+    def test_keeps_the_working_tree_apart_from_its_commit(self):
+        assert (Variant(".", HEAD).directory, Variant("HEAD", HEAD).directory) == ("working-tree", HEAD)
+
+
+class TestParseRuns:
+    @pytest.mark.parametrize("text", [None, ""])
+    def test_is_one_by_default(self, text):
+        assert parse_runs(text) == 1
+
+    def test_reads_a_count(self):
+        assert parse_runs("3") == 3
+
+    @pytest.mark.parametrize("text", ["0", "-1", "two", "1.5"])
+    def test_rejects_anything_but_a_positive_count(self, text):
+        with pytest.raises(ValueError, match="RUNS must be a whole number of at least 1"):
+            parse_runs(text)
+
+
+class TestOrder:
+    def test_interleaves_the_variants(self):
+        a, b = Variant("a", "1" * 40), Variant("b", "2" * 40)
+
+        result = order([a, b], 3)
+
+        assert result == [a, b, a, b, a, b]
+
+
+def fake_git(dirty: str = ""):
+    commits = {"HEAD": HEAD, "main^{commit}": MAIN, "origin/main^{commit}": MAIN}
+
+    def git(*args: str) -> str:
+        if args == ("rev-parse", "HEAD"):
+            return HEAD
+        if args == ("status", "--porcelain"):
+            return dirty
+        if args[:3] == ("rev-parse", "--verify", "--quiet") and args[3] in commits:
+            return commits[args[3]]
+        raise subprocess.CalledProcessError(1, ["git", *args])
+
+    return git
+
+
+HEAD = "f5320cb711ad5e456b2d04fd6a8d5451ddf44128"
+MAIN = "a33715a" + "0" * 33
 T0 = 1759450000
