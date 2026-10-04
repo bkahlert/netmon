@@ -1,6 +1,6 @@
 <component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="preview-device" type="ShConfigurationType">
-    <option name="SCRIPT_TEXT" value="make preview-device" />
+  <configuration default="false" name="preview-board" type="ShConfigurationType">
+    <option name="SCRIPT_TEXT" value="make preview-board" />
     <option name="INDEPENDENT_SCRIPT_PATH" value="true" />
     <option name="SCRIPT_PATH" value="" />
     <option name="SCRIPT_OPTIONS" value="" />
