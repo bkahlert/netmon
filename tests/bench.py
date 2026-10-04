@@ -170,6 +170,7 @@ def bundle(variant: Variant, run=subprocess.run) -> Path:
         partial = target.with_name(target.name + ".partial")
         shutil.rmtree(partial, ignore_errors=True)
         shutil.copytree(source / DIST, partial)
+        shutil.rmtree(target, ignore_errors=True)
         partial.rename(target)
     finally:
         run(["git", "worktree", "remove", "--force", str(source)], cwd=ROOT, check=False)

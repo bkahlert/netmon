@@ -1,5 +1,6 @@
 import json
 import subprocess
+from pathlib import Path
 import urllib.request
 
 import pytest
@@ -219,6 +220,18 @@ class TestRunAll:
         assert lines == ["run 1/1 a 1111111: failed: the board rebooted"]
 
 
+class TestBundle:
+    def test_replaces_a_bundle_directory_without_a_page(self, tmp_path, monkeypatch):
+        monkeypatch.setattr(bench, "BUNDLES", tmp_path / "bundles")
+        monkeypatch.setattr(bench, "SOURCES", tmp_path / "src")
+        (tmp_path / "bundles" / MAIN).mkdir(parents=True)
+        (tmp_path / "bundles" / MAIN / "stale.js").write_text("old")
+
+        result = bench.bundle(Variant("main", MAIN), run=fake_build)
+
+        assert sorted(path.name for path in result.iterdir()) == ["index.html"]
+
+
 class TestMain:
     def test_needs_a_target(self, capsys):
         status = bench.main({})
@@ -260,6 +273,14 @@ class FakeStream:
 
 def every_five_seconds(first: int, last: int):
     return [sample(at) for at in range(first, last + 1, 5)]
+
+
+def fake_build(command, cwd, **_):
+    if command[0] == "git" and command[1:3] == ["worktree", "add"]:
+        Path(command[4]).mkdir(parents=True)
+    if command == bench.GRADLE:
+        (Path(cwd) / bench.DIST).mkdir(parents=True)
+        (Path(cwd) / bench.DIST / "index.html").write_text("<html>")
 
 
 def fake_git(dirty: str = ""):
