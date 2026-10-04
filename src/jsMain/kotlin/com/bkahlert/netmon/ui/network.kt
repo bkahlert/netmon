@@ -187,8 +187,9 @@ fun RenderContext.host(
     val modelIcons = models.map { it?.let(DeviceModelCodes::symbol)?.let(DataUri::svg) ?: SFSymbols.display }
 
     val vendors = host.data.map { it.vendor }.distinctUntilChanged()
+    val macs = host.data.map { it.mac }.distinctUntilChanged()
 
-    val captions = hostNames.combine(modelNames) { h, m -> h?.substringBefore(".") ?: m }
+    val captions = combine(hostNames, modelNames, macs) { h, m, mac -> h?.substringBefore(".") ?: m ?: mac?.takeLast(8) }
 
     div("host") {
         className(elapsedTime.map { if (it != null && it < highlightDuration) "host--highlighted" else "" })

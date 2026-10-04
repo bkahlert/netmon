@@ -45,6 +45,16 @@ class HostTest {
         JsonFormat.decodeFromString(Host.serializer(), json) shouldBe host
     }
 
+    @Test
+    fun mac_round_trips() {
+        val host = Host(ip = IP.of("10.0.0.1"), status = Status.UP, mac = "dc:a6:32:a5:ba:b6")
+
+        val json = JsonFormat.encodeToString(Host.serializer(), host)
+
+        json shouldContain "\"mac\": \"dc:a6:32:a5:ba:b6\""
+        JsonFormat.decodeFromString(Host.serializer(), json) shouldBe host
+    }
+
     /**
      * Regression test for when [Host.since] wasn't serialized,
      * likely because of its default parameter `if (status == Status.UP) Clock.System.now() else null`.
@@ -69,6 +79,7 @@ operator fun Host.Companion.invoke(
     vendor: String? = "ACME",
     services: Set<String>? = setOf("smb", "airplay"),
     lastSeen: Instant? = null,
+    mac: String? = null,
 ) = Host(
     ip = IP.of(ip),
     name = name,
@@ -78,6 +89,7 @@ operator fun Host.Companion.invoke(
     vendor = vendor,
     services = services,
     lastSeen = lastSeen,
+    mac = mac,
 )
 
 inline val Int.epoch get() = toLong().epoch

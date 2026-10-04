@@ -2,9 +2,11 @@ package com.bkahlert.netmon.scanner
 
 import com.bkahlert.netmon.Cidr
 import com.bkahlert.netmon.Host
+import com.bkahlert.netmon.IP
 import com.bkahlert.netmon.Status
 import com.bkahlert.netmon.epoch
 import com.bkahlert.netmon.invoke
+import com.bkahlert.netmon.nmap.NmapXml
 import io.kotest.assertions.asClue
 import io.kotest.data.forAll
 import io.kotest.data.row
@@ -594,6 +596,117 @@ class ScanResultTest {
                 m.host.lastSeen shouldBe null
                 m.changed.size shouldBe 1
             }
+        }
+    }
+
+    @Test
+    fun merge_host_that_moved_keeps_its_record_under_the_new_ip() {
+        val recorded = Host(
+            ip = "10.0.0.1", name = "Anirul", status = Status.UP, since = 50.epoch, lastSeen = 100.epoch,
+            model = "MacPro7,1", vendor = "Apple", services = setOf("smb"), mac = "aa:bb:cc:dd:ee:01",
+        )
+        val scanned = Host(
+            ip = "10.0.0.5", name = null, status = Status.UP, model = null, vendor = null, services = null, mac = "aa:bb:cc:dd:ee:01",
+        )
+
+        val merged = scanAt(100.epoch, recorded).mergedWith(scanAt(130.epoch, scanned))
+
+        merged should { m ->
+            m.host shouldBe recorded.copy(ip = IP.of("10.0.0.5"), lastSeen = 130.epoch)
+            m.changed.shouldBeEmpty()
+        }
+    }
+
+    @Test
+    fun merge_new_device_on_a_taken_ip_inherits_nothing_and_replaces_the_old_host() {
+        val recorded = Host(
+            ip = "10.0.0.1", name = "Anirul", status = Status.UP, since = 50.epoch, lastSeen = 100.epoch,
+            model = "MacPro7,1", vendor = "Apple", services = setOf("smb"), mac = "aa:bb:cc:dd:ee:01",
+        )
+        val scanned = Host(
+            ip = "10.0.0.1", name = null, status = Status.UP, model = null, vendor = null, services = null, mac = "aa:bb:cc:dd:ee:02",
+        )
+        val expected = Host(
+            ip = "10.0.0.1", name = null, status = Status.UP, since = 130.epoch, lastSeen = 130.epoch,
+            model = null, vendor = null, services = null, mac = "aa:bb:cc:dd:ee:02",
+        )
+
+        val merged = scanAt(100.epoch, recorded).mergedWith(scanAt(130.epoch, scanned))
+
+        merged should { m ->
+            m.result.hosts.shouldContainExactly(expected)
+            m.changed.shouldContainExactly(expected)
+        }
+    }
+
+    @Test
+    fun merge_host_unseen_at_an_ip_nobody_took_keeps_the_grace_period() {
+        val recorded = Host(status = Status.UP, since = 50.epoch, lastSeen = 100.epoch, mac = "aa:bb:cc:dd:ee:01")
+        val other = Host(ip = "10.0.0.2", status = Status.UP, mac = "aa:bb:cc:dd:ee:02")
+
+        val merged = scanAt(100.epoch, recorded).mergedWith(scanAt(130.epoch, other))
+
+        merged.result.hosts.map { it.ip.toString() to it.status } shouldContainExactly listOf("10.0.0.1" to Status.UP, "10.0.0.2" to Status.UP)
+    }
+
+    @Test
+    fun merge_hosts_that_swapped_ips_keep_their_own_records() {
+        val first = Host(ip = "10.0.0.1", name = "first", status = Status.UP, since = 50.epoch, lastSeen = 100.epoch, mac = "aa:bb:cc:dd:ee:01")
+        val second = Host(ip = "10.0.0.2", name = "second", status = Status.UP, since = 60.epoch, lastSeen = 100.epoch, mac = "aa:bb:cc:dd:ee:02")
+        val scannedFirst = Host(ip = "10.0.0.2", name = null, status = Status.UP, mac = "aa:bb:cc:dd:ee:01", model = null, vendor = null, services = null)
+        val scannedSecond = Host(ip = "10.0.0.1", name = null, status = Status.UP, mac = "aa:bb:cc:dd:ee:02", model = null, vendor = null, services = null)
+
+        val merged = scanAt(100.epoch, first, second).mergedWith(scanAt(130.epoch, scannedFirst, scannedSecond))
+
+        merged.result.hosts.map { Triple(it.ip.toString(), it.name, it.since) } shouldContainExactly listOf(
+            Triple("10.0.0.1", "second", 60.epoch),
+            Triple("10.0.0.2", "first", 50.epoch),
+        )
+    }
+
+    @Test
+    fun merge_sleep_proxy_answering_for_a_sleeping_host_keeps_both_records() {
+        val proxy = Host(ip = "10.0.0.8", name = "HomePod", status = Status.UP, since = 50.epoch, lastSeen = 100.epoch, mac = "aa:bb:cc:dd:ee:08")
+        val sleeper = Host(ip = "10.0.0.50", name = "MacBook", status = Status.UP, since = 60.epoch, lastSeen = 100.epoch, mac = "aa:bb:cc:dd:ee:50")
+        val scanned = NmapXml.parse(
+            """<nmaprun>
+            |<host><status state="up"/><address addr="10.0.0.8" addrtype="ipv4"/><address addr="AA:BB:CC:DD:EE:08" addrtype="mac"/></host>
+            |<host><status state="up"/><address addr="10.0.0.50" addrtype="ipv4"/><address addr="AA:BB:CC:DD:EE:08" addrtype="mac"/></host>
+            |</nmaprun>""".trimMargin(),
+        )
+
+        val merged = scanAt(100.epoch, proxy, sleeper).mergedWith(scanAt(130.epoch, *scanned.toTypedArray()))
+
+        merged.result.hosts.map { Triple(it.ip.toString(), it.name to it.mac, it.since) } shouldContainExactly listOf(
+            Triple("10.0.0.8", "HomePod" to "aa:bb:cc:dd:ee:08", 50.epoch),
+            Triple("10.0.0.50", "MacBook" to "aa:bb:cc:dd:ee:50", 60.epoch),
+        )
+        merged.changed.shouldBeEmpty()
+    }
+
+    @Test
+    fun merge_scan_without_mac_matches_a_recorded_host_by_ip_and_keeps_its_mac() {
+        val recorded = Host(status = Status.UP, since = 50.epoch, lastSeen = 100.epoch, mac = "aa:bb:cc:dd:ee:01")
+        val scanned = Host(status = Status.UP, mac = null)
+
+        val merged = scanAt(100.epoch, recorded).mergedWith(scanAt(130.epoch, scanned))
+
+        merged should { m ->
+            m.host shouldBe recorded.copy(lastSeen = 130.epoch)
+            m.changed.shouldBeEmpty()
+        }
+    }
+
+    @Test
+    fun merge_scan_with_mac_matches_a_recorded_host_without_mac_by_ip_and_adopts_the_mac() {
+        val recorded = Host(status = Status.UP, since = 50.epoch, lastSeen = 100.epoch, mac = null)
+        val scanned = Host(status = Status.UP, mac = "aa:bb:cc:dd:ee:01")
+
+        val merged = scanAt(100.epoch, recorded).mergedWith(scanAt(130.epoch, scanned))
+
+        merged should { m ->
+            m.host shouldBe recorded.copy(lastSeen = 130.epoch, mac = "aa:bb:cc:dd:ee:01")
+            m.changed.shouldBeEmpty()
         }
     }
 }

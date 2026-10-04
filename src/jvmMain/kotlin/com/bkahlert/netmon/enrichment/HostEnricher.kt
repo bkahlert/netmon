@@ -54,6 +54,7 @@ abstract class HostPropertyEnricher<V>(
             model = if (property == Host::model && value is String) value else model,
             vendor = if (property == Host::vendor && value is String) value else vendor,
             services = if (property == Host::services && value is Set<*>) value as Set<String> else services,
+            mac = if (property == Host::mac && value is String) value else mac,
         )
     }
 }
