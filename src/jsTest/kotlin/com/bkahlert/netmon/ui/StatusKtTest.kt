@@ -1,10 +1,12 @@
 package com.bkahlert.netmon.ui
 
+import com.bkahlert.netmon.BUILD_VERSION
 import com.bkahlert.netmon.ConsoleLogStore
 import com.bkahlert.netmon.KioskStats
 import com.bkahlert.netmon.fritz2.runTest
 import io.kotest.matchers.comparables.shouldBeGreaterThan
 import io.kotest.matchers.comparables.shouldBeLessThan
+import io.kotest.matchers.shouldNotBe
 import io.kotest.matchers.string.shouldContain
 import io.kotest.matchers.string.shouldNotContain
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -22,6 +24,29 @@ class StatusKtTest {
         text shouldContain "kiosk 118 %"
         text.indexOf("web 114 %") shouldBeGreaterThan text.indexOf("Network Monitor")
         text.indexOf("kiosk 161 MB") shouldBeLessThan text.indexOf("started")
+        container.remove()
+    }
+
+    @Test
+    fun shows_the_build_version_next_to_the_title() = runTest {
+        val container = rendered { status(ConsoleLogStore("info" to "Starting..."), MutableStateFlow(SAMPLE), version = "v2.2.0-4-g54adb6b") }
+
+        val text = container.textOnce("kiosk 161 MB")
+
+        text shouldContain "v2.2.0-4-g54adb6b"
+        text.indexOf("v2.2.0-4-g54adb6b") shouldBeGreaterThan text.indexOf("Network Monitor")
+        text.indexOf("v2.2.0-4-g54adb6b") shouldBeLessThan text.indexOf("web 114 %")
+        container.remove()
+    }
+
+    @Test
+    fun shows_the_version_baked_in_at_build_time_by_default() = runTest {
+        val container = rendered { status(ConsoleLogStore("info" to "Starting..."), MutableStateFlow(null)) }
+
+        val text = container.textOnce("Starting...")
+
+        text shouldContain BUILD_VERSION
+        BUILD_VERSION shouldNotBe "unknown"
         container.remove()
     }
 
