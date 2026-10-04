@@ -15,6 +15,7 @@ import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 import java.nio.channels.ClosedChannelException
 import java.nio.file.Path
+import java.nio.file.StandardCopyOption
 import kotlin.io.path.createTempFile
 import kotlin.io.path.exists
 import kotlin.io.path.moveTo
@@ -86,9 +87,9 @@ data class ScanResult(
         format: StringFormat = JsonFormat,
     ) = try {
         val content = format.encodeToString(this)
-        val tempFile = createTempFile(file.name, ".tmp")
+        val tempFile = createTempFile(file.toAbsolutePath().parent, file.name, ".tmp")
         tempFile.writeText(content)
-        tempFile.moveTo(file, overwrite = true)
+        tempFile.moveTo(file, StandardCopyOption.ATOMIC_MOVE)
     } catch (e: ClosedChannelException) {
         logger.info("Aborted saving scan result to {} was aborted", file.toAbsolutePath())
     } catch (e: Throwable) {

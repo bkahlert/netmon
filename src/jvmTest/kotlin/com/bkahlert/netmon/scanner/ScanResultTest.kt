@@ -15,6 +15,11 @@ import io.kotest.matchers.comparables.shouldBeBetween
 import io.kotest.matchers.should
 import io.kotest.matchers.shouldBe
 import kotlinx.coroutines.test.runTest
+import java.nio.file.Paths
+import kotlin.io.path.createDirectories
+import kotlin.io.path.deleteRecursively
+import kotlin.io.path.listDirectoryEntries
+import kotlin.io.path.writeText
 import kotlin.test.Test
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.minutes
@@ -374,6 +379,24 @@ class ScanResultTest {
             }
         }
     }
+    @Test
+    fun save_replaces_a_relative_file_and_leaves_no_temp_file() {
+        val directory = Paths.get("build", "tmp", "ScanResultTest").createDirectories()
+        try {
+            val file = directory.resolve("scan.json").also { it.writeText("stale") }
+            val scan = scanAt(100.epoch, Host(status = Status.UP, since = 100.epoch, lastSeen = 100.epoch))
+
+            scan.save(file)
+
+            file should {
+                ScanResult.load(it) shouldBe scan
+                directory.listDirectoryEntries().shouldContainExactly(listOf(it))
+            }
+        } finally {
+            directory.deleteRecursively()
+        }
+    }
+
     @Test
     fun merge_unseen_just_before_downAfter_keeps_host_up() {
         val recorded = Host(status = Status.UP, since = 50.epoch, lastSeen = 100.epoch)
