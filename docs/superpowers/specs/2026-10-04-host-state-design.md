@@ -68,8 +68,9 @@ and today a host that stays UP never gets one). They get the scan time on the ne
   mDNS cache no longer erases anything; a real rename still wins. An unseen host keeps all recorded fields.
 - **Missing `lastSeen`.** An old state file has none; the previous scan's timestamp stands in for it and is stored from
   then on. Otherwise the stand-in would advance with every scan and the grace period would never run out.
-- **Restart floor.** `NetmonScanner` captures its construction time as `notBefore`, so the grace period of every UP host
-  runs from the restart at the earliest. A scanner that was down for ten minutes does not flip the hosts its first scan
+- **Restart floor.** `NetmonScanner` passes the scan time minus its uptime as `notBefore`, so the grace period of every
+  UP host runs from the restart at the earliest. The uptime comes from the monotonic clock, so a wall-clock jump when
+  NTP answers moves the floor along. A scanner that was down for ten minutes does not flip the hosts its first scan
   happens to miss. The cost is that a device that left while the scanner was down shows UP for up to `downAfter` after
   the start. `since` of a late DOWN still uses the recorded `lastSeen`, not the floor.
 - **Returning networks.** `Application`'s `finalize` also removes the network's `NetmonScanner`, so a network that comes
