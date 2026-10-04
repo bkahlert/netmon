@@ -93,6 +93,7 @@ make test-preview                                   # the preview's fake broker 
 make deploy TARGET=pi@netmon.local                  # the built packages onto a device, no repository involved
 make soak TARGET=pi@netmon.local                    # ten minutes of memory samples of both units: dist/ssh/soak.md (the VM without TARGET)
 make apt-probe TARGET=pi@netmon.local               # apt update and a reinstall next to the live stack, timed, with apt's peak
+make bench TARGET=pi@netmon.local VARIANTS="main ." # the display's scripted scans on the board per variant: dist/bench/<time>/report.md
 make device-model-codes                             # the model codes and SF Symbols the display draws, from this Mac
 ```
 

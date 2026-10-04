@@ -1,11 +1,15 @@
 import json
 import subprocess
+import urllib.request
 
 import pytest
 
+import bench
 import scan_fixtures
-from bench import SCAN_TOPIC, Variant, order, parse_runs, parse_variants, run_timeline, scenario
+from bench import SCAN_TOPIC, Variant, order, page_url, parse_runs, parse_variants, run_all, run_timeline, scenario
 from bench_fixtures import sample
+from bench_report import Run
+from layout import Page
 
 pytestmark = pytest.mark.tier0
 
@@ -159,6 +163,70 @@ class TestRunTimeline:
             run_timeline(stream, clear=lambda: None, install=stream.install, publish=lambda scan: None, payloads=payloads)
 
         assert payloads[-1] == b"100"
+
+
+class TestPageUrl:
+    def test_reaches_the_variant_and_the_broker_through_the_boards_forwards(self):
+        result = page_url(Variant("main", MAIN))
+
+        assert result == f"http://127.0.0.1:18082/{MAIN}/?broker.host=127.0.0.1&broker.port=18080"
+
+    def test_serves_a_variants_page_and_its_assets_under_its_directory(self, tmp_path):
+        (tmp_path / MAIN).mkdir()
+        (tmp_path / MAIN / "index.html").write_text("<html>")
+        (tmp_path / MAIN / "netmon.js").write_text("js")
+        page = Page(tmp_path)
+        try:
+            index = urllib.request.urlopen(f"http://127.0.0.1:{page.port}/{MAIN}/?broker.host=127.0.0.1&broker.port=18080").read()
+            script = urllib.request.urlopen(f"http://127.0.0.1:{page.port}/{MAIN}/netmon.js").read()
+        finally:
+            page.close()
+
+        assert (index, script) == (b"<html>", b"js")
+
+
+class TestRunAll:
+    def test_writes_the_report_after_every_run(self):
+        written = []
+        a, b = Variant("a", "1" * 40), Variant("b", "2" * 40)
+
+        run_all([a, b], lambda n, v: Run(n, v.label, None, "x"), write=lambda runs: written.append(len(runs)), report=lambda line: None)
+
+        assert written == [1, 2]
+
+    def test_keeps_the_report_of_the_finished_runs_on_ctrl_c(self):
+        written = []
+
+        def one_run(number, variant):
+            if number == 3:
+                raise KeyboardInterrupt
+            return Run(number, variant.label, None, "x")
+
+        with pytest.raises(KeyboardInterrupt):
+            run_all(order([Variant("a", "1" * 40)], 3), one_run, write=lambda runs: written.append([r.number for r in runs]), report=lambda line: None)
+
+        assert written[-1] == [1, 2]
+
+    def test_reports_a_line_per_run(self):
+        lines = []
+
+        run_all([Variant("a", "1" * 40)], lambda n, v: Run(n, v.label, None, "the board rebooted"), write=lambda runs: None, report=lines.append)
+
+        assert lines == ["run 1/1 a 1111111: failed: the board rebooted"]
+
+
+class TestMain:
+    def test_needs_a_target(self, capsys):
+        status = bench.main({})
+
+        assert status == 2
+        assert "make bench TARGET=" in capsys.readouterr().err
+
+    def test_names_a_malformed_runs(self, capsys):
+        status = bench.main({"TARGET": "pi@netmon.local", "RUNS": "0"})
+
+        assert status == 2
+        assert "RUNS must be" in capsys.readouterr().err
 
 
 class FakeStream:

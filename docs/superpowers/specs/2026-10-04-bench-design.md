@@ -171,8 +171,9 @@ A restore or start that fails prints its message; a reboot removes the session's
     | scan 2 | settle    | 40 s (35–45)     | 20 s (20–25)     | −20 s  |
 
   - The per-run table: every run's figures in the order they ran, failed runs with their reason, so drift shows.
-- **`runs/<n>-<label>.jsonl`**: the raw metrics payloads of each run, with t0 and the phase boundaries, so a changed
-  rule or a new figure is computed again without the board.
+- **`runs/<n>-<directory>.jsonl`**: the raw metrics payloads of each run, with t0 and the phase boundaries, so a changed
+  rule or a new figure is computed again without the board. The directory is the bundle's: `working-tree` or the commit's
+  sha.
 
 The terminal prints a line per finished run (`run 2/6 main a33715a: scan 1 18.3 s web CPU, settle 25 s, …`) and the
 path of the report at the end.

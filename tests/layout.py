@@ -10,10 +10,10 @@ PINGRESP = bytes([0xD0, 0x00])
 
 
 class Page:
-    def __init__(self, directory: Path):
+    def __init__(self, directory: Path, port: int = 0):
         self.directory = directory
         handler = partial(QuietHandler, directory=str(directory))
-        self.server = ThreadingHTTPServer(("127.0.0.1", 0), handler)
+        self.server = ThreadingHTTPServer(("127.0.0.1", port), handler)
         threading.Thread(target=self.server.serve_forever, daemon=True).start()
         self.port = self.server.server_address[1]
 

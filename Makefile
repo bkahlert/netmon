@@ -1,7 +1,7 @@
 SHELL := /bin/bash
 .DEFAULT_GOAL := help
 # Gradle's output directory is called build, so the targets are declared phony.
-.PHONY: help gradle metrics build browser test-jvm test-js test-metrics test-layout test-preview test-tier0 test-tier1 test-tier2 soak apt-probe test test-all vm-device vm-prepare vm broker preview preview-browser preview-vm preview-board deploy device-model-codes clean release
+.PHONY: help gradle metrics build browser test-jvm test-js test-metrics test-layout test-preview test-tier0 test-tier1 test-tier2 soak apt-probe bench test test-all vm-device vm-prepare vm broker preview preview-browser preview-vm preview-board deploy device-model-codes clean release
 
 PLATFORM ?= linux/arm64
 TARGET ?=
@@ -62,6 +62,9 @@ soak: ## sample both units for ten minutes: TARGET=pi@host for the board, else t
 
 apt-probe: ## apt update and a reinstall next to the live stack, with apt's peak and timing: TARGET=pi@host for the board, else the VM
 	@$(UV) pytest -m apt $(if $(TARGET),--target=ssh --target-uri=$(TARGET),--target=vm --qemu-accel=$(QEMU_ACCEL)) $(APT_ARGS)
+
+bench: ## the display's scripted benchmark on a board: TARGET=pi@host VARIANTS="ref ... ." (default .) RUNS=1
+	@$(UV) python tests/bench.py
 
 test: test-jvm test-js test-metrics test-tier0 test-tier1 ## JVM, JS and Go unit tests, tiers 0 and 1, what CI runs
 
