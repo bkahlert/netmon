@@ -33,8 +33,8 @@ class TestBaseline:
 
 
 class TestSettle:
-    def test_is_where_the_first_two_calm_intervals_begin(self):
-        phase = at_utilizations([40, 30, 6, 6.5, 6], start=0)
+    def test_is_where_three_calm_intervals_begin(self):
+        phase = at_utilizations([60, 40, 10, 12, 8], start=0)
 
         result = settle(phase, base=5.0)
 
@@ -45,12 +45,22 @@ class TestSettle:
 
         assert result == Settle(0, True)
 
-    def test_needs_the_next_interval_calm_too(self):
-        phase = at_utilizations([40, 6, 30, 6, 6], start=0)
+    def test_averages_out_a_single_busy_interval(self):
+        result = settle(at_utilizations([5, 30, 5, 5], start=0), base=5.0)
 
-        result = settle(phase, base=5.0)
+        assert result == Settle(0, True)
 
-        assert result == Settle(15, True)
+    def test_needs_more_than_two_calm_intervals(self):
+        result = settle(at_utilizations([40, 6, 6, 40, 40], start=0), base=5.0)
+
+        assert result == Settle(25, False)
+
+    def test_reads_a_noisy_idle_as_settled(self):
+        phase = at_utilizations([119, 122, 125, 127, 136, 142, 27, 35, 15, 36, 24, 48], start=0)
+
+        result = settle(phase, base=17.4)
+
+        assert result == Settle(30, True)
 
     def test_is_the_phase_unsettled_on_a_last_calm_interval_alone(self):
         result = settle(at_utilizations([40, 40, 6], start=0), base=5.0)

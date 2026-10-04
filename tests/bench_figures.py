@@ -4,7 +4,8 @@ from dataclasses import dataclass
 from sampling import KIOSK, Sample
 
 PHASES = ("load", "scan 1", "scan 2")
-MARGIN = 2.0
+MARGIN = 10.0
+WINDOW = 3
 BASELINE_FROM = 130
 
 
@@ -51,10 +52,10 @@ def baseline(samples: list[Sample], since: float) -> float | None:
 
 
 def settle(phase: list[Sample], base: float, margin: float = MARGIN) -> Settle:
-    """Return where the first two consecutive intervals within `margin` points of `base` begin, or the phase unsettled."""
-    calm = [(u := utilization(a, b)) is not None and u <= base + margin for a, b in zip(phase, phase[1:])]
-    for index in range(len(calm) - 1):
-        if calm[index] and calm[index + 1]:
+    """Return where the first three intervals whose utilization together is at most `margin` points above `base` begin, or the phase unsettled."""
+    for index in range(len(phase) - WINDOW):
+        u = utilization(phase[index], phase[index + WINDOW])
+        if u is not None and u <= base + margin:
             return Settle(phase[index].at - phase[0].at, True)
     return Settle(phase[-1].at - phase[0].at, False)
 
