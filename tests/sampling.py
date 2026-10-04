@@ -192,7 +192,7 @@ class Samples:
         return self.receive(timeout)[0]
 
     def pending(self) -> list[tuple[Sample, bytes]]:
-        """Return the samples received and not yet returned, with their payloads, without waiting."""
+        """Return the samples received and not yet returned, with their payloads, without waiting, however long they waited."""
         result = []
         while True:
             try:
@@ -200,7 +200,7 @@ class Samples:
             except queue.Empty:
                 return result
             sample = decode(payload)
-            if sample is not None and abs(self.clock() - sample.at) < SILENCE:
+            if sample is not None:
                 result.append((sample, payload))
 
 

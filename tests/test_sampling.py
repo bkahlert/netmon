@@ -113,6 +113,14 @@ class TestSamples:
 
         assert result == []
 
+    def test_pending_keeps_samples_that_waited_longer_than_three_intervals(self):
+        payloads = queue.Queue()
+        payloads.put(GOLDEN.read_bytes())
+
+        result = Samples(payloads, clock=lambda: 1759450065).pending()
+
+        assert [sample.at for sample, _ in result] == [1759450005]
+
 
 class TestThin:
     def test_keeps_the_first_and_then_one_sample_per_interval(self):
