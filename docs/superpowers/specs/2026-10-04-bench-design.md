@@ -2,8 +2,8 @@
 
 ## Intent
 
-Compare two builds of the display on a real Pi, the same scripted scans for each, and see which costs less and settles
-sooner. An A/B check for edits such as [28a4cf3](https://github.com/bkahlert/netmon/commit/28a4cf34f0f84637de49a0425e8a46fce1b00fe4),
+Compare two builds of the display on a real Pi, the same scripted scans for each, and see which costs less and is busy
+for less of each scan. An A/B check for edits such as [28a4cf3](https://github.com/bkahlert/netmon/commit/28a4cf34f0f84637de49a0425e8a46fce1b00fe4),
 not an absolute footprint and not a CI gate: one run by default for a quick look, more runs for a figure with its noise.
 
 ## Today
@@ -25,7 +25,7 @@ not an absolute footprint and not a CI gate: one run by default for a quick look
 Settled with the user on 2026-10-04:
 
 1. **A/B regression.** The figures compare variants with each other, run interleaved on one board in one sitting.
-2. **Cost per phase and settle time**, both from netmon-metrics. Nothing in the page changes for the benchmark.
+2. **Cost per phase and how long each scan keeps the page busy**, both from netmon-metrics. Nothing in the page changes for the benchmark.
 3. **Bundles served from the workstation.** Each variant is a production bundle (`jsBrowserDistribution`) the workstation builds and
    serves through `board.Session`'s tunnel. Nothing persistent changes on the board.
 4. **The representative scenario** below: 53 hosts, then 8 changes 60 s later, then 90 s more.
@@ -49,7 +49,8 @@ make bench TARGET=pi@netmon.local VARIANTS="main ." RUNS=3
 | `RUNS`     | `1`     | Runs per variant, at least 1                                                   |
 
 Every ref is resolved to its commit before anything is built; an unknown ref ends the command. A variant's label is the
-ref as given with its short sha (`main a33715a`), the working tree's `. f5320cb+dirty` when it has changes.
+ref as given with its short sha (`main a33715a`), the working tree's `. f5320cb+dirty` when it has changes; a ref that
+is the commit's sha reads as the short sha alone (`a33715a`).
 
 ### Bundles
 
@@ -90,11 +91,11 @@ Runs go interleaved, variant after variant: with `VARIANTS="main ."` and `RUNS=3
 
 The phases:
 
-| Phase  | From                     | To                       |
-|--------|--------------------------|--------------------------|
-| load   | the kiosk's restart      | the sample at t0         |
-| scan 1 | the sample at t0         | the sample before scan 2 |
-| scan 2 | the sample before scan 2 | the run's last sample    |
+| Phase     | From                     | To                       |
+|-----------|--------------------------|--------------------------|
+| page load | the kiosk's restart      | the sample at t0         |
+| scan 1    | the sample at t0         | the sample before scan 2 |
+| scan 2    | the sample before scan 2 | the run's last sample    |
 
 Tying each publish to a sample makes every boundary exact to a sample. The load phase needs no first boundary: the
 counters of the new cgroup and process start at zero.
@@ -116,29 +117,29 @@ The display drops a scan older than 5 minutes (`ScanEventSettings.outdatedThresh
 
 ### Figures
 
-Per phase and run, from the samples at the phase's boundaries:
+Per phase and run:
 
-| Figure         | Source                                                                                    |
-|----------------|-------------------------------------------------------------------------------------------|
-| web CPU s      | delta of `SystemSample.web_cpu_seconds`, `process.cpu.time` of `WPEWebProcess`            |
-| kiosk CPU s    | delta of `UnitSample.cpu_seconds` of `pihero-kiosk.service`: cog, web and network process |
-| kiosk RAM+zram | `current + swap_current` of the kiosk at the phase's end, and the peak of its samples     |
-| web anon       | `SystemSample.web_anon` at the phase's end                                                |
-| major faults   | delta of `SystemSample.pgmajfault`                                                        |
-| settle         | scan phases only, below                                                                   |
+| Figure          | Phases    | Source                                                                                         |
+|-----------------|-----------|------------------------------------------------------------------------------------------------|
+| load time       | page load | from the journal's `Started pihero-kiosk.service` to cog's `Loaded successfully`, both on the board's clock |
+| CPU usage       | all       | the renderer's (`WPEWebProcess`) CPU time over the phase's elapsed time, in % of one core as `top` shows it |
+| busy            | scans     | below                                                                                          |
+| memory peak     | all       | the highest `current + swap_current` of the kiosk among the phase's samples                    |
+| memory at end   | all       | the kiosk's `current + swap_current` at the phase's end                                       |
+| renderer memory | all       | `SystemSample.web_anon` at the phase's end                                                     |
+| kiosk CPU time  | all       | delta of `UnitSample.cpu_seconds` of `pihero-kiosk.service`: cog, renderer and network process |
+| major faults    | all       | delta of `SystemSample.pgmajfault`                                                             |
 
-The peak is the phase's own, from its samples: the cgroup's `memory.peak` counts since the unit's start.
+The page load's CPU usage runs from the renderer's start, the start of its `process.cpu.time`, to t0. The memory peak is
+the phase's own, from its samples: the cgroup's `memory.peak` counts since the unit's start.
 
-**Settle time.** The utilization between two samples is the web CPU delta over the elapsed time, in % of one core, as
-the footprint figures are. The run's baseline is the mean utilization of the sample pairs from t0 + 130 s to the run's
-end. A scan phase's settle time runs from its start to the first sample from which the utilization over the next three
-intervals (15 s) is at most 10 points above the baseline. A phase that ends first reads `> 60 s` or `> 90 s`. The
-resolution is the 5 s of the samples.
+**Busy.** A scan is busy until the renderer's CPU usage over the next three intervals (15 s) is below 50 % of one core.
+The figure is that time in % of the phase's length; 100 % means the renderer was still busy when the phase ended. The
+resolution is the 5 s of the samples, 8 % of scan 1 and 6 % of scan 2.
 
-The idle page's single intervals swing by more than 10 points around the baseline: 28a4cf3's last 20 s read 6, 21, 5
-and 22 % against a baseline of 17 %. A rule over single intervals within 2 points never settles on that. Settle time is
-measured against each variant's own idle: a variant that is busy all the time settles at once, and its CPU figures show
-its cost.
+The idle page's single 5 s intervals swing between 5 and 35 %, a busy one runs above 100 %. Three intervals and a
+threshold between the two read through that noise. The threshold is fixed rather than each variant's own idle level: a
+variant busy all the time then reads 100 %, not 0.
 
 ### A run that does not count
 
@@ -164,24 +165,32 @@ A restore or start that fails prints its message; a reboot removes the session's
 `dist/bench/<YYYY-MM-DD-HHMM>/`:
 
 - **`report.md`**
-  - The header: target, date, boot id, every variant's label, runs per variant, the run order, "scanner stopped".
-  - The summary: a row per phase and figure, a column per variant, and per further variant a Δ column against the first.
-    With one run a cell is the value; with more, `median (min–max)` of the valid runs and `n/m valid`. A Δ whose ranges
-    overlap is prefixed `~`. A Δ is in % for the CPU, memory and fault figures and in seconds for the settle time.
-    Example:
+  - The header: target, date, boot id, runs per variant, the run order, "scanner stopped".
+  - A legend: what each phase and figure means, in plain words, and why the status bar's pills stay empty.
+  - The summary: a column per variant, and per further variant a Δ column against the first. A row per figure under a
+    heading row per phase: `page load`, `scan 1 (60 s): 53 hosts appear`, `scan 2 (90 s): 8 hosts change`. The page load
+    shows load time, CPU usage and memory peak; each scan CPU usage, busy and memory peak. A first row counts the valid
+    runs (`3 of 3`).
 
-    | phase  | figure    | main a33715a     | . f5320cb        | Δ .    |
-    |--------|-----------|------------------|------------------|--------|
-    | scan 2 | web CPU s | 31.2 (30.4–32.0) | 24.8 (24.1–25.5) | −20 %  |
-    | scan 2 | settle    | 40 s (35–45)     | 20 s (20–25)     | −20 s  |
+    A cell lists the valid runs' values in the order they ran, with their unit, up to five (`50 % · 50 % · 58 %`); with
+    more, `median (min–max)`. Δ is the relative change of the medians in %; `about the same` when both variants have
+    more than one run and their ranges overlap; `n/a` without a value or against a zero. Example:
 
-  - The per-run table: every run's figures in the order they ran, failed runs with their reason, so drift shows.
-- **`runs/<n>-<directory>.jsonl`**: the raw metrics payloads of each run, with t0 and the phase boundaries, so a changed
-  rule or a new figure is computed again without the board. The directory is the bundle's: `working-tree` or the commit's
-  sha.
+    |                                    | a33715a               | 28a4cf3            | Δ 28a4cf3 |
+    |------------------------------------|-----------------------|--------------------|-----------|
+    | valid runs                         | 3 of 3                | 3 of 3             |           |
+    | **scan 2 (90 s): 8 hosts change**  |                       |                    |           |
+    | CPU usage                          | 117 % · 127 % · 127 % | 59 % · 58 % · 55 % | -54 %     |
+    | busy                               | 100 % · 100 % · 100 % | 72 % · 72 % · 78 % | -28 %     |
 
-The terminal prints a line per finished run (`run 2/6 main a33715a: scan 1 18.3 s web CPU, settle 25 s, …`) and the
-path of the report at the end.
+  - The details: every run's figures in the order they ran, every figure above included, failed runs with their
+    reason, so drift shows.
+- **`runs/<n>-<directory>.jsonl`**: the raw metrics payloads of each run, with t0, the phase boundaries and the load
+  time, so a changed rule or a new figure is computed again without the board. The directory is the bundle's:
+  `working-tree` or the commit's sha.
+
+The terminal prints a line per finished run (`run 2/6 28a4cf3: page load 21 s, 52 % CPU; scan 1 79 % CPU, busy 50 %;
+…`) and the path of the report at the end.
 
 ### What else changes
 
@@ -198,20 +207,20 @@ Each behaviour at the lowest level that catches its defect.
   - `VARIANTS` and `RUNS`: refs and `.`, `RUNS` defaulting to 1 and rejecting 0, the interleaved order;
   - the timeline against a fake sample stream and publisher: scan 2 on the first sample at or after t0 + 60 s, the end
     on the first at or after t0 + 150 s, silence raising;
-  - the figures from built `Sample`s: the CPU deltas, the load phase as the counters at t0, the peak and end memory, the
-    fault delta;
-  - the settle time: the baseline window, settling on three intervals' utilization, not on one calm interval, `> 60 s`
-    when it never does;
+  - the figures from built `Sample`s: CPU usage per phase, the page load's from the renderer's start, the peak and end
+    memory, the fault delta;
+  - the load time from the kiosk's journal;
+  - busy: three intervals under 50 %, not one, and 100 % when the renderer never gets there;
   - a failed run per reason: PID change, kiosk restart, OOM kill, boot id;
-  - the report: values for one run, `median (min–max)` for more, `~` on overlapping ranges, failed runs excluded with
-    `n/m valid`, the per-run table in run order.
+  - the report: the runs' values listed, `median (min–max)` beyond five, `about the same` on overlapping ranges, failed
+    runs excluded with `n of m`, the details in run order.
 - **[tests/test_makefile.py](../../../tests/test_makefile.py)**: the `bench` target and its help line.
 - **`-m preview`, Podman**, next to [test_preview_broker.py](../../../tests/test_preview_broker.py): a cleared retained
   topic leaves nothing for a new subscriber; the static server answers a variant's `index.html` and its assets under the
   variant's directory.
 - **Not automated:** building a ref in a worktree (Gradle) and the board end to end. The acceptance run is
   `make bench TARGET=pi@netmon.local VARIANTS="a33715a 28a4cf3"`: each phase has its figures, and 28a4cf3 is clearly
-  ahead of its parent in scan 2's web CPU and settle time. Its report goes into a Numbers section here.
+  ahead of its parent in scan 2's CPU usage and busy share. Its report goes into a Numbers section here.
 
 ## Out of scope
 
