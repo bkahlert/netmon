@@ -4,6 +4,8 @@ from pathlib import Path
 
 import pytest
 
+from pihero_testkit import device_file
+
 import vm_device
 
 pytestmark = pytest.mark.tier0
@@ -87,7 +89,7 @@ class TestWrite:
         assert [p.name for p in out.iterdir()] == ["user-data"]
         text = (out / "user-data").read_text()
         assert text.startswith("#cloud-config\n")
-        assert vm_device.PUBLIC_KEY.read_text().strip() in text
+        assert device_file.PUBLIC_KEY.read_text().strip() in text
 
 
 class TestPytestConfigure:

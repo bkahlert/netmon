@@ -4,22 +4,23 @@ import subprocess
 import pytest
 
 import preview_broker
-from preview_broker import DEVICE, EXTERNAL, FIXTURE, Broker
+from preview_broker import BOARD, EXTERNAL, FAKE, Broker, MosquittoBackend
 from scan_fixtures import Scan
 
 
 @pytest.mark.tier0
 class TestParseBroker:
-    @pytest.mark.parametrize("text", [None, "", "fixture"])
-    def test_is_the_fixture_on_the_macs_8080_by_default(self, text):
+    @pytest.mark.parametrize("text", [None, "", "fake", "fixture"])
+    def test_is_the_fake_on_the_macs_8080_by_default(self, text):
         broker = preview_broker.parse_broker(text)
 
-        assert broker == Broker(FIXTURE, "localhost", 8080)
+        assert broker == Broker(FAKE, "localhost", 8080)
 
-    def test_is_the_boards_own_broker_on_its_loopback_for_device(self):
-        broker = preview_broker.parse_broker("device")
+    @pytest.mark.parametrize("text", ["board", "device"])
+    def test_is_the_boards_own_broker_on_its_loopback_for_board(self, text):
+        broker = preview_broker.parse_broker(text)
 
-        assert broker == Broker(DEVICE, "127.0.0.1", 8080)
+        assert broker == Broker(BOARD, "127.0.0.1", 8080)
 
     @pytest.mark.parametrize("text", ["localhost:8080", "127.0.0.1:8080", "localhost:9000", "netmon.local:8080"])
     def test_uses_a_host_and_port_as_it_is(self, text):
@@ -29,17 +30,50 @@ class TestParseBroker:
         assert broker.managed is False
         assert broker.address == text
 
-    @pytest.mark.parametrize("text", ["netmon.local", ":8080", "host:", "host:abc", "host:0", "host:70000", "host:-1", "Fixture", "mock"])
+    @pytest.mark.parametrize("text", ["netmon.local", ":8080", "host:", "host:abc", "host:0", "host:70000", "host:-1", "Fake", "mock"])
     def test_rejects_anything_but_the_three_forms(self, text):
-        with pytest.raises(ValueError, match="BROKER must be fixture, device or HOST:PORT"):
+        with pytest.raises(ValueError, match="BROKER must be fake, board or HOST:PORT"):
             preview_broker.parse_broker(text)
 
 
 @pytest.mark.tier0
 class TestBroker:
-    @pytest.mark.parametrize("text, described", [("fixture", "fixture on localhost:8080"), ("device", "the device's own, 127.0.0.1:8080 on the board"), ("netmon.local:8080", "netmon.local:8080")])
+    @pytest.mark.parametrize("text, described", [("fake", "fake on localhost:8080"), ("board", "the board's own, 127.0.0.1:8080 on the board"), ("netmon.local:8080", "netmon.local:8080")])
     def test_describes_itself_for_the_ready_message(self, text, described):
         assert preview_broker.parse_broker(text).describe() == described
+
+
+@pytest.mark.tier0
+class TestMosquittoBackend:
+    @pytest.mark.parametrize("text, managed, mac_port", [
+        ("fake", True, 8080),
+        ("localhost:9000", False, 9000),
+        ("127.0.0.1:9000", False, 9000),
+        ("::1:9000", False, 9000),
+        ("netmon.local:8080", False, None),
+        ("board", False, None),
+    ])
+    def test_knows_what_it_starts_and_which_mac_port_the_kiosk_must_reach(self, text, managed, mac_port):
+        backend = MosquittoBackend(preview_broker.parse_broker(text), Scan(1, 1, 1))
+
+        assert (backend.managed, backend.mac_port) == (managed, mac_port)
+
+    @pytest.mark.parametrize("text, address", [
+        ("fake", ("10.0.2.2", 8080)),
+        ("localhost:9000", ("10.0.2.2", 9000)),
+        ("netmon.local:8080", ("netmon.local", 8080)),
+        ("board", ("127.0.0.1", 8080)),
+    ])
+    def test_gives_the_broker_as_the_page_reaches_it(self, text, address):
+        backend = MosquittoBackend(preview_broker.parse_broker(text), Scan(1, 1, 1))
+
+        assert backend.address_for(Served("10.0.2.2")) == address
+
+    def test_describes_its_broker(self):
+        assert MosquittoBackend(preview_broker.parse_broker("fake"), Scan(1, 1, 1)).describe() == "fake on localhost:8080"
+
+    def test_stops_without_ever_having_run(self):
+        MosquittoBackend(preview_broker.parse_broker("netmon.local:8080"), Scan(1, 1, 1)).stop()
 
 
 @pytest.mark.tier0
@@ -51,19 +85,19 @@ class TestEnsure:
             port = server.getsockname()[1]
 
             with pytest.raises(RuntimeError, match=f"port {port} is taken; to use the broker there, run with BROKER=localhost:{port}"):
-                preview_broker.ensure(Broker(FIXTURE, "127.0.0.1", port), Scan(1, 1, 1))
+                preview_broker.ensure(Broker(FAKE, "127.0.0.1", port), Scan(1, 1, 1))
 
 
 @pytest.mark.tier0
 class TestCommands:
     def test_run_publishes_the_websocket_listener_on_the_loopback_only(self):
-        command = preview_broker.run_command(Broker(FIXTURE, "localhost", 8080))
+        command = preview_broker.run_command(Broker(FAKE, "localhost", 8080))
 
         assert command[command.index("--publish") + 1] == "127.0.0.1:8080:8080"
         assert command[-1] == "docker.io/library/eclipse-mosquitto:2"
 
     def test_run_mounts_the_boards_configuration_read_only(self):
-        command = preview_broker.run_command(Broker(FIXTURE, "localhost", 8080))
+        command = preview_broker.run_command(Broker(FAKE, "localhost", 8080))
 
         volume = command[command.index("--volume") + 1]
         assert volume.endswith("packages/netmon-scanner/conf/mosquitto-netmon.conf:/mosquitto/config/mosquitto.conf:ro")
@@ -96,7 +130,7 @@ class TestMain:
 @pytest.mark.preview
 class TestBrokerContainer:
     def test_serves_the_fixture_as_retained_messages_over_websockets(self):
-        broker = Broker(FIXTURE, "127.0.0.1", free_port())
+        broker = Broker(FAKE, "127.0.0.1", free_port())
 
         preview_broker.ensure(broker, Scan(2, 1, 2))
         try:
@@ -112,13 +146,25 @@ class TestBrokerContainer:
         assert handshake.startswith("HTTP/1.1 101")
 
     def test_refuses_a_broker_that_already_answers(self):
-        broker = Broker(FIXTURE, "127.0.0.1", free_port())
+        broker = Broker(FAKE, "127.0.0.1", free_port())
         preview_broker.ensure(broker, Scan(1, 1, 1))
         try:
             with pytest.raises(RuntimeError, match="is taken"):
                 preview_broker.ensure(broker, Scan(1, 1, 1))
         finally:
             preview_broker.stop()
+
+
+class Served:
+    """Reaches the Mac's ports at `host`, as the VM's kiosk does."""
+
+    flavor = "vm"
+
+    def __init__(self, host: str):
+        self.host = host
+
+    def address(self, mac_port: int) -> str:
+        return f"{self.host}:{mac_port}"
 
 
 def free_port() -> int:

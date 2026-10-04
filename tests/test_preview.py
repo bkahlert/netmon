@@ -1,188 +1,151 @@
-import json
-import os
-
 import pytest
+from pihero_testkit.preview import Settings
+from pihero_testkit.preview.flavors import BoardServed, BrowserServed, VmServed
 
 import preview
-import preview_device
-import preview_session
+import vm_device
 
+pytestmark = pytest.mark.tier0
+SAMPLE = vm_device.SAMPLE.read_text()
+KEY = "ssh-ed25519 AAAATEST pihero-testkit"
 
-@pytest.mark.tier0
-class TestMain:
-    def test_names_a_variable_that_does_not_fit_the_flavor_and_runs_nothing(self, capsys):
-        status = preview.main(["--on", "device"], {})
 
-        assert status == 2
-        assert "preview-device needs TARGET=user@host" in capsys.readouterr().err
+def settings(flavor: str, **environ: str) -> Settings:
+    return Settings.from_environ(flavor, {**({"TARGET": "pi@netmon.local:2222"} if flavor == "board" else {}), **environ})
 
-    def test_refuses_an_unknown_flavor(self):
-        with pytest.raises(SystemExit) as exit_:
-            preview.main(["--on", "tv"], {})
 
-        assert exit_.value.code == 2
+class TestRender:
+    def test_leaves_out_netmons_packages(self):
+        text = preview.render(SAMPLE, KEY)
 
+        assert "  - pihero\n" in text
+        assert "netmon-scanner" not in text
+        assert "netmon-display" not in text
 
-@pytest.mark.tier0
-class TestForget:
-    def test_deletes_the_record(self, tmp_path, monkeypatch):
-        monkeypatch.setattr(preview, "RECORD", tmp_path / "session.json")
-        preview.RECORD.write_text(json.dumps({"owner": 1, "gradle": 2}))
+    def test_installs_the_kiosk_from_pi_heros_own_source(self):
+        text = preview.render(SAMPLE, KEY)
 
-        preview.forget()
+        assert "  - pihero-kiosk\n" in text
 
-        assert not preview.RECORD.exists()
+    def test_leaves_out_netmons_apt_source(self):
+        text = preview.render(SAMPLE, KEY)
 
-    def test_keeps_only_a_board_that_still_runs_the_session(self, tmp_path, monkeypatch):
-        monkeypatch.setattr(preview, "RECORD", tmp_path / "session.json")
-        preview.RECORD.write_text(json.dumps({"owner": 1, "gradle": 2, "device": "pi@netmon.local"}))
+        assert "netmon.sources" not in text
+        assert "bkahlert.github.io/netmon" not in text
+        assert "10.0.2.2:8000" not in text
 
-        preview.forget()
+    def test_leaves_out_the_boot_config_lines_of_netmons_packages(self):
+        text = preview.render(SAMPLE, KEY)
 
-        assert json.loads(preview.RECORD.read_text()) == {"device": "pi@netmon.local"}
+        assert "bootconfig add cmdline" not in text
 
-    def test_is_done_on_a_missing_record(self, tmp_path, monkeypatch):
-        monkeypatch.setattr(preview, "RECORD", tmp_path / "session.json")
+    def test_keeps_the_kiosk_settings_and_the_testkit_user(self):
+        text = preview.render(SAMPLE, KEY)
 
-        preview.forget()
+        assert "COG_PLATFORM_DRM_VIDEO_MODE=800x480" in text
+        assert "  - name: pihero\n" in text
+        assert f"      - {KEY}\n" in text
 
-        assert not preview.RECORD.exists()
+    def test_changes_nothing_but_what_it_leaves_out(self):
+        rendered = vm_device.render(SAMPLE, KEY).splitlines()
 
+        kept = preview.render(SAMPLE, KEY).splitlines()
 
-@pytest.mark.tier0
-class TestStaleActions:
-    def test_refuses_to_start_next_to_a_running_preview(self):
-        record = {"owner": 100}
+        assert [line for line in kept if line not in rendered] == ["  - pihero-kiosk"]
+        assert len(rendered) - len(kept) == 9
 
-        with pytest.raises(preview.AlreadyRunning, match="100"):
-            preview.stale_actions(record, commands({100: "python tests/preview.py"}))
 
-    def test_ends_what_a_killed_preview_left_behind(self):
-        record = {"owner": 100, "qemu": 200, "gradle": 300, "broker": True}
+class TestApp:
+    def test_is_named_for_the_record_and_the_boards_run_directory(self):
+        assert preview.Netmon.name == "netmon"
+        assert preview.Netmon.root == preview.ROOT
+        assert preview.Netmon.display == (800, 480)
 
-        actions = preview.stale_actions(record, commands({200: "qemu-system-aarch64 -M virt", 300: "/bin/sh ./gradlew --console=plain jsBrowserDevelopmentRun"}))
+    def test_gives_the_vm_the_rendered_sample(self):
+        text = preview.Netmon().user_data()
 
-        assert actions == [("terminate", 200), ("terminate-group", 300), ("stop-broker", None)]
+        assert "  - pihero-kiosk\n" in text and "netmon.sources" not in text
 
-    def test_leaves_alone_a_process_that_reuses_the_recorded_id(self):
-        record = {"owner": 100, "qemu": 200, "gradle": 300}
 
-        actions = preview.stale_actions(record, commands({200: "/usr/bin/vim notes.txt", 300: "firefox"}))
+class TestDevServer:
+    def test_runs_gradles_continuous_development_server_on_8081(self):
+        server = preview.Netmon().dev_server(settings("browser"))
 
-        assert actions == []
+        assert server.argv == ["./gradlew", "--console=plain", "jsBrowserDevelopmentRun", "--continuous"]
+        assert server.port == 8081
 
-    def test_does_nothing_for_an_empty_record(self):
-        assert preview.stale_actions({}, commands({})) == []
+    @pytest.mark.parametrize("flavor", ["browser", "vm"])
+    def test_proxies_no_stats_off_the_board(self, flavor):
+        assert preview.Netmon().dev_server(settings(flavor)).env == {}
 
-    def test_ends_a_killed_previews_tunnel_and_restores_its_board(self):
-        record = {"owner": 100, "tunnel": 400, "device": "pi@netmon.local"}
+    def test_proxies_the_boards_stats_from_its_web_server_whatever_the_ssh_port(self):
+        server = preview.Netmon().dev_server(settings("board"))
 
-        actions = preview.stale_actions(record, commands({400: "ssh -N -o BatchMode=yes pi@netmon.local"}))
+        assert server.env == {"NETMON_STATS_PROXY": "http://netmon.local"}
 
-        assert actions == [("terminate", 400), ("restore-device", "pi@netmon.local")]
 
-    @pytest.mark.parametrize("command", ["/usr/bin/ssh-agent -l", "sshd: pi@notty", "ssh pi@netmon.local"])
-    def test_spares_a_process_that_reused_the_tunnels_pid(self, command):
-        record = {"owner": 100, "tunnel": 400}
+class TestHostOf:
+    @pytest.mark.parametrize("target, host", [("pi@netmon.local", "netmon.local"), ("pi@netmon.local:2222", "netmon.local"), ("netmon.local", "netmon.local")])
+    def test_is_the_host_of_user_at_host_and_port(self, target, host):
+        assert preview.host_of(target) == host
 
-        actions = preview.stale_actions(record, commands({400: command}))
 
-        assert actions == []
+class TestBackend:
+    def test_is_the_fake_with_14_recent_and_39_stable_hosts_by_default(self):
+        backend = preview.Netmon().backend(settings("vm"))
 
-    def test_restores_a_board_whose_tunnel_is_already_gone(self):
-        record = {"owner": 100, "tunnel": 400, "device": "pi@netmon.local"}
+        assert backend.managed and backend.describe() == "fake on localhost:8080"
+        assert (backend.scan.recent, backend.scan.stable) == (14, 39)
 
-        actions = preview.stale_actions(record, commands({}))
+    def test_takes_the_broker_and_the_scan_from_the_environment(self):
+        backend = preview.Netmon().backend(settings("vm", BROKER="netmon.local:8080", SCAN="2+3"))
 
-        assert actions == [("restore-device", "pi@netmon.local")]
+        assert not backend.managed and backend.describe() == "netmon.local:8080"
+        assert (backend.scan.recent, backend.scan.stable) == (2, 3)
 
+    def test_offers_the_boards_own_broker_on_the_board(self):
+        assert preview.Netmon().backend(settings("board", BROKER="board")).describe() == "the board's own, 127.0.0.1:8080 on the board"
 
-@pytest.mark.tier0
-class TestCarryOut:
-    def test_restores_a_board_through_its_board_class(self, monkeypatch):
-        restored = []
+    @pytest.mark.parametrize("flavor", ["browser", "vm"])
+    def test_refuses_the_boards_own_broker_elsewhere(self, flavor):
+        with pytest.raises(ValueError, match="BROKER=board is only for preview-board"):
+            preview.Netmon().backend(settings(flavor, BROKER="board"))
 
-        class FakeBoard:
-            def __init__(self, target):
-                self.target = target
+    def test_names_a_malformed_variable(self):
+        with pytest.raises(ValueError, match="BROKER must be fake, board or HOST:PORT"):
+            preview.Netmon().backend(settings("vm", BROKER="nope"))
+        with pytest.raises(ValueError, match="SCAN must be"):
+            preview.Netmon().backend(settings("vm", SCAN="nope"))
 
-            def restore(self):
-                restored.append(self.target)
 
-        monkeypatch.setattr(preview.preview_board, "Board", FakeBoard)
+class TestPageUrl:
+    @pytest.mark.parametrize("flavor, served, expected", [
+        ("browser", BrowserServed(), "http://localhost:8081/?broker.host=localhost&broker.port=8080"),
+        ("vm", VmServed(), "http://10.0.2.2:8081/?broker.host=10.0.2.2&broker.port=8080"),
+        ("board", BoardServed(), "http://127.0.0.1:18081/?broker.host=127.0.0.1&broker.port=18080"),
+    ])
+    def test_reaches_the_dev_server_and_the_fake_on_the_mac_as_the_flavor_does(self, flavor, served, expected):
+        app = preview.Netmon()
 
-        preview.carry_out([("restore-device", "pi@netmon.local")], command_of=lambda pid: None)
+        assert app.page_url(app.backend(settings(flavor)), served) == expected
 
-        assert restored == ["pi@netmon.local"]
+    def test_reaches_a_broker_on_the_mac_by_its_own_port(self):
+        app = preview.Netmon()
 
+        url = app.page_url(app.backend(settings("vm", BROKER="localhost:9000")), VmServed())
 
-@pytest.mark.tier0
-class TestWaitForInspector:
-    def test_returns_the_inspector_of_the_first_target_once_the_list_names_one(self):
-        listings = iter(["", EMPTY_LISTING, LISTING])
+        assert url == "http://10.0.2.2:8081/?broker.host=10.0.2.2&broker.port=9000"
 
-        found = preview.wait_for_inspector("127.0.0.1:2999", fetch=lambda address: next(listings), sleep=lambda s: None)
+    def test_reaches_a_remote_broker_where_it_is(self):
+        app = preview.Netmon()
 
-        assert found == "http://127.0.0.1:2999/Main.html?ws=127.0.0.1:2999/socket/1/1/WebPage"
+        url = app.page_url(app.backend(settings("vm", BROKER="netmon.local:8080")), VmServed())
 
-    def test_falls_back_to_the_list_itself_on_a_list_without_a_target(self):
-        now = iter(range(0, 1000, 10))
+        assert url == "http://10.0.2.2:8081/?broker.host=netmon.local&broker.port=8080"
 
-        found = preview.wait_for_inspector("127.0.0.1:2999", timeout=30, fetch=lambda address: EMPTY_LISTING, sleep=lambda s: None, clock=lambda: next(now))
+    def test_reaches_the_boards_own_broker_on_its_loopback(self):
+        app = preview.Netmon()
 
-        assert found == "http://127.0.0.1:2999/"
+        url = app.page_url(app.backend(settings("board", BROKER="board")), BoardServed())
 
-
-@pytest.mark.tier0
-class TestWaitUntilGone:
-    def test_returns_once_every_process_is_gone(self):
-        alive = {200: 2, 300: 1}
-
-        def command_of(pid):
-            alive[pid] -= 1
-            return "qemu" if alive[pid] > 0 else None
-
-        preview.wait_until_gone([200, 300], command_of, sleep=lambda s: None)
-
-        assert alive == {200: 0, 300: 0}
-
-    def test_gives_up_on_a_process_that_stays(self):
-        now = iter(range(0, 1000, 10))
-
-        with pytest.raises(TimeoutError, match="200"):
-            preview.wait_until_gone([200], lambda pid: "qemu", timeout=30, sleep=lambda s: None, clock=lambda: next(now))
-
-
-@pytest.mark.tier0
-class TestDevServerPort:
-    def test_is_the_port_the_pages_use(self):
-        assert preview.DEV_PORT == 8081
-
-
-@pytest.mark.preview
-class TestClaim:
-    def test_ends_the_qemu_a_killed_preview_left_behind(self, tmp_path, monkeypatch):
-        monkeypatch.setattr(preview, "STATE", tmp_path)
-        monkeypatch.setattr(preview, "RECORD", tmp_path / "session.json")
-        monkeypatch.setattr(preview, "SESSION_DIR", tmp_path / "session")
-        session = preview_session.Session(preview_device.ensure_layer(), tmp_path / "session", window=False)
-        vm = session.start()
-        try:
-            preview.RECORD.write_text(json.dumps({"owner": 2**22 + 777, "qemu": vm.process.pid}))
-
-            preview.claim()
-
-            vm.process.wait(timeout=30)
-            record = json.loads(preview.RECORD.read_text())
-        finally:
-            session.stop()
-        assert vm.process.returncode is not None
-        assert record == {"owner": os.getpid()}
-
-
-def commands(by_pid):
-    return lambda pid: by_pid.get(pid)
-
-
-LISTING = """<html><body><div id='targetlist'><table><tbody><tr><td class="input"><input type="button" value="Inspect" onclick="window.open('Main.html?ws=' + window.location.host + '/socket/1/1/WebPage', '_blank');"></td></tr></tbody></table></div></body></html>"""
-EMPTY_LISTING = "<html><body><div id='targetlist'><table><tbody></tbody></table></div></body></html>"
+        assert url == "http://127.0.0.1:18081/?broker.host=127.0.0.1&broker.port=8080"
