@@ -1,12 +1,11 @@
-"""The benchmark's figures: one run's samples cut into phases, their CPU, memory, faults and settle time."""
+"""The benchmark's figures: one run's samples cut into phases, their CPU usage, busy share, memory and faults."""
 from dataclasses import dataclass
 
 from sampling import KIOSK, Sample
 
-PHASES = ("load", "scan 1", "scan 2")
-MARGIN = 10.0
+PHASES = ("page load", "scan 1", "scan 2")
+BUSY_ABOVE = 50.0
 WINDOW = 3
-BASELINE_FROM = 130
 
 
 @dataclass(frozen=True)
@@ -17,25 +16,19 @@ class Timeline:
     load: list[Sample]
     samples: list[Sample]
     boundaries: list[int]
-
-
-@dataclass(frozen=True)
-class Settle:
-    """Seconds from a phase's start until the web process is calm, or the phase's length when it never is."""
-
-    seconds: float
-    settled: bool
+    load_time: float | None = None
 
 
 @dataclass(frozen=True)
 class Figures:
-    web_cpu: float | None
-    kiosk_cpu: float | None
-    kiosk_memory: int | None
-    kiosk_memory_peak: int | None
+    load_time: float | None
+    cpu: float | None
+    busy: float | None
+    memory_peak: int | None
+    memory: int | None
     web_anon: int | None
+    kiosk_cpu: float | None
     faults: int
-    settle: Settle | None
 
 
 def utilization(before: Sample, after: Sample) -> float | None:
@@ -45,35 +38,29 @@ def utilization(before: Sample, after: Sample) -> float | None:
     return (after.system.web_cpu_seconds - before.system.web_cpu_seconds) / (after.at - before.at) * 100
 
 
-def baseline(samples: list[Sample], since: float) -> float | None:
-    """Return the mean utilization of the intervals that start at or after `since`, or None without one."""
-    values = [u for a, b in zip(samples, samples[1:]) if a.at >= since and (u := utilization(a, b)) is not None]
-    return sum(values) / len(values) if values else None
-
-
-def settle(phase: list[Sample], base: float, margin: float = MARGIN) -> Settle:
-    """Return where the first three intervals whose utilization together is at most `margin` points above `base` begin, or the phase unsettled."""
+def busy(phase: list[Sample]) -> float:
+    """Return the share of the phase in % until the web process's CPU over the next three intervals is under 50 % of one core, 100 when it never is."""
     for index in range(len(phase) - WINDOW):
         u = utilization(phase[index], phase[index + WINDOW])
-        if u is not None and u <= base + margin:
-            return Settle(phase[index].at - phase[0].at, True)
-    return Settle(phase[-1].at - phase[0].at, False)
+        if u is not None and u < BUSY_ABOVE:
+            return (phase[index].at - phase[0].at) / (phase[-1].at - phase[0].at) * 100
+    return 100.0
 
 
 def figures(timeline: Timeline) -> dict[str, Figures]:
-    """Return the figures of each phase: the load from the counters at t0, each scan phase from its boundary samples."""
+    """Return the figures of each phase: the page load from the counters at t0, each scan phase from its boundary samples."""
     samples, t0 = timeline.samples, timeline.samples[0]
-    base = baseline(samples, t0.at + BASELINE_FROM)
     own = [s for s in [*timeline.load, t0] if s.system.web_pid == t0.system.web_pid]
     result = {
         PHASES[0]: Figures(
-            web_cpu=t0.system.web_cpu_seconds,
-            kiosk_cpu=t0.units[KIOSK].cpu_seconds,
-            kiosk_memory=memory(t0),
-            kiosk_memory_peak=peak(own),
+            load_time=timeline.load_time,
+            cpu=since_start(t0),
+            busy=None,
+            memory_peak=peak(own),
+            memory=memory(t0),
             web_anon=t0.system.web_anon,
+            kiosk_cpu=t0.units[KIOSK].cpu_seconds,
             faults=t0.system.pgmajfault - timeline.before.system.pgmajfault,
-            settle=None,
         )
     }
     ends = [*timeline.boundaries[1:], len(samples) - 1]
@@ -81,13 +68,14 @@ def figures(timeline: Timeline) -> dict[str, Figures]:
         phase = samples[start:end + 1]
         first, last = phase[0], phase[-1]
         result[name] = Figures(
-            web_cpu=difference(first.system.web_cpu_seconds, last.system.web_cpu_seconds),
-            kiosk_cpu=difference(first.units[KIOSK].cpu_seconds, last.units[KIOSK].cpu_seconds),
-            kiosk_memory=memory(last),
-            kiosk_memory_peak=peak(phase[1:]),
+            load_time=None,
+            cpu=utilization(first, last),
+            busy=busy(phase),
+            memory_peak=peak(phase[1:]),
+            memory=memory(last),
             web_anon=last.system.web_anon,
+            kiosk_cpu=difference(first.units[KIOSK].cpu_seconds, last.units[KIOSK].cpu_seconds),
             faults=last.system.pgmajfault - first.system.pgmajfault,
-            settle=None if base is None else settle(phase, base),
         )
     return result
 
@@ -109,6 +97,13 @@ def problem(timeline: Timeline) -> str | None:
         if s.units[KIOSK].oom_kills != first.units[KIOSK].oom_kills:
             return "the kiosk was OOM-killed"
     return None
+
+
+def since_start(sample: Sample) -> float | None:
+    started, cpu = sample.system.web_start, sample.system.web_cpu_seconds
+    if started is None or cpu is None or sample.at <= started / 1e9:
+        return None
+    return cpu / (sample.at - started / 1e9) * 100
 
 
 def memory(sample: Sample) -> int | None:

@@ -29,6 +29,11 @@ END_AT = 150
 GOES_DOWN = (0, 20, 30)
 COMES_UP = (10, 24, 38)
 GONE = 40
+TITLES = {
+    bench_figures.PHASES[0]: "page load",
+    bench_figures.PHASES[1]: f"scan 1 ({SCAN_TWO_AT} s): 53 hosts appear",
+    bench_figures.PHASES[2]: f"scan 2 ({END_AT - SCAN_TWO_AT} s): 8 hosts change",
+}
 ROOT = Path(__file__).resolve().parents[1]
 WORKING_TREE = "working-tree"
 BENCH = ROOT / "dist" / "bench"
@@ -227,7 +232,7 @@ def bench(session: board.Session, variants: list[Variant], runs: int, out: Path)
         cleanup.callback(start_scanner, session)
         session.ssh(f"sudo systemctl stop {SCANNER_UNIT}")
         cleanup.callback(session.restore)
-        header = Header(target=target, date=time.strftime("%Y-%m-%d %H:%M"), boot_id=stream.next().boot_id, labels=[v.label for v in variants], runs=runs, order=[v.label for v in planned])
+        header = Header(target=target, date=time.strftime("%Y-%m-%d %H:%M"), boot_id=stream.next().boot_id, labels=[v.label for v in variants], runs=runs, order=[v.label for v in planned], titles=TITLES)
 
         def one_run(number: int, variant: Variant) -> Run:
             payloads: list[bytes] = []

@@ -1,22 +1,30 @@
-"""The benchmark's report: a summary per phase and figure with a column per variant, every run's figures, and the raw payloads."""
+"""The benchmark's report: a legend, a summary per phase with a column per variant, every run's figures, and the raw payloads."""
 import json
 from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
 from statistics import median
 
-from bench_figures import PHASES, Figures, Settle
+from bench_figures import BUSY_ABOVE, PHASES, WINDOW, Figures
+from sampling import INTERVAL
 
 MIB = 2**20
-FIGURES: list[tuple[str, Callable[[Figures], float | Settle | None], str]] = [
-    ("web CPU s", lambda f: f.web_cpu, "cpu"),
-    ("kiosk CPU s", lambda f: f.kiosk_cpu, "cpu"),
-    ("kiosk RAM+zram MB", lambda f: f.kiosk_memory, "memory"),
-    ("kiosk RAM+zram peak MB", lambda f: f.kiosk_memory_peak, "memory"),
-    ("web anon MB", lambda f: f.web_anon, "memory"),
-    ("major faults", lambda f: f.faults, "count"),
-    ("settle s", lambda f: f.settle, "settle"),
+LISTED = 5
+FIGURES: list[tuple[str, Callable[[Figures], float | None], str, int]] = [
+    ("load time", lambda f: f.load_time, "s", 0),
+    ("CPU usage", lambda f: f.cpu, "%", 0),
+    ("busy", lambda f: f.busy, "%", 0),
+    ("memory peak", lambda f: f.memory_peak, "MB", 0),
+    ("memory at end", lambda f: f.memory, "MB", 0),
+    ("renderer memory", lambda f: f.web_anon, "MB", 0),
+    ("kiosk CPU time", lambda f: f.kiosk_cpu, "s", 1),
+    ("major faults", lambda f: f.faults, "", 0),
 ]
+SUMMARY = {
+    PHASES[0]: ("load time", "CPU usage", "memory peak"),
+    PHASES[1]: ("CPU usage", "busy", "memory peak"),
+    PHASES[2]: ("CPU usage", "busy", "memory peak"),
+}
 
 
 @dataclass(frozen=True)
@@ -35,45 +43,66 @@ class Header:
     labels: list[str]
     runs: int
     order: list[str]
+    titles: dict[str, str]
 
 
 def render(header: Header, runs: list[Run]) -> str:
-    """Return the report as Markdown: what ran where, the summary, and the runs in the order they ran."""
+    """Return the report as Markdown: what ran where, what the figures mean, the summary, and the runs in the order they ran."""
     return "\n".join([
         f"# Benchmark on {header.target}",
         "",
         f"{header.date}, boot id {header.boot_id}. {header.runs} run(s) per variant, in this order: {', '.join(header.order)}. "
         "The board's scanner was stopped.",
         "",
-        summary(header.labels, runs),
+        LEGEND,
         "",
-        "## Runs",
+        summary(header, runs),
         "",
-        per_run(runs),
+        "## Details",
+        "",
+        details(runs),
         "",
     ])
 
 
-def summary(labels: list[str], runs: list[Run]) -> str:
-    rest = labels[1:]
+LEGEND = "\n".join([
+    "Each run restarts the kiosk on the variant's page, then plays the scans the headings name; a scan lasts until the next one or the run's end.",
+    "",
+    "- **load time**: from systemd starting the kiosk until the kiosk reports the page loaded.",
+    "- **CPU usage**: the page's renderer process (WPEWebProcess) in % of one core, as `top` shows it; above 100 % it uses more than one core. "
+    "The page load's counts from the renderer's start.",
+    f"- **busy**: the share of a scan until the renderer's CPU usage over the next {WINDOW * INTERVAL} s is under {BUSY_ABOVE:.0f} %; "
+    "100 % means it was still busy when the scan ended.",
+    "- **memory peak**: the kiosk's highest RAM plus compressed swap (zram) during the phase.",
+    f"- A cell lists each valid run's value in the order they ran; with more than {LISTED} runs, the median and the range. "
+    "Δ compares the medians with the first variant; **about the same** when the runs' ranges overlap.",
+    "- The status bar's **pills** stay empty: the fake broker carries no metrics, and pages before #54 fetch `stats.json`, which the "
+    "benchmark's server does not have.",
+])
+
+
+def summary(header: Header, runs: list[Run]) -> str:
+    labels, rest = header.labels, header.labels[1:]
+    columns = len(labels) + len(rest)
     lines = [
-        "| " + " | ".join(["phase", "figure", *labels, *(f"Δ {label}" for label in rest)]) + " |",
-        "|" + "---|" * (2 + len(labels) + len(rest)),
-        "|  | valid runs | " + " | ".join(valid(label, runs) for label in labels) + " |" + "  |" * len(rest),
+        "|  | " + " | ".join([*labels, *(f"Δ {label}" for label in rest)]) + " |",
+        "|" + "---|" * (1 + columns),
+        "| valid runs | " + " | ".join(valid(label, runs) for label in labels) + " |" + "  |" * len(rest),
     ]
     for phase in PHASES:
-        for name, get, kind in FIGURES:
-            if phase == PHASES[0] and kind == "settle":
+        lines.append(f"| **{header.titles[phase]}** |" + "  |" * columns)
+        for name, get, unit, decimals in FIGURES:
+            if name not in SUMMARY[phase]:
                 continue
             values = {label: [v for run in runs if run.label == label and run.figures and (v := get(run.figures[phase])) is not None] for label in labels}
-            cells = [cell(values[label], kind) for label in labels] + [delta(values[labels[0]], values[label], kind) for label in rest]
-            lines.append(f"| {phase} | {name} | " + " | ".join(cells) + " |")
+            cells = [cell(values[label], unit, decimals) for label in labels] + [delta(values[labels[0]], values[label]) for label in rest]
+            lines.append(f"| {name} | " + " | ".join(cells) + " |")
     return "\n".join(lines)
 
 
-def per_run(runs: list[Run]) -> str:
+def details(runs: list[Run]) -> str:
     lines = [
-        "| " + " | ".join(["run", "variant", "phase", *(name for name, _, _ in FIGURES)]) + " |",
+        "| " + " | ".join(["run", "variant", "phase", *(f"{name} {unit}".strip() for name, _, unit, _ in FIGURES)]) + " |",
         "|" + "---|" * (3 + len(FIGURES)),
     ]
     for run in runs:
@@ -81,7 +110,7 @@ def per_run(runs: list[Run]) -> str:
             lines.append(f"| {run.number} | {run.label} | failed: {run.problem} |")
             continue
         for phase in PHASES:
-            cells = [cell([v], kind) if (v := get(run.figures[phase])) is not None else "" for _, get, kind in FIGURES]
+            cells = [number(v, unit, decimals) if (v := get(run.figures[phase])) is not None else "" for _, get, unit, decimals in FIGURES]
             lines.append(f"| {run.number} | {run.label} | {phase} | " + " | ".join(cells) + " |")
     return "\n".join(lines)
 
@@ -90,13 +119,11 @@ def run_line(run: Run, total: int) -> str:
     """Return the terminal's line for a finished run."""
     if run.figures is None:
         return f"run {run.number}/{total} {run.label}: failed: {run.problem}"
-    parts = []
-    for phase in PHASES:
+    load = run.figures[PHASES[0]]
+    parts = [f"{PHASES[0]} {short(load.load_time, 's')}, {short(load.cpu, '%')} CPU"]
+    for phase in PHASES[1:]:
         figures = run.figures[phase]
-        text = f"{phase} {fmt(figures.web_cpu, 'cpu')} s web CPU"
-        if figures.settle is not None:
-            text += f", settle {cell([figures.settle], 'settle')} s"
-        parts.append(text)
+        parts.append(f"{phase} {short(figures.cpu, '%')} CPU, busy {short(figures.busy, '%')}")
     return f"run {run.number}/{total} {run.label}: " + "; ".join(parts)
 
 
@@ -109,58 +136,35 @@ def write_payloads(path: Path, meta: dict, payloads: list[bytes]) -> None:
 
 def valid(label: str, runs: list[Run]) -> str:
     own = [run for run in runs if run.label == label]
-    return f"{sum(run.figures is not None for run in own)}/{len(own)}"
+    return f"{sum(run.figures is not None for run in own)} of {len(own)}"
 
 
-def cell(values: list, kind: str) -> str:
+def cell(values: list[float], unit: str, decimals: int) -> str:
     if not values:
         return "n/a"
-    numbers = [number(v) for v in values]
-    text = fmt(median(numbers), kind) if len(numbers) == 1 else f"{fmt(median(numbers), kind)} ({fmt(min(numbers), kind)}–{fmt(max(numbers), kind)})"
-    if kind == "settle":
-        unsettled = sum(not v.settled for v in values)
-        if at_least(values):
-            text = f"> {text}"
-        if unsettled and len(values) > 1:
-            text += f", {unsettled} unsettled"
-    return text
+    if len(values) <= LISTED:
+        return " · ".join(with_unit(number(v, unit, decimals), unit) for v in values)
+    return f"{with_unit(number(median(values), unit, decimals), unit)} ({number(min(values), unit, decimals)}–{with_unit(number(max(values), unit, decimals), unit)})"
 
 
-def delta(reference: list, values: list, kind: str) -> str:
+def delta(reference: list[float], values: list[float]) -> str:
     if not reference or not values:
         return "n/a"
-    ours, theirs = [number(v) for v in reference], [number(v) for v in values]
-    before, after = median(ours), median(theirs)
-    if kind == "settle":
-        if at_least(reference) and at_least(values):
-            return "n/a"
-        text = f"{after - before:+.0f} s"
-        if at_least(values):
-            return f"> {text}"
-        if at_least(reference):
-            return f"< {text}"
-    elif before == 0:
+    before, after = median(reference), median(values)
+    if before == 0:
         return "n/a"
-    else:
-        text = f"{(after - before) / before * 100:+.0f} %"
-    overlapping = len(ours) > 1 and len(theirs) > 1 and max(min(ours), min(theirs)) <= min(max(ours), max(theirs))
-    return f"~{text}" if overlapping else text
+    if len(reference) > 1 and len(values) > 1 and max(min(reference), min(values)) <= min(max(reference), max(values)):
+        return "about the same"
+    return f"{(after - before) / before * 100:+.0f} %"
 
 
-def at_least(settles: list[Settle]) -> bool:
-    # An unsettled phase counts its whole length, the longest a phase has, so it sorts last; the median is exact while fewer than half are.
-    return sum(not s.settled for s in settles) * 2 >= len(settles)
+def short(value: float | None, unit: str) -> str:
+    return "n/a" if value is None else with_unit(number(value, unit, 0), unit)
 
 
-def number(value: float | Settle) -> float:
-    return value.seconds if isinstance(value, Settle) else value
+def number(value: float, unit: str, decimals: int) -> str:
+    return f"{value / MIB if unit == 'MB' else value:.{decimals}f}"
 
 
-def fmt(value: float | None, kind: str) -> str:
-    if value is None:
-        return "n/a"
-    if kind == "cpu":
-        return f"{value:.1f}"
-    if kind == "memory":
-        return f"{value / MIB:.0f}"
-    return f"{value:.0f}"
+def with_unit(text: str, unit: str) -> str:
+    return f"{text} {unit}" if unit else text

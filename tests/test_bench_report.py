@@ -3,105 +3,89 @@ import json
 
 import pytest
 
-from bench_figures import Figures, Settle
+from bench_figures import Figures
 from bench_report import Header, Run, render, run_line, write_payloads
 
 pytestmark = pytest.mark.tier0
 
 
 class TestRender:
-    def test_shows_a_single_run_as_its_values(self):
-        result = render(header(["a"]), [Run(1, "a", phases(web_cpu=12.34))])
-
-        assert "| scan 2 | web CPU s | 12.3 |" in result
-
-    def test_shows_more_runs_as_median_and_range(self):
-        runs = [Run(n, "a", phases(web_cpu=cpu)) for n, cpu in ((1, 10.0), (2, 14.0), (3, 11.0))]
+    def test_lists_the_values_of_the_runs_in_their_order(self):
+        runs = [Run(n, "a", phases(cpu=cpu)) for n, cpu in ((1, 116.4), (2, 115.2), (3, 127.0))]
 
         result = render(header(["a"], runs=3), runs)
 
-        assert "| scan 2 | web CPU s | 11.0 (10.0–14.0) |" in result
+        assert "| CPU usage | 116 % · 115 % · 127 % |" in section(result, SCAN_2)
 
-    def test_gives_the_change_against_the_first_variant(self):
-        runs = [Run(1, "a", phases(web_cpu=20.0, settle=Settle(40, True))), Run(2, "b", phases(web_cpu=15.0, settle=Settle(25, True)))]
+    def test_shows_more_than_five_runs_as_median_and_range(self):
+        runs = [Run(n, "a", phases(cpu=float(cpu))) for n, cpu in enumerate(range(10, 17), 1)]
+
+        result = render(header(["a"], runs=7), runs)
+
+        assert "| CPU usage | 13 % (10–16 %) |" in section(result, SCAN_2)
+
+    def test_heads_a_further_variant_with_its_change(self):
+        result = render(header(["a", "b"]), [])
+
+        assert "|  | a | b | Δ b |" in result.splitlines()
+
+    def test_gives_the_change_of_the_medians_against_the_first_variant(self):
+        runs = [Run(1, "a", phases(cpu=20.0)), Run(2, "b", phases(cpu=15.0))]
 
         result = render(header(["a", "b"]), runs)
 
-        assert "| scan 2 | web CPU s | 20.0 | 15.0 | -25 % |" in result
-        assert "| scan 2 | settle s | 40 | 25 | -15 s |" in result
+        assert "| CPU usage | 20 % | 15 % | -25 % |" in section(result, SCAN_2)
 
-    def test_marks_a_change_within_overlapping_ranges(self):
-        runs = [Run(1, "a", phases(web_cpu=10.0)), Run(2, "b", phases(web_cpu=11.0)), Run(3, "a", phases(web_cpu=12.0)), Run(4, "b", phases(web_cpu=13.0))]
+    def test_calls_a_change_within_overlapping_ranges_about_the_same(self):
+        runs = [Run(1, "a", phases(cpu=10.0)), Run(2, "b", phases(cpu=11.0)), Run(3, "a", phases(cpu=12.0)), Run(4, "b", phases(cpu=13.0))]
 
         result = render(header(["a", "b"], runs=2), runs)
 
-        assert "| scan 2 | web CPU s | 11.0 (10.0–12.0) | 12.0 (11.0–13.0) | ~+9 % |" in result
+        assert "| CPU usage | 10 % · 12 % | 11 % · 13 % | about the same |" in section(result, SCAN_2)
 
     def test_counts_only_valid_runs(self):
-        runs = [Run(1, "a", phases(web_cpu=10.0)), Run(2, "a", None, "the board rebooted"), Run(3, "a", phases(web_cpu=12.0))]
+        runs = [Run(1, "a", phases(cpu=10.0)), Run(2, "a", None, "the board rebooted"), Run(3, "a", phases(cpu=12.0))]
 
         result = render(header(["a"], runs=3), runs)
 
-        assert "|  | valid runs | 2/3 |" in result
-        assert "| scan 2 | web CPU s | 11.0 (10.0–12.0) |" in result
+        assert "| valid runs | 2 of 3 |" in result
+        assert "| CPU usage | 10 % · 12 % |" in section(result, SCAN_2)
 
     def test_shows_a_variant_without_a_valid_run_as_na(self):
-        runs = [Run(1, "a", phases(web_cpu=10.0)), Run(2, "b", None, "no metrics for 15 s")]
+        runs = [Run(1, "a", phases(cpu=10.0)), Run(2, "b", None, "no metrics for 15 s")]
 
         result = render(header(["a", "b"]), runs)
 
-        assert "|  | valid runs | 1/1 | 0/1 |  |" in result
-        assert "| scan 2 | web CPU s | 10.0 | n/a | n/a |" in result
+        assert "| valid runs | 1 of 1 | 0 of 1 |  |" in result
+        assert "| CPU usage | 10 % | n/a | n/a |" in section(result, SCAN_2)
 
     def test_gives_no_change_against_a_zero(self):
-        runs = [Run(1, "a", phases(faults=0)), Run(2, "b", phases(faults=3))]
+        runs = [Run(1, "a", phases(busy=0.0)), Run(2, "b", phases(busy=50.0))]
 
         result = render(header(["a", "b"]), runs)
 
-        assert "| scan 2 | major faults | 0 | 3 | n/a |" in result
+        assert "| busy | 0 % | 50 % | n/a |" in section(result, SCAN_2)
 
-    def test_shows_an_unsettled_phase_as_at_least_its_length(self):
-        result = render(header(["a"]), [Run(1, "a", phases(settle=Settle(90, False)))])
+    def test_shows_a_renderer_busy_all_along_as_full(self):
+        result = render(header(["a"]), [Run(1, "a", phases(busy=100.0))])
 
-        assert "| scan 2 | settle s | > 90 |" in result
+        assert "| busy | 100 % |" in section(result, SCAN_2)
 
-    def test_counts_the_unsettled_runs_in_a_median(self):
-        runs = [Run(1, "a", phases(settle=Settle(40, True))), Run(2, "a", phases(settle=Settle(90, False)))]
+    def test_shows_the_load_time_of_the_page_load_and_no_busy_share(self):
+        result = render(header(["a"]), [Run(1, "a", phases(load_time=21.4))])
 
-        result = render(header(["a"], runs=2), runs)
+        assert "| load time | 21 s |" in section(result, PAGE_LOAD)
+        assert not [line for line in section(result, PAGE_LOAD) if line.startswith("| busy |")]
 
-        assert "| scan 2 | settle s | > 65 (40–90), 1 unsettled |" in result
-
-    def test_keeps_a_median_exact_with_a_minority_unsettled(self):
-        runs = [Run(1, "a", phases(settle=Settle(40, True))), Run(2, "a", phases(settle=Settle(45, True))), Run(3, "a", phases(settle=Settle(90, False)))]
-
-        result = render(header(["a"], runs=3), runs)
-
-        assert "| scan 2 | settle s | 45 (40–90), 1 unsettled |" in result
-
-    def test_shows_runs_that_all_stayed_unsettled_as_at_least_their_median(self):
-        runs = [Run(1, "a", phases(settle=Settle(90, False))), Run(2, "a", phases(settle=Settle(90, False)))]
-
-        result = render(header(["a"], runs=2), runs)
-
-        assert "| scan 2 | settle s | > 90 (90–90), 2 unsettled |" in result
-
-    @pytest.mark.parametrize("first, second, change", [
-        (Settle(40, True), Settle(90, False), "> +50 s"),
-        (Settle(90, False), Settle(40, True), "< -50 s"),
-        (Settle(90, False), Settle(90, False), "n/a"),
-    ])
-    def test_bounds_a_settle_change_against_an_unsettled_phase(self, first, second, change):
-        runs = [Run(1, "a", phases(settle=first)), Run(2, "b", phases(settle=second))]
-
-        result = render(header(["a", "b"]), runs)
-
-        assert [line.rsplit("|", 2)[-2].strip() for line in result.splitlines() if line.startswith("| scan 2 | settle s |")] == [change]
-
-    def test_has_no_settle_time_for_the_load(self):
+    def test_shows_no_load_time_for_a_scan(self):
         result = render(header(["a"]), [Run(1, "a", phases())])
 
-        assert "| load | settle s |" not in result
+        assert not [line for line in section(result, SCAN_1) if line.startswith("| load time |")]
+
+    def test_explains_its_figures_and_the_empty_pills(self):
+        result = render(header(["a"]), [])
+
+        assert [word for word in ("load time", "CPU usage", "busy", "memory peak", "pills") if f"**{word}**" not in result] == []
 
     def test_lists_every_run_in_order_with_the_reason_of_a_failed_one(self):
         runs = [Run(1, "a", phases()), Run(2, "b", None, "the kiosk restarted")]
@@ -109,7 +93,7 @@ class TestRender:
         result = render(header(["a", "b"]), runs)
 
         rows = [line for line in result.splitlines() if line.startswith(("| 1 |", "| 2 |"))]
-        assert rows[0].startswith("| 1 | a | load |")
+        assert rows[0].startswith("| 1 | a | page load | 21 | 50 |  | 160 | 150 | 60 | 12.0 | 5 |")
         assert rows[-1] == "| 2 | b | failed: the kiosk restarted |"
 
     def test_names_the_target_the_order_and_the_stopped_scanner(self):
@@ -121,10 +105,10 @@ class TestRender:
 
 
 class TestRunLine:
-    def test_names_each_phases_web_cpu_and_settle_time(self):
-        result = run_line(Run(2, "main a33715a", phases(web_cpu=18.3, settle=Settle(25, True))), total=6)
+    def test_names_each_phases_cpu_usage_and_busy_share(self):
+        result = run_line(Run(2, "28a4cf3", phases(cpu=79.4, busy=50.0)), total=6)
 
-        assert result == "run 2/6 main a33715a: load 18.3 s web CPU; scan 1 18.3 s web CPU, settle 25 s; scan 2 18.3 s web CPU, settle 25 s"
+        assert result == "run 2/6 28a4cf3: page load 21 s, 79 % CPU; scan 1 79 % CPU, busy 50 %; scan 2 79 % CPU, busy 50 %"
 
     def test_names_the_reason_of_a_failed_run(self):
         result = run_line(Run(3, "b", None, "the board rebooted"), total=6)
@@ -141,10 +125,24 @@ class TestWritePayloads:
         assert [json.loads(line) for line in path.read_text().splitlines()] == [{"t0": 1000.0}, {"resourceMetrics": []}, {"a": 1}]
 
 
+PAGE_LOAD = "page load"
+SCAN_1 = "scan 1 (60 s): 53 hosts appear"
+SCAN_2 = "scan 2 (90 s): 8 hosts change"
+
+
 def header(labels: list[str], runs: int = 1) -> Header:
-    return Header(target="pi@netmon.local", date="2026-10-04 20:00", boot_id="b", labels=labels, runs=runs, order=labels * runs)
+    titles = {"page load": PAGE_LOAD, "scan 1": SCAN_1, "scan 2": SCAN_2}
+    return Header(target="pi@netmon.local", date="2026-10-04 20:00", boot_id="b", labels=labels, runs=runs, order=labels * runs, titles=titles)
 
 
-def phases(web_cpu: float = 10.0, faults: int = 5, settle: Settle = Settle(20, True)) -> dict[str, Figures]:
-    figures = Figures(web_cpu=web_cpu, kiosk_cpu=12.0, kiosk_memory=150 * 2**20, kiosk_memory_peak=160 * 2**20, web_anon=60 * 2**20, faults=faults, settle=settle)
-    return {"load": dataclasses.replace(figures, settle=None), "scan 1": figures, "scan 2": figures}
+def phases(cpu: float = 50.0, busy: float = 50.0, load_time: float = 21.0) -> dict[str, Figures]:
+    scan = Figures(load_time=None, cpu=cpu, busy=busy, memory_peak=160 * 2**20, memory=150 * 2**20, web_anon=60 * 2**20, kiosk_cpu=12.0, faults=5)
+    return {"page load": dataclasses.replace(scan, load_time=load_time, busy=None), "scan 1": scan, "scan 2": scan}
+
+
+def section(report: str, title: str) -> list[str]:
+    lines = report.splitlines()
+    start = next(index for index, line in enumerate(lines) if line.startswith(f"| **{title}** |"))
+    rest = lines[start + 1:]
+    end = next((index for index, line in enumerate(rest) if line.startswith("| **") or not line.startswith("|")), len(rest))
+    return rest[:end]
