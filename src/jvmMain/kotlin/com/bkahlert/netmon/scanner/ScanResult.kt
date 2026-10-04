@@ -6,6 +6,7 @@ import com.bkahlert.netmon.Cidr
 import com.bkahlert.netmon.Host
 import com.bkahlert.netmon.Status
 import com.bkahlert.netmon.serialization.JsonFormat
+import kotlin.time.Duration
 import kotlin.time.Instant
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -31,6 +32,8 @@ data class ScanResult(
 
     fun merge(
         currentResult: ScanResult,
+        downAfter: Duration,
+        notBefore: Instant,
         onChange: (Host) -> Unit = {},
     ): ScanResult {
         check(`interface` == currentResult.`interface`) { "Interfaces do not match: $`interface` != ${currentResult.`interface`}" }
@@ -46,21 +49,36 @@ data class ScanResult(
                 .map { ip ->
                     val recordedHost = hosts.find { it.ip == ip }
                     val scannedHost = currentResult.hosts.find { it.ip == ip } // TODO improve detection, e.g. by MAC address and/or hostname
-                    val mergedStatus: Status = if (scannedHost != null) scannedHost.status ?: Status.UP else Status.DOWN
-                    val mergedHost = Host(
-                        ip = ip,
-                        name = if (mergedStatus == Status.UP) scannedHost?.name else recordedHost?.name,
-                        status = mergedStatus,
-                        since = if (mergedStatus != recordedHost?.status) currentResult.timestamp else recordedHost.since,
-                        model = if (mergedStatus == Status.UP) scannedHost?.model else recordedHost?.model,
-                        vendor = if (mergedStatus == Status.UP) scannedHost?.vendor else recordedHost?.vendor,
-                        services = if (mergedStatus == Status.UP) scannedHost?.services else recordedHost?.services,
-                    )
-                    if (mergedHost != recordedHost) onChange(mergedHost)
+                    val mergedHost = mergeHost(recordedHost, scannedHost, currentResult.timestamp, downAfter, notBefore)
+                    if (recordedHost == null || recordedHost.status != mergedHost.status) onChange(mergedHost)
                     mergedHost
                 },
             timestamp = currentResult.timestamp,
         )
+    }
+
+    private fun mergeHost(recorded: Host?, scanned: Host?, scanTime: Instant, downAfter: Duration, notBefore: Instant): Host = when {
+        scanned != null && (scanned.status == null || scanned.status == Status.UP) -> scanned.copy(
+            name = scanned.name ?: recorded?.name,
+            status = Status.UP,
+            since = if (recorded != null && recorded.status == Status.UP) recorded.since ?: scanTime else scanTime,
+            lastSeen = scanTime,
+            model = scanned.model ?: recorded?.model,
+            vendor = scanned.vendor ?: recorded?.vendor,
+            services = scanned.services ?: recorded?.services,
+        )
+
+        recorded == null -> checkNotNull(scanned).copy(status = Status.DOWN, since = scanTime, lastSeen = null)
+
+        recorded.status == Status.UP -> {
+            val lastSeen = recorded.lastSeen ?: timestamp
+            if (scanTime - maxOf(lastSeen, notBefore) < downAfter) recorded.copy(lastSeen = lastSeen)
+            else recorded.copy(status = Status.DOWN, since = lastSeen, lastSeen = lastSeen)
+        }
+
+        recorded.status == Status.DOWN -> recorded
+
+        else -> recorded.copy(status = Status.DOWN, since = scanTime)
     }
 
     fun save(

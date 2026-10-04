@@ -12,6 +12,7 @@ import com.bkahlert.netmon.nmap.TimingTemplate
 import java.net.InterfaceAddress
 import java.nio.file.Path
 import java.nio.file.Paths
+import kotlin.time.Instant
 
 class NetmonScanner(
     val interfaceAddress: InterfaceAddress,
@@ -25,6 +26,7 @@ class NetmonScanner(
     val `interface`: String = checkNotNull(interfaceAddress.networkInterface).name
     val cidr: Cidr = interfaceAddress.cidr
     val scanResultFile: Path = Paths.get("scan.$`interface`.${cidr.filenameString}.json")
+    private val startedAt: Instant = Clock.System.now()
 
     private fun scanInitially(): ScanResult {
         logger.info("Performing initial scan...")
@@ -48,7 +50,7 @@ class NetmonScanner(
             timestamp = Clock.System.now(),
         )
 
-        oldScan.merge(currentScan, onChange)
+        oldScan.merge(currentScan, downAfter = ScannerSettings.downAfter, notBefore = startedAt, onChange = onChange)
             .also { onScan(it) }
             .also { it.save(scanResultFile) }
     }
