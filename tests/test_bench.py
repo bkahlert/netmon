@@ -284,6 +284,15 @@ class TestMain:
         assert (status, built) == (2, [])
         assert "cannot reach pi@nope" in capsys.readouterr().err
 
+    def test_names_a_missing_program(self, capsys, monkeypatch):
+        monkeypatch.setattr(bench.process, "raise_on_sigterm", lambda: None)
+        monkeypatch.setattr(bench.board, "Session", lambda target, name, log: FakeSession(kiosk_error=FileNotFoundError(2, "No such file or directory", "ssh")))
+
+        status = bench.main({"TARGET": "pi@netmon.local"})
+
+        assert status == 2
+        assert "'ssh'" in capsys.readouterr().err
+
 
 class FakeStream:
     def __init__(self, samples, arriving_during_install: int, queued=()):

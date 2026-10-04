@@ -289,7 +289,7 @@ def main(environ: Mapping[str, str] = os.environ) -> int:
     except subprocess.CalledProcessError as error:
         print(f"{' '.join(error.cmd)} failed with status {error.returncode}", file=sys.stderr)
         return 2
-    except (RuntimeError, TimeoutError, ConnectionError) as error:
+    except (RuntimeError, OSError, subprocess.SubprocessError) as error:
         print(error, file=sys.stderr)
         return 2
     except KeyboardInterrupt:
