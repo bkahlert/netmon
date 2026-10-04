@@ -170,11 +170,9 @@ mqtt pub -t "dt/netmon/test/en0/10.10.10.0/24/host" -m '' -r -h "$BROKER_HOST" -
 
 ### Update MQTT.js
 
-```shell
-(cd mqtt.js && ./build.sh)
-```
-
-See [mqtt.js/README.md](mqtt.js/README.md) for details.
+The display gets [MQTT.js](https://github.com/mqttjs/MQTT.js) from npm. Bump the version of `npm("mqtt", …)` in
+[build.gradle.kts](build.gradle.kts). It is imported as `mqtt/dist/mqtt.esm`, because the package's `browser` entry is not a
+module webpack can use; see [types.kt](src/jsMain/kotlin/mqtt/types.kt).
 
 ## Contributing
 
