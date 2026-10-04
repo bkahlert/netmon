@@ -1,7 +1,7 @@
 SHELL := /bin/bash
 .DEFAULT_GOAL := help
 # Gradle's output directory is called build, so the targets are declared phony.
-.PHONY: help gradle build browser test-jvm test-js test-layout test-preview test-tier0 test-tier1 test-tier2 soak apt-probe test test-all vm-device vm-prepare vm broker preview preview-browser preview-vm preview-board deploy device-model-codes clean release
+.PHONY: help gradle build browser test-jvm test-js test-metrics test-layout test-preview test-tier0 test-tier1 test-tier2 soak apt-probe test test-all vm-device vm-prepare vm broker preview preview-browser preview-vm preview-board deploy device-model-codes clean release
 
 PLATFORM ?= linux/arm64
 TARGET ?=
@@ -35,6 +35,9 @@ test-jvm: ## the scanner's JVM unit tests (those that need Docker, macOS bundles
 test-js: ## the display's JS unit tests (Karma, headless Chrome)
 	./gradlew $(GRADLE_ARGS) jsBrowserTest
 
+test-metrics: ## the metrics sampler's Go tests
+	cd metrics && go vet ./... && go test ./...
+
 test-layout: ## the page's geometry in Playwright's WebKit at three sizes and several host counts (needs make browser)
 	./gradlew $(GRADLE_ARGS) jsBrowserDistribution
 	@$(UV) pytest -m layout
@@ -57,7 +60,7 @@ soak: ## sample both units for ten minutes: TARGET=pi@host for the board, else t
 apt-probe: ## apt update and a reinstall next to the live stack, with apt's peak and timing: TARGET=pi@host for the board, else the VM
 	@$(UV) pytest -m apt $(if $(TARGET),--target=ssh --target-uri=$(TARGET),--target=vm --qemu-accel=$(QEMU_ACCEL)) $(APT_ARGS)
 
-test: test-jvm test-js test-tier0 test-tier1 ## JVM and JS unit tests, tiers 0 and 1, what CI runs
+test: test-jvm test-js test-metrics test-tier0 test-tier1 ## JVM, JS and Go unit tests, tiers 0 and 1, what CI runs
 
 test-all: test test-tier2 ## everything, what make release runs
 
