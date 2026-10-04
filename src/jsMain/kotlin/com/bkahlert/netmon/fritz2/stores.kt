@@ -16,15 +16,22 @@ import dev.fritz2.core.lensOf
  * - only elements of the *first* store passing the predicate, and
  * - only elements of the *second* store not passing the predicate are included.
  *
+ * The [predicate] is tested once per element of each list the store holds, however many collectors the two stores have:
+ * every collector of a derived store applies the lens on its own, so the last result is kept.
+ *
  * @see Iterable.partition
  */
 public fun <T> Store<List<T>>.partition(
     predicate: (T) -> Boolean
 ): Pair<Store<List<T>>, Store<List<T>>> {
+    var last: Pair<List<T>, Pair<List<T>, List<T>>>? = null
     val map = map(
         lensOf(
             id = "hosts",
-            getter = { it.partition(predicate) },
+            getter = { list ->
+                last?.takeIf { it.first === list }?.second
+                    ?: list.partition(predicate).also { last = list to it }
+            },
             setter = { _, (first, second) -> first.filter(predicate) + second.filterNot(predicate) },
         )
     )
