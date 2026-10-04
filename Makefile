@@ -39,7 +39,7 @@ test-js: ## the display's JS unit tests (Karma, headless Chrome)
 	./gradlew $(GRADLE_ARGS) jsBrowserTest
 
 test-metrics: ## the metrics sampler's Go tests
-	cd metrics && go vet ./... && go test ./...
+	cd metrics && test -z "$$(gofmt -l . | tee /dev/stderr)" && go vet ./... && go test ./...
 
 test-layout: ## the page's geometry in Playwright's WebKit at three sizes and several host counts (needs make browser)
 	./gradlew $(GRADLE_ARGS) jsBrowserDistribution
