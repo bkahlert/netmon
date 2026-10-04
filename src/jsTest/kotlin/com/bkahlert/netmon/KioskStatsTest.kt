@@ -51,6 +51,20 @@ class KioskStatsTest {
     }
 
     @Test
+    fun has_no_figures_in_a_request_whose_point_time_is_not_a_number() {
+        val stats = kioskStatsOf(pointAt("x"))
+
+        stats shouldBe null
+    }
+
+    @Test
+    fun has_no_figures_in_a_request_whose_point_time_exceeds_a_long() {
+        val stats = kioskStatsOf(pointAt("9223372036854775808"))
+
+        stats shouldBe null
+    }
+
+    @Test
     fun is_fresh_for_less_than_three_intervals() {
         val stats = KioskStats(at = 1_000, interval = 5)
 
@@ -75,3 +89,6 @@ class KioskStatsTest {
 
 private const val HOST_ONLY = """{"resourceMetrics":[{"resource":{"attributes":[{"key":"service.name","value":{"stringValue":"netmon-metrics"}}]},
 "scopeMetrics":[{"metrics":[{"name":"system.cpu.logical.count","sum":{"aggregationTemporality":2,"dataPoints":[{"timeUnixNano":"1759450005000000000","asInt":"4"}]}}]}]}]}"""
+
+private fun pointAt(timeUnixNano: String): ByteArray =
+    """{"resourceMetrics":[{"scopeMetrics":[{"metrics":[{"name":"x","gauge":{"dataPoints":[{"timeUnixNano":"$timeUnixNano"}]}}]}]}]}""".encodeToByteArray()

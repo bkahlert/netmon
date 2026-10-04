@@ -35,7 +35,11 @@ data class Metric(val name: String, val unit: String = "", val gauge: Points? = 
 @Serializable
 data class Points(val dataPoints: List<NumberDataPoint> = emptyList())
 
-/** A number at [timeUnixNano], in nanoseconds since the epoch as a decimal string. */
+/**
+ * A number at [timeUnixNano], in nanoseconds since the epoch as a decimal string.
+ *
+ * @throws IllegalArgumentException if [timeUnixNano] is not a [Long], which fails the decoding of the point.
+ */
 @Serializable
 data class NumberDataPoint(
     val attributes: List<KeyValue> = emptyList(),
@@ -43,6 +47,10 @@ data class NumberDataPoint(
     val asDouble: Double? = null,
     val asInt: String? = null,
 ) {
+    init {
+        require(timeUnixNano.toLongOrNull() != null) { "timeUnixNano is not a Long: $timeUnixNano" }
+    }
+
     /** The point's value, whichever of [asDouble] and [asInt] it carries, or `null` if it carries neither. */
     val value: Double? get() = asDouble ?: asInt?.toDoubleOrNull()
 
