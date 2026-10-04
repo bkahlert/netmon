@@ -1,7 +1,7 @@
 SHELL := /bin/bash
 .DEFAULT_GOAL := help
 # Gradle's output directory is called build, so the targets are declared phony.
-.PHONY: help gradle build browser test-jvm test-js test-metrics test-layout test-preview test-tier0 test-tier1 test-tier2 soak apt-probe test test-all vm-device vm-prepare vm broker preview preview-browser preview-vm preview-board deploy device-model-codes clean release
+.PHONY: help gradle metrics build browser test-jvm test-js test-metrics test-layout test-preview test-tier0 test-tier1 test-tier2 soak apt-probe test test-all vm-device vm-prepare vm broker preview preview-browser preview-vm preview-board deploy device-model-codes clean release
 
 PLATFORM ?= linux/arm64
 TARGET ?=
@@ -23,7 +23,10 @@ build/native/netmon-scanner: build/libs/netmon-all.jar packages/netmon-scanner/n
 	@podman image exists $(NATIVE_IMAGE) || podman build --platform linux/arm64 -t $(NATIVE_IMAGE) -f packages/netmon-scanner/native/Containerfile packages/netmon-scanner/native
 	podman run --rm --platform linux/arm64 -v "$(CURDIR):/work" -w /work $(NATIVE_IMAGE) packages/netmon-scanner/native/compile
 
-build: gradle ## build the .deb packages into dist/
+metrics: ## build the metrics sampler, a static arm64 binary, into build/native
+	cd metrics && CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build -trimpath -ldflags "-s -w -X main.version=$(shell git describe --tags --always)" -o ../build/native/netmon-metrics .
+
+build: gradle metrics ## build the .deb packages into dist/
 	@$(UV) python -m pihero_testkit.build
 
 browser: ## download Playwright's WebKit, the kiosk's engine family, for the display tests
