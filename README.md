@@ -17,8 +17,8 @@ The application consists of three independent parts:
 - a network scanner, Kotlin compiled to a native arm64 binary with GraalVM, that publishes appearing and disappearing
   hosts using MQTT,
 - a Kotlin/JS and [Fritz2](https://github.com/jwstegemann/fritz2) based web interface that display the results, by subscribing to MQTT, and
-- two Debian packages, `netmon-scanner` and `netmon-display`, from a signed apt repository at
-  [bkahlert.github.io/netmon](https://bkahlert.github.io/netmon/), installed on a Raspberry Pi by a
+- two Debian packages, `netmon-scanner` and `netmon-display`, plus the optional `netmon-metrics`, from a signed apt
+  repository at [bkahlert.github.io/netmon](https://bkahlert.github.io/netmon/), installed on a Raspberry Pi by a
   [Pi Hero](https://github.com/bkahlert/pihero) device file.
 
 [![photo of Netmon running on a Raspberry Pi Zero](./docs/netmon-rpi0.jpg)
@@ -29,9 +29,10 @@ Netmon on a Raspberry Pi Zero with an 7-inch screen](./docs/netmon-rpi0.jpg)
 Netmon runs on [Pi Hero 2](https://github.com/bkahlert/pihero), on a 64-bit Raspberry Pi OS: copy
 [devices/sample/user-data](devices/sample/user-data) and `network-config`, set the hostname, your SSH key and Wi-Fi,
 flash a card with pihero's `make flash`, and the board installs `netmon-scanner` (the scanner, Mosquitto with a
-websocket listener) and `netmon-display` (the web display behind lighttpd, shown full screen by `pihero-kiosk`).
-The panel's status bar shows the kiosk's CPU and memory, sampled every 5 s by the display package's
-`netmon-display-stats` unit.
+websocket listener), `netmon-display` (the web display behind lighttpd, shown full screen by `pihero-kiosk`) and
+`netmon-metrics` (the board's sampler, optional). The panel's status bar shows the kiosk's CPU and memory from
+`netmon-metrics`, which publishes the board's metrics every 5 s as OTLP/JSON to `dt/netmon/<node>/metrics`; without
+the package the status bar shows no figures.
 [devices/README.md](devices/README.md) has the details, including the one line a panel without EDID needs. The scanner
 reads `/etc/netmon/scanner.conf` (`BROKER_HOST`, `BROKER_PORT`, `NMAP_*`, `NETMON_SCANNER_OPTIONS`); the display
 subscribes to the broker on the host the page was loaded from, port 8080, unless the URL's `broker.host` and
@@ -79,7 +80,7 @@ in about 10 seconds. It needs QEMU, Podman and Accessibility permission for your
 inspector between the Mac and the Pi, and the kiosk reads its session settings from a drop-in under `/run`, which Ctrl-C
 removes and a reboot wipes. The page is the development bundle, so its CPU and memory use is higher than what `make deploy`
 installs; compare flavors and edits with each other, not with the production figures. The status bar's CPU figure is the
-Pi's own, proxied from its `stats.json`.
+Pi's own with `BROKER=board`; the fake broker publishes no metrics.
 
 ### Build and test the packages
 

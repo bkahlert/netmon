@@ -11,7 +11,7 @@ BOOTED_ONLY = ("soak", "apt")
 def pytest_addoption(parser):
     group = parser.getgroup("netmon")
     group.addoption("--soak-duration", default="10m", help="how long the soak samples, e.g. 10m or 90s")
-    group.addoption("--soak-interval", default="30s", help="the time between two samples")
+    group.addoption("--soak-interval", default="30s", help="the spacing of the table's rows; the board samples every 5 s regardless")
     group.addoption("--kiosk-conf", default=None, help="for --target=vm: a kiosk.conf to write before the soak, for an A/B")
     group.addoption("--apt-timeout", default=300, type=int, help="seconds apt may take next to the stack")
     group.addoption("--apt-package", default="netmon-display", help="the package the apt probe reinstalls")

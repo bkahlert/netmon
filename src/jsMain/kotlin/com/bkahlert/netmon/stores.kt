@@ -7,14 +7,6 @@ import com.bkahlert.kommons.js.DefaultConsoleLogFormatter
 import com.bkahlert.kommons.js.console
 import com.bkahlert.kommons.js.format
 import com.bkahlert.kommons.js.tee
-import com.bkahlert.netmon.serialization.JsonFormat
-import kotlinx.browser.window
-import kotlinx.coroutines.await
-import org.w3c.fetch.NO_STORE
-import org.w3c.fetch.RequestCache
-import org.w3c.fetch.RequestInit
-import org.w3c.fetch.Response
-import kotlin.js.Promise
 import kotlin.time.Clock
 import com.bkahlert.netmon.Event.ScanEvent
 import dev.fritz2.core.Handler
@@ -23,6 +15,8 @@ import dev.fritz2.core.RootStore
 import dev.fritz2.core.SimpleHandler
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
 import kotlin.time.Instant
@@ -84,32 +78,27 @@ class ScanEventsStore(
     }
 }
 
-/** Store of the kiosk's latest sample that is fresh by [clock], `null` while there is none, polled every [interval] through [load]. */
+/**
+ * Store of the kiosk's latest sample from the metrics [payloads] that is fresh by [clock], `null` while there is none;
+ * the freshness is checked again every [interval].
+ */
 class KioskStatsStore(
+    payloads: Flow<ByteArray>,
     interval: Duration = KioskStats.INTERVAL,
-    load: suspend () -> KioskStats? = ::loadKioskStats,
     clock: () -> Instant = Clock.System::now,
     job: Job = Job(),
 ) : RootStore<KioskStats?>(null, job = job) {
 
     init {
-        flow {
+        val ticks = flow {
             while (true) {
-                emit(load()?.takeIf { it.isFreshAt(clock()) })
+                emit(Unit)
                 delay(interval)
             }
-        } handledBy update
+        }
+        combine(payloads.map(::kioskStatsOf), ticks) { stats, _ -> stats?.takeIf { it.isFreshAt(clock()) } } handledBy update
     }
 }
-
-/**
- * Returns the sample lighttpd serves next to the page, requested through [fetch], or `null` when it is missing,
- * unreadable or not a sample.
- */
-suspend fun loadKioskStats(fetch: (String, RequestInit) -> Promise<Response> = { input, init -> window.fetch(input, init) }): KioskStats? = runCatching {
-    val response = fetch("stats.json", RequestInit(cache = RequestCache.NO_STORE)).await()
-    if (response.ok) JsonFormat.decodeFromString<KioskStats>(response.text().await()) else null
-}.getOrNull()
 
 /** Store that is attached to the specified [console] storing log messages of the specified [levels]. */
 class ConsoleLogStore(

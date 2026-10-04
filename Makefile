@@ -1,7 +1,7 @@
 SHELL := /bin/bash
 .DEFAULT_GOAL := help
 # Gradle's output directory is called build, so the targets are declared phony.
-.PHONY: help gradle build browser test-jvm test-js test-layout test-preview test-tier0 test-tier1 test-tier2 soak apt-probe test test-all vm-device vm-prepare vm broker preview preview-browser preview-vm preview-board deploy device-model-codes clean release
+.PHONY: help gradle metrics build browser test-jvm test-js test-metrics test-layout test-preview test-tier0 test-tier1 test-tier2 soak apt-probe test test-all vm-device vm-prepare vm broker preview preview-browser preview-vm preview-board deploy device-model-codes clean release
 
 PLATFORM ?= linux/arm64
 TARGET ?=
@@ -23,7 +23,10 @@ build/native/netmon-scanner: build/libs/netmon-all.jar packages/netmon-scanner/n
 	@podman image exists $(NATIVE_IMAGE) || podman build --platform linux/arm64 -t $(NATIVE_IMAGE) -f packages/netmon-scanner/native/Containerfile packages/netmon-scanner/native
 	podman run --rm --platform linux/arm64 -v "$(CURDIR):/work" -w /work $(NATIVE_IMAGE) packages/netmon-scanner/native/compile
 
-build: gradle ## build the .deb packages into dist/
+metrics: ## build the metrics sampler, a static arm64 binary, into build/native
+	cd packages/netmon-metrics/src && CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build -trimpath -ldflags "-s -w -X main.version=$(shell git describe --tags --always)" -o $(CURDIR)/build/native/netmon-metrics .
+
+build: gradle metrics ## build the .deb packages into dist/
 	@$(UV) python -m pihero_testkit.build
 
 browser: ## download Playwright's WebKit, the kiosk's engine family, for the display tests
@@ -34,6 +37,9 @@ test-jvm: ## the scanner's JVM unit tests (those that need Docker, macOS bundles
 
 test-js: ## the display's JS unit tests (Karma, headless Chrome)
 	./gradlew $(GRADLE_ARGS) jsBrowserTest
+
+test-metrics: ## the metrics sampler's Go tests
+	cd packages/netmon-metrics/src && test -z "$$(gofmt -l . | tee /dev/stderr)" && go vet ./... && go test ./...
 
 test-layout: ## the page's geometry in Playwright's WebKit at three sizes and several host counts (needs make browser)
 	./gradlew $(GRADLE_ARGS) jsBrowserDistribution
@@ -57,7 +63,7 @@ soak: ## sample both units for ten minutes: TARGET=pi@host for the board, else t
 apt-probe: ## apt update and a reinstall next to the live stack, with apt's peak and timing: TARGET=pi@host for the board, else the VM
 	@$(UV) pytest -m apt $(if $(TARGET),--target=ssh --target-uri=$(TARGET),--target=vm --qemu-accel=$(QEMU_ACCEL)) $(APT_ARGS)
 
-test: test-jvm test-js test-tier0 test-tier1 ## JVM and JS unit tests, tiers 0 and 1, what CI runs
+test: test-jvm test-js test-metrics test-tier0 test-tier1 ## JVM, JS and Go unit tests, tiers 0 and 1, what CI runs
 
 test-all: test test-tier2 ## everything, what make release runs
 

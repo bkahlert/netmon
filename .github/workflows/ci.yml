@@ -26,10 +26,13 @@ jobs:
         with: { distribution: temurin, java-version: "17" }
       - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
         with: { enable-cache: true }
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with: { go-version-file: packages/netmon-metrics/src/go.mod, cache-dependency-path: packages/netmon-metrics/src/go.sum }
       - run: uv sync --frozen
       - run: make build
       - run: make browser BROWSER_ARGS=--with-deps
       - run: make test-jvm
+      - run: make test-metrics
       - run: make test-tier0
       - run: make test-layout
 
@@ -42,6 +45,8 @@ jobs:
         with: { distribution: temurin, java-version: "17" }
       - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
         with: { enable-cache: true, cache-suffix: tier1 }
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with: { go-version-file: packages/netmon-metrics/src/go.mod, cache-dependency-path: packages/netmon-metrics/src/go.sum }
       - run: uv sync --frozen
-      - run: make gradle
+      - run: make gradle metrics
       - run: make test-tier1

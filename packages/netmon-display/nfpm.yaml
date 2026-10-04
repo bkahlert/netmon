@@ -15,15 +15,9 @@ depends:
   - lighttpd
   - pihero-kiosk
 contents:
-  - src: root/
-    dst: /
-    type: tree
   - src: ../../build/dist/js/productionExecutable/
     dst: /usr/share/netmon/web/
     type: tree
-  - src: /run/netmon-display/stats.json
-    dst: /usr/share/netmon/web/stats.json
-    type: symlink
   - src: conf/lighttpd-netmon.conf
     dst: /etc/lighttpd/conf-available/90-netmon.conf
     type: config

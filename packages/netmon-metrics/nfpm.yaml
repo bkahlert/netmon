@@ -1,0 +1,28 @@
+name: netmon-metrics
+arch: arm64
+platform: linux
+version: ${VERSION}
+section: admin
+priority: optional
+maintainer: Björn Kahlert <bkahlert@users.noreply.github.com>
+description: |
+  Netmon: publishes the board's metrics over MQTT as OTLP/JSON.
+  Every 5 s a native sampler reads the scanner's and the kiosk's cgroups, their main processes and the system's
+  memory and paging, and publishes one retained message to dt/netmon/<node>/metrics on the local broker.
+homepage: https://github.com/bkahlert/netmon
+license: MIT
+depends:
+  - mosquitto
+  - dbus
+contents:
+  - src: root/
+    dst: /
+    type: tree
+  - src: ../../build/native/netmon-metrics
+    dst: /usr/lib/netmon/netmon-metrics
+    file_info:
+      mode: 0755
+scripts:
+  postinstall: .build/postinst
+  preremove: .build/prerm
+  postremove: .build/postrm

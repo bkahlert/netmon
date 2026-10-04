@@ -1,4 +1,3 @@
-import json
 import re
 import shlex
 import time
@@ -44,10 +43,8 @@ class TestServing:
 
 
 class TestCaching:
-    def test_the_page_and_the_sample_are_asked_for_again_every_time(self, host):
-        fetch_until(host, "http://localhost/stats.json", '"at"')
-
-        for path in ("", "?broker.host=localhost&broker.port=8080", "stats.json"):
+    def test_the_page_is_asked_for_again_every_time(self, host):
+        for path in ("", "?broker.host=localhost&broker.port=8080"):
             headers = host.check_output(HEADERS + shlex.quote("http://localhost/" + path))
 
             assert "Cache-Control: no-cache" in headers, (path, headers)
@@ -77,24 +74,6 @@ class TestKiosk:
         assert host.service("pihero-kiosk").is_running
 
 
-class TestStats:
-    def test_the_sampler_runs_as_an_enabled_unit(self, host):
-        unit = host.service("netmon-display-stats")
-
-        assert unit.is_enabled
-        assert unit.is_running
-
-    def test_serves_the_latest_sample_as_json(self, host):
-        text = fetch_until(host, "http://localhost/stats.json", '"at"')
-
-        sample = json.loads(text)
-        assert set(sample) == {"at", "interval", "kioskCpu", "webCpu", "kioskMemory"}
-        assert sample["interval"] == 5
-        if not host.service("pihero-kiosk").is_running:
-            assert sample["kioskCpu"] is None
-            assert sample["webCpu"] is None
-
-
 class TestRemoval:
     @pytest.mark.mutating
     def test_purge_gives_lighttpd_its_root_back(self, host, target):
@@ -103,7 +82,6 @@ class TestRemoval:
         assert not host.file("/usr/share/netmon/web").exists
         assert not host.file("/etc/lighttpd/conf-enabled/90-netmon.conf").exists
         assert not host.file("/etc/lighttpd/conf-available/90-netmon.conf").exists
-        assert not host.file("/usr/lib/systemd/system/netmon-display-stats.service").exists
         assert "Netmon" not in host.run(FETCH + "http://localhost/").stdout
 
         target.reinstall()

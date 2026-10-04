@@ -1,4 +1,5 @@
 import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
+import org.jetbrains.kotlin.gradle.ExperimentalKotlinGradlePluginApi
 import org.jetbrains.kotlin.gradle.targets.js.webpack.KotlinWebpack
 import org.jetbrains.kotlin.gradle.targets.js.webpack.KotlinWebpackConfig
 import org.jetbrains.kotlin.gradle.targets.js.yarn.YarnLockMismatchReport
@@ -33,6 +34,7 @@ kotlin {
         compilerOptions {
             freeCompilerArgs.add("-Xjsr305=strict")
         }
+        @OptIn(ExperimentalKotlinGradlePluginApi::class)
         binaries {
             executable {
                 mainClass.set("com.bkahlert.netmon.Application")
@@ -51,7 +53,7 @@ kotlin {
     }
 
     sourceSets {
-        val commonMain by getting {
+        commonMain {
             dependencies {
                 implementation(project.dependencies.platform("org.jetbrains.kotlinx:kotlinx-coroutines-bom:1.11.0"))
                 implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core")
@@ -61,7 +63,7 @@ kotlin {
                 implementation("org.jetbrains.kotlinx:kotlinx-serialization-json")
             }
         }
-        val commonTest by getting {
+        commonTest {
             dependencies {
                 implementation(kotlin("test"))
 
@@ -74,7 +76,7 @@ kotlin {
             }
         }
 
-        val jvmMain by getting {
+        jvmMain {
             dependencies {
                 implementation("org.slf4j:slf4j-simple:2.0.20") { because("logging to the journal without XML or reflection") }
 
@@ -86,7 +88,7 @@ kotlin {
             }
             languageSettings.optIn("kotlin.io.path.ExperimentalPathApi")
         }
-        val jvmTest by getting {
+        jvmTest {
             dependencies {
                 implementation(kotlin("test"))
 
@@ -98,7 +100,7 @@ kotlin {
             languageSettings.optIn("kotlin.io.path.ExperimentalPathApi")
         }
 
-        val jsMain by getting {
+        jsMain {
             dependencies {
                 val fritz2Version = "1.0-RC21"
                 implementation("dev.fritz2:core:$fritz2Version")
@@ -117,6 +119,9 @@ kotlin {
                 implementation(devNpm("style-loader", "^4.0"))
                 implementation(devNpm("cssnano", "^7.0")) { because("CSS minification by PostCSS") }
             }
+        }
+        jsTest {
+            resources.srcDir("packages/netmon-metrics/src/testdata")
         }
         all {
             languageSettings.optIn("kotlin.RequiresOptIn")

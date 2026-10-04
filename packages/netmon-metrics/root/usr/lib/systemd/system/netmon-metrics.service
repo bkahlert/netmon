@@ -1,0 +1,50 @@
+[Unit]
+Description=Netmon: publishes the scanner's, the kiosk's and the system's metrics over MQTT as OTLP/JSON
+Documentation=https://github.com/bkahlert/netmon
+Wants=mosquitto.service
+After=mosquitto.service
+
+[Service]
+# Not DynamicUser=: dbus-daemon runs with SYSTEMD_NSS_DYNAMIC_BYPASS=1 and drops the connections of dynamic users.
+User=netmon-metrics
+Group=netmon-metrics
+ExecStart=/usr/lib/netmon/netmon-metrics \
+  --unit netmon-scanner.service --unit pihero-kiosk.service \
+  --process WPEWebProcess --process netmon-scanner
+Environment=GOMEMLIMIT=16MiB
+Restart=always
+RestartSec=10
+Nice=10
+MemoryMax=24M
+# The sampler reads /proc, the units' cgroups and systemd's unit properties over D-Bus, and publishes to the local
+# broker, nothing else. ProtectProc= and ProcSubset= stay off because the processes it reads belong to other users.
+NoNewPrivileges=yes
+CapabilityBoundingSet=
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+PrivateDevices=yes
+PrivateUsers=yes
+ProtectClock=yes
+ProtectControlGroups=yes
+ProtectHostname=yes
+ProtectKernelLogs=yes
+ProtectKernelModules=yes
+ProtectKernelTunables=yes
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+RestrictNamespaces=yes
+RestrictRealtime=yes
+RestrictSUIDSGID=yes
+LockPersonality=yes
+MemoryDenyWriteExecute=yes
+RemoveIPC=yes
+SystemCallArchitectures=native
+SystemCallFilter=@system-service
+SystemCallFilter=~@privileged @resources
+# Go's runtime raises its file limit at start; the filter answers that with EPERM, which Go ignores, instead of a kill.
+SystemCallErrorNumber=EPERM
+IPAddressDeny=any
+IPAddressAllow=localhost
+
+[Install]
+WantedBy=multi-user.target

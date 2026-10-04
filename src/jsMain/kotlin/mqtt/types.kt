@@ -65,6 +65,12 @@ external interface MqttClient {
     fun subscribe(topic: String, options: ClientSubscribeOptions = definedExternally): MqttClient
 
     /**
+     * Subscribes to the specified [topics] with the given [options].
+     * @see <a href="https://github.com/mqttjs/MQTT.js/#mqttclientsubscribetopictopic-arraytopic-object-options-callback">mqtt.Client#subscribe</a>
+     */
+    fun subscribe(topics: Array<String>, options: ClientSubscribeOptions = definedExternally): MqttClient
+
+    /**
      * Closes the connection.
      * @see <a href="https://github.com/mqttjs/MQTT.js/?tab=readme-ov-file#mqttclientendforce-options-callback">mqtt.Client#end</a>
      */

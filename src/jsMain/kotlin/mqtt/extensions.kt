@@ -21,6 +21,10 @@ val IClientOptions.url: String get() = "${protocol}://${hostname}:${port}${path}
 fun MqttClient.subscribe(topic: String, options: ClientSubscribeOptions.() -> Unit): MqttClient =
     subscribe(topic, js("{}").unsafeCast<ClientSubscribeOptions>().apply(options))
 
+/** Subscribes to the specified [topics] with the given [options]. */
+fun MqttClient.subscribe(topics: List<String>, options: ClientSubscribeOptions.() -> Unit): MqttClient =
+    subscribe(topics.toTypedArray(), js("{}").unsafeCast<ClientSubscribeOptions>().apply(options))
+
 /**
  * Registers the given [callback] which is invoked on successful (re)connection (i.e., connack rc=0).
  * @see <a href="https://github.com/mqttjs/MQTT.js/#event-connect">Event 'connect'</a>

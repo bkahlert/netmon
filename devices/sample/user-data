@@ -39,6 +39,7 @@ packages:
   - pihero-usb-gadget
   - netmon-scanner
   - netmon-display
+  - netmon-metrics
 write_files:
   - path: /etc/apt/sources.list.d/pihero.sources
     content: |
