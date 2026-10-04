@@ -51,7 +51,7 @@ Settled with the user on 2026-10-04:
 `Host` gains `mac: String?` (`@SerialName("mac")`), lowercase with colons. It is optional on the wire; both sides ignore
 unknown keys, so scanner and display can differ in version. `HostPropertyEnricher.copy` learns the field.
 
-`NmapXml` reads the `addr` of the `mac` address element next to its `vendor`. Unprivileged nmap reports no MAC; those
+`NmapXml` reads the `addr` of the `mac` address element next to its `vendor`. A MAC that one nmap run reports for several hosts identifies none of them (a Bonjour sleep proxy answers ARP for a sleeping device with its own MAC); those hosts get no MAC. Unprivileged nmap reports no MAC; those
 hosts keep the IP as their only identity, as today.
 
 ### Matching in `merge`
