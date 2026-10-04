@@ -195,16 +195,24 @@ def run_all(planned: list[Variant], one_run: Callable[[int, Variant], Run], writ
     return runs
 
 
-def bench(target: str, variants: list[Variant], runs: int, out: Path) -> None:
-    """Run the benchmark on `target` and write its report into `out`; everything started on the way is ended on the way out."""
+def check(session: board.Session) -> None:
+    """Raise RuntimeError when the benchmark cannot run: the board has no kiosk, no active metrics or another session on its kiosk, or a port of the workstation is taken."""
+    session.check_kiosk()
+    if session.ssh(f"systemctl is-active {METRICS_UNIT}").stdout.strip() != "active":
+        raise RuntimeError(f"{session.target} has no active {METRICS_UNIT}; install the netmon-metrics package")
+    others = [name for name in session.ssh(f"ls {board.DROPIN_DIR}").stdout.split() if name != Path(session.dropin).name]
+    if others:
+        raise RuntimeError(f"another session is on the kiosk of {session.target} ({', '.join(others)} in {board.DROPIN_DIR}); end it or reboot the board")
+    for port in (PAGE_PORT, preview_broker.WEBSOCKET_PORT):
+        if process.answers("127.0.0.1", port):
+            raise RuntimeError(f"port {port} is taken on the workstation; end what serves there first")
+
+
+def bench(session: board.Session, variants: list[Variant], runs: int, out: Path) -> None:
+    """Run the benchmark on the session's board and write its report into `out`; everything started on the way is ended on the way out."""
+    target = session.target
     planned = order(variants, runs)
     with ExitStack() as cleanup:
-        session = board.Session(target, SESSION, out / board.LOG_NAME)
-        session.check_kiosk()
-        if session.ssh(f"systemctl is-active {METRICS_UNIT}").stdout.strip() != "active":
-            raise RuntimeError(f"{target} has no active {METRICS_UNIT}; install the netmon-metrics package")
-        if process.answers("127.0.0.1", PAGE_PORT):
-            raise RuntimeError(f"port {PAGE_PORT} is taken on the workstation; end what serves there first")
         broker = preview_broker.Broker(preview_broker.FAKE, "localhost", preview_broker.WEBSOCKET_PORT)
         preview_broker.start(broker)
         cleanup.callback(preview_broker.stop)
@@ -270,11 +278,14 @@ def main(environ: Mapping[str, str] = os.environ) -> int:
         print(error, file=sys.stderr)
         return 2
     process.raise_on_sigterm()
+    out = BENCH / time.strftime("%Y-%m-%d-%H%M")
     try:
+        session = board.Session(target, SESSION, out / board.LOG_NAME)
+        check(session)
         for variant in variants:
             print(f"building {variant.label}", file=sys.stderr, flush=True)
             bundle(variant)
-        bench(target, variants, runs, BENCH / time.strftime("%Y-%m-%d-%H%M"))
+        bench(session, variants, runs, out)
     except subprocess.CalledProcessError as error:
         print(f"{' '.join(error.cmd)} failed with status {error.returncode}", file=sys.stderr)
         return 2

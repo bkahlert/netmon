@@ -9,6 +9,7 @@ import bench
 import scan_fixtures
 from bench import SCAN_TOPIC, Variant, order, page_url, parse_runs, parse_variants, run_all, run_timeline, scenario
 from bench_fixtures import sample
+from pihero_testkit.preview import board
 from bench_report import Run
 from layout import Page
 
@@ -232,6 +233,33 @@ class TestBundle:
         assert sorted(path.name for path in result.iterdir()) == ["index.html"]
 
 
+class TestCheck:
+    def test_refuses_another_session_on_the_kiosk(self, monkeypatch):
+        monkeypatch.setattr(bench.process, "answers", lambda host, port: False)
+
+        with pytest.raises(RuntimeError, match="netmon-preview.conf"):
+            bench.check(FakeSession(dropins="netmon-preview.conf\n"))
+
+    def test_takes_over_a_session_of_its_own(self, monkeypatch):
+        monkeypatch.setattr(bench.process, "answers", lambda host, port: False)
+
+        result = bench.check(FakeSession(dropins="netmon-bench-preview.conf\n"))
+
+        assert result is None
+
+    def test_refuses_a_board_without_metrics(self, monkeypatch):
+        monkeypatch.setattr(bench.process, "answers", lambda host, port: False)
+
+        with pytest.raises(RuntimeError, match="no active netmon-metrics.service"):
+            bench.check(FakeSession(metrics="inactive"))
+
+    def test_refuses_a_taken_port_of_the_workstation(self, monkeypatch):
+        monkeypatch.setattr(bench.process, "answers", lambda host, port: port == 8080)
+
+        with pytest.raises(RuntimeError, match="port 8080 is taken"):
+            bench.check(FakeSession())
+
+
 class TestMain:
     def test_needs_a_target(self, capsys):
         status = bench.main({})
@@ -244,6 +272,17 @@ class TestMain:
 
         assert status == 2
         assert "RUNS must be" in capsys.readouterr().err
+
+    def test_checks_the_board_before_any_build(self, capsys, monkeypatch):
+        built = []
+        monkeypatch.setattr(bench.process, "raise_on_sigterm", lambda: None)
+        monkeypatch.setattr(bench.board, "Session", lambda target, name, log: FakeSession(kiosk_error=RuntimeError("cannot reach pi@nope over ssh")))
+        monkeypatch.setattr(bench, "bundle", built.append)
+
+        status = bench.main({"TARGET": "pi@nope"})
+
+        assert (status, built) == (2, [])
+        assert "cannot reach pi@nope" in capsys.readouterr().err
 
 
 class FakeStream:
@@ -273,6 +312,23 @@ class FakeStream:
 
 def every_five_seconds(first: int, last: int):
     return [sample(at) for at in range(first, last + 1, 5)]
+
+
+class FakeSession:
+    def __init__(self, dropins: str = "", metrics: str = "active", kiosk_error: Exception | None = None):
+        self.target, self.dropin = "pi@netmon.local", f"{board.DROPIN_DIR}/netmon-bench-preview.conf"
+        self.dropins, self.metrics, self.kiosk_error = dropins, metrics, kiosk_error
+
+    def check_kiosk(self):
+        if self.kiosk_error:
+            raise self.kiosk_error
+
+    def ssh(self, remote: str) -> subprocess.CompletedProcess:
+        if remote.startswith("systemctl is-active"):
+            return subprocess.CompletedProcess(remote, 0 if self.metrics == "active" else 3, stdout=f"{self.metrics}\n", stderr="")
+        if remote.startswith("ls "):
+            return subprocess.CompletedProcess(remote, 0, stdout=self.dropins, stderr="")
+        raise AssertionError(remote)
 
 
 def fake_build(command, cwd, **_):
