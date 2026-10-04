@@ -30,9 +30,10 @@ Netmon runs on [Pi Hero 2](https://github.com/bkahlert/pihero), on a 64-bit Rasp
 [devices/sample/user-data](devices/sample/user-data) and `network-config`, set the hostname, your SSH key and Wi-Fi,
 flash a card with pihero's `make flash`, and the board installs `netmon-scanner` (the scanner, Mosquitto with a
 websocket listener), `netmon-display` (the web display behind lighttpd, shown full screen by `pihero-kiosk`) and
-`netmon-metrics` (the board's sampler).
+`netmon-metrics` (the board's sampler, optional).
 The panel's status bar shows the kiosk's CPU and memory from `netmon-metrics`, which
-publishes the board's metrics every 5 s as OTLP/JSON to `dt/netmon/<node>/metrics`.
+publishes the board's metrics every 5 s as OTLP/JSON to `dt/netmon/<node>/metrics`;
+without the package the status bar shows no figures.
 [devices/README.md](devices/README.md) has the details, including the one line a panel without EDID needs. The scanner
 reads `/etc/netmon/scanner.conf` (`BROKER_HOST`, `BROKER_PORT`, `NMAP_*`, `NETMON_SCANNER_OPTIONS`); the display
 subscribes to the broker on the host the page was loaded from, port 8080, unless the URL's `broker.host` and

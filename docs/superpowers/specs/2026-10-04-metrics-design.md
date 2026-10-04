@@ -53,8 +53,8 @@ Settled with the user on 2026-10-04:
 `packages/netmon-metrics/`, laid out as the two existing packages: `nfpm.yaml` (`arch: arm64`, depends on `mosquitto`
 and `dbus`), `root/usr/lib/systemd/system/netmon-metrics.service`, `units.txt`, `scripts/`, `tests/test_installed.py`.
 The binary is `/usr/lib/netmon/netmon-metrics`. [devices/sample/user-data](../../../devices/sample/user-data) installs
-the package next to the other two. `netmon-display` depends on it, so `apt upgrade` on a board installs the sampler
-together with the display that retires `netmon-display-stats`.
+the package next to the other two. The package is optional: `netmon-display` does not depend on it. The status bar shows
+the figures when messages arrive and no pills otherwise.
 
 The unit runs as the static system user `netmon-metrics`, which the package's maintainer scripts create and remove as
 `netmon-scanner`'s do. It is not `DynamicUser=yes` because systemd starts dbus-daemon with
