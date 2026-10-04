@@ -119,7 +119,7 @@ kotlin {
             }
         }
         val jsTest by getting {
-            resources.srcDir("metrics/testdata")
+            resources.srcDir("packages/netmon-metrics/src/testdata")
         }
         all {
             languageSettings.optIn("kotlin.RequiresOptIn")

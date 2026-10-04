@@ -51,7 +51,8 @@ Settled with the user on 2026-10-04:
 ### Package and unit
 
 `packages/netmon-metrics/`, laid out as the two existing packages: `nfpm.yaml` (`arch: arm64`, depends on `mosquitto`
-and `dbus`), `root/usr/lib/systemd/system/netmon-metrics.service`, `units.txt`, `scripts/`, `tests/test_installed.py`.
+and `dbus`), `root/usr/lib/systemd/system/netmon-metrics.service`, `units.txt`, `scripts/`, `tests/test_installed.py`,
+and the Go source in `src/`.
 The binary is `/usr/lib/netmon/netmon-metrics`. [devices/sample/user-data](../../../devices/sample/user-data) installs
 the package next to the other two. The package is optional: `netmon-display` does not depend on it. The status bar shows
 the figures when messages arrive and no pills otherwise.
@@ -75,7 +76,7 @@ fixtures), `--node` the unqualified hostname.
 
 ### Source and build
 
-Go source in `metrics/` with its own `go.mod`, the newest stable Go. Dependencies:
+Go source in `packages/netmon-metrics/src/` with its own `go.mod`, the newest stable Go. Dependencies:
 
 - `go.opentelemetry.io/proto/otlp/metrics/v1` and `google.golang.org/protobuf/encoding/protojson` for the message,
   built as `MetricsData`. Its one field is `resource_metrics = 1`, as in `ExportMetricsServiceRequest`, so both encode
@@ -205,9 +206,9 @@ Each behaviour at the lowest level that catches its defect:
   round-trips through `protojson.Unmarshal` into `MetricsData` with the catalogue's names, instruments, units and
   temporality. The utilization on a first sample, a restart and a counter going backwards, with an injected clock and no
   sleeps.
-- **Contract fixture.** A Go test writes a golden message to `metrics/testdata/metrics.json` and fails when the file
-  is out of date, unless run with `-update`. The JS and Python decoder tests read that file, so no decoder drifts from
-  the producer.
+- **Contract fixture.** A Go test writes a golden message to `packages/netmon-metrics/src/testdata/metrics.json` and
+  fails when the file is out of date, unless run with `-update`. The JS and Python decoder tests read that file, so no
+  decoder drifts from the producer.
 - **JS.** Decoding the golden into `KioskStats`, including the scaling by the core count and missing resources as
   `null`; the store's freshness and the empty payload; one client subscribing to both topics.
 - **Python.** Decoding the golden into `Sample`; deltas across a restart; a boot id change; `render_table` and

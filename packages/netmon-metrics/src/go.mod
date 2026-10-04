@@ -1,4 +1,4 @@
-module github.com/bkahlert/netmon/metrics
+module github.com/bkahlert/netmon/packages/netmon-metrics
 
 go 1.27.0
 

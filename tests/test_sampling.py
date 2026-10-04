@@ -6,7 +6,7 @@ import pytest
 from sampling import KIOSK, SCANNER, Sample, Samples, SystemSample, UnitSample, decode, parse_duration, parse_show, render_summary, render_table, thin
 
 pytestmark = pytest.mark.tier0
-GOLDEN = Path(__file__).resolve().parents[1] / "metrics" / "testdata" / "metrics.json"
+GOLDEN = Path(__file__).resolve().parents[1] / "packages" / "netmon-metrics" / "src" / "testdata" / "metrics.json"
 
 
 class TestParseDuration:

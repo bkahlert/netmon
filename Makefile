@@ -24,7 +24,7 @@ build/native/netmon-scanner: build/libs/netmon-all.jar packages/netmon-scanner/n
 	podman run --rm --platform linux/arm64 -v "$(CURDIR):/work" -w /work $(NATIVE_IMAGE) packages/netmon-scanner/native/compile
 
 metrics: ## build the metrics sampler, a static arm64 binary, into build/native
-	cd metrics && CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build -trimpath -ldflags "-s -w -X main.version=$(shell git describe --tags --always)" -o ../build/native/netmon-metrics .
+	cd packages/netmon-metrics/src && CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build -trimpath -ldflags "-s -w -X main.version=$(shell git describe --tags --always)" -o $(CURDIR)/build/native/netmon-metrics .
 
 build: gradle metrics ## build the .deb packages into dist/
 	@$(UV) python -m pihero_testkit.build
@@ -39,7 +39,7 @@ test-js: ## the display's JS unit tests (Karma, headless Chrome)
 	./gradlew $(GRADLE_ARGS) jsBrowserTest
 
 test-metrics: ## the metrics sampler's Go tests
-	cd metrics && test -z "$$(gofmt -l . | tee /dev/stderr)" && go vet ./... && go test ./...
+	cd packages/netmon-metrics/src && test -z "$$(gofmt -l . | tee /dev/stderr)" && go vet ./... && go test ./...
 
 test-layout: ## the page's geometry in Playwright's WebKit at three sizes and several host counts (needs make browser)
 	./gradlew $(GRADLE_ARGS) jsBrowserDistribution
