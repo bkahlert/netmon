@@ -13,6 +13,7 @@ import io.kotest.matchers.collections.shouldContainAll
 import io.kotest.matchers.collections.shouldContainExactly
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldContain
+import io.kotest.matchers.string.shouldNotContain
 import kotlinx.coroutines.flow.MutableStateFlow
 import org.w3c.dom.HTMLElement
 import org.w3c.dom.Node
@@ -157,6 +158,40 @@ class NetworkKtTest {
         val container = rendered { hosts(store, clock = MutableStateFlow(now)) }
 
         container.awaited({ fitLengths() }) { it.size == 2 } shouldContainExactly listOf("16", "11")
+        container.remove()
+    }
+
+    @Test
+    fun a_host_without_name_and_model_shows_the_end_of_its_mac() = runTest {
+        val now = Clock.System.now()
+        val store = RootStore(listOf(Host(ip = IP.of("192.168.1.1"), mac = "dc:a6:32:a5:ba:b6", status = Status.UP, since = now)), job = job)
+
+        val container = rendered { hosts(store, clock = MutableStateFlow(now)) }
+
+        container.textOnce("a5:ba:b6") shouldContain "a5:ba:b6"
+        container.remove()
+    }
+
+    @Test
+    fun a_host_without_name_model_and_mac_shows_the_placeholder() = runTest {
+        val now = Clock.System.now()
+        val store = RootStore(listOf(Host(ip = IP.of("192.168.1.1"), status = Status.UP, since = now)), job = job)
+
+        val container = rendered { hosts(store, clock = MutableStateFlow(now)) }
+
+        container.textOnce("❔") shouldContain "❔"
+        container.remove()
+    }
+
+    @Test
+    fun a_named_host_does_not_show_its_mac() = runTest {
+        val now = Clock.System.now()
+        val named = Host(ip = IP.of("192.168.1.1"), name = "printer.local.", mac = "dc:a6:32:a5:ba:b6", status = Status.UP, since = now)
+        val store = RootStore(listOf(named), job = job)
+
+        val container = rendered { hosts(store, clock = MutableStateFlow(now)) }
+
+        container.textOnce("printer") shouldNotContain "a5:ba:b6"
         container.remove()
     }
 
