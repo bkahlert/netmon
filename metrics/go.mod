@@ -2,6 +2,14 @@ module github.com/bkahlert/netmon/metrics
 
 go 1.27.0
 
-require github.com/coreos/go-systemd/v22 v22.7.0
+require (
+	github.com/coreos/go-systemd/v22 v22.7.0
+	go.opentelemetry.io/otel v1.47.0
+	go.opentelemetry.io/proto/otlp v1.11.1
+	google.golang.org/protobuf v1.36.12
+)
 
-require github.com/godbus/dbus/v5 v5.1.0 // indirect
+require (
+	github.com/cespare/xxhash/v2 v2.3.0 // indirect
+	github.com/godbus/dbus/v5 v5.1.0 // indirect
+)
