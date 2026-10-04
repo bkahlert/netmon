@@ -75,7 +75,7 @@ def clear_command(topic: str) -> list[str]:
 def start(broker: Broker) -> None:
     """Start the container with no message in it; raise RuntimeError when something already answers on the broker's port or podman fails."""
     if preview_process.answers(broker.host, broker.port):
-        raise RuntimeError(f"port {broker.port} is taken; to use the broker there, run with BROKER=localhost:{broker.port}")
+        raise RuntimeError(f"port {broker.port} is taken; end what serves there first")
     result = subprocess.run(run_command(broker), capture_output=True, text=True, check=False)
     if result.returncode != 0:
         raise RuntimeError(f"podman could not start the broker on {broker.address}: {result.stderr.strip()}")
@@ -83,6 +83,8 @@ def start(broker: Broker) -> None:
 
 def ensure(broker: Broker, scan: scan_fixtures.Scan) -> None:
     """Starts the container and publishes the fixture; raises RuntimeError when something already answers on the broker's port."""
+    if preview_process.answers(broker.host, broker.port):
+        raise RuntimeError(f"port {broker.port} is taken; to use the broker there, run with BROKER=localhost:{broker.port}")
     start(broker)
     try:
         publish(scan_fixtures.scans(scan.sources, scan.recent, scan.stable))

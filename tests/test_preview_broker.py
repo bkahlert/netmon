@@ -99,6 +99,17 @@ class TestStart:
             with pytest.raises(RuntimeError, match=f"port {port} is taken"):
                 preview_broker.start(Broker(FAKE, "127.0.0.1", port))
 
+    def test_names_no_preview_variable_for_a_taken_port(self):
+        with socket.socket() as server:
+            server.bind(("127.0.0.1", 0))
+            server.listen()
+            port = server.getsockname()[1]
+
+            with pytest.raises(RuntimeError) as raised:
+                preview_broker.start(Broker(FAKE, "127.0.0.1", port))
+
+        assert "BROKER" not in str(raised.value)
+
 
 @pytest.mark.tier0
 class TestCommands:
