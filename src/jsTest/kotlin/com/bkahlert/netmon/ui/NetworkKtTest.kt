@@ -18,6 +18,7 @@ import org.w3c.dom.asList
 import kotlin.test.Test
 import kotlin.time.Clock
 import kotlin.time.Duration.Companion.hours
+import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
 import kotlin.time.Instant
 
@@ -34,6 +35,48 @@ class NetworkKtTest {
         clock.value = now + 90.seconds
 
         container.textOnce("since 2m") shouldContain "since 2m"
+        container.remove()
+    }
+
+    @Test
+    fun a_card_unchanged_for_a_minute_follows_the_slow_clock() = runTest {
+        val now = Clock.System.now()
+        val fast = MutableStateFlow(now)
+        val slow = MutableStateFlow(now)
+        val store = RootStore(listOf(Host(ip = IP.of("192.168.1.1"), status = Status.UP, since = now - 5.minutes)), job = job)
+        val container = rendered { hosts(store, clock = fast, slowClock = slow) }
+        container.textOnce("since 5m") shouldContain "since 5m"
+
+        fast.value = now + 60.seconds
+        nextFrames(3)
+
+        container.textContent.orEmpty() shouldContain "since 5m"
+
+        slow.value = now + 60.seconds
+
+        container.textOnce("since 6m") shouldContain "since 6m"
+        container.remove()
+    }
+
+    @Test
+    fun a_card_hands_over_to_the_slow_clock_once_a_minute_old() = runTest {
+        val now = Clock.System.now()
+        val fast = MutableStateFlow(now)
+        val slow = MutableStateFlow(now)
+        val store = RootStore(listOf(Host(ip = IP.of("192.168.1.1"), status = Status.UP, since = now - 30.seconds)), job = job)
+        val container = rendered { hosts(store, clock = fast, slowClock = slow) }
+        container.textOnce("since 30s") shouldContain "since 30s"
+
+        fast.value = now + 40.seconds
+        container.textOnce("since 1m") shouldContain "since 1m"
+        fast.value = now + 100.seconds
+        nextFrames(3)
+
+        container.textContent.orEmpty() shouldContain "since 1m"
+
+        slow.value = now + 150.seconds
+
+        container.textOnce("since 3m") shouldContain "since 3m"
         container.remove()
     }
 
