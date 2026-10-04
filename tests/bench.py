@@ -10,7 +10,7 @@ from contextlib import ExitStack
 from dataclasses import dataclass
 from pathlib import Path
 
-from pihero_testkit.preview import board, process
+from pihero_testkit.preview import board, kiosk, process
 from pihero_testkit.ssh import SshTarget
 
 import bench_figures
@@ -82,7 +82,7 @@ def changed(scan: dict, at: int) -> dict:
 def run_timeline(
     stream,
     clear: Callable[[], None],
-    install: Callable[[], None],
+    install: Callable[[], float | None],
     publish: Callable[[dict], None],
     payloads: list[bytes],
     steps: Callable[[int], list[tuple[int, dict]]] = scenario,
@@ -90,7 +90,7 @@ def run_timeline(
 ) -> Timeline:
     """Run the scenario once and return its samples, every payload of the run appended to `payloads`; raise ConnectionError on silence.
 
-    The scan is cleared, then `install` restarts the kiosk on the page and returns once it loaded. The first sample after
+    The scan is cleared, then `install` restarts the kiosk on the page and returns its load time once it loaded. The first sample after
     that is t0. Each scan goes out right after the first sample at or after its offset from t0, and the run ends at the
     first sample at or after `end_at`."""
 
@@ -102,7 +102,7 @@ def run_timeline(
     stream.pending()
     clear()
     before = receive()
-    install()
+    load_time = install()
     load = []
     for sample, payload in stream.pending():
         load.append(sample)
@@ -117,7 +117,22 @@ def run_timeline(
         boundaries.append(len(samples) - 1)
     while samples[-1].at < t0 + end_at:
         samples.append(receive())
-    return Timeline(before, load, samples, boundaries)
+    return Timeline(before, load, samples, boundaries, load_time)
+
+
+def load_time(journal: str) -> float | None:
+    """Return the seconds from the kiosk's last start to its page load in a `journalctl -o short-unix` of the kiosk, or None without both."""
+    started = None
+    for line in journal.splitlines():
+        try:
+            at = float(line.split(maxsplit=1)[0])
+        except (ValueError, IndexError):
+            continue
+        if f"Started {kiosk.UNIT}.service" in line:
+            started = at
+        elif kiosk.LOADED in line and started is not None:
+            return at - started
+    return None
 
 
 def parse_variants(text: str | None, git: Callable[..., str]) -> list[Variant]:
@@ -242,7 +257,7 @@ def bench(session: board.Session, variants: list[Variant], runs: int, out: Path)
                 timeline = run_timeline(
                     stream,
                     clear=lambda: preview_broker.clear(SCAN_TOPIC),
-                    install=lambda: session.install(conf, tunnel),
+                    install=lambda: timed_install(session, conf, tunnel),
                     publish=lambda scan: preview_broker.publish({SCAN_TOPIC: scan}),
                     payloads=payloads,
                 )
@@ -251,13 +266,20 @@ def bench(session: board.Session, variants: list[Variant], runs: int, out: Path)
                 problem = str(error)
             meta = {"variant": variant.label, "problem": problem}
             if timeline is not None:
-                meta |= {"t0": timeline.samples[0].at, "boundaries": [timeline.samples[i].at for i in timeline.boundaries]}
+                meta |= {"t0": timeline.samples[0].at, "boundaries": [timeline.samples[i].at for i in timeline.boundaries], "load_time": timeline.load_time}
             bench_report.write_payloads(out / "runs" / f"{number}-{variant.directory}.jsonl", meta, payloads)
             return Run(number, variant.label, None if problem else bench_figures.figures(timeline), problem)
 
         report = out / "report.md"
         run_all(planned, one_run, write=lambda done: report.write_text(bench_report.render(header, done)), report=lambda line: print(line, file=sys.stderr, flush=True))
         print(f"report in {report}", file=sys.stderr, flush=True)
+
+
+def timed_install(session: board.Session, conf: str, tunnel: subprocess.Popen) -> float | None:
+    """Put the session on the board and return the page's load time from the kiosk's journal, or None when the journal lacks it."""
+    since = session.ssh(kiosk.since_command()).stdout.strip()
+    session.install(conf, tunnel)
+    return load_time(session.ssh(f"sudo journalctl -u {kiosk.UNIT} --since '{since}' --no-pager -o short-unix").stdout)
 
 
 def start_scanner(session: board.Session) -> None:

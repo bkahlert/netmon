@@ -122,7 +122,7 @@ class TestRunTimeline:
     def test_clears_the_scan_before_the_kiosk_restarts(self):
         events, stream = [], FakeStream(every_five_seconds(0, 200), arriving_during_install=3)
 
-        run_timeline(stream, clear=lambda: events.append("clear"), install=lambda: (events.append("install"), stream.install()), publish=lambda scan: events.append("publish"), payloads=[])
+        run_timeline(stream, clear=lambda: events.append("clear"), install=lambda: events.append("install") or stream.install(), publish=lambda scan: events.append("publish"), payloads=[])
 
         assert events == ["clear", "install", "publish", "publish"]
 
@@ -169,6 +169,35 @@ class TestRunTimeline:
             run_timeline(stream, clear=lambda: None, install=stream.install, publish=lambda scan: None, payloads=payloads)
 
         assert payloads[-1] == b"100"
+
+    def test_keeps_the_load_time_the_install_returns(self):
+        stream = FakeStream(every_five_seconds(0, 200), arriving_during_install=3)
+
+        result = run_timeline(stream, clear=lambda: None, install=lambda: stream.install() or 21.0, publish=lambda scan: None, payloads=[])
+
+        assert result.load_time == 21.0
+
+
+class TestLoadTime:
+    def test_runs_from_the_kiosks_start_to_the_pages_load(self):
+        result = bench.load_time(STARTED + "1791140200.5 netmon cog[71619]: Using WPE backend\n" + LOADED)
+
+        assert result == pytest.approx(21.050855)
+
+    def test_counts_from_the_last_start_before_the_load(self):
+        result = bench.load_time("1791140150.0 netmon systemd[1]: Started pihero-kiosk.service - Pi Hero.\n" + STARTED + LOADED)
+
+        assert result == pytest.approx(21.050855)
+
+    def test_is_none_without_a_load(self):
+        result = bench.load_time(STARTED)
+
+        assert result is None
+
+    def test_skips_lines_without_a_time(self):
+        result = bench.load_time("-- No entries --\n")
+
+        assert result is None
 
 
 class TestPageUrl:
@@ -365,4 +394,6 @@ def fake_git(dirty: str = ""):
 
 HEAD = "f5320cb711ad5e456b2d04fd6a8d5451ddf44128"
 MAIN = "a33715a" + "0" * 33
+STARTED = "1791140198.086536 netmon systemd[1]: Started pihero-kiosk.service - Pi Hero: the kiosk page on the display.\n"
+LOADED = "1791140219.137391 netmon cog[71619]: <http://127.0.0.1:18082/x/?broker.host=127.0.0.1&broker.port=18080> Loaded successfully.\n"
 T0 = 1759450000
