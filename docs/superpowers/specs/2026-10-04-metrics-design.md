@@ -205,6 +205,18 @@ Each behaviour at the lowest level that catches its defect:
   host and `netmon-scanner.service` resources, the topic empty after `systemctl stop`.
 - **Tier 2, VM.** The `pihero-kiosk.service` and `WPEWebProcess` resources present; the panel shows the pills.
 
+## Numbers
+
+Measured on the board on 2026-10-04, with a 10-minute soak (`make soak TARGET=pi@netmon.local
+SOAK_ARGS='--soak-duration=10m'`) read from the metrics topic:
+
+```
+soak: scanner peak 47 MB, scanner rss up to 29 MB, kiosk peak 164 MB RAM+zram, web process anon up to 60 MB, web process cpu 422.1 s, 34.7 major faults/s
+```
+
+`netmon-metrics.service` right after the soak, 673 s after it started, with no restarts: `MemoryCurrent` 10.0 MB,
+`MemoryPeak` 13.9 MB, `CPUUsageNSec` 7.9 s. That is 1.2 % of one core.
+
 ## Removed
 
 `netmon-display-stats` and its unit, the `stats.json` symlink in
