@@ -3,11 +3,13 @@ package com.bkahlert.netmon.enrichment
 import com.bkahlert.netmon.Host
 import com.bkahlert.netmon.logging.SLF4J
 import com.bkahlert.netmon.xml.SecureXml
-import java.io.DataInputStream
 import java.io.DataOutputStream
+import java.io.EOFException
 import java.net.InetAddress
 import java.net.InetSocketAddress
 import java.net.Socket
+import java.net.SocketTimeoutException
+import java.nio.ByteBuffer
 import java.util.concurrent.ConcurrentHashMap
 import javax.xml.stream.XMLStreamConstants
 import kotlin.time.Clock
@@ -53,23 +55,37 @@ class LockdownModelEnricher(
     private fun probe(address: ByteArray): String? = try {
         Socket().use { socket ->
             socket.connect(InetSocketAddress(InetAddress.getByAddress(address), port), connectTimeout.inWholeMilliseconds.toInt())
-            socket.soTimeout = readTimeout.inWholeMilliseconds.toInt()
+            val deadline = System.nanoTime() + readTimeout.inWholeNanoseconds
             val request = REQUEST.toByteArray()
             DataOutputStream(socket.getOutputStream()).apply {
                 writeInt(request.size)
                 write(request)
                 flush()
             }
-            val input = DataInputStream(socket.getInputStream())
-            val length = input.readInt()
+            val length = ByteBuffer.wrap(socket.readFully(4, deadline)).getInt()
             require(length in 1..MAX_REPLY_BYTES) { "Reply length $length" }
-            valueOf(String(ByteArray(length).also(input::readFully)))
+            valueOf(String(socket.readFully(length, deadline)))
         }
     } catch (e: InterruptedException) {
         throw e
     } catch (e: Exception) {
         logger.debug("No model from {}:{}: {}", InetAddress.getByAddress(address).hostAddress, port, e.toString())
         null
+    }
+
+    /** Reads [length] bytes, giving up at [deadline] (a [System.nanoTime] value) however slowly they arrive. */
+    private fun Socket.readFully(length: Int, deadline: Long): ByteArray {
+        val bytes = ByteArray(length)
+        var read = 0
+        while (read < length) {
+            val remainingMillis = (deadline - System.nanoTime()) / 1_000_000
+            if (remainingMillis <= 0) throw SocketTimeoutException("Reply not complete within $readTimeout")
+            soTimeout = remainingMillis.toInt()
+            val count = getInputStream().read(bytes, read, length - read)
+            if (count < 0) throw EOFException("Reply ended after $read of $length bytes")
+            read += count
+        }
+        return bytes
     }
 
     private fun valueOf(plist: String): String? {

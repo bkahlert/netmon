@@ -4,6 +4,7 @@ import com.bkahlert.netmon.Host
 import com.bkahlert.netmon.epoch
 import com.bkahlert.netmon.invoke
 import io.kotest.matchers.collections.shouldBeEmpty
+import io.kotest.matchers.comparables.shouldBeLessThan
 import io.kotest.matchers.collections.shouldHaveSize
 import io.kotest.matchers.nulls.shouldBeNull
 import io.kotest.matchers.should
@@ -23,6 +24,7 @@ import kotlin.time.Duration
 import kotlin.time.Duration.Companion.hours
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.minutes
+import kotlin.time.Duration.Companion.nanoseconds
 import kotlin.time.Duration.Companion.seconds
 import kotlin.time.Instant
 
@@ -167,6 +169,21 @@ class LockdownModelEnricherTest {
     }
 
     @Test
+    fun a_device_that_trickles_its_reply_is_given_up_on_after_the_read_timeout() {
+        val slowReply = ByteBuffer.allocate(104).putInt(60_000).put(ByteArray(100)).array()
+        FakeLockdownd(reply = slowReply, byteDelay = 100.milliseconds).use { server ->
+            val enricher = LockdownModelEnricher(port = server.port, readTimeout = 300.milliseconds)
+
+            val started = System.nanoTime()
+            val result = enricher.enrich(candidate())
+            val elapsed = (System.nanoTime() - started).nanoseconds
+
+            result.shouldBeNull()
+            elapsed shouldBeLessThan 3.seconds
+        }
+    }
+
+    @Test
     fun an_absurd_reply_length_yields_nothing() {
         FakeLockdownd(reply = ByteBuffer.allocate(4).putInt(Int.MAX_VALUE).array()).use { server ->
             val enricher = LockdownModelEnricher(port = server.port, readTimeout = 200.milliseconds)
@@ -219,7 +236,7 @@ private class TestClock(private var current: Instant = 0.epoch) : Clock {
     }
 }
 
-private class FakeLockdownd(private val reply: ByteArray?) : AutoCloseable {
+private class FakeLockdownd(private val reply: ByteArray?, private val byteDelay: Duration = Duration.ZERO) : AutoCloseable {
 
     private val server = ServerSocket(0, 50, InetAddress.getLoopbackAddress())
     private val sockets = CopyOnWriteArrayList<Socket>()
@@ -244,7 +261,19 @@ private class FakeLockdownd(private val reply: ByteArray?) : AutoCloseable {
         try {
             val input = DataInputStream(socket.getInputStream())
             requests += String(ByteArray(input.readInt()).also(input::readFully))
-            reply?.let { socket.getOutputStream().apply { write(it); flush() } }
+            reply?.let { bytes ->
+                val output = socket.getOutputStream()
+                if (byteDelay == Duration.ZERO) {
+                    output.write(bytes)
+                    output.flush()
+                } else {
+                    bytes.forEach {
+                        output.write(it.toInt())
+                        output.flush()
+                        Thread.sleep(byteDelay.inWholeMilliseconds)
+                    }
+                }
+            }
         } catch (e: IOException) {
             // the client left
         }
