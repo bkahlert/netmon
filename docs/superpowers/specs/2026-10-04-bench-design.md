@@ -129,11 +129,16 @@ Per phase and run, from the samples at the phase's boundaries:
 
 The peak is the phase's own, from its samples: the cgroup's `memory.peak` counts since the unit's start.
 
-**Settle time.** The utilization between two consecutive samples is the web CPU delta over the elapsed time, in % of one
-core, as the footprint figures are. The run's baseline is the mean utilization of the sample pairs from t0 + 130 s to
-the run's end. A scan
-phase's settle time runs from its start to the first sample whose utilization is within 2 points of the baseline and
-whose next sample is too. A phase that ends first reads `> 60 s` or `> 90 s`. The resolution is the 5 s of the samples.
+**Settle time.** The utilization between two samples is the web CPU delta over the elapsed time, in % of one core, as
+the footprint figures are. The run's baseline is the mean utilization of the sample pairs from t0 + 130 s to the run's
+end. A scan phase's settle time runs from its start to the first sample from which the utilization over the next three
+intervals (15 s) is at most 10 points above the baseline. A phase that ends first reads `> 60 s` or `> 90 s`. The
+resolution is the 5 s of the samples.
+
+The idle page's single intervals swing by more than 10 points around the baseline: 28a4cf3's last 20 s read 6, 21, 5
+and 22 % against a baseline of 17 %. A rule over single intervals within 2 points never settles on that. Settle time is
+measured against each variant's own idle: a variant that is busy all the time settles at once, and its CPU figures show
+its cost.
 
 ### A run that does not count
 
@@ -195,7 +200,8 @@ Each behaviour at the lowest level that catches its defect.
     on the first at or after t0 + 150 s, silence raising;
   - the figures from built `Sample`s: the CPU deltas, the load phase as the counters at t0, the peak and end memory, the
     fault delta;
-  - the settle time: the baseline window, settling only when the next sample stays, `> 60 s` when it never does;
+  - the settle time: the baseline window, settling on three intervals' utilization, not on one calm interval, `> 60 s`
+    when it never does;
   - a failed run per reason: PID change, kiosk restart, OOM kill, boot id;
   - the report: values for one run, `median (min–max)` for more, `~` on overlapping ranges, failed runs excluded with
     `n/m valid`, the per-run table in run order.
