@@ -20,14 +20,19 @@ import dev.fritz2.core.Store
 import dev.fritz2.core.joinClasses
 import dev.fritz2.core.mapByElement
 import dev.fritz2.core.mapByKey
+import kotlinx.browser.document
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.MainScope
+import kotlinx.coroutines.plus
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.transformWhile
 import org.w3c.dom.HTMLElement
 import org.w3c.dom.HTMLUListElement
@@ -212,14 +217,13 @@ fun RenderContext.host(
                 if (status != null) {
                     div("host__status") {
                         +status.toString()
+                        // One text node that is written, not rendered anew, as every tick of a fresh card would launch and replace one.
+                        val since = document.createTextNode("")
+                        domNode.appendChild(since)
                         elapsedTime
-                            .map { it?.toMomentString(descriptive = false) }
-                            .render {
-                                if (it != null) {
-                                    +" since "
-                                    +it
-                                }
-                            }
+                            .map { it?.toMomentString(descriptive = false)?.let { moment -> " since $moment" }.orEmpty() }
+                            .onEach { since.data = it }
+                            .launchIn(MainScope() + job)
                     }
                 }
             }

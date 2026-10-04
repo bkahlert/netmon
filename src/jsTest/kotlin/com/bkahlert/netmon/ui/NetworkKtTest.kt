@@ -9,11 +9,13 @@ import com.bkahlert.netmon.Status
 import com.bkahlert.netmon.fritz2.runTest
 import com.bkahlert.netmon.model_identification.DeviceModelCodes
 import dev.fritz2.core.RootStore
+import io.kotest.matchers.collections.shouldContainAll
 import io.kotest.matchers.collections.shouldContainExactly
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldContain
 import kotlinx.coroutines.flow.MutableStateFlow
 import org.w3c.dom.HTMLElement
+import org.w3c.dom.Node
 import org.w3c.dom.asList
 import kotlin.test.Test
 import kotlin.time.Clock
@@ -35,6 +37,22 @@ class NetworkKtTest {
         clock.value = now + 90.seconds
 
         container.textOnce("since 2m") shouldContain "since 2m"
+        container.remove()
+    }
+
+    @Test
+    fun a_cards_since_text_is_updated_in_place_not_rendered_anew() = runTest {
+        val now = Clock.System.now()
+        val clock = MutableStateFlow(now)
+        val store = RootStore(listOf(Host(ip = IP.of("192.168.1.1"), status = Status.UP, since = now - 30.seconds)), job = job)
+        val container = rendered { hosts(store, clock = clock) }
+        container.textOnce("since 30s")
+        val before = container.querySelector(".host__status")!!.nodes()
+
+        clock.value = now + 5.seconds
+
+        container.textOnce("since 35s")
+        container.querySelector(".host__status")!!.nodes() shouldContainAll before
         container.remove()
     }
 
@@ -190,3 +208,5 @@ private fun HTMLElement.hostIps(section: String): List<String> =
 
 private fun HTMLElement.fitLengths(): List<String> =
     querySelectorAll(".fit").asList().map { (it as HTMLElement).style.getPropertyValue("--len").trim() }
+
+private fun Node.nodes(): List<Node> = childNodes.asList().flatMap { listOf(it) + it.nodes() }
