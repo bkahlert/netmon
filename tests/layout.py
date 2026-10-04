@@ -44,11 +44,11 @@ def broker(scan_by_topic: dict[str, dict]):
 
         def on_message(message):
             pending.extend(message if isinstance(message, bytes) else message.encode("latin-1"))
-            for kind in packets(pending):
+            for kind, body in packets(pending):
                 if kind == 1:
                     route.send(CONNACK)
                 elif kind == 8:
-                    route.send(bytes([0x90, 0x03, 0x00, 0x01, 0x01]))
+                    route.send(suback(body))
                     for topic, scan in scan_by_topic.items():
                         route.send(publish(topic, json.dumps(scan)))
                 elif kind == 12:
@@ -60,7 +60,7 @@ def broker(scan_by_topic: dict[str, dict]):
 
 
 def packets(pending: bytearray):
-    """Yield the type of each complete MQTT packet in `pending` and remove it."""
+    """Yield the type and the body after the fixed header of each complete MQTT packet in `pending`, and remove it."""
     while len(pending) >= 2:
         length, multiplier, i = 0, 1, 1
         while True:
@@ -75,8 +75,18 @@ def packets(pending: bytearray):
         if len(pending) < i + length:
             return
         kind = pending[0] >> 4
+        body = bytes(pending[i : i + length])
         del pending[: i + length]
-        yield kind
+        yield kind, body
+
+
+def suback(subscribe: bytes) -> bytes:
+    """Return the SUBACK of a SUBSCRIBE body: its packet id and QoS 1 granted for each of its topic filters."""
+    filters, i = 0, 2
+    while i < len(subscribe):
+        i += 2 + int.from_bytes(subscribe[i : i + 2], "big") + 1
+        filters += 1
+    return bytes([0x90, 2 + filters]) + subscribe[:2] + bytes([0x01] * filters)
 
 
 def publish(topic: str, payload: str) -> bytes:

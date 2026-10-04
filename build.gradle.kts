@@ -118,6 +118,9 @@ kotlin {
                 implementation(devNpm("cssnano", "^7.0")) { because("CSS minification by PostCSS") }
             }
         }
+        val jsTest by getting {
+            resources.srcDir("metrics/testdata")
+        }
         all {
             languageSettings.optIn("kotlin.RequiresOptIn")
             languageSettings.optIn("kotlin.ExperimentalStdlibApi")
