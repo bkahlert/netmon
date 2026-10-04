@@ -11,16 +11,16 @@ import vm_device
 
 ROOT = Path(__file__).resolve().parents[1]
 DEV_PORT = 8081
-NETMON_PACKAGES = ("netmon-scanner", "netmon-display")
+PACKAGE_LINE = "  - netmon-"
+KIOSK_BRINGER = "netmon-display"
 KIOSK_PACKAGE = "pihero-kiosk"
 
 
 def render(sample: str, key: str) -> str:
     """Return the sample for the preview's VM: no netmon source, packages or boot-config lines; the kiosk named, since only netmon-display brought it."""
     text = device_file.drop(vm_device.render(sample, key), f"  - path: {vm_device.SOURCE}")
-    for package in NETMON_PACKAGES:
-        text = text.replace(f"  - {package}\n", f"  - {KIOSK_PACKAGE}\n" if package == "netmon-display" else "")
-    return "".join(line for line in text.splitlines(keepends=True) if "--package netmon-" not in line)
+    text = text.replace(f"  - {KIOSK_BRINGER}\n", f"  - {KIOSK_PACKAGE}\n")
+    return "".join(line for line in text.splitlines(keepends=True) if not line.startswith(PACKAGE_LINE) and "--package netmon-" not in line)
 
 
 class Netmon:
