@@ -87,6 +87,32 @@ class TestSamples:
         with pytest.raises(ConnectionError, match="no metrics"):
             Samples(queue.Queue()).next(timeout=0.1)
 
+    def test_receives_the_sample_with_its_payload(self):
+        payloads = queue.Queue()
+        payloads.put(GOLDEN.read_bytes())
+
+        result = Samples(payloads, clock=lambda: 1759450006).receive(timeout=0.1)
+
+        assert result[0].at == 1759450005
+        assert result[1] == GOLDEN.read_bytes()
+
+    def test_pending_returns_what_arrived_without_waiting(self):
+        payloads = queue.Queue()
+        payloads.put(GOLDEN.read_bytes())
+        payloads.put(b"")
+        payloads.put(GOLDEN.read_bytes())
+        stream = Samples(payloads, clock=lambda: 1759450006)
+
+        result = stream.pending()
+
+        assert [(sample.at, payload) for sample, payload in result] == [(1759450005, GOLDEN.read_bytes())] * 2
+        assert payloads.empty()
+
+    def test_pending_is_empty_on_nothing_received(self):
+        result = Samples(queue.Queue()).pending()
+
+        assert result == []
+
 
 class TestThin:
     def test_keeps_the_first_and_then_one_sample_per_interval(self):

@@ -174,17 +174,34 @@ class Samples:
         self.payloads = payloads
         self.clock = clock
 
-    def next(self, timeout: float = SILENCE) -> Sample:
-        """Return the next sample less than three intervals from the clock; raise ConnectionError when none arrives within `timeout` seconds."""
+    def receive(self, timeout: float = SILENCE) -> tuple[Sample, bytes]:
+        """Return the next sample less than three intervals from the clock with its payload; raise ConnectionError when none arrives within `timeout` seconds."""
         deadline = time.monotonic() + timeout
         while (left := deadline - time.monotonic()) > 0:
             try:
-                sample = decode(self.payloads.get(timeout=left))
+                payload = self.payloads.get(timeout=left)
             except queue.Empty:
                 break
+            sample = decode(payload)
             if sample is not None and abs(self.clock() - sample.at) < SILENCE:
-                return sample
+                return sample, payload
         raise ConnectionError(f"no metrics for {timeout:.0f} s")
+
+    def next(self, timeout: float = SILENCE) -> Sample:
+        """Return the next sample less than three intervals from the clock; raise ConnectionError when none arrives within `timeout` seconds."""
+        return self.receive(timeout)[0]
+
+    def pending(self) -> list[tuple[Sample, bytes]]:
+        """Return the samples received and not yet returned, with their payloads, without waiting."""
+        result = []
+        while True:
+            try:
+                payload = self.payloads.get_nowait()
+            except queue.Empty:
+                return result
+            sample = decode(payload)
+            if sample is not None and abs(self.clock() - sample.at) < SILENCE:
+                result.append((sample, payload))
 
 
 @contextmanager
