@@ -15,17 +15,22 @@ object NmapXml {
      *
      * A host without an IPv4 or IPv6 address is left out. The name is the first `hostname` element's name; the vendor
      * and the MAC (lowercase) come from the MAC address element. Each is `null` when absent.
+     *
+     * A MAC that the run reports for several hosts identifies none of them: a Bonjour sleep proxy answers ARP for a
+     * sleeping device with its own MAC. Those hosts have no MAC.
      */
     fun parse(xml: String): List<Host> {
         val reader = SecureXml.reader(xml)
         try {
-            return buildList {
+            val hosts = buildList {
                 while (reader.hasNext()) {
                     if (reader.next() == XMLStreamConstants.START_ELEMENT && reader.localName == "host") {
                         reader.readHost()?.let(::add)
                     }
                 }
             }
+            val sharedMacs = hosts.mapNotNull { it.mac }.groupingBy { it }.eachCount().filterValues { it > 1 }.keys
+            return hosts.map { if (it.mac in sharedMacs) it.copy(mac = null) else it }
         } finally {
             reader.close()
         }

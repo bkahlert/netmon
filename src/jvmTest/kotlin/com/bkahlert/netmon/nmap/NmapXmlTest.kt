@@ -31,6 +31,17 @@ class NmapXmlTest {
     }
 
     @Test
+    fun a_mac_reported_at_several_ips_identifies_none_of_them() {
+        val result = NmapXml.parse(nmapRun(SHARED_MAC_A, SHARED_MAC_B, UP_WITH_NAME))
+
+        result.map { it.ip.toString() to it.mac } shouldContainExactly listOf(
+            "192.168.42.8" to null,
+            "192.168.42.50" to null,
+            "192.168.42.180" to "dc:a6:32:a5:ba:b6",
+        )
+    }
+
+    @Test
     fun a_host_without_an_ip_address_is_left_out() {
         val result = NmapXml.parse(nmapRun(MAC_ONLY, LOCALHOST))
 
@@ -139,5 +150,19 @@ private val PRIVATE_MAC = """
     <host><status state="up" reason="arp-response" reason_ttl="0"/>
     <address addr="192.168.42.9" addrtype="ipv4"/>
     <address addr="DE:AD:BE:EF:00:01" addrtype="mac"/>
+    </host>
+""".trimIndent()
+
+private val SHARED_MAC_A = """
+    <host><status state="up" reason="arp-response" reason_ttl="0"/>
+    <address addr="192.168.42.8" addrtype="ipv4"/>
+    <address addr="AA:BB:CC:DD:EE:08" addrtype="mac" vendor="Apple"/>
+    </host>
+""".trimIndent()
+
+private val SHARED_MAC_B = """
+    <host><status state="up" reason="arp-response" reason_ttl="0"/>
+    <address addr="192.168.42.50" addrtype="ipv4"/>
+    <address addr="AA:BB:CC:DD:EE:08" addrtype="mac" vendor="Apple"/>
     </host>
 """.trimIndent()

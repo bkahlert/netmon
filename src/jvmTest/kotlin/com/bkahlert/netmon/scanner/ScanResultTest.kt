@@ -6,6 +6,7 @@ import com.bkahlert.netmon.IP
 import com.bkahlert.netmon.Status
 import com.bkahlert.netmon.epoch
 import com.bkahlert.netmon.invoke
+import com.bkahlert.netmon.nmap.NmapXml
 import io.kotest.assertions.asClue
 import io.kotest.data.forAll
 import io.kotest.data.row
@@ -661,6 +662,26 @@ class ScanResultTest {
             Triple("10.0.0.1", "second", 60.epoch),
             Triple("10.0.0.2", "first", 50.epoch),
         )
+    }
+
+    @Test
+    fun merge_sleep_proxy_answering_for_a_sleeping_host_keeps_both_records() {
+        val proxy = Host(ip = "10.0.0.8", name = "HomePod", status = Status.UP, since = 50.epoch, lastSeen = 100.epoch, mac = "aa:bb:cc:dd:ee:08")
+        val sleeper = Host(ip = "10.0.0.50", name = "MacBook", status = Status.UP, since = 60.epoch, lastSeen = 100.epoch, mac = "aa:bb:cc:dd:ee:50")
+        val scanned = NmapXml.parse(
+            """<nmaprun>
+            |<host><status state="up"/><address addr="10.0.0.8" addrtype="ipv4"/><address addr="AA:BB:CC:DD:EE:08" addrtype="mac"/></host>
+            |<host><status state="up"/><address addr="10.0.0.50" addrtype="ipv4"/><address addr="AA:BB:CC:DD:EE:08" addrtype="mac"/></host>
+            |</nmaprun>""".trimMargin(),
+        )
+
+        val merged = scanAt(100.epoch, proxy, sleeper).mergedWith(scanAt(130.epoch, *scanned.toTypedArray()))
+
+        merged.result.hosts.map { Triple(it.ip.toString(), it.name to it.mac, it.since) } shouldContainExactly listOf(
+            Triple("10.0.0.8", "HomePod" to "aa:bb:cc:dd:ee:08", 50.epoch),
+            Triple("10.0.0.50", "MacBook" to "aa:bb:cc:dd:ee:50", 60.epoch),
+        )
+        merged.changed.shouldBeEmpty()
     }
 
     @Test
