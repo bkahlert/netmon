@@ -24,12 +24,22 @@ Settled with the user on 2026-10-04:
 
 1. **Both consumers.** The panel and the soak (with the apt probe) read the new messages. The board publishes
    everything `sampling.py` reads today, except `top`.
-2. **OTLP/JSON.** One `ExportMetricsServiceRequest` per interval, the body an OTel collector accepts on `/v1/metrics`,
-   with semantic-convention names where they exist.
-3. **Go.** A static arm64 binary: the official OTLP proto types and `protojson` give spec-exact JSON, and its RSS of
-   about 6 to 10 MB is affordable on the 415 MB board. Rust would save about 5 MB, no CPU worth measuring, and take longer.
-   Bash would fork nothing but builds 30 metrics in `printf`; Python costs 15 to 20 MB; the OTel Collector 60 to 100 MB
-   and has no MQTT exporter; folding the sampler into the scanner blinds it exactly when the scanner fails.
+2. **OTLP/JSON.** One message per interval, the body an OTel collector accepts on `/v1/metrics`, with
+   semantic-convention names, instruments and units where they exist.
+3. **Go.** A static arm64 binary: the official OTLP proto types and `protojson` give spec-exact JSON. A prototype of
+   the same shape peaked at 13 MB `memory.current` (9.4 MB RSS, 3.4 MB of it anonymous) under podman on linux/arm64,
+   which fits `MemoryMax=24M`. Rust might save a few MB more, unmeasured, and takes longer. Bash would fork nothing but
+   builds 30 metrics in `printf`; Python costs 15 to 20 MB; folding the sampler into the scanner blinds it exactly when
+   the scanner fails. No existing component fits, which an investigation on 2026-10-04 checked against the docs and by
+   measurement:
+   - A minimal OTel Collector build (hostmetrics and a debug exporter) used 34 MB `memory.current`, the official
+     `otelcol-contrib` 134 MB. Its receivers cover about half the catalogue (no PSI, zram, boot id, unit swap, anon,
+     file, swap peak, OOM kills or start time, no process anon, file or swap), the systemd receiver runs on its own
+     ticker, and no MQTT exporter exists that publishes retained with a Last Will.
+   - The OTel Go SDK has one resource per meter provider and no start time for observable instruments, and its OTLP
+     transform is internal.
+   - Telegraf has no OTLP/JSON serializer and no Last Will, and its `procstat` needs ptrace for anon and swap.
+   - systemd's own metrics over varlink arrive in v260 and its `OOMKills` property in v259; Debian trixie ships 257.
 4. **A third package, `netmon-metrics`.** The apt probe reinstalls a package next to the live stack, and a package's
    postinst restarts its units: shipped in `netmon-scanner`, the sampler would restart during the very run that
    measures the reinstall.
@@ -61,9 +71,11 @@ fixtures), `--node` the unqualified hostname.
 
 Go source in `metrics/` with its own `go.mod`, the newest stable Go. Dependencies:
 
-- `go.opentelemetry.io/proto/otlp` and `google.golang.org/protobuf/encoding/protojson` for the message,
-- `go.opentelemetry.io/otel/semconv/v1.N.0` for the semconv names and `SchemaURL`, the newest `v1.N.0` package of that
-  module when the work starts,
+- `go.opentelemetry.io/proto/otlp/metrics/v1` and `google.golang.org/protobuf/encoding/protojson` for the message,
+  built as `MetricsData`. Its one field is `resource_metrics = 1`, as in `ExportMetricsServiceRequest`, so both encode
+  alike. The collector package that declares `ExportMetricsServiceRequest` links grpc: 4 MB more binary and 3.5 MB more
+  `memory.current` in the prototype,
+- `go.opentelemetry.io/otel/semconv/v1.43.0` for `SchemaURL`,
 - `github.com/eclipse/paho.golang/autopaho` for MQTT,
 - `github.com/coreos/go-systemd/v22/dbus` for the units' state and restarts.
 
@@ -73,7 +85,7 @@ workflow gain `actions/setup-go`, pinned by commit hash as the other actions are
 
 ### The loop
 
-Every interval the sampler reads all sources of the catalogue, builds one request, marshals it with `protojson` and
+Every interval the sampler reads all sources of the catalogue, builds one message, marshals it with `protojson` and
 publishes it to `dt/netmon/<node>/metrics`, retained, QoS 1. A Last Will and a clean shutdown on SIGTERM publish an
 empty retained payload there, which clears the topic.
 
@@ -90,9 +102,10 @@ One `ResourceMetrics` per entity, each with one `ScopeMetrics` named `netmon-met
 | unit    | `host.name`, `systemd.unit.name`                                                         |
 | process | `host.name`, `systemd.unit.name` of its unit, `process.pid`, `process.executable.name`   |
 
-Every data point carries `timeUnixNano`, the time of the sample. Counters are cumulative and monotonic, with
-`startTimeUnixNano` the boot time (host), the unit's `ActiveEnterTimestamp` (unit) or the process's start from field 22
-of `/proc/<pid>/stat` (process). A new start time is OTel's reset signal: consumers never take a delta across it.
+Every data point carries `timeUnixNano`, the time of the sample. Counters and updowncounters are cumulative sums
+(`aggregationTemporality` 2), monotonic and not, with `startTimeUnixNano` the boot time (host), the unit's
+`ActiveEnterTimestamp` (unit) or the process's start from field 22 of `/proc/<pid>/stat` (process). A new start time is
+OTel's reset signal: consumers never take a delta across it.
 
 `*.cpu.utilization` is the CPU time's delta to the previous sample of the same start time, divided by the elapsed
 time and by `system.cpu.logical.count`, as the semantic conventions define it. A sample without such a predecessor has
@@ -100,31 +113,33 @@ no utilization point.
 
 ### The catalogue
 
-`*` marks names without a semantic convention. They follow the OTel naming rules; `systemd.unit.state` and its
-attribute match the collector-contrib systemd receiver.
+Names, instruments and units without `*` are those of semantic conventions v1.43.0. `*` marks names without a
+semantic convention. They follow the OTel naming rules by analogy: a `*.usage` is an updowncounter in `By`, a count is
+a counter with an annotation unit such as `{restart}`; a peak, a state, a load and a utilization stay gauges.
+`systemd.unit.state` and its attribute match the collector-contrib systemd receiver.
 
 | Entity  | Metric                                                              | Instrument      | Unit | Source                                       |
 |---------|---------------------------------------------------------------------|-----------------|------|----------------------------------------------|
-| host    | `system.cpu.logical.count`                                          | gauge           | 1    | `/sys/devices/system/cpu/online`             |
-| host    | `system.memory.limit`                                               | gauge           | By   | meminfo MemTotal                             |
-| host    | `system.memory.linux.available`                                     | gauge           | By   | meminfo MemAvailable                         |
-| host    | `system.paging.usage` {`system.paging.state`=used, free}            | gauge           | By   | meminfo SwapTotal, SwapFree                  |
-| host    | `system.paging.operations` {`system.paging.direction`=in, out}      | counter         | 1    | vmstat pswpin, pswpout                       |
-| host    | `system.paging.faults` {`system.paging.fault.type`=major}           | counter         | 1    | vmstat pgmajfault                            |
+| host    | `system.cpu.logical.count`                                          | updowncounter   | {cpu} | `/sys/devices/system/cpu/online`             |
+| host    | `system.memory.limit`                                               | updowncounter   | By   | meminfo MemTotal                             |
+| host    | `system.memory.linux.available`                                     | updowncounter   | By   | meminfo MemAvailable                         |
+| host    | `system.paging.usage` {`system.paging.state`=used, free}            | updowncounter   | By   | meminfo SwapTotal, SwapFree                  |
+| host    | `system.paging.operations` {`system.paging.direction`=in, out}      | counter         | {operation} | vmstat pswpin, pswpout                       |
+| host    | `system.paging.faults` {`system.paging.fault.type`=major}           | counter         | {fault} | vmstat pgmajfault                            |
 | host    | `system.linux.cpu.load_1m` *                                        | gauge           | 1    | loadavg                                      |
 | host    | `system.linux.memory.pressure.stall_time` * {kind=some, full}       | counter         | s    | `/proc/pressure/memory` `total`              |
-| host    | `system.linux.zram.memory.usage` *                                  | gauge           | By   | `/sys/block/zram0/mm_stat` mem_used_total    |
+| host    | `system.linux.zram.memory.usage` *                                  | updowncounter   | By   | `/sys/block/zram0/mm_stat` mem_used_total    |
 | unit    | `systemd.unit.state` {`systemd.unit.active_state`}                  | gauge, 1 or 0   | 1    | D-Bus ActiveState                            |
-| unit    | `systemd.unit.restarts` *                                           | counter         | 1    | D-Bus NRestarts                              |
+| unit    | `systemd.unit.restarts` *                                           | counter         | {restart} | D-Bus NRestarts                              |
 | unit    | `systemd.unit.cpu.time` *                                           | counter         | s    | `cpu.stat` usage_usec                        |
 | unit    | `systemd.unit.cpu.utilization` *                                    | gauge           | 1    | derived                                      |
-| unit    | `systemd.unit.memory.usage` * {type=ram, swap, anon, file}          | gauge           | By   | `memory.current`, `memory.swap.current`, `memory.stat` |
+| unit    | `systemd.unit.memory.usage` * {type=ram, swap, anon, file}          | updowncounter   | By   | `memory.current`, `memory.swap.current`, `memory.stat` |
 | unit    | `systemd.unit.memory.peak` * {type=ram, swap}                       | gauge           | By   | `memory.peak`, `memory.swap.peak`            |
-| unit    | `systemd.unit.memory.oom_kills` *                                   | counter         | 1    | `memory.events` oom_kill                     |
+| unit    | `systemd.unit.memory.oom_kills` *                                   | counter         | {kill} | `memory.events` oom_kill                     |
 | process | `process.cpu.time` {`cpu.mode`=user, system}                        | counter         | s    | `/proc/<pid>/stat` utime, stime              |
 | process | `process.cpu.utilization`                                           | gauge           | 1    | derived                                      |
-| process | `process.memory.usage`                                              | gauge           | By   | `/proc/<pid>/status` VmRSS                   |
-| process | `process.linux.memory.usage` * {type=anon, file, swap}              | gauge           | By   | `/proc/<pid>/status` RssAnon, RssFile, VmSwap |
+| process | `process.memory.usage`                                              | updowncounter   | By   | `/proc/<pid>/status` VmRSS                   |
+| process | `process.linux.memory.usage` * {type=anon, file, swap}              | updowncounter   | By   | `/proc/<pid>/status` RssAnon, RssFile, VmSwap |
 
 `systemd.unit.state` publishes one point per active state, 1 for the current one, as the contrib receiver does.
 
@@ -175,7 +190,7 @@ Each behaviour at the lowest level that catches its defect:
 - **Go, `go test`.** The readers against a fake root, ported from
   [test_stats.py](../../../packages/netmon-display/tests/test_stats.py): counters, a web process restarted between two
   samples, a missing kiosk, a `comm` with spaces and parentheses. The builder's output round-trips through
-  `protojson.Unmarshal` into `ExportMetricsServiceRequest` with the catalogue's names, units and temporality. The
+  `protojson.Unmarshal` into `MetricsData` with the catalogue's names, instruments, units and temporality. The
   utilization on a first sample, a restart and a counter going backwards, with an injected clock and no sleeps.
 - **Contract fixture.** A Go test writes a golden message to `metrics/testdata/metrics.json` and fails when the file
   is out of date, unless run with `-update`. The JS and Python decoder tests read that file, so no decoder drifts from
