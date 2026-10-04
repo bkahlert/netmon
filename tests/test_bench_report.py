@@ -70,7 +70,33 @@ class TestRender:
 
         result = render(header(["a"], runs=2), runs)
 
-        assert "| scan 2 | settle s | 65 (40–90), 1 unsettled |" in result
+        assert "| scan 2 | settle s | > 65 (40–90), 1 unsettled |" in result
+
+    def test_keeps_a_median_exact_with_a_minority_unsettled(self):
+        runs = [Run(1, "a", phases(settle=Settle(40, True))), Run(2, "a", phases(settle=Settle(45, True))), Run(3, "a", phases(settle=Settle(90, False)))]
+
+        result = render(header(["a"], runs=3), runs)
+
+        assert "| scan 2 | settle s | 45 (40–90), 1 unsettled |" in result
+
+    def test_shows_runs_that_all_stayed_unsettled_as_at_least_their_median(self):
+        runs = [Run(1, "a", phases(settle=Settle(90, False))), Run(2, "a", phases(settle=Settle(90, False)))]
+
+        result = render(header(["a"], runs=2), runs)
+
+        assert "| scan 2 | settle s | > 90 (90–90), 2 unsettled |" in result
+
+    @pytest.mark.parametrize("first, second, change", [
+        (Settle(40, True), Settle(90, False), "> +50 s"),
+        (Settle(90, False), Settle(40, True), "< -50 s"),
+        (Settle(90, False), Settle(90, False), "n/a"),
+    ])
+    def test_bounds_a_settle_change_against_an_unsettled_phase(self, first, second, change):
+        runs = [Run(1, "a", phases(settle=first)), Run(2, "b", phases(settle=second))]
+
+        result = render(header(["a", "b"]), runs)
+
+        assert [line.rsplit("|", 2)[-2].strip() for line in result.splitlines() if line.startswith("| scan 2 | settle s |")] == [change]
 
     def test_has_no_settle_time_for_the_load(self):
         result = render(header(["a"]), [Run(1, "a", phases())])

@@ -119,9 +119,9 @@ def cell(values: list, kind: str) -> str:
     text = fmt(median(numbers), kind) if len(numbers) == 1 else f"{fmt(median(numbers), kind)} ({fmt(min(numbers), kind)}–{fmt(max(numbers), kind)})"
     if kind == "settle":
         unsettled = sum(not v.settled for v in values)
-        if unsettled and len(values) == 1:
-            return f"> {text}"
-        if unsettled:
+        if at_least(values):
+            text = f"> {text}"
+        if unsettled and len(values) > 1:
             text += f", {unsettled} unsettled"
     return text
 
@@ -132,13 +132,24 @@ def delta(reference: list, values: list, kind: str) -> str:
     ours, theirs = [number(v) for v in reference], [number(v) for v in values]
     before, after = median(ours), median(theirs)
     if kind == "settle":
+        if at_least(reference) and at_least(values):
+            return "n/a"
         text = f"{after - before:+.0f} s"
+        if at_least(values):
+            return f"> {text}"
+        if at_least(reference):
+            return f"< {text}"
     elif before == 0:
         return "n/a"
     else:
         text = f"{(after - before) / before * 100:+.0f} %"
     overlapping = len(ours) > 1 and len(theirs) > 1 and max(min(ours), min(theirs)) <= min(max(ours), max(theirs))
     return f"~{text}" if overlapping else text
+
+
+def at_least(settles: list[Settle]) -> bool:
+    # An unsettled phase counts its whole length, the longest a phase has, so it sorts last; the median is exact while fewer than half are.
+    return sum(not s.settled for s in settles) * 2 >= len(settles)
 
 
 def number(value: float | Settle) -> float:
