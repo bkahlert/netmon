@@ -11,11 +11,11 @@ func TestSampler(t *testing.T) {
 	at := time.Unix(1759450005, 0)
 	boot := time.Unix(1759400000, 0)
 	files := map[string]string{
-		"sys/devices/system/cpu/online":                                      "0-3\n",
-		"sys/fs/cgroup/system.slice/netmon-scanner.service/memory.current":   "41943040\n",
-		"sys/fs/cgroup/system.slice/netmon-scanner.service/cgroup.procs":     "812\n",
-		"sys/fs/cgroup/system.slice/pihero-kiosk.service/memory.current":     "160000000\n",
-		"sys/fs/cgroup/system.slice/pihero-kiosk.service/cgroup.procs":       "1234\n",
+		"sys/devices/system/cpu/online":                                    "0-3\n",
+		"sys/fs/cgroup/system.slice/netmon-scanner.service/memory.current": "41943040\n",
+		"sys/fs/cgroup/system.slice/netmon-scanner.service/cgroup.procs":   "812\n",
+		"sys/fs/cgroup/system.slice/pihero-kiosk.service/memory.current":   "160000000\n",
+		"sys/fs/cgroup/system.slice/pihero-kiosk.service/cgroup.procs":     "1234\n",
 		"proc/812/comm":    "netmon-scanner\n",
 		"proc/812/stat":    stat(812),
 		"proc/812/status":  "VmRSS:\t1 kB\n",
