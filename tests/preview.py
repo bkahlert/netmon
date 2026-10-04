@@ -23,10 +23,6 @@ def render(sample: str, key: str) -> str:
     return "".join(line for line in text.splitlines(keepends=True) if "--package netmon-" not in line)
 
 
-def host_of(target: str) -> str:
-    return target.partition(":")[0].rpartition("@")[2]
-
-
 class Netmon:
     name = "netmon"
     root = ROOT
@@ -36,8 +32,7 @@ class Netmon:
         return render(vm_device.SAMPLE.read_text(), device_file.PUBLIC_KEY.read_text().strip())
 
     def dev_server(self, settings: Settings) -> DevServer:
-        env = {"NETMON_STATS_PROXY": f"http://{host_of(settings.target)}"} if settings.flavor == "board" else {}
-        return DevServer(["./gradlew", "--console=plain", "jsBrowserDevelopmentRun", "--continuous"], DEV_PORT, env)
+        return DevServer(["./gradlew", "--console=plain", "jsBrowserDevelopmentRun", "--continuous"], DEV_PORT, {})
 
     def backend(self, settings: Settings) -> preview_broker.MosquittoBackend:
         broker = preview_broker.parse_broker(settings.environ.get("BROKER"))

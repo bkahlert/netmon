@@ -15,10 +15,10 @@ pytestmark = pytest.mark.tier0
 
 ROOT = Path.cwd()
 # The units call binaries the tools container does not have; verify only needs them to exist and be executable.
-STUBBED_COMMANDS = ("/usr/lib/netmon/netmon-scanner", "/usr/lib/netmon/netmon-display-stats", "/usr/lib/netmon/netmon-metrics")
+STUBBED_COMMANDS = ("/usr/lib/netmon/netmon-scanner", "/usr/lib/netmon/netmon-metrics")
 # The exposure level systemd-analyze security grants a unit, on its printed 0 to 10 scale; above it, the unit has lost
 # part of its sandbox.
-EXPOSURE_LEVELS = {"netmon-display-stats.service": 1.0, "netmon-metrics.service": 1.1}
+EXPOSURE_LEVELS = {"netmon-metrics.service": 1.1}
 STRIP_RPI_KEYS = (
     "import sys, yaml; d = yaml.safe_load(open(sys.argv[1])); "
     "[d.pop(k, None) for k in ('rpi', 'enable_ssh')]; "

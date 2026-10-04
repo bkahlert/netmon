@@ -74,20 +74,9 @@ class TestDevServer:
         assert server.argv == ["./gradlew", "--console=plain", "jsBrowserDevelopmentRun", "--continuous"]
         assert server.port == 8081
 
-    @pytest.mark.parametrize("flavor", ["browser", "vm"])
-    def test_proxies_no_stats_off_the_board(self, flavor):
+    @pytest.mark.parametrize("flavor", ["browser", "vm", "board"])
+    def test_needs_no_environment(self, flavor):
         assert preview.Netmon().dev_server(settings(flavor)).env == {}
-
-    def test_proxies_the_boards_stats_from_its_web_server_whatever_the_ssh_port(self):
-        server = preview.Netmon().dev_server(settings("board"))
-
-        assert server.env == {"NETMON_STATS_PROXY": "http://netmon.local"}
-
-
-class TestHostOf:
-    @pytest.mark.parametrize("target, host", [("pi@netmon.local", "netmon.local"), ("pi@netmon.local:2222", "netmon.local"), ("netmon.local", "netmon.local")])
-    def test_is_the_host_of_user_at_host_and_port(self, target, host):
-        assert preview.host_of(target) == host
 
 
 class TestBackend:
