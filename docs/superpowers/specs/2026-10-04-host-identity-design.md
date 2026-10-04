@@ -41,6 +41,8 @@ Settled with the user on 2026-10-04:
 2. **The MAC follows the device.** The same MAC at a new IP is one host with the new IP.
 3. **The probe caches itself.** The probe enricher keeps its own cache; the scanner pipeline (`scan`, `enrich`, `merge`)
    keeps its order.
+4. **A superseded host is dropped.** Settled while planning: a recorded host whose IP a different device took leaves the
+   list at once instead of turning DOWN, so IPs stay unique.
 
 ## Design
 
@@ -61,9 +63,12 @@ Two passes, each recorded host matched at most once:
    scanned MAC is missing. This keeps old state files (no MACs) and unprivileged scans working; the host gains its MAC on
    the next privileged scan.
 
-Different MACs at one IP are different hosts: the scanned one is new, the recorded one runs through the grace and turns
-DOWN. Randomized MACs get no special case. The merged list stays sorted by IP. `onChange` keeps firing for a new host or
-a status change only; a pure IP change sends no host event.
+Different MACs at one IP are different hosts: the scanned one is new. A recorded host that no scanned host matched is
+dropped from the list at once, without an event, when a scanned host that is up holds its IP. So no two hosts share an
+IP, the display keeps keying cards by IP, and rotating private MACs leave no DOWN ghosts. The cost: a sleeping device whose
+IP another device took vanishes instead of showing DOWN, and returns as a new host when seen. Randomized MACs get no
+special case. The merged list stays sorted by IP. `onChange` keeps firing for a new host or a status change only; a pure
+IP change sends no host event.
 
 ### Model probe
 
@@ -99,7 +104,7 @@ Written first, in the style of the file edited.
 
 - `NmapXmlTest`: the MAC is read; absent for a host without one.
 - `ScanResultTest`: the IP moves with the MAC and keeps name, model and services; a recycled IP with a different MAC is
-  a new host and the old one runs the grace; one side without MAC matches by IP; an old state file gains the MAC; two
+  a new host and the old one is dropped without an event; a recorded host unseen at an IP nobody took keeps the grace; one side without MAC matches by IP; an old state file gains the MAC; two
   hosts swapping IPs keep their fields.
 - `LockdownModelEnricherTest`: a fake lockdownd on loopback answers `ProductType`; the cache hit skips the connect; a
   failure is retried after 5 minutes; a host with a non-Apple vendor is not probed; a closed port or timeout returns
