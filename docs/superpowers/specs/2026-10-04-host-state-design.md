@@ -66,7 +66,8 @@ and today a host that stays UP never gets one). They get the scan time on the ne
 
 - **Fields.** For a seen host every field is the fresh value if there is one, otherwise the recorded value. An empty
   mDNS cache no longer erases anything; a real rename still wins. An unseen host keeps all recorded fields.
-- **Missing `lastSeen`.** An old state file has none; the previous scan's timestamp stands in for it.
+- **Missing `lastSeen`.** An old state file has none; the previous scan's timestamp stands in for it and is stored from
+  then on. Otherwise the stand-in would advance with every scan and the grace period would never run out.
 - **Restart floor.** `NetmonScanner` captures its construction time as `notBefore`, so the grace period of every UP host
   runs from the restart at the earliest. A scanner that was down for ten minutes does not flip the hosts its first scan
   happens to miss. The cost is that a device that left while the scanner was down shows UP for up to `downAfter` after
@@ -108,13 +109,15 @@ no DOWN is reachable; the new cases choose their own. The `Host.Companion.invoke
 - a DOWN host that stays unseen: no change, no event
 - an empty fresh scan keeps name, model, vendor and services of a seen host; a changed name wins
 - an enrichment-only change fires no event; a seen UP host updates `lastSeen` without an event
-- a recorded host without `lastSeen` uses the previous scan's timestamp
+- a recorded host without `lastSeen` uses the previous scan's timestamp, and keeps counting from it over later scans
 - `notBefore` later than `lastSeen` extends the grace period; earlier changes nothing
+- an empty scan keeps every host UP within the grace period, with no events
+- a scan time before `lastSeen` (the board has no clock until NTP answers) keeps the host UP
 - scanned DOWN or UNKNOWN is unseen; a recorded none or UNKNOWN status becomes UP when seen, DOWN when not
 - `lastSeen` survives a serialization round trip, and a state file without it loads
 
-A `save` test checks that the state file is replaced in its own directory and that the old file is intact when writing
-fails.
+A `save` test checks that a relative state file, as the scanner uses it, is replaced and that no temp file stays behind.
+It passes before the change as well; that the temp file now sits next to the target is checked by reading the diff.
 
 **Not unit-tested.** `NetmonScanner` passing `startedAt` and `ScannerSettings.downAfter` to `merge`, and `Application`
 removing the scanner in `finalize`: `NmapNetworkScanner` needs the nmap binary. Both are one-line wirings, checked by
