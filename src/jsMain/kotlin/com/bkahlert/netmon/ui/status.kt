@@ -19,7 +19,7 @@ fun RenderContext.status(consoleLogStore: ConsoleLogStore, kioskStats: Flow<Kios
             if (stats != null) {
                 stats.webCpu?.let { pill("web", cpuText(it), "CPU of the web process, share of one core over the last ${stats.interval} s") }
                 stats.kioskCpu?.let { pill("kiosk", cpuText(it), "CPU of cog and its WebKit processes, share of one core over the last ${stats.interval} s") }
-                stats.kioskMemory?.let { pill("kiosk", memoryText(it), "RAM plus zram of cog and its WebKit processes") }
+                stats.kioskMemory?.let { pill("kiosk", memoryText(it), "RAM plus swap of the kiosk unit") }
             }
         }
     }
