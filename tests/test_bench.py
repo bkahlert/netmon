@@ -74,8 +74,12 @@ class TestParseVariants:
             parse_variants("main nope", fake_git())
 
     def test_rejects_two_refs_of_one_commit(self):
-        with pytest.raises(ValueError, match="twice"):
+        with pytest.raises(ValueError, match="main and origin/main are both a33715a"):
             parse_variants("main origin/main", fake_git())
+
+    def test_rejects_a_ref_given_twice(self):
+        with pytest.raises(ValueError, match="names main twice"):
+            parse_variants("main main", fake_git())
 
 
 class TestVariant:

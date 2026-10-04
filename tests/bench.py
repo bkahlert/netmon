@@ -126,8 +126,11 @@ def parse_variants(text: str | None, git: Callable[..., str]) -> list[Variant]:
                 variant = Variant(ref, git("rev-parse", "--verify", "--quiet", f"{ref}^{{commit}}"))
             except subprocess.CalledProcessError:
                 raise ValueError(f"VARIANTS names {ref!r}, which is no commit here") from None
-        if any(known.directory == variant.directory for known in variants):
-            raise ValueError(f"VARIANTS names {variant.label} twice")
+        for known in variants:
+            if known.ref == variant.ref:
+                raise ValueError(f"VARIANTS names {ref} twice")
+            if known.directory == variant.directory:
+                raise ValueError(f"VARIANTS names one commit twice: {known.ref} and {ref} are both {variant.sha[:7]}")
         variants.append(variant)
     return variants
 
