@@ -53,8 +53,10 @@ Settled with the user on 2026-10-04:
 `/usr/lib/netmon/netmon-metrics`. [devices/sample/user-data](../../../devices/sample/user-data) installs the package
 next to the other two.
 
-The unit runs `DynamicUser=yes`, `Restart=always`, `Nice=10`, `MemoryMax=24M` with `GOMEMLIMIT=16MiB`, and keeps the
-sandbox of `netmon-display-stats.service` with these changes: `PrivateNetwork=` goes; `RestrictAddressFamilies=AF_UNIX
+The unit runs as the static system user `netmon-metrics`, which the package's maintainer scripts create and remove as
+`netmon-scanner`'s do. It is not `DynamicUser=yes` because systemd starts dbus-daemon with
+`SYSTEMD_NSS_DYNAMIC_BYPASS=1`, so the bus cannot resolve a dynamic user and drops its connection. The unit runs
+`Restart=always`, `Nice=10`, `MemoryMax=24M` with `GOMEMLIMIT=16MiB`, and keeps the sandbox of `netmon-display-stats.service` with these changes: `PrivateNetwork=` goes; `RestrictAddressFamilies=AF_UNIX
 AF_INET AF_INET6`; `IPAddressAllow=localhost` next to `IPAddressDeny=any`. AF_UNIX is for systemd's D-Bus API. The
 command line names what it watches:
 
