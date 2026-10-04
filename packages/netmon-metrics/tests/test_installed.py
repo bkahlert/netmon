@@ -94,7 +94,7 @@ class TestBrokerRestart:
     @pytest.mark.mutating
     def test_publishes_again_after_the_broker_restarted(self, host, mosquitto_clients):
         host.check_output("sudo systemctl restart mosquitto.service")
-        restarted = time.time()
+        restarted = float(host.check_output("date +%s.%N"))
 
         request = latest(host, lambda r: at(r) > restarted)
 
