@@ -25,6 +25,7 @@ class NetmonScanner(
     val `interface`: String = checkNotNull(interfaceAddress.networkInterface).name
     val cidr: Cidr = interfaceAddress.cidr
     val scanResultFile: Path = Paths.get("scan.$`interface`.${cidr.filenameString}.json")
+    private val restartFloor = RestartFloor()
 
     private fun scanInitially(): ScanResult {
         logger.info("Performing initial scan...")
@@ -48,7 +49,7 @@ class NetmonScanner(
             timestamp = Clock.System.now(),
         )
 
-        oldScan.merge(currentScan, onChange)
+        oldScan.merge(currentScan, downAfter = ScannerSettings.downAfter, notBefore = restartFloor.at(currentScan.timestamp), onChange = onChange)
             .also { onScan(it) }
             .also { it.save(scanResultFile) }
     }

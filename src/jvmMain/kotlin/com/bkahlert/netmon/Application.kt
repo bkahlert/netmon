@@ -155,6 +155,7 @@ class Application(
                 Thread.sleep(ScannerSettings.pauseDuration.inWholeMilliseconds)
             },
             finalize = { (interfaceAddress, interfaceName) ->
+                scanners.remove(interfaceAddress.address)
                 serviceInfoCaches.remove(interfaceAddress.address)?.also {
                     it.close()
                     it.jmDns.close()
