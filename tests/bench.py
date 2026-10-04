@@ -56,6 +56,8 @@ class Variant:
 
     @property
     def label(self) -> str:
+        if self.sha.startswith(self.ref):
+            return self.sha[:7]
         return f"{self.ref} {self.sha[:7]}{'+dirty' if self.dirty else ''}"
 
     @property

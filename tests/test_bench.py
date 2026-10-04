@@ -88,6 +88,9 @@ class TestVariant:
     def test_labels_a_ref_with_its_short_sha(self):
         assert Variant("main", MAIN).label == "main a33715a"
 
+    def test_labels_a_ref_that_is_its_sha_once(self):
+        assert (Variant("a33715a", MAIN).label, Variant(MAIN, MAIN).label) == ("a33715a", "a33715a")
+
     def test_labels_a_changed_working_tree_dirty(self):
         assert Variant(".", HEAD, dirty=True).label == ". f5320cb+dirty"
 
