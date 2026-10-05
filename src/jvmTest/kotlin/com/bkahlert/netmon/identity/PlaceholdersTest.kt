@@ -47,6 +47,7 @@ class PlaceholdersTest {
             row("fritz.box.", "fritz.box"),
             row("Fire TV Stick 4K", "Fire TV Stick 4K"),
             row("tado-IB0000000001.local.", "tado-IB0000000001"),
+            row("0200000000AB00", "0200000000AB00"),
         ) { name, expected ->
             Placeholders.clean(name) shouldBe expected
         }
