@@ -14,4 +14,6 @@ internal object SecureXml {
     }
 
     fun reader(xml: String): XMLStreamReader = factory.createXMLStreamReader(xml.reader())
+
+    fun reader(input: java.io.InputStream): XMLStreamReader = factory.createXMLStreamReader(input, "UTF-8")
 }
