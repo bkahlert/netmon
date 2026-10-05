@@ -35,6 +35,37 @@ def scans(sources: int, recent: int, stable: int, now: int | None = None) -> dic
     return result
 
 
+KINDS_SCAN_TOPIC = "dt/netmon/node/wlan0/192.0.2.0/24/scan"
+KINDS_HOSTS = [
+    ("192.0.2.200", "Router", "gateway", "up", 2 * 86400),
+    ("192.0.2.3", "NetworkSwitch", "switch", "up", 13 * 3600),
+    ("192.0.2.10", "Laptop", "notebook", "up", 30),
+    ("192.0.2.9", "Computer", "desktop", "down", 600),
+    ("192.0.2.40", "Smartphone", "handset", "up", 6 * 60),
+    ("192.0.2.4", "Tablet", "slate", "up", 30 * 60),
+    ("192.0.2.60", "Television", "screen", "up", 2 * 3600),
+    ("192.0.2.6", "Speaker", "boombox", "up", 20 * 3600),
+    ("192.0.2.70", "Socket", "plug", "up", 3 * 86400),
+    ("192.0.2.7", "Hub", "bridge", "up", 90),
+    ("192.0.2.80", None, None, "up", 25 * 60),
+    ("192.0.2.8", "Generic", "gadget", "down", 7200),
+]
+
+
+def kinds_scan(now: int | None = None) -> dict[str, dict]:
+    """Returns one scan with hosts of each group of kinds, two per group, their addresses out of order and their times up in every step the display highlights."""
+    now = now or int(time.time())
+    hosts = []
+    for ip, kind, name, status, age in KINDS_HOSTS:
+        entry = {"ip": ip, "status": status, "since": now - age}
+        if kind:
+            entry["kind"] = kind
+        if name:
+            entry["name"] = name
+        hosts.append(entry)
+    return {KINDS_SCAN_TOPIC: {"event": "scan", "type": "completed", "hosts": hosts, "timestamp": now - 1}}
+
+
 def host(source: int, index: int, since: int) -> dict:
     entry = {"ip": f"10.{source}.{index // 250}.{index % 250 + 1}", "status": "down" if index % 7 == 3 else "up", "since": since}
     for key, values in (("name", NAMES), ("vendor", VENDORS), ("model", MODELS)):

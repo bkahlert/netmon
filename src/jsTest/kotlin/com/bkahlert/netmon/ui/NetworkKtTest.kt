@@ -123,7 +123,7 @@ class NetworkKtTest {
 
         val container = rendered { scan(source, events) }
 
-        container.awaited({ cells() }) { it == "2" } shouldBe "2"
+        container.awaited({ cells() }) { it == "3" } shouldBe "3"
         container.remove()
     }
 
@@ -132,11 +132,59 @@ class NetworkKtTest {
         val now = Clock.System.now()
         val events = RootStore(scan(now, host(1, now - 30.seconds)), job = job)
         val container = rendered { scan(source, events) }
-        container.awaited({ cells() }) { it == "1" }
+        container.awaited({ cells() }) { it == "2" }
 
         events.update(scan(now, host(1, now - 30.seconds), host(2, now - 2.hours)))
 
-        container.awaited({ cells() }) { it == "2" } shouldBe "2"
+        container.awaited({ cells() }) { it == "3" } shouldBe "3"
+        container.remove()
+    }
+
+    @Test
+    fun a_scan_labels_each_group_before_its_hosts_in_the_order_of_the_groups() = runTest {
+        val now = Clock.System.now()
+        val events = RootStore(scan(now, host(1, now, Kind.SOCKET), host(2, now), host(3, now, Kind.ROUTER), host(4, now, Kind.LAPTOP)), job = job)
+
+        val container = rendered { scan(source, events) }
+
+        container.awaited({ cellTexts() }) { it.size == 8 && "" !in it } shouldContainExactly listOf(
+            "Network", "192.0.2.3", "Computers", "192.0.2.4", "Smart home", "192.0.2.1", "Other", "192.0.2.2",
+        )
+        container.remove()
+    }
+
+    @Test
+    fun a_scan_orders_the_hosts_of_a_group_by_the_numbers_of_their_ips() = runTest {
+        val now = Clock.System.now()
+        val events = RootStore(scan(now, host(200, now), host(10, now), host(9, now)), job = job)
+
+        val container = rendered { scan(source, events) }
+
+        container.awaited({ cellTexts() }) { it.size == 4 && "" !in it } shouldContainExactly listOf("Other", "192.0.2.9", "192.0.2.10", "192.0.2.200")
+        container.remove()
+    }
+
+    @Test
+    fun a_scan_counts_the_group_labels_among_the_cells() = runTest {
+        val now = Clock.System.now()
+        val events = RootStore(scan(now, host(1, now, Kind.SOCKET), host(2, now, Kind.LAMP), host(3, now)), job = job)
+
+        val container = rendered { scan(source, events) }
+
+        container.awaited({ cells() }) { it == "5" } shouldBe "5"
+        container.remove()
+    }
+
+    @Test
+    fun a_host_that_changes_its_kind_moves_to_its_new_group() = runTest {
+        val now = Clock.System.now()
+        val events = RootStore(scan(now, host(1, now, Kind.ROUTER), host(2, now)), job = job)
+        val container = rendered { scan(source, events) }
+        container.awaited({ cellTexts() }) { it.size == 4 }
+
+        events.update(scan(now, host(1, now, Kind.ROUTER), host(2, now, Kind.NETWORK_SWITCH)))
+
+        container.awaited({ cellTexts() }) { it.size == 3 && "" !in it } shouldContainExactly listOf("Network", "192.0.2.1", "192.0.2.2")
         container.remove()
     }
 
@@ -239,7 +287,7 @@ class NetworkKtTest {
 
             val container = rendered { hosts(store, clock = MutableStateFlow(now)) }
 
-            container.awaited({ symbolNames() }) { it.size == 2 } shouldContainExactly listOf("cbi:firetv", "ipad")
+            container.awaited({ symbolNames() }) { it.size == 2 } shouldContainExactly listOf("ipad", "cbi:firetv")
             container.remove()
         }
     }
@@ -311,12 +359,15 @@ class NetworkKtTest {
 
 private val source = EventSource("test", "en0", Cidr.parse("192.0.2.0/24"))
 
-private fun host(index: Int, since: Instant) = Host(ip = IP.of("192.0.2.$index"), status = Status.UP, since = since)
+private fun host(index: Int, since: Instant, kind: Kind? = null) = Host(ip = IP.of("192.0.2.$index"), kind = kind, status = Status.UP, since = since)
 
 private fun scan(now: Instant, vararg hosts: Host) = ScanEvent(ScanEvent.Type.COMPLETED, hosts.toList(), now)
 
 private fun HTMLElement.cells(): String =
-    (querySelector(".scan__hosts") as? HTMLElement)?.style?.getPropertyValue("--cells")?.trim().orEmpty()
+    (querySelector(".hosts") as? HTMLElement)?.style?.getPropertyValue("--cells")?.trim().orEmpty()
+
+private fun HTMLElement.cellTexts(): List<String> =
+    querySelectorAll(".hosts > li").asList().map { cell -> ((cell as Element).querySelector(".hosts__label, .host__ip") ?: cell).textContent.orEmpty() }
 
 private fun HTMLElement.hostIps(section: String): List<String> =
     querySelectorAll("$section .font-mono").asList().map { it.textContent.orEmpty() }

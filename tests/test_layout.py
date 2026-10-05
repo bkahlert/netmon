@@ -24,8 +24,8 @@ class TestLayout:
         assert len(found["hosts"]) == sum(counts)
         assert found["scroll"]["h"] <= found["viewport"]["h"]
         assert found["scroll"]["w"] <= found["viewport"]["w"]
-        assert layout.outside(found["hosts"], found["scans"]) == []
-        assert layout.overlapping(found["hosts"]) == []
+        assert layout.outside(found["hosts"] + found["labels"], found["scans"]) == []
+        assert layout.overlapping(found["hosts"] + found["labels"]) == []
         assert found["zoomed"] == 0
 
     @pytest.mark.parametrize("size", [PANEL, DESKTOP, PHONE], ids=lambda s: f"{s[0]}x{s[1]}")
@@ -36,14 +36,14 @@ class TestLayout:
         assert len(found["scans"]) == sources
         assert len(found["hosts"]) == sources * 53
         assert found["scroll"]["h"] <= found["viewport"]["h"]
-        assert layout.outside(found["hosts"], found["scans"]) == []
-        assert layout.overlapping(found["hosts"]) == []
+        assert layout.outside(found["hosts"] + found["labels"], found["scans"]) == []
+        assert layout.overlapping(found["hosts"] + found["labels"]) == []
 
     def test_a_slow_page_is_measured_once_it_has_rendered(self, browser, page_server):
         found = open_page(browser, page_server, PANEL, sources=3, counts=(14, 39), slowdown=1)
 
-        assert layout.outside(found["hosts"], found["scans"]) == []
-        assert layout.overlapping(found["hosts"]) == []
+        assert layout.outside(found["hosts"] + found["labels"], found["scans"]) == []
+        assert layout.overlapping(found["hosts"] + found["labels"]) == []
 
     def test_the_utility_classes_of_the_kotlin_code_are_styled(self, browser, page_server):
         found = open_page(browser, page_server, PANEL, sources=1, counts=(3, 0))
@@ -98,7 +98,34 @@ class TestLayout:
 
         sizes = {round(h["fontSize"], 1) for h in found["hosts"]}
         assert len(sizes) == 1
-        assert min(sizes) > 7.5
+        assert min(sizes) >= 6.9
+
+    @pytest.mark.parametrize("size", [PANEL, DESKTOP, PHONE], ids=lambda s: f"{s[0]}x{s[1]}")
+    def test_the_groups_read_in_order_each_after_its_label(self, browser, page_server, size):
+        found = open_page(browser, page_server, size, scans=scan_fixtures.kinds_scan())
+
+        assert layout.reading_order(found["cells"]) == [
+            "Network", "192.0.2.3", "192.0.2.200",
+            "Computers", "192.0.2.9", "192.0.2.10",
+            "Phones & tablets", "192.0.2.4", "192.0.2.40",
+            "Media", "192.0.2.6", "192.0.2.60",
+            "Smart home", "192.0.2.7", "192.0.2.70",
+            "Other", "192.0.2.8", "192.0.2.80",
+        ]
+        assert found["scroll"]["h"] <= found["viewport"]["h"]
+        assert found["scroll"]["w"] <= found["viewport"]["w"]
+        assert layout.outside(found["hosts"] + found["labels"], found["scans"]) == []
+        assert layout.overlapping(found["hosts"] + found["labels"]) == []
+
+    @pytest.mark.parametrize("size", [PANEL, DESKTOP, PHONE], ids=lambda s: f"{s[0]}x{s[1]}")
+    def test_a_label_is_as_wide_as_the_cards_and_no_taller(self, browser, page_server, size):
+        found = open_page(browser, page_server, size, sources=1, counts=(14, 39))
+
+        heights = {round(label["b"] - label["t"]) for label in found["labels"]}
+        widths = {round(label["r"] - label["l"]) for label in found["labels"]} | {round(h["r"] - h["l"]) for h in found["hosts"]}
+        assert len(found["labels"]) == 5
+        assert len(widths) == 1
+        assert max(heights) <= max(round(h["b"] - h["t"]) for h in found["hosts"])
 
     def test_many_hosts_use_the_panel_down_to_its_lower_part(self, browser, page_server):
         found = open_page(browser, page_server, PANEL, sources=1, counts=(14, 39))
@@ -127,15 +154,15 @@ def browser():
         engine.close()
 
 
-def open_page(browser, page_server, size, sources, counts, slowdown=0):
+def open_page(browser, page_server, size, sources=1, counts=(0, 0), slowdown=0, scans=None):
     page = browser.new_page(viewport={"width": size[0], "height": size[1]})
     try:
         if slowdown:
             page.add_init_script(layout.slowed(slowdown))
-        scans = scan_fixtures.scans(sources, *counts)
+        scans = scans or scan_fixtures.scans(sources, *counts)
         page.route_web_socket("ws://127.0.0.1:1/", layout.broker(scans))
         page.goto(page_server.url)
-        expected = {"hosts": sources * sum(counts), "models": sum("model" in host for scan in scans.values() for host in scan["hosts"]), "links": sum("link" in host for scan in scans.values() for host in scan["hosts"])}
+        expected = {"hosts": sum(len(scan["hosts"]) for scan in scans.values()), "models": sum("model" in host for scan in scans.values() for host in scan["hosts"]), "links": sum("link" in host for scan in scans.values() for host in scan["hosts"])}
         page.wait_for_function(layout.RENDERED, arg=expected, timeout=20_000)
         return page.evaluate(layout.GEOMETRY)
     finally:

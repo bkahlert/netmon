@@ -134,6 +134,15 @@ GEOMETRY = """() => {
       scan: scans.indexOf(h.closest('.networks > div > div')),
       fontSize: parseFloat(getComputedStyle(h).fontSize),
     })),
+    labels: [...document.querySelectorAll('.hosts__label')].map(l => ({
+      ...box(l),
+      scan: scans.indexOf(l.closest('.networks > div > div')),
+      text: l.textContent,
+    })),
+    cells: [...document.querySelectorAll('.hosts > li')].map(c => ({
+      ...box(c),
+      text: (c.querySelector('.hosts__label, .host__ip') || c).textContent,
+    })),
     zoomed: document.querySelectorAll('[style*=zoom], [data-zoomed]').length,
     card: (c => ({borderTopWidth: c.borderTopWidth, borderTopLeftRadius: c.borderTopLeftRadius}))(getComputedStyle(scans[0])),
   };
@@ -148,6 +157,11 @@ def overlapping(hosts: list[dict], tolerance: float = 0.5) -> list[tuple[int, in
             if a["l"] < b["r"] - tolerance and b["l"] < a["r"] - tolerance and a["t"] < b["b"] - tolerance and b["t"] < a["b"] - tolerance:
                 found.append((i, j))
     return found
+
+
+def reading_order(cells: list[dict]) -> list[str]:
+    """Return the texts of the cells from left to right and top to bottom, as they appear on the page."""
+    return [c["text"] for c in sorted(cells, key=lambda c: (round(c["t"]), c["l"]))]
 
 
 def outside(hosts: list[dict], boxes: list[dict], tolerance: float = 1.0) -> list[int]:

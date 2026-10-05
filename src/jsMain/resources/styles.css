@@ -22,9 +22,9 @@ body::before { @apply content-[''] table h-0; }
 .divider-xs::before, .divider-xs::after { @apply h-[1px];}
 
 /*
- * The hosts of a scan fill the room they are given; no script measures anything. Kotlin writes the number of cells
- * of the scan as --cells on .scan__hosts, a size container, and the rules below turn that and the container's size
- * into columns, rows and a font size per card.
+ * The hosts of a scan fill the room they are given; no script measures anything. Kotlin writes the number of cells,
+ * a card per host and a label per group of hosts, as --cells on .hosts, the grid in .scan__hosts, a size container, and
+ * the rules below turn that and the container's size into columns, rows and a font size per cell.
  *
  * A card is 11.5625rem by 6.25rem at its natural size and lays itself out in em, so one font size scales it. Its
  * height is the card's padding and margin (1em), the name (1.25em) and the vendor, IP, link and status lines (1em each).
@@ -74,6 +74,18 @@ body::before { @apply content-[''] table h-0; }
   margin: .25em;
   padding: .25em .5em;
 }
+
+/* A group's label takes a cell of its own before the group's cards and scales with them. */
+.hosts__label {
+  font-size: min(1rem, 100cqw / 11.5625, 100cqh / 6.25);
+  @apply flex items-center overflow-hidden font-bold opacity-60;
+  gap: .5em;
+  width: 11.0625em;
+  margin: .25em;
+  padding: .25em .5em;
+}
+.hosts__label > span { @apply flex-none whitespace-nowrap; font-size: .875em; }
+.hosts__label::after { content: ''; @apply flex-1 h-px bg-current; }
 
 .host__aside { @apply flex-none; width: 2.5em; }
 .host__icon { @apply block; }

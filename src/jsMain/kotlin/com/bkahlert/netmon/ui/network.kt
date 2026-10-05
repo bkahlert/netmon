@@ -5,6 +5,7 @@ import com.bkahlert.netmon.CurrentTimeStore
 import com.bkahlert.netmon.Event.ScanEvent
 import com.bkahlert.netmon.EventSource
 import com.bkahlert.netmon.Host
+import com.bkahlert.netmon.HostGroup
 import com.bkahlert.netmon.Kind
 import com.bkahlert.netmon.Link
 import com.bkahlert.netmon.MinuteClock
@@ -12,6 +13,7 @@ import com.bkahlert.netmon.ScanEventSettings
 import com.bkahlert.netmon.ScanEventsStore
 import com.bkahlert.netmon.UiSettings
 import com.bkahlert.netmon.getElapsedTime
+import com.bkahlert.netmon.groupedByKind
 import com.bkahlert.netmon.hosts
 import com.bkahlert.netmon.model_identification.DeviceIcons
 import com.bkahlert.netmon.model_identification.DeviceModelCodes
@@ -69,8 +71,6 @@ fun RenderContext.scan(
     val hosts = events.map(ScanEvent.hosts())
 
     div("scan__hosts") {
-        inlineStyle(cells(hosts.current))
-        inlineStyle(hosts.data.map(::cells))
         hosts(hosts, slowClock = MinuteClock.data)
     }
 }
@@ -94,8 +94,6 @@ private fun Host.elapsedTimes(clock: Flow<Instant>, slowClock: Flow<Instant>): F
     }.collect(this)
     slowClock.drop(1).collect { emit(getElapsedTime(it)) }
 }
-
-private fun cells(hosts: List<Host>): String = "--cells: ${hosts.size}"
 
 private fun HtmlTag<HTMLElement>.meta(
     source: EventSource,
@@ -135,16 +133,42 @@ private fun HtmlTag<HTMLElement>.meta(
     }
 }
 
-/** Renders the [hosts] as a grid of cards that the stylesheet sizes by the number of cells the enclosing `.scan__hosts` carries. */
+/**
+ * Renders the [hosts] as a grid of cards by [HostGroup], each group after a label, that the stylesheet sizes by the
+ * number of cells the grid carries as `--cells`.
+ */
 fun RenderContext.hosts(
     hosts: Store<List<Host>>,
     clock: Flow<Instant> = CurrentTimeStore.data,
     slowClock: Flow<Instant> = clock,
 ): HtmlTag<HTMLUListElement> = ul("hosts") {
-    hosts.data.renderEach(Host::ip, into = this) { value ->
-        li { host(hosts.mapByElement(value, Host::ip), clock, slowClock) }
+    val cells = hosts.data.map { it.cells() }
+    inlineStyle(cellCount(hosts.current.cells()))
+    inlineStyle(cells.map(::cellCount))
+    cells.renderEach(Cell::id, into = this) { cell ->
+        when (cell) {
+            is Cell.Label -> li("hosts__group") { div("hosts__label") { span { +cell.group.label } } }
+            is Cell.Card -> li { host(hosts.mapByElement(cell.host, Host::ip), clock, slowClock) }
+        }
     }
 }
+
+private sealed interface Cell {
+    val id: Any
+
+    data class Label(val group: HostGroup) : Cell {
+        override val id: Any get() = group
+    }
+
+    data class Card(val host: Host) : Cell {
+        override val id: Any get() = host.ip
+    }
+}
+
+private fun List<Host>.cells(): List<Cell> =
+    groupedByKind().flatMap { (group, hosts) -> listOf(Cell.Label(group)) + hosts.map(Cell::Card) }
+
+private fun cellCount(cells: List<Cell>): String = "--cells: ${cells.size}"
 
 fun RenderContext.host(
     host: Store<Host>,
