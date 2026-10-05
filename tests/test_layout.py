@@ -136,7 +136,7 @@ def open_page(browser, page_server, size, sources, counts, slowdown=0):
         scans = scan_fixtures.scans(sources, *counts)
         page.route_web_socket("ws://127.0.0.1:1/", layout.broker(scans))
         page.goto(page_server.url)
-        expected = {"hosts": sources * sum(counts), "models": sum("model" in host for scan in scans.values() for host in scan["hosts"])}
+        expected = {"hosts": sources * sum(counts), "models": sum("model" in host for scan in scans.values() for host in scan["hosts"]), "links": sum("link" in host for scan in scans.values() for host in scan["hosts"])}
         page.wait_for_function(layout.RENDERED, arg=expected, timeout=20_000)
         return page.evaluate(layout.GEOMETRY)
     finally:

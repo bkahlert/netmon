@@ -114,11 +114,12 @@ def slowed(milliseconds: int) -> str:
 }})()"""
 
 
-RENDERED = """({hosts, models}) => {
+RENDERED = """({hosts, models, links}) => {
   const cards = [...document.querySelectorAll('.host')];
   return cards.length === hosts
     && cards.every(card => ['.host__name', '.host__vendor', '.host__ip', '.host__status'].every(part => card.querySelector(part)))
-    && document.querySelectorAll('.host__model').length === models;
+    && document.querySelectorAll('.host__model').length === models
+    && document.querySelectorAll('.host__link').length === links;
 }"""
 
 GEOMETRY = """() => {

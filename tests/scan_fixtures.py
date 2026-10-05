@@ -6,6 +6,8 @@ from typing import NamedTuple
 VENDORS = ["Apple", "Espressif", "Raspberry Pi Foundation", "AVM Audiovisuelles Marketing und Computersysteme GmbH", None, "HP"]
 NAMES = ["printer.local.", "NPID96FF6", None, "openclaw-(690).local.", "indoorcam", "52540003C3310000.local.", "Shi"]
 MODELS = ["Mac14,8", None, "AppleTV3,2", "AirPort10,115", None, "AirPods3,1"]
+KINDS = ["Computer", "Printer", None, "Camera", "Smartphone", "Socket", "SetTopBox", None]
+LINKS = [("ethernet", 1000), ("wifi", 866), None, ("wifi", 72), ("ethernet", 2500), ("wifi", None), None]
 SCAN = re.compile(r"(?P<recent>\d+)\+(?P<stable>\d+)(?:x(?P<sources>\d+))?")
 
 
@@ -39,4 +41,12 @@ def host(source: int, index: int, since: int) -> dict:
         value = values[index % len(values)]
         if value:
             entry[key] = value
+    kind = KINDS[index % len(KINDS)]
+    if kind:
+        entry["kind"] = kind
+    link = LINKS[index % len(LINKS)]
+    if link:
+        entry["link"], speed = link
+        if speed:
+            entry["speed"] = speed
     return entry

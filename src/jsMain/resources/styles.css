@@ -26,7 +26,9 @@ body::before { @apply content-[''] table h-0; }
  * cards of each section as --unstable and --stable on .scan__hosts, a size container, and the rules below turn
  * that and the container's size into columns, rows and a font size per card.
  *
- * A card is 11.5625rem by 5.25rem at its natural size and lays itself out in em, so one font size scales it.
+ * A card is 11.5625rem by 6.25rem at its natural size and lays itself out in em, so one font size scales it. Its
+ * height is the card's padding and margin (1em), the name (1.25em) and the vendor, IP, link and status lines (1em each).
+ * A host without a link has no link line and so a card 1em shorter, which the cell centers.
  * The stable section is 0.75 of that (--sigma). For both sections to end up at one scale, the unstable one gets
  * --balanced columns and the stable one --balanced / --sigma. --balanced follows from the number of cards and the
  * container's width to height ratio, which a container query sorts into steps (--ratio): CSS cannot divide two
@@ -38,8 +40,9 @@ body::before { @apply content-[''] table h-0; }
 .scan__hosts {
   --sigma-stable: .75;
   --cell-width: 11.5625rem;
-  --cell-height: 5.25rem;
-  --aspect: 2.2;
+  --cell-height: 6.25rem;
+  /* The cell's aspect is 11.5625 / 6.25 = 1.85; 1.65 gives the same average scale over the tested sizes and counts, and at 800x480 with 14+39 hosts 8.3px instead of 7.1px, because the --ratio steps are coarse. */
+  --aspect: 1.65;
   --ratio: 1;
   @apply flex flex-1 flex-col min-h-0;
   container-type: size;
@@ -71,7 +74,7 @@ body::before { @apply content-[''] table h-0; }
 .hosts > li { @apply grid place-items-center min-w-0 min-h-0; container-type: size; }
 
 .host {
-  font-size: min(1rem * var(--sigma), 100cqw / 11.5625, 100cqh / 5.25);
+  font-size: min(1rem * var(--sigma), 100cqw / 11.5625, 100cqh / 6.25);
   @apply flex rounded-[.25em];
   gap: .5em;
   width: 11.0625em;
@@ -90,7 +93,7 @@ body::before { @apply content-[''] table h-0; }
 .host__name { --room: 8.07; --char: .68; @apply font-bold; font-size: .875em; line-height: calc(20 / 14); }
 .host__vendor, .host__ip, .host__status { --room: 9.417; --char: .6; font-size: .75em; line-height: calc(16 / 12); }
 .host__ip { --char: .6; }
-.host__link { --room: 9.417; --char: .6; @apply flex items-center gap-1 whitespace-nowrap overflow-hidden opacity-60; font-size: .75em; line-height: calc(16 / 12); }
+.host__link { --room: 9.417; --char: .6; @apply flex items-center whitespace-nowrap overflow-hidden opacity-60; gap: .25em; font-size: .75em; line-height: calc(16 / 12); }
 .host__link-icon { @apply flex-none; width: 1em; height: 1em; }
 
 /* A line shrinks by its length (--len) until it fits the text column, but not below .6 of its size; the rest ends in an ellipsis. */
