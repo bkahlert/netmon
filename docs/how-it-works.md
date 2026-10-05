@@ -71,9 +71,10 @@ gives each slice its own caches. One network reached over Wi-Fi and a cable is s
 | Paho's client threads | process | the broker | the broker |
 | `read-deadline` of [BoundedInputStream](../src/jvmMain/kotlin/com/bkahlert/netmon/net/BoundedInputStream.kt) | process | nothing | closes a response stream past its deadline |
 
-**The scan loop never waits on the network except for nmap and the bounded lockdownd probe.** Every clue source
-answers from memory. Network reads happen on the cache threads, which may be slow or fail without delaying a scan.
-Publishing waits for the broker's acknowledgement, which on the board is the local Mosquitto.
+**The scan loop waits on the network only for nmap, the bounded lockdownd probe and the broker's acknowledgement of
+each publish.** A worker's first start also downloads the MAC-prefix table when it is missing or older than 30 days.
+Every clue source answers from memory. Network reads for clues happen on the cache threads, which may be slow or fail
+without delaying a scan.
 
 ## The scan and the state
 
@@ -86,7 +87,8 @@ calls `NetmonScanner.scan()` and sleeps `SCANNER_PAUSE_DURATION`, 30 s by defaul
 stopped along with its caches.
 
 [NmapNetworkScanner](../src/jvmMain/kotlin/com/bkahlert/netmon/nmap/NmapNetworkScanner.kt) runs
-`nmap -sn -T4 <cidr> -oX -`, privileged unless nmap refuses, with `--datadir` set to `NMAP_DATA_DIR`. There it puts
+`nmap -sn -T4 <cidr> -oX -`, privileged unless nmap refuses, with `-6` added for an IPv6 network and `--datadir` set to
+`NMAP_DATA_DIR`. There it puts
 `nmap-mac-prefixes`, fetched from nmap's repository when the cached copy is older than 30 days.
 [NmapXml](../src/jvmMain/kotlin/com/bkahlert/netmon/nmap/NmapXml.kt) reads per host:
 
@@ -127,13 +129,16 @@ different versions.
 |---|---|
 | Scanned up, recorded up | UP, `since` kept |
 | Scanned up, recorded otherwise or not at all | UP, `since` = scan time |
-| Not scanned, recorded UP, unseen for less than `SCANNER_DOWN_AFTER` | UP, unchanged |
-| Not scanned, recorded UP, unseen for `SCANNER_DOWN_AFTER` or longer | DOWN, `since` = `lastSeen` |
-| Not scanned, recorded DOWN | unchanged |
-| Not scanned, recorded with no or an unknown status | DOWN, `since` = scan time |
+| Not scanned up, recorded UP, unseen for less than `SCANNER_DOWN_AFTER` | UP, unchanged |
+| Not scanned up, recorded UP, unseen for `SCANNER_DOWN_AFTER` or longer | DOWN, `since` = `lastSeen` |
+| Not scanned up, recorded DOWN | unchanged |
+| Not scanned up, recorded with no or an unknown status | DOWN, `since` = scan time |
+| Scanned but not up, with a record | as the rows for not scanned up |
 | Scanned but not up, no record | DOWN, `since` = scan time, no `lastSeen` |
 
-"Unseen for" counts from `lastSeen`, but never from before the process started
+"Not scanned up" covers a host nmap did not list and one it listed with a status other than `up`.
+
+"Unseen for" counts from `lastSeen`, but never from before the slice's scanner started
 ([RestartFloor](../src/jvmMain/kotlin/com/bkahlert/netmon/scanner/RestartFloor.kt), on the monotonic clock). A host is
 not reported DOWN because the scanner was stopped, and a wall-clock jump at boot moves the floor along. A missed scan
 costs nothing: a host only goes DOWN after `SCANNER_DOWN_AFTER`, 3 minutes by default, without being seen.
@@ -372,7 +377,7 @@ give no clue.
 ### Placeholders
 
 [Placeholders](../src/jvmMain/kotlin/com/bkahlert/netmon/identity/Placeholders.kt) drops names that identify nothing,
-after a trailing `.` and `.local` are removed. Matching is case-insensitive except for the `PC-` rules.
+after a trailing `.` and `.local` are removed. Matching is case-insensitive, except `PC-` with an IPv4 address and `PC---…`, which need an upper-case `PC`.
 
 | Pattern | Typical origin |
 |---|---|
@@ -477,7 +482,8 @@ A failed refresh keeps the last table. `InterfaceType` `Ethernet` maps to `ether
 `X_AVM-DE_Speed` above 0 is the speed.
 
 **Without credentials**, there is no table. `byMac` queues a MAC it has no fresh answer for and returns what it has.
-The thread, started on the first queued MAC, calls `GetSpecificHostEntry` for one MAC after the other. An answer,
+The `fritzbox-hosts` thread starts with the slice in both modes. Without credentials it waits for queued MACs and calls
+`GetSpecificHostEntry` for one MAC after the other. An answer,
 including the box's `NoSuchEntryInArray`, is kept 10 minutes. After a transport or authentication failure, the rest of
 that batch is dropped and asked again on the next lookup. This mode yields hostname, link and active; no friendly
 name, class or speed. `byIp` answers nothing, so a host without a MAC gets no router clues.
@@ -591,19 +597,23 @@ it at mode 600, since it holds the router password.
 | `BROKER_PORT` | `8080` | `1883` | 8080 and 8081 use `ws://`, any other port `tcp://` |
 | `NMAP_PRIVILEGED` | `true` | | run nmap with `--privileged`; falls back once nmap refuses |
 | `NMAP_DATA_DIR` | `./nmap` | `/var/lib/netmon/nmap` | nmap's data directory, holding the MAC prefix table |
+| `XDG_CACHE_HOME` | `~/.cache` on Linux, `~/Library/Caches` on macOS | `/var/cache/netmon` | the base of the download cache, where the MAC prefix table is cached before it is copied to `NMAP_DATA_DIR` |
 | `SCANNER_PAUSE_DURATION` | `PT30S` | | the pause between two scans of a slice |
 | `SCANNER_DOWN_AFTER` | `PT3M` | | how long a host may stay unseen before it is DOWN |
 | `NETWORK_MIN_HOST_BITS`, `NETWORK_MAX_HOST_BITS` | `4`, `16` | | the sizes of networks scanned |
 | `SCAN_TOPIC`, `HOST_TOPIC` | `dt/netmon/${node}/${interface}/${cidr}/scan`, `…/host` | | the topics |
 | `NETMON_SCANNER_OPTIONS` | | `-Xmx48m` | the native image's runtime options, read by the unit only |
 
-Credentials never appear in logs. `FritzBoxSettings` prints `user=<set>` and `password=***`, `Credentials` prints no
-values, and warnings mask the host list's session id.
+Credentials never appear in logs. [FritzBoxSettings](../src/jvmMain/kotlin/com/bkahlert/netmon/router/FritzBoxSettings.kt) prints `user=<set>` and
+`password=***`, [Credentials](../src/jvmMain/kotlin/com/bkahlert/netmon/router/Credentials.kt) prints no values, and warnings mask the host list's session id.
 
 ## Properties to preserve
 
 - **The scan loop rule.** A clue source reads memory. Anything that needs the network gets its own thread and cache,
-  like `FritzBoxHosts` and `SsdpCache`. The only probe on the scan loop is lockdownd, bounded to 3 s and cached.
+  like [FritzBoxHosts](../src/jvmMain/kotlin/com/bkahlert/netmon/router/FritzBoxHosts.kt) and
+  [SsdpCache](../src/jvmMain/kotlin/com/bkahlert/netmon/ssdp/SsdpCache.kt). The only probe on the scan loop is
+  lockdownd, bounded to 3 s and cached. Publishing is still synchronous; see
+  [open issues](open-issues.md#scanner-and-identification).
 - **Bounded reads.** Every network-fed read has a size cap and a deadline:
 
   | Read | Cap | Deadline |
@@ -625,7 +635,7 @@ values, and warnings mask the host list's session id.
 - **Only shipped SVG reaches `innerHTML`.** The display inlines SVG from its two assets only. Host fields from the
   network are rendered as text. The generator's allowlist keeps the asset to plain shapes.
 - **Credentials stay out of text.** No `toString`, log line or exception message carries the user or password.
-- **Optional fields.** New `Host` fields stay optional, and `JsonFormat` keeps ignoring unknown keys and omitting nulls.
+- **Optional fields.** New `Host` fields stay optional, and [JsonFormat](../src/commonMain/kotlin/com/bkahlert/netmon/serialization/JsonFormat.kt) keeps ignoring unknown keys and omitting nulls.
 
 ## How to extend
 
@@ -636,19 +646,20 @@ Run `make test-jvm`, `make test-js` and `make test-tier0` after any of these cha
 1. Add a `token(pattern, vendor, kind)` line to `NameTokens.tokens` in
    [NameTokens.kt](../src/jvmMain/kotlin/com/bkahlert/netmon/identity/NameTokens.kt). Anchor brand prefixes with `^`.
    An earlier line wins over a later one for the same name.
-2. Use a vendor spelling `VendorNames.normalize` would produce, so icon matchers find it.
+2. Use a vendor spelling that `normalize` of [VendorNames](../src/jvmMain/kotlin/com/bkahlert/netmon/identity/VendorNames.kt) would produce, so icon matchers find it.
 3. Add a row to [NameTokensTest](../src/jvmTest/kotlin/com/bkahlert/netmon/identity/NameTokensTest.kt), and a negative
    case if the pattern could hit a location word, as `LEDVANCE-Hallway-TV` does for TV.
-4. If the name is a default that identifies nothing, add it to `Placeholders` and
+4. If the name is a default that identifies nothing, add it to [Placeholders](../src/jvmMain/kotlin/com/bkahlert/netmon/identity/Placeholders.kt) and
    [PlaceholdersTest](../src/jvmTest/kotlin/com/bkahlert/netmon/identity/PlaceholdersTest.kt) instead. Tokens still read
    it.
 
 ### Add a clue source
 
 1. Put any network access on its own daemon thread with a cache, bounded as above. Give the cache a small lookup
-   interface, like `RouterHostLookup` or `SsdpLookup`, so tests can fake it.
+   interface, like [RouterHostLookup](../src/jvmMain/kotlin/com/bkahlert/netmon/router/RouterHost.kt) or
+   [SsdpLookup](../src/jvmMain/kotlin/com/bkahlert/netmon/ssdp/SsdpCache.kt), so tests can fake it.
 2. Implement `ClueSource` over that interface. Pick the `Source` per clue by how far it is trusted; a new `Source` value
-   needs a place in each order of `IdentityResolver` and a case in
+   needs a place in each order of [IdentityResolver](../src/jvmMain/kotlin/com/bkahlert/netmon/identity/IdentityResolver.kt) and a case in
    [IdentityResolverTest](../src/jvmTest/kotlin/com/bkahlert/netmon/identity/IdentityResolverTest.kt).
 3. Add it to `sources` in [Application](../src/jvmMain/kotlin/com/bkahlert/netmon/Application.kt). Its position decides
    its rank within a shared `Source`. A source that should only run when no model is known goes to `fallbacks`.
@@ -663,8 +674,12 @@ Run `make test-jvm`, `make test-js` and `make test-tier0` after any of these cha
    [KindTest](../src/commonTest/kotlin/com/bkahlert/netmon/KindTest.kt).
 2. Put it in exactly one group of [HostGroup](../src/commonMain/kotlin/com/bkahlert/netmon/HostGroup.kt);
    [HostGroupTest](../src/commonTest/kotlin/com/bkahlert/netmon/HostGroupTest.kt) checks this.
-3. Map it from the rules that should yield it: `HapCategories`, `MdnsClues`, `SsdpClues`, `AppleCodes.kindOf`,
-   the kind defaults of `OuiClues`, or `NameTokens`, each with its test.
+3. Map it from the rules that should yield it: [HapCategories](../src/jvmMain/kotlin/com/bkahlert/netmon/identity/HapCategories.kt),
+   [MdnsClues](../src/jvmMain/kotlin/com/bkahlert/netmon/identity/MdnsClues.kt),
+   [SsdpClues](../src/jvmMain/kotlin/com/bkahlert/netmon/identity/SsdpClues.kt),
+   `AppleCodes.kindOf` in [AppleCodes](../src/jvmMain/kotlin/com/bkahlert/netmon/identity/AppleCodes.kt),
+   the kind defaults of [OuiClues](../src/jvmMain/kotlin/com/bkahlert/netmon/identity/OuiClues.kt), or
+   [NameTokens](../src/jvmMain/kotlin/com/bkahlert/netmon/identity/NameTokens.kt), each with its test.
 4. Give it an icon in `KINDS` of [device_icons.py](../tests/device_icons.py) and run `make device-icons`.
    [test_device_icons.py](../tests/test_device_icons.py) and
    [DeviceIconsResourceTest](../src/jvmTest/kotlin/com/bkahlert/netmon/model_identification/DeviceIconsResourceTest.kt)
