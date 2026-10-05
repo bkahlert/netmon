@@ -15,7 +15,8 @@ import java.util.concurrent.ScheduledFuture
 import java.util.concurrent.TimeUnit
 import javax.xml.stream.XMLStreamConstants
 
-class Tr064Exception(message: String) : RuntimeException(message)
+/** A TR-064 call that failed; [fault] is the box's `errorDescription` (for example `NoSuchEntryInArray`) when it sent one. */
+class Tr064Exception(message: String, val fault: String? = null) : RuntimeException(message)
 
 /**
  * SOAP calls to a FRITZ!Box's TR-064 `Hosts` service.
@@ -46,7 +47,10 @@ class Tr064Client(
             val challenge = response.challenge ?: throw Tr064Exception("401 without a challenge for $action")
             response = post(request.header("Authorization", DigestAuth.authorization(challenge, "POST", CONTROL_PATH, credentials)), body, action)
         }
-        if (response.status != 200) throw Tr064Exception("$action failed with ${response.status}: ${fault(response.body)}")
+        if (response.status != 200) {
+            val fault = fault(response.body)
+            throw Tr064Exception("$action failed with ${response.status}: ${fault ?: response.body.take(200)}", fault)
+        }
         return arguments(response.body)
     }
 
@@ -95,7 +99,7 @@ class Tr064Client(
         }
     }
 
-    private fun fault(xml: String): String = Regex("<errorDescription>(?<text>[^<]*)</errorDescription>").find(xml)?.groups?.get("text")?.value ?: xml.take(200)
+    private fun fault(xml: String): String? = Regex("<errorDescription>(?<text>[^<]*)</errorDescription>").find(xml)?.groups?.get("text")?.value
 
     companion object {
         const val SERVICE = "urn:dslforum-org:service:Hosts:1"

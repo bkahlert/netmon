@@ -11,6 +11,7 @@ class FakeFritzBox(
     val credentials: Credentials? = Credentials("netmon", "secret"),
     private val hostList: String = HOST_LIST,
     private val unauthenticated: Map<String, String> = mapOf("GetHostNumberOfEntries" to "<NewHostNumberOfEntries>2</NewHostNumberOfEntries>"),
+    private val unknownMacs: Set<String> = emptySet(),
 ) : AutoCloseable {
 
     private val server: HttpServer = HttpServer.create(InetSocketAddress("127.0.0.1", 0), 0)
@@ -28,6 +29,9 @@ class FakeFritzBox(
         val body = exchange.requestBody.readBytes().decodeToString()
         requests += "$action ${exchange.requestHeaders.getFirst("Authorization") ?: "-"} ${body.length}"
         if (body.isEmpty()) return exchange.reply(500, FAULT.replace("CODE", "502").replace("TEXT", "XML error"))
+        if (action == "GetSpecificHostEntry" && unknownMacs.any { body.contains(it, ignoreCase = true) }) {
+            return exchange.reply(500, FAULT.replace("CODE", "714").replace("TEXT", "NoSuchEntryInArray"))
+        }
         unauthenticated[action]?.let { return exchange.reply(200, envelope(action, it)) }
         val authorization = exchange.requestHeaders.getFirst("Authorization")
         if (credentials == null || authorization == null || !authorization.contains("username=\"${credentials.user}\"")) {
