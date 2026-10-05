@@ -18,7 +18,7 @@ class Scan(NamedTuple):
 
 
 def parse_scan(text: str) -> Scan:
-    """Returns the fixture `text` names: `14+39` is 14 recent and 39 stable hosts in one scan, `14+39x2` the same in two scans."""
+    """Returns the fixture `text` names: `14+39` is 14 hosts up for 30 s and 39 up for 2 h in one scan, `14+39x2` the same in two scans."""
     match = SCAN.fullmatch(text)
     if not match or match["sources"] == "0":
         raise ValueError(f"SCAN must be RECENT+STABLE or RECENT+STABLExSCANS with at least one scan, not {text!r}")

@@ -66,7 +66,7 @@ variables and have a Web Inspector on the page. They differ in where the page is
 | Variable  | Default   | Meaning                                                                                                                         |
 |-----------|-----------|---------------------------------------------------------------------------------------------------------------------------------|
 | `BROKER`  | `fake`    | `fake`: a Mosquitto container holding the `SCAN` hosts, started and stopped by the command. `board`: the Pi's own broker (`preview-board` only). `HOST:PORT`: that broker, nothing started; `localhost` is the Mac. `fixture` and `device` still work for `fake` and `board` for one release |
-| `SCAN`    | `14+39`   | Recent and stable hosts of the fake; `14+39x2` publishes two scans                                                           |
+| `SCAN`    | `14+39`   | Hosts of the fake up for 30 s and for 2 h; `14+39x2` publishes two scans                                                     |
 | `INSPECT` | `Safari`  | What opens once the session is up: the page (`preview-browser`) or the kiosk's Web Inspector; `INSPECT=0` opens nothing         |
 | `TARGET`  |           | `preview-board` only: `user@host[:port]` of the Pi, which needs Pi Hero's `pihero-kiosk` and ssh access without a prompt       |
 
