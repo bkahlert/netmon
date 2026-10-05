@@ -29,6 +29,17 @@ class PlaceholdersTest {
     }
 
     @Test
+    fun drops_eui_64_host_names_of_matter_devices() = runTest {
+        forAll(
+            row("0200000000AB0000"),
+            row("0200000000ab0000.local."),
+            row("0A1B2C3D4E5F6071"),
+        ) { name ->
+            Placeholders.clean(name) shouldBe null
+        }
+    }
+
+    @Test
     fun keeps_real_names_without_the_local_suffix_or_trailing_dot() = runTest {
         forAll(
             row("LEDVANCE-Hallway-TV", "LEDVANCE-Hallway-TV"),
