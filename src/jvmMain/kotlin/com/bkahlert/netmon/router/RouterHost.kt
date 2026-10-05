@@ -26,3 +26,9 @@ data class RouterHost(
     /** The box's link rate to the host in Mbit/s, `null` when the box reports none. */
     val linkSpeed: LinkSpeed? get() = speed.takeIf { it > 0 }?.let(::LinkSpeed)
 }
+
+/** What the identity rules need from the router's host table. */
+interface RouterHostLookup {
+    fun byMac(mac: String): RouterHost?
+    fun byIp(ip: String): RouterHost?
+}

@@ -44,7 +44,7 @@ class FritzBoxHosts(
     private val clock: Clock = Clock.System,
     private val refreshEvery: Duration = 60.seconds,
     private val logger: Logger = LoggerFactory.getLogger(FritzBoxHosts::class.java),
-) : AutoCloseable {
+) : AutoCloseable, RouterHostLookup {
 
     private class Table(val byMac: Map<String, RouterHost>, val byIp: Map<String, RouterHost>)
 
@@ -63,7 +63,7 @@ class FritzBoxHosts(
     @Volatile
     private var worker: Thread? = null
 
-    fun byMac(mac: String): RouterHost? {
+    override fun byMac(mac: String): RouterHost? {
         val key = mac.lowercase()
         table.byMac[key]?.let { return it }
         if (credentials != null) return null
@@ -75,7 +75,7 @@ class FritzBoxHosts(
         return cached?.first
     }
 
-    fun byIp(ip: String): RouterHost? = table.byIp[ip]
+    override fun byIp(ip: String): RouterHost? = table.byIp[ip]
 
     /** Loads the table once; with no credentials, there is nothing to load. Any failure keeps the last table. */
     fun refresh() {
