@@ -18,14 +18,14 @@ class InterfacePreferenceTest {
 
     @Test
     fun prefers_the_wired_interface_on_a_shared_network() {
-        listOf("wlan0" to "192.168.16.0/23", "eth0" to "192.168.16.0/23", "usb0" to "10.10.10.40/29")
-            .onePerNetwork({ it.second }, wired) shouldContainExactly listOf("eth0" to "192.168.16.0/23", "usb0" to "10.10.10.40/29")
+        listOf("wlan0" to "10.0.0.0/23", "eth0" to "10.0.0.0/23", "usb0" to "10.10.10.40/29")
+            .onePerNetwork({ it.second }, wired) shouldContainExactly listOf("eth0" to "10.0.0.0/23", "usb0" to "10.10.10.40/29")
     }
 
     @Test
     fun keeps_the_first_interface_when_none_is_wired() {
-        listOf("wlan0" to "192.168.16.0/23", "wlan1" to "192.168.16.0/23")
-            .onePerNetwork({ it.second }, wired) shouldContainExactly listOf("wlan0" to "192.168.16.0/23")
+        listOf("wlan0" to "10.0.0.0/23", "wlan1" to "10.0.0.0/23")
+            .onePerNetwork({ it.second }, wired) shouldContainExactly listOf("wlan0" to "10.0.0.0/23")
     }
 
     @Test
@@ -44,20 +44,20 @@ class NetworkOfTest {
 
     @Test
     fun two_addresses_in_one_subnet_share_the_network() {
-        networkOf(java.net.InetAddress.getByName("192.168.17.42"), 23) shouldBe networkOf(java.net.InetAddress.getByName("192.168.17.43"), 23)
-        networkOf(java.net.InetAddress.getByName("192.168.17.42"), 23) shouldBe com.bkahlert.netmon.Cidr.parse("192.168.16.0/23")
+        networkOf(java.net.InetAddress.getByName("10.0.1.42"), 23) shouldBe networkOf(java.net.InetAddress.getByName("10.0.1.43"), 23)
+        networkOf(java.net.InetAddress.getByName("10.0.1.42"), 23) shouldBe com.bkahlert.netmon.Cidr.parse("10.0.0.0/23")
     }
 
     @Test
     fun the_network_keeps_the_prefix_and_masks_the_host_bits() {
         networkOf(java.net.InetAddress.getByName("10.10.10.44"), 29) shouldBe com.bkahlert.netmon.Cidr.parse("10.10.10.40/29")
-        networkOf(java.net.InetAddress.getByName("fe80::2ecf:67ff:fe18:d93c"), 64) shouldBe com.bkahlert.netmon.Cidr.parse("fe80::/64")
+        networkOf(java.net.InetAddress.getByName("fe80::aa:bbff:fecc:1"), 64) shouldBe com.bkahlert.netmon.Cidr.parse("fe80::/64")
     }
 
     @Test
     fun interfaces_on_one_lan_collapse_by_network_not_by_address() {
-        val wlan0 = networkOf(java.net.InetAddress.getByName("192.168.17.105"), 23)
-        val eth0 = networkOf(java.net.InetAddress.getByName("192.168.17.43"), 23)
+        val wlan0 = networkOf(java.net.InetAddress.getByName("10.0.1.105"), 23)
+        val eth0 = networkOf(java.net.InetAddress.getByName("10.0.1.43"), 23)
 
         listOf("wlan0" to wlan0, "eth0" to eth0).onePerNetwork({ it.second }, { !it.first.startsWith("wl") }) shouldContainExactly listOf("eth0" to eth0)
     }

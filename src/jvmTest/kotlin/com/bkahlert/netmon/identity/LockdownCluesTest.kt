@@ -17,7 +17,7 @@ class LockdownCluesTest {
 
     @Test
     fun an_answer_is_an_apple_code_with_vendor_and_kind() {
-        val result = LockdownClues(probe { "iPad7,5" }, appleCodes).clues(Host(vendor = null, mac = "4a:1d:30:53:a0:b2"))
+        val result = LockdownClues(probe { "iPad7,5" }, appleCodes).clues(Host(vendor = null, mac = "02:aa:bb:cc:00:15"))
 
         result shouldContainExactly listOf(
             Clue.Model("iPad7,5", Source.APPLE_CODE),

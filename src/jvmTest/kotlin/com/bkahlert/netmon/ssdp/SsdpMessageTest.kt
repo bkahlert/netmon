@@ -10,12 +10,12 @@ class SsdpMessageTest {
 
     @Test
     fun a_search_response_yields_location_server_and_max_age() {
-        val text = "HTTP/1.1 200 OK\r\nCACHE-CONTROL: max-age=100\r\nLOCATION: http://192.168.17.5:80/description.xml\r\nSERVER: Bridge/1.0 UPnP/1.0 TestBridge/1.78.0\r\nST: upnp:rootdevice\r\nUSN: uuid:00000000-0000-4000-8000-000000000001::upnp:rootdevice\r\n\r\n"
+        val text = "HTTP/1.1 200 OK\r\nCACHE-CONTROL: max-age=100\r\nLOCATION: http://192.0.2.5:80/description.xml\r\nSERVER: Bridge/1.0 UPnP/1.0 TestBridge/1.78.0\r\nST: upnp:rootdevice\r\nUSN: uuid:00000000-0000-4000-8000-000000000001::upnp:rootdevice\r\n\r\n"
 
         val result = SsdpMessage.parse(text)
 
         result.shouldNotBeNullAnd {
-            it.location shouldBe "http://192.168.17.5:80/description.xml"
+            it.location shouldBe "http://192.0.2.5:80/description.xml"
             it.server shouldBe "Bridge/1.0 UPnP/1.0 TestBridge/1.78.0"
             it.notificationType shouldBe "upnp:rootdevice"
             it.usn shouldBe "uuid:00000000-0000-4000-8000-000000000001::upnp:rootdevice"
@@ -25,13 +25,13 @@ class SsdpMessageTest {
 
     @Test
     fun a_notify_uses_nt_and_lowercase_header_names_are_fine() {
-        val text = "NOTIFY * HTTP/1.1\r\nHost: 239.255.255.250:1900\r\nnt: urn:schemas-upnp-org:device:NAS:1\r\nnts: ssdp:alive\r\nlocation: http://192.168.16.10:49152/gatedesc.xml\r\n\r\n"
+        val text = "NOTIFY * HTTP/1.1\r\nHost: 239.255.255.250:1900\r\nnt: urn:schemas-upnp-org:device:NAS:1\r\nnts: ssdp:alive\r\nlocation: http://198.51.100.10:49152/gatedesc.xml\r\n\r\n"
 
         val result = SsdpMessage.parse(text)
 
         result.shouldNotBeNullAnd {
             it.notificationType shouldBe "urn:schemas-upnp-org:device:NAS:1"
-            it.location shouldBe "http://192.168.16.10:49152/gatedesc.xml"
+            it.location shouldBe "http://198.51.100.10:49152/gatedesc.xml"
             it.maxAge.shouldBeNull()
         }
     }

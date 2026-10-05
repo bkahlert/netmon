@@ -11,13 +11,13 @@ class MacAddressesTest {
     @Test
     fun a_locally_administered_address_is_private() = runTest {
         forAll(
-            row("de:c8:ff:43:fc:54", true),
-            row("be:3b:a1:cf:7c:bf", true),
-            row("3a:ef:e4:bc:6f:34", true),
-            row("02:42:c0:a8:10:0b", true),
-            row("52:54:00:03:c3:31", true),
-            row("b8:27:eb:66:2e:c2", false),
-            row("A8:80:55:37:E5:C6", false),
+            row("02:aa:bb:cc:00:16", true),
+            row("02:aa:bb:cc:00:17", true),
+            row("02:aa:bb:cc:00:18", true),
+            row("02:42:c6:33:64:0b", true),
+            row("52:54:00:12:34:56", true),
+            row("b8:00:00:00:00:01", false),
+            row("A8:00:00:00:00:06", false),
         ) { mac, expected ->
             MacAddresses.isPrivate(mac) shouldBe expected
         }

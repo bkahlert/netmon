@@ -15,7 +15,7 @@ class IdentityResolverTest {
     fun each_field_takes_the_first_clue_in_its_source_order() {
         val clues = listOf(
             Clue.Name("unicorn", Source.ROUTER),
-            Clue.Name("Stilgar", Source.PROTOCOL),
+            Clue.Name("Example-Pi", Source.PROTOCOL),
             Clue.Model("AirPort4", Source.APPLE_CODE),
             Clue.Model("Raspberry Pi Zero 2 W Rev 1.0", Source.PROTOCOL),
             Clue.Vendor("Raspberry Pi Ltd", Source.PROTOCOL),
@@ -27,7 +27,7 @@ class IdentityResolverTest {
         val result = IdentityResolver().resolve(empty(), clues)
 
         result should {
-            it.name shouldBe "Stilgar"
+            it.name shouldBe "Example-Pi"
             it.model shouldBe "Raspberry Pi Zero 2 W Rev 1.0"
             it.vendor shouldBe "Raspberry Pi"
             it.kind shouldBe Kind.CIRCUIT_BOARD
@@ -45,11 +45,11 @@ class IdentityResolverTest {
 
     @Test
     fun the_user_name_outranks_every_other_name() {
-        val clues = listOf(Clue.Name("Paul", Source.PROTOCOL), Clue.Name("Paul (Wi-Fi)", Source.USER), Clue.Name("paul-wi-fi", Source.ROUTER))
+        val clues = listOf(Clue.Name("Sam", Source.PROTOCOL), Clue.Name("Sam (Wi-Fi)", Source.USER), Clue.Name("sam-wi-fi", Source.ROUTER))
 
         val result = IdentityResolver().resolve(empty(), clues)
 
-        result.name shouldBe "Paul (Wi-Fi)"
+        result.name shouldBe "Sam (Wi-Fi)"
     }
 
     @Test

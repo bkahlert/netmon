@@ -31,8 +31,8 @@ class FritzBoxHostsTest {
 
             hosts.refresh()
 
-            hosts.byMac("a8:80:55:37:e5:c6")?.hostName shouldBe "LEDVANCE-Sideboard-TV"
-            hosts.byMac("00:e0:4e:3a:5f:84")?.linkSpeed shouldBe LinkSpeed(2500)
+            hosts.byMac("a8:00:00:00:00:06")?.hostName shouldBe "LEDVANCE-Hallway-TV"
+            hosts.byMac("00:00:00:00:00:14")?.linkSpeed shouldBe LinkSpeed(2500)
             box.requests shouldHaveSize 2
         }
     }
@@ -43,7 +43,7 @@ class FritzBoxHostsTest {
             val hosts = FritzBoxHosts({ Tr064Client(box.base, box.credentials) }, box.credentials, TestClock())
             hosts.refresh()
 
-            hosts.byIp("192.168.16.13")?.mac shouldBe "de:c8:ff:43:fc:54"
+            hosts.byIp("198.51.100.13")?.mac shouldBe "02:aa:bb:cc:00:16"
         }
     }
 
@@ -52,16 +52,16 @@ class FritzBoxHostsTest {
         FakeFritzBox(unauthenticated = mapOf("GetSpecificHostEntry" to ENTRY)).use { box ->
             val clock = TestClock()
             FritzBoxHosts({ Tr064Client(box.base, null) }, credentials = null, clock = clock).use { hosts ->
-                hosts.byMac("a8:80:55:37:e5:c6").shouldBeNull()
-                eventually { hosts.byMac("a8:80:55:37:e5:c6") != null }
+                hosts.byMac("a8:00:00:00:00:06").shouldBeNull()
+                eventually { hosts.byMac("a8:00:00:00:00:06") != null }
 
-                hosts.byMac("a8:80:55:37:e5:c6")?.hostName shouldBe "LEDVANCE-Sideboard-TV"
+                hosts.byMac("a8:00:00:00:00:06")?.hostName shouldBe "LEDVANCE-Hallway-TV"
                 box.requests shouldHaveSize 1
                 clock.advance(11.minutes)
-                hosts.byMac("a8:80:55:37:e5:c6")?.hostName shouldBe "LEDVANCE-Sideboard-TV"
+                hosts.byMac("a8:00:00:00:00:06")?.hostName shouldBe "LEDVANCE-Hallway-TV"
                 eventually { box.requests.size == 2 }
 
-                hosts.byMac("a8:80:55:37:e5:c6")?.linkSpeed.shouldBeNull()
+                hosts.byMac("a8:00:00:00:00:06")?.linkSpeed.shouldBeNull()
             }
         }
     }
@@ -71,8 +71,8 @@ class FritzBoxHostsTest {
         val started = CountDownLatch(1)
         val release = CountDownLatch(1)
         FritzBoxHosts({ started.countDown(); release.await(); null }, credentials = null, clock = TestClock()).use { hosts ->
-            hosts.byMac("a8:80:55:37:e5:c6").shouldBeNull()
-            hosts.byIp("192.168.17.70").shouldBeNull()
+            hosts.byMac("a8:00:00:00:00:06").shouldBeNull()
+            hosts.byIp("192.0.2.70").shouldBeNull()
 
             started.await(5, TimeUnit.SECONDS) shouldBe true
         }
@@ -85,8 +85,8 @@ class FritzBoxHostsTest {
         FakeFritzBox(unauthenticated = mapOf("GetSpecificHostEntry" to ENTRY), unknownMacs = setOf("02:00:00:00:00:01")).use { box ->
             FritzBoxHosts({ Tr064Client(box.base, null) }, credentials = null, clock = TestClock(), logger = log.logger).use { hosts ->
                 hosts.byMac("02:00:00:00:00:01").shouldBeNull()
-                hosts.byMac("a8:80:55:37:e5:c6").shouldBeNull()
-                eventually { hosts.byMac("a8:80:55:37:e5:c6") != null }
+                hosts.byMac("a8:00:00:00:00:06").shouldBeNull()
+                eventually { hosts.byMac("a8:00:00:00:00:06") != null }
 
                 box.requests shouldHaveSize 2
                 hosts.byMac("02:00:00:00:00:01").shouldBeNull()
@@ -104,14 +104,14 @@ class FritzBoxHostsTest {
             val box = AtomicReference(dead)
             val calls = AtomicInteger()
             FritzBoxHosts({ val target = box.get(); calls.incrementAndGet(); Tr064Client(target.base, null) }, credentials = null, clock = TestClock(), logger = log.logger).use { hosts ->
-                hosts.byMac("a8:80:55:37:e5:c6").shouldBeNull()
+                hosts.byMac("a8:00:00:00:00:06").shouldBeNull()
                 eventually { log.events.size == 1 }
-                hosts.byMac("a8:80:55:37:e5:c6").shouldBeNull()
+                hosts.byMac("a8:00:00:00:00:06").shouldBeNull()
                 eventually { calls.get() == 2 }
                 box.set(live)
 
-                hosts.byMac("a8:80:55:37:e5:c7").shouldBeNull()
-                eventually { hosts.byMac("a8:80:55:37:e5:c7") != null }
+                hosts.byMac("a8:00:00:00:00:07").shouldBeNull()
+                eventually { hosts.byMac("a8:00:00:00:00:07") != null }
 
                 log.events.map { it.substringBefore(' ') } shouldBe listOf("WARN", "INFO")
             }
@@ -131,18 +131,18 @@ class FritzBoxHostsTest {
                 }
             }
             FritzBoxHosts(client, credentials = null, clock = TestClock(), logger = RecordingLogger().logger).use { hosts ->
-                hosts.byMac("a8:80:55:37:e5:c0")
+                hosts.byMac("a8:00:00:00:00:00")
                 eventually { calls.get() == 1 }
-                hosts.byMac("a8:80:55:37:e5:c1")
-                hosts.byMac("a8:80:55:37:e5:c2")
+                hosts.byMac("a8:00:00:00:00:01")
+                hosts.byMac("a8:00:00:00:00:02")
                 release.countDown()
                 eventually { calls.get() == 2 }
 
-                hosts.byMac("a8:80:55:37:e5:c3")
-                eventually { hosts.byMac("a8:80:55:37:e5:c3") != null }
+                hosts.byMac("a8:00:00:00:00:03")
+                eventually { hosts.byMac("a8:00:00:00:00:03") != null }
 
                 calls.get() shouldBe 3
-                hosts.byMac("a8:80:55:37:e5:c2").shouldBeNull()
+                hosts.byMac("a8:00:00:00:00:02").shouldBeNull()
             }
         }
     }
@@ -156,7 +156,7 @@ class FritzBoxHostsTest {
 
         hosts.refresh()
 
-        hosts.byMac("a8:80:55:37:e5:c6").shouldNotBeNull()
+        hosts.byMac("a8:00:00:00:00:06").shouldNotBeNull()
     }
 
     @Test
@@ -165,7 +165,7 @@ class FritzBoxHostsTest {
             val hosts = FritzBoxHosts({ Tr064Client(box.base, box.credentials) }, box.credentials, TestClock())
             hosts.refresh()
 
-            hosts.byMac("A8:80:55:37:E5:C6")?.hostName shouldBe "LEDVANCE-Sideboard-TV"
+            hosts.byMac("A8:00:00:00:00:06")?.hostName shouldBe "LEDVANCE-Hallway-TV"
         }
     }
 
@@ -179,7 +179,7 @@ class FritzBoxHostsTest {
 
                 hosts.refresh()
 
-                hosts.byMac("a8:80:55:37:e5:c6").shouldNotBeNull()
+                hosts.byMac("a8:00:00:00:00:06").shouldNotBeNull()
             }
         }
     }
@@ -193,7 +193,7 @@ class FritzBoxHostsTest {
 
             hosts.refresh()
 
-            hosts.byMac("a8:80:55:37:e5:c6").shouldNotBeNull()
+            hosts.byMac("a8:00:00:00:00:06").shouldNotBeNull()
         }
     }
 
@@ -204,8 +204,8 @@ class FritzBoxHostsTest {
 
             hosts.start()
             val deadline = System.nanoTime() + 5_000_000_000L
-            while (hosts.byMac("a8:80:55:37:e5:c6") == null && System.nanoTime() < deadline) Thread.sleep(10)
-            hosts.byMac("a8:80:55:37:e5:c6").shouldNotBeNull()
+            while (hosts.byMac("a8:00:00:00:00:06") == null && System.nanoTime() < deadline) Thread.sleep(10)
+            hosts.byMac("a8:00:00:00:00:06").shouldNotBeNull()
 
             hosts.close()
 
@@ -225,10 +225,10 @@ class FritzBoxHostsTest {
 
     @Test
     fun the_endpoint_comes_from_the_setting_then_the_tr064_record_then_the_default_name() {
-        val tr064 = service("tr064", "192-168-16-1", "fritz.box.", 49000, "192.168.16.1", "path" to "http://fritz.box:49000/tr64desc.xml", "ipv4" to "192.168.16.1")
+        val tr064 = service("tr064", "198-51-100-1", "fritz.box.", 49000, "198.51.100.1", "path" to "http://fritz.box:49000/tr64desc.xml", "ipv4" to "198.51.100.1")
 
         FritzBoxEndpoint.discover("http://10.0.0.1:49000", FakeMdns(tr064)) shouldBe URI("http://10.0.0.1:49000")
-        FritzBoxEndpoint.discover(null, FakeMdns(tr064)) shouldBe URI("http://192.168.16.1:49000")
+        FritzBoxEndpoint.discover(null, FakeMdns(tr064)) shouldBe URI("http://198.51.100.1:49000")
         FritzBoxEndpoint.discover(null, FakeMdns()) shouldBe URI("http://fritz.box:49000")
     }
 }
@@ -241,7 +241,7 @@ private class TestClock(start: Instant = Instant.fromEpochSeconds(1_700_000_000)
     fun advance(duration: kotlin.time.Duration) { now += duration }
 }
 
-private const val ENTRY = "<NewIPAddress>192.168.17.70</NewIPAddress><NewActive>1</NewActive><NewHostName>LEDVANCE-Sideboard-TV</NewHostName><NewInterfaceType>802.11</NewInterfaceType>"
+private const val ENTRY = "<NewIPAddress>192.0.2.70</NewIPAddress><NewActive>1</NewActive><NewHostName>LEDVANCE-Hallway-TV</NewHostName><NewInterfaceType>802.11</NewInterfaceType>"
 
 private fun eventually(condition: () -> Boolean) {
     val deadline = System.nanoTime() + 5_000_000_000L

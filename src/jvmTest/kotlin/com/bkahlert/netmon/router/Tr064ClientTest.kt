@@ -56,7 +56,7 @@ class Tr064ClientTest {
         FakeFritzBox().use { box ->
             val result = Tr064Client(box.base, credentials = null).get("/devicehostlist.lua?sid=abc").use { it.readBytes().decodeToString() }
 
-            result shouldContain "<HostName>LEDVANCE-Sideboard-TV</HostName>"
+            result shouldContain "<HostName>LEDVANCE-Hallway-TV</HostName>"
         }
     }
 }

@@ -15,7 +15,7 @@ class DeviceIconsTest {
 
     @Test
     fun the_first_matching_specific_rule_wins_and_every_given_field_must_match() {
-        ICONS.specificSymbol(vendor = "Nanoleaf", model = "NL42", name = "Shapes 6632") shouldBe "<svg>shapes</svg>"
+        ICONS.specificSymbol(vendor = "Nanoleaf", model = "NL42", name = "Shapes 0001") shouldBe "<svg>shapes</svg>"
         ICONS.specificSymbol(vendor = "Nanoleaf", model = "SQFX01", name = null) shouldBe "<svg>nanoleaf</svg>"
         ICONS.specificSymbol(vendor = "Amazon", model = "Fire TV Stick 4K", name = null) shouldBe "<svg>firetv</svg>"
         ICONS.specificSymbol(vendor = "Amazon", model = null, name = "Echo").shouldBeNull()

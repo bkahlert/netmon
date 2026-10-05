@@ -13,13 +13,13 @@ class AppleCodesTest {
     @Test
     fun a_known_code_is_accepted_for_an_apple_private_or_unknown_mac() = runTest {
         forAll(
-            row("iPad8,3", "Apple", "da:46:ef:b7:7e:3c", true),
-            row("Mac14,13", null, "f6:4b:6f:b8:61:03", true),
-            row("AirPort5", null, "d4:d6:df:cd:4a:26", true),
-            row("AirPort4", "Raspberry Pi", "b8:27:eb:66:2e:c2", false),
-            row("MacPro7,1@ECOLOR=226,226,226", "Ugreen", "6c:1f:f7:a6:09:42", false),
-            row("AppleTV3,1", "Amazon", "ec:8a:c4:76:da:f0", false),
-            row("Hoverboard1,1", "Apple", "da:46:ef:b7:7e:3c", false),
+            row("iPad8,3", "Apple", "02:aa:bb:cc:00:19", true),
+            row("Mac14,13", null, "02:aa:bb:cc:00:1a", true),
+            row("AirPort5", null, "d4:00:00:00:00:02", true),
+            row("AirPort4", "Raspberry Pi", "b8:00:00:00:00:01", false),
+            row("MacPro7,1@ECOLOR=226,226,226", "Ugreen", "6c:00:00:00:00:0c", false),
+            row("AppleTV3,1", "Amazon", "ec:00:00:00:00:03", false),
+            row("Hoverboard1,1", "Apple", "02:aa:bb:cc:00:19", false),
         ) { code, vendor, mac, expected ->
             codes.accepts(code, ouiVendor = vendor, mac = mac, linuxHost = false) shouldBe expected
         }
@@ -27,7 +27,7 @@ class AppleCodesTest {
 
     @Test
     fun a_linux_host_is_never_believed() {
-        codes.accepts("AirPort5", ouiVendor = null, mac = "d4:d6:df:cd:4a:26", linuxHost = true) shouldBe false
+        codes.accepts("AirPort5", ouiVendor = null, mac = "d4:00:00:00:00:02", linuxHost = true) shouldBe false
     }
 
     @Test

@@ -467,7 +467,7 @@ class ScanResultTest {
     @Test
     fun merge_seen_host_keeps_recorded_fields_the_scan_lacks() {
         val recorded = Host(
-            name = "Anirul",
+            name = "Example-Mac",
             status = Status.UP,
             since = 50.epoch,
             lastSeen = 100.epoch,
@@ -617,7 +617,7 @@ class ScanResultTest {
     @Test
     fun merge_host_that_moved_keeps_its_record_under_the_new_ip() {
         val recorded = Host(
-            ip = "10.0.0.1", name = "Anirul", status = Status.UP, since = 50.epoch, lastSeen = 100.epoch,
+            ip = "10.0.0.1", name = "Example-Mac", status = Status.UP, since = 50.epoch, lastSeen = 100.epoch,
             model = "MacPro7,1", vendor = "Apple", services = setOf("smb"), mac = "aa:bb:cc:dd:ee:01",
         )
         val scanned = Host(
@@ -635,7 +635,7 @@ class ScanResultTest {
     @Test
     fun merge_new_device_on_a_taken_ip_inherits_nothing_and_replaces_the_old_host() {
         val recorded = Host(
-            ip = "10.0.0.1", name = "Anirul", status = Status.UP, since = 50.epoch, lastSeen = 100.epoch,
+            ip = "10.0.0.1", name = "Example-Mac", status = Status.UP, since = 50.epoch, lastSeen = 100.epoch,
             model = "MacPro7,1", vendor = "Apple", services = setOf("smb"), mac = "aa:bb:cc:dd:ee:01",
         )
         val scanned = Host(

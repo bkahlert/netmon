@@ -169,11 +169,11 @@ class NetworkKtTest {
     @Test
     fun a_host_without_name_and_model_shows_the_end_of_its_mac() = runTest {
         val now = Clock.System.now()
-        val store = RootStore(listOf(Host(ip = IP.of("192.168.1.1"), mac = "dc:a6:32:a5:ba:b6", status = Status.UP, since = now)), job = job)
+        val store = RootStore(listOf(Host(ip = IP.of("192.168.1.1"), mac = "dc:00:00:00:00:12", status = Status.UP, since = now)), job = job)
 
         val container = rendered { hosts(store, clock = MutableStateFlow(now)) }
 
-        container.textOnce("a5:ba:b6") shouldContain "a5:ba:b6"
+        container.textOnce("00:00:12") shouldContain "00:00:12"
         container.remove()
     }
 
@@ -191,12 +191,12 @@ class NetworkKtTest {
     @Test
     fun a_named_host_does_not_show_its_mac() = runTest {
         val now = Clock.System.now()
-        val named = Host(ip = IP.of("192.168.1.1"), name = "printer.local.", mac = "dc:a6:32:a5:ba:b6", status = Status.UP, since = now)
+        val named = Host(ip = IP.of("192.168.1.1"), name = "printer.local.", mac = "dc:00:00:00:00:12", status = Status.UP, since = now)
         val store = RootStore(listOf(named), job = job)
 
         val container = rendered { hosts(store, clock = MutableStateFlow(now)) }
 
-        container.textOnce("printer") shouldNotContain "a5:ba:b6"
+        container.textOnce("printer") shouldNotContain "00:00:12"
         container.remove()
     }
 
@@ -250,7 +250,7 @@ class NetworkKtTest {
     @Test
     fun a_nameless_modelless_host_is_captioned_by_its_kind() = runTest {
         val now = Clock.System.now()
-        val store = RootStore(listOf(Host(ip = IP.of("192.168.1.1"), kind = Kind.GAMING_DEVICE, mac = "80:d2:e5:6b:ad:08", status = Status.UP, since = now)), job = job)
+        val store = RootStore(listOf(Host(ip = IP.of("192.168.1.1"), kind = Kind.GAMING_DEVICE, mac = "80:00:00:00:00:0d", status = Status.UP, since = now)), job = job)
 
         val container = rendered { hosts(store, clock = MutableStateFlow(now)) }
 

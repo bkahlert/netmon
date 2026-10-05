@@ -14,7 +14,7 @@ class IdentityEnricherTest {
         val enricher = IdentityEnricher(
             IdentityResolver(),
             sources = listOf(
-                ClueSource { listOf(Clue.Name("LEDVANCE-Sideboard-TV", Source.ROUTER)) },
+                ClueSource { listOf(Clue.Name("LEDVANCE-Hallway-TV", Source.ROUTER)) },
                 ClueSource { listOf(Clue.Vendor("Tuya", Source.OUI), Clue.DeviceKind(Kind.SOCKET, Source.OUI)) },
             ),
         )
@@ -22,7 +22,7 @@ class IdentityEnricherTest {
         val result = enricher.enrich(scanned(vendor = "Tuya Smart"))
 
         result should {
-            it?.name shouldBe "LEDVANCE-Sideboard-TV"
+            it?.name shouldBe "LEDVANCE-Hallway-TV"
             it?.vendor shouldBe "Ledvance"
             it?.kind shouldBe Kind.LAMP
         }
@@ -44,19 +44,19 @@ class IdentityEnricherTest {
     fun nmaps_reverse_name_ranks_below_the_mdns_host_and_above_the_router() {
         val enricher = IdentityEnricher(
             IdentityResolver(),
-            sources = listOf(ClueSource { listOf(Clue.Name("PC-192-168-16-12", Source.ROUTER), Clue.Name("pi-hole.local.", Source.MDNS_HOST)) }),
+            sources = listOf(ClueSource { listOf(Clue.Name("PC-192-0-2-12", Source.ROUTER), Clue.Name("pi-hole.local.", Source.MDNS_HOST)) }),
         )
 
-        enricher.enrich(scanned(name = "Bellonda-PiHole.fritz.box."))?.name shouldBe "pi-hole"
-        IdentityEnricher(IdentityResolver(), sources = listOf(ClueSource { listOf(Clue.Name("PC-192-168-16-12", Source.ROUTER)) }))
-            .enrich(scanned(name = "Bellonda-PiHole.fritz.box."))?.name shouldBe "Bellonda-PiHole.fritz.box"
+        enricher.enrich(scanned(name = "Example-PiHole.fritz.box."))?.name shouldBe "pi-hole"
+        IdentityEnricher(IdentityResolver(), sources = listOf(ClueSource { listOf(Clue.Name("PC-192-0-2-12", Source.ROUTER)) }))
+            .enrich(scanned(name = "Example-PiHole.fritz.box."))?.name shouldBe "Example-PiHole.fritz.box"
     }
 
     @Test
     fun the_raw_vendor_is_replaced_by_the_resolved_one() {
         val enricher = IdentityEnricher(IdentityResolver(), sources = listOf(OuiClues()))
 
-        enricher.enrich(scanned(vendor = "Raspberry Pi Foundation", mac = "b8:27:eb:66:2e:c2"))?.vendor shouldBe "Raspberry Pi"
+        enricher.enrich(scanned(vendor = "Raspberry Pi Foundation", mac = "b8:00:00:00:00:01"))?.vendor shouldBe "Raspberry Pi"
     }
 
     @Test
@@ -68,9 +68,9 @@ class IdentityEnricherTest {
             fallbacks = listOf(ClueSource { seen += it; emptyList() }),
         )
 
-        enricher.enrich(scanned(name = "stilgar.fritz.box.", vendor = "Raspberry Pi Foundation", mac = "b8:27:eb:66:2e:c2"))
+        enricher.enrich(scanned(name = "example-pi.fritz.box.", vendor = "Raspberry Pi Foundation", mac = "b8:00:00:00:00:01"))
 
-        seen.map { Triple(it.name, it.vendor, it.mac) } shouldBe List(2) { Triple("stilgar.fritz.box.", "Raspberry Pi Foundation", "b8:27:eb:66:2e:c2") }
+        seen.map { Triple(it.name, it.vendor, it.mac) } shouldBe List(2) { Triple("example-pi.fritz.box.", "Raspberry Pi Foundation", "b8:00:00:00:00:01") }
     }
 
     @Test

@@ -17,8 +17,8 @@ class NmapXmlTest {
         val result = NmapXml.parse(nmapRun(UP_WITH_NAME, UP_WITHOUT_NAME, LOCALHOST))
 
         result.shouldContainExactly(
-            Host(ip = IP.of("192.168.42.180"), name = "foo.bar", status = Status.UP, vendor = "Raspberry Pi Trading", mac = "dc:a6:32:a5:ba:b6"),
-            Host(ip = IP.of("192.168.42.190"), name = null, status = Status.UP, vendor = "Raspberry Pi Trading", mac = "e4:5f:01:34:81:39"),
+            Host(ip = IP.of("192.168.42.180"), name = "foo.bar", status = Status.UP, vendor = "Raspberry Pi Trading", mac = "dc:00:00:00:00:12"),
+            Host(ip = IP.of("192.168.42.190"), name = null, status = Status.UP, vendor = "Raspberry Pi Trading", mac = "e4:00:00:00:00:13"),
             Host(ip = IP.of("192.168.42.33"), name = null, status = Status.UP, vendor = null, mac = null),
         )
     }
@@ -37,7 +37,7 @@ class NmapXmlTest {
         result.map { it.ip.toString() to it.mac } shouldContainExactly listOf(
             "192.168.42.8" to null,
             "192.168.42.50" to null,
-            "192.168.42.180" to "dc:a6:32:a5:ba:b6",
+            "192.168.42.180" to "dc:00:00:00:00:12",
         )
     }
 
@@ -93,7 +93,7 @@ private fun nmapRun(vararg hosts: String): String = """
 private val UP_WITH_NAME = """
     <host><status state="up" reason="arp-response" reason_ttl="0"/>
     <address addr="192.168.42.180" addrtype="ipv4"/>
-    <address addr="DC:A6:32:A5:BA:B6" addrtype="mac" vendor="Raspberry Pi Trading"/>
+    <address addr="DC:00:00:00:00:12" addrtype="mac" vendor="Raspberry Pi Trading"/>
     <hostnames>
     <hostname name="foo.bar" type="PTR"/>
     </hostnames>
@@ -104,7 +104,7 @@ private val UP_WITH_NAME = """
 private val UP_WITHOUT_NAME = """
     <host><status state="up" reason="arp-response" reason_ttl="0"/>
     <address addr="192.168.42.190" addrtype="ipv4"/>
-    <address addr="E4:5F:01:34:81:39" addrtype="mac" vendor="Raspberry Pi Trading"/>
+    <address addr="E4:00:00:00:00:13" addrtype="mac" vendor="Raspberry Pi Trading"/>
     <hostnames>
     </hostnames>
     </host>

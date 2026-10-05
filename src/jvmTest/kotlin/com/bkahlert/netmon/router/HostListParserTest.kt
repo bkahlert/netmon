@@ -15,11 +15,11 @@ class HostListParserTest {
 
         result shouldHaveSize 5
         result[1] should {
-            it.mac shouldBe "be:3b:a1:cf:7c:bf"
-            it.ip shouldBe "192.168.17.11"
+            it.mac shouldBe "02:aa:bb:cc:00:17"
+            it.ip shouldBe "192.0.2.11"
             it.active shouldBe true
-            it.hostName shouldBe "macbookproista"
-            it.friendlyName shouldBe "MacBook Pro ista"
+            it.hostName shouldBe "macbookpro-a"
+            it.friendlyName shouldBe "MacBook Pro A"
             it.link shouldBe Link.WIFI
             it.linkSpeed shouldBe LinkSpeed(1088)
             it.deviceClass shouldBe "Generic"

@@ -47,11 +47,11 @@ class HostTest {
 
     @Test
     fun mac_round_trips() {
-        val host = Host(ip = IP.of("10.0.0.1"), status = Status.UP, mac = "dc:a6:32:a5:ba:b6")
+        val host = Host(ip = IP.of("10.0.0.1"), status = Status.UP, mac = "dc:00:00:00:00:12")
 
         val json = JsonFormat.encodeToString(Host.serializer(), host)
 
-        json shouldContain "\"mac\": \"dc:a6:32:a5:ba:b6\""
+        json shouldContain "\"mac\": \"dc:00:00:00:00:12\""
         JsonFormat.decodeFromString(Host.serializer(), json) shouldBe host
     }
 

@@ -42,11 +42,11 @@ class TestGatewayOf:
         assert result == "10.0.2.2"
 
     def test_on_two_default_routes_returns_the_first(self):
-        routes = "default via 192.168.16.1 dev eth0 proto dhcp metric 100\ndefault via 192.168.16.1 dev wlan0 proto dhcp metric 600\n"
+        routes = "default via 198.51.100.1 dev eth0 proto dhcp metric 100\ndefault via 198.51.100.1 dev wlan0 proto dhcp metric 600\n"
 
         result = gateway_of(routes)
 
-        assert result == "192.168.16.1"
+        assert result == "198.51.100.1"
 
     def test_on_no_default_route_raises(self):
         with pytest.raises(ValueError, match="default route"):
@@ -55,10 +55,10 @@ class TestGatewayOf:
 
 class TestExactly:
     def test_matches_the_ip_and_not_a_longer_one(self):
-        pattern = exactly("192.168.16.1")
+        pattern = exactly("198.51.100.1")
 
-        assert pattern.match("192.168.16.1")
-        assert not pattern.match("192.168.16.10")
+        assert pattern.match("198.51.100.1")
+        assert not pattern.match("198.51.100.10")
 
 
 class TestUnexpectedRecoverableErrors:
