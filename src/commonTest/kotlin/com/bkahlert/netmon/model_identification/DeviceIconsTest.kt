@@ -15,11 +15,11 @@ class DeviceIconsTest {
 
     @Test
     fun the_first_matching_specific_rule_wins_and_every_given_field_must_match() {
-        ICONS.specificSymbol(vendor = "Nanoleaf", model = "NL42", name = "Shapes 0001") shouldBe "<svg>shapes</svg>"
-        ICONS.specificSymbol(vendor = "Nanoleaf", model = "SQFX01", name = null) shouldBe "<svg>nanoleaf</svg>"
-        ICONS.specificSymbol(vendor = "Amazon", model = "Fire TV Stick 4K", name = null) shouldBe "<svg>firetv</svg>"
-        ICONS.specificSymbol(vendor = "Amazon", model = null, name = "Echo").shouldBeNull()
-        ICONS.specificSymbol(vendor = null, model = "NL42", name = null).shouldBeNull()
+        ICONS.specificSymbol(vendor = "Sonos", model = "One SL", name = "Living Room") shouldBe "<svg>one</svg>"
+        ICONS.specificSymbol(vendor = "Sonos", model = "Play:5", name = null) shouldBe "<svg>sonos</svg>"
+        ICONS.specificSymbol(vendor = "Nintendo", model = "Switch OLED", name = null) shouldBe "<svg>switch</svg>"
+        ICONS.specificSymbol(vendor = "Nintendo", model = null, name = "Console").shouldBeNull()
+        ICONS.specificSymbol(vendor = null, model = "One SL", name = null).shouldBeNull()
     }
 
     @Test
@@ -32,9 +32,9 @@ class DeviceIconsTest {
 private val ICONS = DeviceIcons(
     kinds = mapOf("Television" to "mdi:television"),
     specific = listOf(
-        DeviceIcons.Matcher(vendor = "^Amazon$", model = "Fire TV", symbol = "cbi:firetv"),
-        DeviceIcons.Matcher(vendor = "^Nanoleaf$", model = "^NL42", symbol = "cbi:nanoleaf-shapes"),
-        DeviceIcons.Matcher(vendor = "^Nanoleaf$", symbol = "cbi:nanoleaf"),
+        DeviceIcons.Matcher(vendor = "^Sonos$", model = "^One", symbol = "mdi:speaker-wireless"),
+        DeviceIcons.Matcher(vendor = "^Sonos$", symbol = "simple-icons:sonos"),
+        DeviceIcons.Matcher(vendor = "^Nintendo$", model = "^Switch", symbol = "mdi:nintendo-switch"),
     ),
-    symbols = mapOf("mdi:television" to "<svg>tv</svg>", "cbi:firetv" to "<svg>firetv</svg>", "cbi:nanoleaf-shapes" to "<svg>shapes</svg>", "cbi:nanoleaf" to "<svg>nanoleaf</svg>", "mdi:wifi" to "<svg>wifi</svg>"),
+    symbols = mapOf("mdi:television" to "<svg>tv</svg>", "mdi:speaker-wireless" to "<svg>one</svg>", "simple-icons:sonos" to "<svg>sonos</svg>", "mdi:nintendo-switch" to "<svg>switch</svg>", "mdi:wifi" to "<svg>wifi</svg>"),
 )

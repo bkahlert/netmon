@@ -324,13 +324,27 @@ class NetworkKtTest {
     fun a_specific_brand_icon_beats_the_kind_and_an_apple_code_beats_both() = runTest {
         withIcons {
             val now = Clock.System.now()
-            val stick = Host(ip = IP.of("192.0.2.1"), vendor = "Amazon", model = "Fire TV Stick 4K", kind = Kind.SET_TOP_BOX, status = Status.UP, since = now)
+            val tado = Host(ip = IP.of("192.0.2.1"), vendor = "tado", model = "Smart Thermostat", kind = Kind.THERMOSTAT, status = Status.UP, since = now)
             val ipad = Host(ip = IP.of("192.0.2.2"), vendor = "Apple", model = "iPad8,3", kind = Kind.TABLET, status = Status.UP, since = now)
-            val store = RootStore(listOf(stick, ipad), job = job)
+            val store = RootStore(listOf(tado, ipad), job = job)
 
             val container = rendered { hosts(store, clock = MutableStateFlow(now)) }
 
-            container.awaited({ symbolNames() }) { it.size == 2 } shouldContainExactly listOf("ipad", "cbi:firetv")
+            container.awaited({ symbolNames() }) { it.size == 2 } shouldContainExactly listOf("ipad", "simple-icons:tado")
+            container.remove()
+        }
+    }
+
+    @Test
+    fun a_fire_tv_has_no_brand_icon_and_is_drawn_by_its_kind() = runTest {
+        withIcons {
+            val now = Clock.System.now()
+            val stick = Host(ip = IP.of("192.0.2.1"), vendor = "Amazon", model = "Fire TV Stick 4K", kind = Kind.SET_TOP_BOX, status = Status.UP, since = now)
+            val store = RootStore(listOf(stick), job = job)
+
+            val container = rendered { hosts(store, clock = MutableStateFlow(now)) }
+
+            container.awaited({ symbolNames() }) { it.isNotEmpty() } shouldContainExactly listOf("mdi:cast")
             container.remove()
         }
     }
@@ -344,7 +358,7 @@ class NetworkKtTest {
 
             val container = rendered { hosts(store, clock = MutableStateFlow(now)) }
 
-            container.awaited({ symbolNames() }) { it.isNotEmpty() } shouldContainExactly listOf("cbi:sonos-one")
+            container.awaited({ symbolNames() }) { it.isNotEmpty() } shouldContainExactly listOf("simple-icons:sonos")
             container.remove()
         }
     }
@@ -430,12 +444,12 @@ private suspend fun withIcons(block: suspend () -> Unit) {
     DeviceModelCodes.set(DeviceModelCodes(models = mapOf("iPad8,3" to DeviceModelCodes.Model("iPad Pro", "ipad"), "One SL" to DeviceModelCodes.Model("One SL", "hifispeaker")), symbols = mapOf("ipad" to """<svg data-symbol-name="ipad" viewBox="0 0 10 10"><path d="M0 0"/></svg>""", "hifispeaker" to """<svg data-symbol-name="hifispeaker" viewBox="0 0 10 10"><path d="M0 0"/></svg>""")))
     DeviceIcons.set(
         DeviceIcons(
-            kinds = mapOf("Socket" to "mdi:power-socket-eu", "SetTopBox" to "mdi:cast", "Tablet" to "mdi:tablet"),
+            kinds = mapOf("Socket" to "mdi:power-socket-eu", "SetTopBox" to "mdi:cast", "Tablet" to "mdi:tablet", "Thermostat" to "mdi:thermostat"),
             specific = listOf(
-                DeviceIcons.Matcher(vendor = "^Amazon$", model = "Fire TV", symbol = "cbi:firetv"),
-                DeviceIcons.Matcher(vendor = "^Sonos$", model = "^One", symbol = "cbi:sonos-one"),
+                DeviceIcons.Matcher(vendor = "^tado$", symbol = "simple-icons:tado"),
+                DeviceIcons.Matcher(vendor = "^Sonos$", symbol = "simple-icons:sonos"),
             ),
-            symbols = listOf("mdi:power-socket-eu", "mdi:cast", "mdi:tablet", "cbi:firetv", "cbi:sonos-one", "mdi:ethernet", "mdi:wifi")
+            symbols = listOf("mdi:power-socket-eu", "mdi:cast", "mdi:tablet", "mdi:thermostat", "simple-icons:tado", "simple-icons:sonos", "mdi:ethernet", "mdi:wifi")
                 .associateWith { """<svg data-symbol-name="$it" viewBox="0 0 24 24"><path d="M0 0"/></svg>""" },
         ),
     )

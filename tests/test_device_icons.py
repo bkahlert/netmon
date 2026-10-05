@@ -28,9 +28,9 @@ class TestSvg:
         assert result == '<svg xmlns="http://www.w3.org/2000/svg" data-symbol-name="mdi:wifi" viewBox="0 0 24 24"><path d="M1 1" fill="currentColor"/></svg>'
 
     def test_uses_the_icons_own_size_and_offset_when_given(self):
-        data = {"prefix": "cbi", "width": 24, "height": 24, "icons": {"firetv": {"body": "<g/>", "width": 32, "height": 16, "left": -4, "top": 2}}}
+        data = {"prefix": "simple-icons", "width": 24, "height": 24, "icons": {"sonos": {"body": "<g/>", "width": 32, "height": 16, "left": -4, "top": 2}}}
 
-        result = device_icons.svg(data, "firetv")
+        result = device_icons.svg(data, "sonos")
 
         assert 'viewBox="-4 -6 32 32"' in result
 
@@ -42,7 +42,7 @@ class TestBuild:
         result = device_icons.build(svgs)
 
         assert result["kinds"]["Television"] == "mdi:television"
-        assert {"vendor": "^Amazon$", "model": "Fire TV", "symbol": "cbi:firetv"} in result["specific"]
+        assert {"vendor": "^Sonos$", "symbol": "simple-icons:sonos"} in result["specific"]
         assert result["symbols"]["mdi:television"] == "<svg>mdi:television</svg>"
         assert set(result["symbols"]) == set(svgs)
 
@@ -53,9 +53,29 @@ class TestBuild:
 
 class TestGroupByPrefix:
     def test_groups_symbol_ids_by_icon_set(self):
-        result = device_icons.group_by_prefix(["mdi:wifi", "cbi:firetv", "mdi:lan"])
+        result = device_icons.group_by_prefix(["mdi:wifi", "simple-icons:sonos", "mdi:lan"])
 
-        assert result == {"mdi": ["lan", "wifi"], "cbi": ["firetv"]}
+        assert result == {"mdi": ["lan", "wifi"], "simple-icons": ["sonos"]}
+
+
+class TestLicences:
+    """Only Apache 2.0 (mdi) and CC0 1.0 (simple-icons) icons ship; a NonCommercial or ShareAlike set conflicts with the MIT licence."""
+
+    def test_the_generator_draws_only_from_licence_clean_sets(self):
+        prefixes = {symbol.split(":", 1)[0] for symbol in device_icons.used_symbols()}
+
+        assert prefixes <= {"mdi", "simple-icons"}
+
+    def test_the_shipped_asset_draws_only_from_licence_clean_sets(self):
+        asset = json.loads(ASSET.read_text())
+        prefixes = {symbol.split(":", 1)[0] for symbol in asset["symbols"]}
+
+        assert prefixes <= {"mdi", "simple-icons"}
+
+    def test_a_fire_tv_has_no_brand_icon_of_its_own_and_falls_back_to_its_kind(self):
+        matchers = [matcher for matcher in device_icons.SPECIFIC if re.search(matcher["vendor"], "Amazon", re.I)]
+
+        assert matchers == []
 
 
 class TestSafety:

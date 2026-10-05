@@ -2,7 +2,7 @@
 
 `make device-icons` writes src/commonMain/resources/assets/device-icons.json: `kinds` maps each Kind token to a symbol
 id, `specific` lists vendor/model/name regex matchers to a symbol id (first match wins), `symbols` maps each symbol id
-to its SVG. Kinds come from Material Design Icons (Apache 2.0), brands from Custom Brand Icons (CC BY-NC-SA 4.0).
+to its SVG. Kinds and device shapes come from Material Design Icons (Apache 2.0), vendor wordmarks from Simple Icons (CC0 1.0).
 """
 
 import json
@@ -51,16 +51,12 @@ KINDS = {
 }
 # Matchers are regexes, case-insensitive, over the resolved vendor, model and name; every given field must match.
 SPECIFIC = [
-    {"vendor": "^Amazon$", "model": "Fire TV", "symbol": "cbi:firetv"},
-    {"vendor": "^Sonos$", "model": "^One", "symbol": "cbi:sonos-one"},
-    {"vendor": "^Nanoleaf$", "model": "^NL42", "symbol": "cbi:nanoleaf-shapes"},
-    {"vendor": "^Nanoleaf$", "model": "^NL69", "symbol": "cbi:nanoleaf-lines"},
-    {"vendor": "^Nanoleaf$", "symbol": "cbi:nanoleaf"},
-    {"vendor": "^Signify$", "symbol": "cbi:hue-only"},
-    {"vendor": "^Ring$", "symbol": "cbi:ring"},
-    {"vendor": "^tado$", "symbol": "cbi:tado"},
-    {"vendor": "^AVM$", "symbol": "cbi:fritzbox-7530"},
-    {"vendor": "^Raspberry Pi$", "symbol": "cbi:raspberry-pi"},
+    {"vendor": "^Sonos$", "symbol": "simple-icons:sonos"},
+    {"vendor": "^Signify$", "symbol": "simple-icons:philipshue"},
+    {"vendor": "^Ring$", "symbol": "simple-icons:ring"},
+    {"vendor": "^tado$", "symbol": "simple-icons:tado"},
+    {"vendor": "^AVM$", "symbol": "simple-icons:avm"},
+    {"vendor": "^Raspberry Pi$", "symbol": "mdi:raspberry-pi"},
     {"vendor": "^Nintendo$", "symbol": "mdi:nintendo-switch"},
 ]
 EXTRA = {"ethernet": "mdi:ethernet", "wifi": "mdi:wifi"}
