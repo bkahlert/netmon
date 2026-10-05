@@ -53,6 +53,7 @@ class FritzBoxHosts(
     private val lookups = ConcurrentHashMap<String, Pair<RouterHost?, Instant>>()
     private val pending = ConcurrentHashMap.newKeySet<String>()
     private val queue = LinkedBlockingQueue<String>()
+    private val gate = Any()
 
     @Volatile
     private var failing = false
@@ -68,14 +69,28 @@ class FritzBoxHosts(
         table.byMac[key]?.let { return it }
         if (credentials != null) return null
         val cached = lookups[key]
-        if (!closed && (cached == null || clock.now() - cached.second >= LOOKUP_TTL) && pending.add(key)) {
-            queue.add(key)
-            start()
-        }
+        if (!closed && cached.isStale() && enqueue(key)) start()
         return cached?.first
     }
 
     override fun byIp(ip: String): RouterHost? = table.byIp[ip]
+
+    private fun Pair<RouterHost?, Instant>?.isStale(): Boolean = this == null || clock.now() - second >= LOOKUP_TTL
+
+    private fun enqueue(key: String): Boolean = synchronized(gate) {
+        if (!lookups[key].isStale() || !pending.add(key)) return false
+        lookups.entries.removeIf { it.key != key && it.value.isStale() }
+        queue.add(key)
+    }
+
+    private fun publish(mac: String, host: RouterHost?) {
+        if (failing) logger.info("FRITZ!Box host lookup works again")
+        failing = false
+        synchronized(gate) {
+            pending.remove(mac)
+            lookups[mac] = host to clock.now()
+        }
+    }
 
     /** Loads the table once; with no credentials, there is nothing to load. Any failure keeps the last table. */
     fun refresh() {
@@ -149,22 +164,22 @@ class FritzBoxHosts(
         try {
             val client = client() ?: return true
             val fields = client.hosts("GetSpecificHostEntry", mapOf("MACAddress" to mac.uppercase()))
-            lookups[mac] = (fields + ("MACAddress" to mac)).toRouterHost() to clock.now()
+            publish(mac, (fields + ("MACAddress" to mac)).toRouterHost())
         } catch (e: Tr064Exception) {
             if (e.fault != UNKNOWN_ENTRY) {
+                pending.remove(mac)
                 report(e)
                 return false
             }
-            lookups[mac] = null to clock.now()
+            publish(mac, null)
         } catch (e: InterruptedException) {
             Thread.currentThread().interrupt()
             return true
         } catch (e: Exception) {
+            pending.remove(mac)
             report(e)
             return false
         }
-        if (failing) logger.info("FRITZ!Box host lookup works again")
-        failing = false
         return true
     }
 

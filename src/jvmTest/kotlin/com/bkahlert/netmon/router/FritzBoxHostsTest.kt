@@ -119,6 +119,43 @@ class FritzBoxHostsTest {
     }
 
     @Test
+    fun a_failed_lookup_can_be_asked_again_as_soon_as_its_failure_is_logged() {
+        val warned = CountDownLatch(1)
+        val resume = CountDownLatch(1)
+        val log = RecordingLogger { warned.countDown(); resume.await(3, TimeUnit.SECONDS) }
+        val dead = FakeFritzBox().also { it.close() }
+        val calls = AtomicInteger()
+        FritzBoxHosts({ calls.incrementAndGet(); Tr064Client(dead.base, null) }, credentials = null, clock = TestClock(), logger = log.logger).use { hosts ->
+            try {
+                hosts.byMac("a8:00:00:00:00:06").shouldBeNull()
+                warned.await(5, TimeUnit.SECONDS) shouldBe true
+
+                hosts.byMac("a8:00:00:00:00:06").shouldBeNull()
+            } finally {
+                resume.countDown()
+            }
+
+            eventually { calls.get() == 2 }
+        }
+    }
+
+    @Test
+    fun without_credentials_expired_lookups_are_dropped_when_a_new_one_is_queued() {
+        FakeFritzBox(unauthenticated = mapOf("GetSpecificHostEntry" to ENTRY)).use { box ->
+            val clock = TestClock()
+            FritzBoxHosts({ Tr064Client(box.base, null) }, credentials = null, clock = clock).use { hosts ->
+                hosts.byMac("a8:00:00:00:00:06").shouldBeNull()
+                eventually { hosts.byMac("a8:00:00:00:00:06") != null }
+                clock.advance(11.minutes)
+
+                hosts.byMac("a8:00:00:00:00:07").shouldBeNull()
+
+                hosts.byMac("a8:00:00:00:00:06").shouldBeNull()
+            }
+        }
+    }
+
+    @Test
     fun after_a_transport_failure_the_rest_of_the_batch_waits_for_the_next_request() {
         val release = CountDownLatch(1)
         val calls = AtomicInteger()
@@ -251,12 +288,13 @@ private fun eventually(condition: () -> Boolean) {
 
 private fun liveWorkers() = Thread.getAllStackTraces().keys.filter { it.name == "fritzbox-hosts" && it.isAlive }
 
-private class RecordingLogger {
+private class RecordingLogger(private val afterEvent: () -> Unit = {}) {
     val events = CopyOnWriteArrayList<String>()
     val logger: Logger = Proxy.newProxyInstance(Logger::class.java.classLoader, arrayOf(Logger::class.java)) { _, method, args ->
         if (method.name in setOf("info", "warn", "error")) {
             val message = args.orEmpty().filterIsInstance<String>().firstOrNull().orEmpty()
             events += "${method.name.uppercase()} ${MessageFormatter.arrayFormat(message, args.orEmpty().drop(1).toTypedArray()).message}"
+            afterEvent()
         }
         if (method.returnType == Boolean::class.javaPrimitiveType) false else null
     } as Logger
