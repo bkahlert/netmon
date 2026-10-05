@@ -6,6 +6,8 @@ import com.bkahlert.netmon.Event.ScanEvent
 import com.bkahlert.netmon.EventSource
 import com.bkahlert.netmon.Host
 import com.bkahlert.netmon.HostEventSettings
+import com.bkahlert.netmon.Kind
+import com.bkahlert.netmon.Link
 import com.bkahlert.netmon.MinuteClock
 import com.bkahlert.netmon.ScanEventSettings
 import com.bkahlert.netmon.ScanEventsStore
@@ -13,7 +15,9 @@ import com.bkahlert.netmon.UiSettings
 import com.bkahlert.netmon.fritz2.partition
 import com.bkahlert.netmon.getElapsedTime
 import com.bkahlert.netmon.hosts
+import com.bkahlert.netmon.model_identification.DeviceIcons
 import com.bkahlert.netmon.model_identification.DeviceModelCodes
+import com.bkahlert.netmon.uri.Uri
 import dev.fritz2.core.HtmlTag
 import dev.fritz2.core.RenderContext
 import dev.fritz2.core.Store
@@ -29,6 +33,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.map
@@ -184,19 +189,21 @@ fun RenderContext.host(
 
     val models = host.data.map { it.model }.distinctUntilChanged()
     val modelNames = models.map { it?.let(DeviceModelCodes::description) ?: it }
-    val modelIcons = models.map { it?.let(DeviceModelCodes::symbol)?.let(DataUri::svg) ?: SFSymbols.display }
+    val kinds = host.data.map { it.kind }.distinctUntilChanged()
+    val icons = host.data.map { hostIcon(it.model, it.vendor, it.name, it.kind) }.distinctUntilChanged()
+    val links = host.data.map { it.link to it.speed }.distinctUntilChanged()
 
     val vendors = host.data.map { it.vendor }.distinctUntilChanged()
     val macs = host.data.map { it.mac }.distinctUntilChanged()
 
-    val captions = combine(hostNames, modelNames, macs) { h, m, mac -> h?.substringBefore(".") ?: m ?: mac?.takeLast(8) }
+    val captions = combine(hostNames, modelNames, kinds, macs) { h, m, k, mac -> h?.substringBefore(".") ?: m ?: k?.label ?: mac?.takeLast(8) }
 
     div("host") {
         className(elapsedTime.map { if (it != null && it < highlightDuration) "host--highlighted" else "" })
         attr("data-status", statuses.map { it?.toString()?.lowercase() ?: "" })
 
         div("host__aside") {
-            icon("host__icon w-full", modelIcons)
+            icon("host__icon w-full", icons)
             modelNames.render {
                 if (it != null) div("host__model") { fitted(it, length = it.longestWord()) }
             }
@@ -213,6 +220,14 @@ fun RenderContext.host(
             }
             ips.render {
                 div("host__ip font-mono") { fitted(it.toString()) }
+            }
+            links.render { (link, speed) ->
+                if (link != null) {
+                    div("host__link") {
+                        icon("host__link-icon", flowOf(linkIcon(link)))
+                        span { +(speed?.toString() ?: if (link == Link.WIFI) "Wi-Fi" else "Ethernet") }
+                    }
+                }
             }
             statuses.render { status ->
                 if (status != null) {
@@ -231,3 +246,11 @@ fun RenderContext.host(
         }
     }
 }
+
+/** The icon of a host: a known Apple model code's SF Symbol, else the first brand matcher, else the kind's symbol, else the display glyph. */
+fun hostIcon(model: String?, vendor: String?, name: String?, kind: Kind?): Uri =
+    (model?.let(DeviceModelCodes::symbol) ?: DeviceIcons.specificSymbol(vendor, model, name) ?: kind?.let(DeviceIcons::kindSymbol))
+        ?.let(DataUri::svg) ?: SFSymbols.display
+
+private fun linkIcon(link: Link): Uri =
+    DeviceIcons.symbol(if (link == Link.WIFI) "mdi:wifi" else "mdi:ethernet")?.let(DataUri::svg) ?: SFSymbols.display

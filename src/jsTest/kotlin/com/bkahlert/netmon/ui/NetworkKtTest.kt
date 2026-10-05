@@ -5,8 +5,12 @@ import com.bkahlert.netmon.Event.ScanEvent
 import com.bkahlert.netmon.EventSource
 import com.bkahlert.netmon.Host
 import com.bkahlert.netmon.IP
+import com.bkahlert.netmon.Kind
+import com.bkahlert.netmon.Link
+import com.bkahlert.netmon.LinkSpeed
 import com.bkahlert.netmon.Status
 import com.bkahlert.netmon.fritz2.runTest
+import com.bkahlert.netmon.model_identification.DeviceIcons
 import com.bkahlert.netmon.model_identification.DeviceModelCodes
 import dev.fritz2.core.RootStore
 import io.kotest.matchers.collections.shouldContainAll
@@ -15,6 +19,7 @@ import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldContain
 import io.kotest.matchers.string.shouldNotContain
 import kotlinx.coroutines.flow.MutableStateFlow
+import org.w3c.dom.Element
 import org.w3c.dom.HTMLElement
 import org.w3c.dom.Node
 import org.w3c.dom.asList
@@ -214,6 +219,72 @@ class NetworkKtTest {
     }
 
     @Test
+    fun a_host_without_a_model_code_is_drawn_by_its_kind() = runTest {
+        withIcons {
+            val now = Clock.System.now()
+            val plug = Host(ip = IP.of("192.168.1.1"), kind = Kind.SOCKET, status = Status.UP, since = now)
+            val store = RootStore(listOf(plug), job = job)
+
+            val container = rendered { hosts(store, clock = MutableStateFlow(now)) }
+
+            container.awaited({ symbolNames() }) { it.isNotEmpty() } shouldContainExactly listOf("mdi:power-socket-eu")
+            container.remove()
+        }
+    }
+
+    @Test
+    fun a_specific_brand_icon_beats_the_kind_and_an_apple_code_beats_both() = runTest {
+        withIcons {
+            val now = Clock.System.now()
+            val stick = Host(ip = IP.of("192.168.1.1"), vendor = "Amazon", model = "Fire TV Stick 4K", kind = Kind.SET_TOP_BOX, status = Status.UP, since = now)
+            val ipad = Host(ip = IP.of("192.168.1.2"), vendor = "Apple", model = "iPad8,3", kind = Kind.TABLET, status = Status.UP, since = now)
+            val store = RootStore(listOf(stick, ipad), job = job)
+
+            val container = rendered { hosts(store, clock = MutableStateFlow(now)) }
+
+            container.awaited({ symbolNames() }) { it.size == 2 } shouldContainExactly listOf("cbi:firetv", "ipad")
+            container.remove()
+        }
+    }
+
+    @Test
+    fun a_nameless_modelless_host_is_captioned_by_its_kind() = runTest {
+        val now = Clock.System.now()
+        val store = RootStore(listOf(Host(ip = IP.of("192.168.1.1"), kind = Kind.GAMING_DEVICE, mac = "80:d2:e5:6b:ad:08", status = Status.UP, since = now)), job = job)
+
+        val container = rendered { hosts(store, clock = MutableStateFlow(now)) }
+
+        container.textOnce("Gaming Device") shouldContain "Gaming Device"
+        container.remove()
+    }
+
+    @Test
+    fun a_host_with_a_link_shows_the_badge_with_its_speed() = runTest {
+        withIcons {
+            val now = Clock.System.now()
+            val store = RootStore(listOf(Host(ip = IP.of("192.168.1.1"), link = Link.ETHERNET, speed = LinkSpeed(2500), status = Status.UP, since = now)), job = job)
+
+            val container = rendered { hosts(store, clock = MutableStateFlow(now)) }
+
+            container.textOnce("2.5 Gbit/s") shouldContain "2.5 Gbit/s"
+            container.querySelector(".host__link svg")?.getAttribute("data-symbol-name") shouldBe "mdi:ethernet"
+            container.remove()
+        }
+    }
+
+    @Test
+    fun a_host_without_a_link_shows_no_badge() = runTest {
+        val now = Clock.System.now()
+        val store = RootStore(listOf(Host(ip = IP.of("192.168.1.1"), status = Status.UP, since = now)), job = job)
+
+        val container = rendered { hosts(store, clock = MutableStateFlow(now)) }
+
+        container.textOnce("192.168.1.1")
+        container.querySelector(".host__link") shouldBe null
+        container.remove()
+    }
+
+    @Test
     fun a_card_carries_no_zoom() = runTest {
         val now = Clock.System.now()
         val events = RootStore(scan(now, host(1, now - 30.seconds), host(2, now - 3.hours)), job = job)
@@ -245,3 +316,24 @@ private fun HTMLElement.fitLengths(): List<String> =
     querySelectorAll(".fit").asList().map { (it as HTMLElement).style.getPropertyValue("--len").trim() }
 
 private fun Node.nodes(): List<Node> = childNodes.asList().flatMap { listOf(it) + it.nodes() }
+
+private fun HTMLElement.symbolNames(): List<String> =
+    querySelectorAll(".host__icon").asList().mapNotNull { (it as? Element)?.getAttribute("data-symbol-name") }
+
+private suspend fun withIcons(block: suspend () -> Unit) {
+    DeviceModelCodes.set(DeviceModelCodes(models = mapOf("iPad8,3" to DeviceModelCodes.Model("iPad Pro", "ipad")), symbols = mapOf("ipad" to """<svg data-symbol-name="ipad" viewBox="0 0 10 10"><path d="M0 0"/></svg>""")))
+    DeviceIcons.set(
+        DeviceIcons(
+            kinds = mapOf("Socket" to "mdi:power-socket-eu", "SetTopBox" to "mdi:cast", "Tablet" to "mdi:tablet"),
+            specific = listOf(DeviceIcons.Matcher(vendor = "^Amazon$", model = "Fire TV", symbol = "cbi:firetv")),
+            symbols = listOf("mdi:power-socket-eu", "mdi:cast", "mdi:tablet", "cbi:firetv", "mdi:ethernet", "mdi:wifi")
+                .associateWith { """<svg data-symbol-name="$it" viewBox="0 0 24 24"><path d="M0 0"/></svg>""" },
+        ),
+    )
+    try {
+        block()
+    } finally {
+        DeviceModelCodes.set(DeviceModelCodes())
+        DeviceIcons.set(DeviceIcons())
+    }
+}

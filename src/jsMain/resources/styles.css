@@ -90,6 +90,8 @@ body::before { @apply content-[''] table h-0; }
 .host__name { --room: 8.07; --char: .68; @apply font-bold; font-size: .875em; line-height: calc(20 / 14); }
 .host__vendor, .host__ip, .host__status { --room: 9.417; --char: .6; font-size: .75em; line-height: calc(16 / 12); }
 .host__ip { --char: .6; }
+.host__link { --room: 9.417; --char: .6; @apply flex items-center gap-1 whitespace-nowrap overflow-hidden opacity-60; font-size: .75em; line-height: calc(16 / 12); }
+.host__link-icon { @apply flex-none; width: 1em; height: 1em; }
 
 /* A line shrinks by its length (--len) until it fits the text column, but not below .6 of its size; the rest ends in an ellipsis. */
 .fit { font-size: clamp(.6em, calc(var(--room) * 1em / (max(var(--len), 1) * var(--char))), 1em); }
