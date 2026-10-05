@@ -59,6 +59,10 @@ class PlaceholdersTest {
             row("Fire TV Stick 4K", "Fire TV Stick 4K"),
             row("tado-IB0000000001.local.", "tado-IB0000000001"),
             row("0200000000AB00", "0200000000AB00"),
+            row("0000000000004000800000000000002", "0000000000004000800000000000002"),
+            row("000000000000400080000000000000002", "000000000000400080000000000000002"),
+            row("cafe-babe-deadbeef", "cafe-babe-deadbeef"),
+            row("Deadbeef-Cafe", "Deadbeef-Cafe"),
         ) { name, expected ->
             Placeholders.clean(name) shouldBe expected
         }
