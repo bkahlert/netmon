@@ -72,6 +72,10 @@ class TestSafety:
             "<foreignObject><div/></foreignObject>",
             "<!DOCTYPE x [<!ENTITY a 'b'>]><path d='&a;'/>",
             '<path d="M1 1"',
+            "<g><?a ><script>alert(1)</script>?></g>",
+            '<path d="M1 1" fill="\\75rl(x)"/>',
+            "<root/>",
+            "</svg><path/><svg>",
         ],
     )
     def test_svg_rejects_a_hostile_body(self, body):
@@ -86,6 +90,19 @@ class TestSafety:
         with pytest.raises(ValueError):
             device_icons.svg(data, 'x" onload="y')
 
+    @pytest.mark.parametrize(
+        "markup",
+        [
+            '<svg xmlns="http://www.w3.org/2000/svg"><g><?a ><script>alert(1)</script>?></g></svg>',
+            '<svg xmlns="http://www.w3.org/2000/svg"><path fill="\\75rl(x)"/></svg>',
+            '<svg xmlns="http://www.w3.org/2000/svg"><root/></svg>',
+            '<g xmlns="http://www.w3.org/2000/svg"/>',
+        ],
+    )
+    def test_check_markup_rejects_a_hostile_svg(self, markup):
+        with pytest.raises(ValueError):
+            device_icons.check_markup(markup)
+
     def test_build_rejects_a_hostile_svg(self):
         svgs = {symbol: f'<svg xmlns="http://www.w3.org/2000/svg" data-symbol-name="{symbol}"><path d="M1 1"/></svg>' for symbol in device_icons.used_symbols()}
         svgs["mdi:wifi"] = '<svg xmlns="http://www.w3.org/2000/svg"><script>alert(1)</script></svg>'
@@ -98,7 +115,7 @@ class TestShippedAsset:
     ALLOWED_TAGS = {"svg", "path", "g", "circle", "rect", "ellipse", "line", "polyline", "polygon"}
     TAG = re.compile(r"</?(?P<name>[^\s/>]+)")
     ATTRIBUTE = re.compile(r"\s(?P<name>[^\s=/>]+)\s*=")
-    FORBIDDEN = re.compile(r"url\(|script|style|image|foreignobject|<use|<!|&|href", re.I)
+    FORBIDDEN = re.compile(r"url\(|script|style|image|foreignobject|<use|<!|<\?|&|href|\\", re.I)
 
     @pytest.fixture
     def asset(self):

@@ -103,16 +103,17 @@ def fetch(prefix: str, names: list[str]) -> dict:
 
 
 def check_markup(markup: str) -> None:
-    """Raise ValueError unless the SVG markup has only allowed tags and attributes and no entity, DOCTYPE or url() tricks."""
-    if "<!" in markup or "&" in markup or "url(" in markup.lower():
+    """Raise ValueError unless the markup is one SVG with only allowed tags and attributes and no tricks that parse differently in a browser."""
+    if "<!" in markup or "<?" in markup or "&" in markup or "\\" in markup or "url(" in markup.lower():
         raise ValueError(f"disallowed construct in SVG: {markup[:80]}")
     try:
-        root = ElementTree.fromstring(f"<root>{markup}</root>" if not markup.startswith("<svg") else markup)
+        root = ElementTree.fromstring(markup)
     except ElementTree.ParseError as error:
         raise ValueError(f"SVG does not parse: {error}") from error
+    if root.tag.removeprefix(SVG_NAMESPACE) != "svg":
+        raise ValueError(f"not an SVG: {root.tag}")
     for element in root.iter():
-        tag = element.tag.removeprefix(SVG_NAMESPACE)
-        if tag != "root" and tag not in ALLOWED_TAGS:
+        if element.tag.removeprefix(SVG_NAMESPACE) not in ALLOWED_TAGS:
             raise ValueError(f"disallowed SVG tag: {element.tag}")
         for attribute in element.attrib:
             if attribute not in ALLOWED_ATTRIBUTES:
@@ -127,14 +128,15 @@ def svg(data: dict, name: str) -> str:
     if not SAFE_NAME.fullmatch(data["prefix"]) or not SAFE_NAME.fullmatch(name):
         raise ValueError(f"unsafe icon name: {data['prefix']}:{name}")
     icon = data["icons"][name]
-    check_markup(icon["body"])
     width = icon.get("width", data.get("width", 16))
     height = icon.get("height", data.get("height", 16))
     left = icon.get("left", data.get("left", 0))
     top = icon.get("top", data.get("top", 0))
     side = max(width, height)
     view_box = f"{number(left - (side - width) / 2)} {number(top - (side - height) / 2)} {number(side)} {number(side)}"
-    return f'<svg xmlns="http://www.w3.org/2000/svg" data-symbol-name="{data["prefix"]}:{name}" viewBox="{view_box}">{icon["body"]}</svg>'
+    markup = f'<svg xmlns="http://www.w3.org/2000/svg" data-symbol-name="{data["prefix"]}:{name}" viewBox="{view_box}">{icon["body"]}</svg>'
+    check_markup(markup)
+    return markup
 
 
 def number(value: float) -> str:
