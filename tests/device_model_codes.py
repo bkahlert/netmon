@@ -3,7 +3,7 @@
 `make device-model-codes` writes src/commonMain/resources/assets/device-model-codes.json, read-optimized for the display:
 `models` maps each model code to the description and symbol name of its type, `symbols` maps each symbol name to its
 SVG, so a lookup is two map reads. The Apple model codes and symbols come from device-icons' `symbols export`; the
-codes netmon's enrichers report for other devices, and the symbols of Apple types that declare none, are added here.
+codes the scanner reports for other devices, and the symbols of Apple types that declare none, are added here.
 """
 
 import json
@@ -16,7 +16,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 OUT = ROOT / "src" / "commonMain" / "resources" / "assets" / "device-model-codes.json"
 DEVICE_ICONS = ["uvx", "--from", "git+https://github.com/bkahlert/device-icons@v0.3.0", "device-icons"]
-# Model codes the Amazon and Sonos enrichers report, and netmon's own: description and symbol name of each.
+# Model codes the scanner reports for Amazon and Sonos devices, and netmon's own: description and symbol name of each.
 CUSTOM = {
     "MediaStick": ("Media Stick", "mediastick"),
     "FireTV": ("Fire TV", "mediastick"),

@@ -5,15 +5,19 @@ import com.bkahlert.netmon.CurrentTimeStore
 import com.bkahlert.netmon.Event.ScanEvent
 import com.bkahlert.netmon.EventSource
 import com.bkahlert.netmon.Host
-import com.bkahlert.netmon.HostEventSettings
+import com.bkahlert.netmon.HostGroup
+import com.bkahlert.netmon.Kind
+import com.bkahlert.netmon.Link
 import com.bkahlert.netmon.MinuteClock
 import com.bkahlert.netmon.ScanEventSettings
 import com.bkahlert.netmon.ScanEventsStore
-import com.bkahlert.netmon.UiSettings
-import com.bkahlert.netmon.fritz2.partition
 import com.bkahlert.netmon.getElapsedTime
+import com.bkahlert.netmon.groupedByKind
+import com.bkahlert.netmon.onlineAge
 import com.bkahlert.netmon.hosts
+import com.bkahlert.netmon.model_identification.DeviceIcons
 import com.bkahlert.netmon.model_identification.DeviceModelCodes
+import com.bkahlert.netmon.uri.Uri
 import dev.fritz2.core.HtmlTag
 import dev.fritz2.core.RenderContext
 import dev.fritz2.core.Store
@@ -29,6 +33,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.map
@@ -54,7 +59,6 @@ fun RenderContext.networks(scanEventsStore: ScanEventsStore) {
 fun RenderContext.scan(
     source: EventSource,
     events: Store<ScanEvent>,
-    stabilizedThreshold: Duration = HostEventSettings.stabilizedThreshold,
 ): HtmlTag<HTMLElement> = div(
     joinClasses(
         "flex flex-col min-h-0 min-w-0 space-y-5 pt-4 sm:pb-4 sm:px-4 sm:rounded-xl",
@@ -64,33 +68,10 @@ fun RenderContext.scan(
 ) {
     meta(source, events)
 
-    val (unstableHosts, stableHosts) = events
-        .map(ScanEvent.hosts())
-        .partition { host ->
-            when (val elapsedTime = host.getElapsedTime()) {
-                null -> false // = always online / never missing during scan
-                else -> elapsedTime <= stabilizedThreshold
-            }
-        }
+    val hosts = events.map(ScanEvent.hosts())
 
     div("scan__hosts") {
-        inlineStyle(sectionSizes(unstableHosts.current.size, stableHosts.current.size))
-        inlineStyle(
-            unstableHosts.data.map { it.size }
-                .combine(stableHosts.data.map { it.size }, ::sectionSizes)
-        )
-        hosts(unstableHosts, slowClock = MinuteClock.data, classes = "hosts--unstable")
-        unstableHosts.data.map { it.isNotEmpty() }
-            .combine(stableHosts.data.map { it.isNotEmpty() }) { a, b ->
-                a && b
-            }.render {
-                if (it) {
-                    div("divider-xs opacity-60") {
-                        +"$stabilizedThreshold+ unchanged"
-                    }
-                }
-            }
-        hosts(stableHosts, clock = MinuteClock.data, classes = "hosts--stable")
+        hosts(hosts, slowClock = MinuteClock.data)
     }
 }
 
@@ -113,8 +94,6 @@ private fun Host.elapsedTimes(clock: Flow<Instant>, slowClock: Flow<Instant>): F
     }.collect(this)
     slowClock.drop(1).collect { emit(getElapsedTime(it)) }
 }
-
-private fun sectionSizes(unstable: Int, stable: Int): String = "--unstable: $unstable; --stable: $stable"
 
 private fun HtmlTag<HTMLElement>.meta(
     source: EventSource,
@@ -155,28 +134,50 @@ private fun HtmlTag<HTMLElement>.meta(
 }
 
 /**
- * Renders the [hosts] as a grid of cards that the stylesheet sizes: the section's class in [classes] sets the
- * cards' scale, the enclosing `.scan__hosts` carries the section sizes.
+ * Renders the [hosts] as a grid of cards by [HostGroup], each group after a label, that the stylesheet sizes by the
+ * number of cells the grid carries as `--cells`.
  */
 fun RenderContext.hosts(
     hosts: Store<List<Host>>,
     clock: Flow<Instant> = CurrentTimeStore.data,
     slowClock: Flow<Instant> = clock,
-    classes: String? = null,
-): HtmlTag<HTMLUListElement> = ul(joinClasses("hosts", classes)) {
-    hosts.data.renderEach(Host::ip, into = this) { value ->
-        li { host(hosts.mapByElement(value, Host::ip), clock, slowClock) }
+): HtmlTag<HTMLUListElement> = ul("hosts") {
+    val cells = hosts.data.map { it.cells() }
+    inlineStyle(cellCount(hosts.current.cells()))
+    inlineStyle(cells.map(::cellCount))
+    cells.renderEach(Cell::id, into = this) { cell ->
+        when (cell) {
+            is Cell.Label -> li("hosts__group") { div("hosts__label") { span { +cell.group.label } } }
+            is Cell.Card -> li { host(hosts.mapByElement(cell.host, Host::ip), clock, slowClock) }
+        }
     }
 }
+
+private sealed interface Cell {
+    val id: Any
+
+    data class Label(val group: HostGroup) : Cell {
+        override val id: Any get() = group
+    }
+
+    data class Card(val host: Host) : Cell {
+        override val id: Any get() = host.ip
+    }
+}
+
+private fun List<Host>.cells(): List<Cell> =
+    groupedByKind().flatMap { (group, hosts) -> listOf(Cell.Label(group)) + hosts.map(Cell::Card) }
+
+private fun cellCount(cells: List<Cell>): String = "--cells: ${cells.size}"
 
 fun RenderContext.host(
     host: Store<Host>,
     clock: Flow<Instant>,
     slowClock: Flow<Instant>,
-    highlightDuration: Duration = UiSettings.HOST_STATE_CHANGE_HIGHLIGHT_DURATION,
 ) {
 
     val elapsedTime: Flow<Duration?> = host.data.flatMapLatest { it.elapsedTimes(clock, slowClock) }
+    val ages = host.data.flatMapLatest { value -> slowClock.map { now -> value.onlineAge(now)?.token } }.distinctUntilChanged()
 
     val ips = host.data.map { it.ip }.distinctUntilChanged()
     val hostNames = host.data.map { it.name }.distinctUntilChanged()
@@ -184,19 +185,21 @@ fun RenderContext.host(
 
     val models = host.data.map { it.model }.distinctUntilChanged()
     val modelNames = models.map { it?.let(DeviceModelCodes::description) ?: it }
-    val modelIcons = models.map { it?.let(DeviceModelCodes::symbol)?.let(DataUri::svg) ?: SFSymbols.display }
+    val kinds = host.data.map { it.kind }.distinctUntilChanged()
+    val icons = host.data.map { hostIcon(it.model, it.vendor, it.name, it.kind) }.distinctUntilChanged()
+    val links = host.data.map { it.link to it.speed }.distinctUntilChanged()
 
     val vendors = host.data.map { it.vendor }.distinctUntilChanged()
     val macs = host.data.map { it.mac }.distinctUntilChanged()
 
-    val captions = combine(hostNames, modelNames, macs) { h, m, mac -> h?.substringBefore(".") ?: m ?: mac?.takeLast(8) }
+    val captions = combine(hostNames, modelNames, kinds, macs) { h, m, k, mac -> h?.substringBefore(".") ?: m ?: k?.label ?: mac?.takeLast(8) }
 
     div("host") {
-        className(elapsedTime.map { if (it != null && it < highlightDuration) "host--highlighted" else "" })
         attr("data-status", statuses.map { it?.toString()?.lowercase() ?: "" })
+        attr("data-age", ages)
 
         div("host__aside") {
-            icon("host__icon w-full", modelIcons)
+            icon("host__icon w-full", icons)
             modelNames.render {
                 if (it != null) div("host__model") { fitted(it, length = it.longestWord()) }
             }
@@ -213,6 +216,14 @@ fun RenderContext.host(
             }
             ips.render {
                 div("host__ip font-mono") { fitted(it.toString()) }
+            }
+            links.render { (link, speed) ->
+                if (link != null) {
+                    div("host__link") {
+                        icon("host__link-icon", flowOf(linkIcon(link)))
+                        span { +(speed?.toString() ?: if (link == Link.WIFI) "Wi-Fi" else "Ethernet") }
+                    }
+                }
             }
             statuses.render { status ->
                 if (status != null) {
@@ -231,3 +242,13 @@ fun RenderContext.host(
         }
     }
 }
+
+/** The icon of a host: a known Apple model code's SF Symbol, else the first brand matcher, else the kind's symbol, else the display glyph. */
+fun hostIcon(model: String?, vendor: String?, name: String?, kind: Kind?): Uri =
+    (model?.takeIf { APPLE_SHAPE.matches(it) }?.let(DeviceModelCodes::symbol) ?: DeviceIcons.specificSymbol(vendor, model, name) ?: kind?.let(DeviceIcons::kindSymbol))
+        ?.let(DataUri::svg) ?: SFSymbols.display
+
+private val APPLE_SHAPE = Regex("[A-Za-z]+\\d+(?:,\\d+)?")
+
+private fun linkIcon(link: Link): Uri =
+    DeviceIcons.symbol(if (link == Link.WIFI) "mdi:wifi" else "mdi:ethernet")?.let(DataUri::svg) ?: SFSymbols.display

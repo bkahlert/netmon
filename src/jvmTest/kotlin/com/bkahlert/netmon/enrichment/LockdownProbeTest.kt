@@ -3,7 +3,6 @@ package com.bkahlert.netmon.enrichment
 import com.bkahlert.netmon.Host
 import com.bkahlert.netmon.epoch
 import com.bkahlert.netmon.invoke
-import io.kotest.matchers.collections.shouldBeEmpty
 import io.kotest.matchers.comparables.shouldBeLessThan
 import io.kotest.matchers.collections.shouldHaveSize
 import io.kotest.matchers.nulls.shouldBeNull
@@ -28,30 +27,21 @@ import kotlin.time.Duration.Companion.nanoseconds
 import kotlin.time.Duration.Companion.seconds
 import kotlin.time.Instant
 
-class LockdownModelEnricherTest {
+class LockdownProbeTest {
 
     @Test
-    fun a_host_without_vendor_gets_the_model_and_apple_as_vendor() {
+    fun a_reachable_device_answers_its_product_type() {
         FakeLockdownd(reply = plist("iPad7,5")).use { server ->
-            val result = LockdownModelEnricher(port = server.port).enrich(candidate())
+            val result = LockdownProbe(port = server.port).model(candidate().ip, candidate().mac)
 
-            result shouldBe candidate().copy(model = "iPad7,5", vendor = "Apple Inc.")
-        }
-    }
-
-    @Test
-    fun a_host_with_an_apple_vendor_keeps_it() {
-        FakeLockdownd(reply = plist("iPad8,3")).use { server ->
-            val result = LockdownModelEnricher(port = server.port).enrich(candidate(vendor = "Apple"))
-
-            result shouldBe candidate(vendor = "Apple").copy(model = "iPad8,3")
+            result shouldBe "iPad7,5"
         }
     }
 
     @Test
     fun the_request_asks_for_the_product_type() {
         FakeLockdownd(reply = plist("iPad7,5")).use { server ->
-            LockdownModelEnricher(port = server.port).enrich(candidate())
+            LockdownProbe(port = server.port).model(candidate().ip, candidate().mac)
 
             server.requests.single() should {
                 it shouldContain "<key>Request</key><string>GetValue</string>"
@@ -63,13 +53,13 @@ class LockdownModelEnricherTest {
     @Test
     fun a_known_model_is_not_asked_again_within_a_day() {
         FakeLockdownd(reply = plist("iPad7,5")).use { server ->
-            val enricher = LockdownModelEnricher(port = server.port, clock = TestClock())
+            val probe = LockdownProbe(port = server.port, clock = TestClock())
 
-            val first = enricher.enrich(candidate())
-            val second = enricher.enrich(candidate())
+            val first = probe.model(candidate().ip, candidate().mac)
+            val second = probe.model(candidate().ip, candidate().mac)
 
-            first?.model shouldBe "iPad7,5"
-            second?.model shouldBe "iPad7,5"
+            first shouldBe "iPad7,5"
+            second shouldBe "iPad7,5"
             server.requests shouldHaveSize 1
         }
     }
@@ -78,11 +68,11 @@ class LockdownModelEnricherTest {
     fun a_known_model_is_asked_again_after_a_day() {
         FakeLockdownd(reply = plist("iPad7,5")).use { server ->
             val clock = TestClock()
-            val enricher = LockdownModelEnricher(port = server.port, clock = clock)
-            enricher.enrich(candidate())
+            val probe = LockdownProbe(port = server.port, clock = clock)
+            probe.model(candidate().ip, candidate().mac)
 
             clock.advance(24.hours + 1.seconds)
-            enricher.enrich(candidate())
+            probe.model(candidate().ip, candidate().mac)
 
             server.requests shouldHaveSize 2
         }
@@ -91,12 +81,12 @@ class LockdownModelEnricherTest {
     @Test
     fun a_device_that_moved_is_found_in_the_cache_by_its_mac() {
         FakeLockdownd(reply = plist("iPad7,5")).use { server ->
-            val enricher = LockdownModelEnricher(port = server.port, clock = TestClock())
-            enricher.enrich(candidate(ip = "127.0.0.1"))
+            val probe = LockdownProbe(port = server.port, clock = TestClock())
+            probe.model(candidate(ip = "127.0.0.1").ip, candidate(ip = "127.0.0.1").mac)
 
-            val result = enricher.enrich(candidate(ip = "127.0.0.2"))
+            val result = probe.model(candidate(ip = "127.0.0.2").ip, candidate(ip = "127.0.0.2").mac)
 
-            result?.model shouldBe "iPad7,5"
+            result shouldBe "iPad7,5"
             server.requests shouldHaveSize 1
         }
     }
@@ -104,10 +94,10 @@ class LockdownModelEnricherTest {
     @Test
     fun without_a_mac_the_ip_is_the_cache_key() {
         FakeLockdownd(reply = plist("iPad7,5")).use { server ->
-            val enricher = LockdownModelEnricher(port = server.port, clock = TestClock())
+            val probe = LockdownProbe(port = server.port, clock = TestClock())
 
-            enricher.enrich(candidate(mac = null))
-            enricher.enrich(candidate(mac = null))
+            probe.model(candidate(mac = null).ip, candidate(mac = null).mac)
+            probe.model(candidate(mac = null).ip, candidate(mac = null).mac)
 
             server.requests shouldHaveSize 1
         }
@@ -117,14 +107,14 @@ class LockdownModelEnricherTest {
     fun a_failed_probe_is_retried_after_five_minutes() {
         FakeLockdownd(reply = errorReply("GetProhibited")).use { server ->
             val clock = TestClock()
-            val enricher = LockdownModelEnricher(port = server.port, clock = clock)
+            val probe = LockdownProbe(port = server.port, clock = clock)
 
-            val first = enricher.enrich(candidate())
+            val first = probe.model(candidate().ip, candidate().mac)
             clock.advance(4.minutes)
-            enricher.enrich(candidate())
+            probe.model(candidate().ip, candidate().mac)
             val requestsBeforeRetry = server.requests.size
             clock.advance(1.minutes + 1.seconds)
-            enricher.enrich(candidate())
+            probe.model(candidate().ip, candidate().mac)
 
             first.shouldBeNull()
             requestsBeforeRetry shouldBe 1
@@ -133,38 +123,18 @@ class LockdownModelEnricherTest {
     }
 
     @Test
-    fun a_host_with_another_vendor_is_not_probed() {
-        FakeLockdownd(reply = plist("iPad7,5")).use { server ->
-            val result = LockdownModelEnricher(port = server.port).enrich(candidate(vendor = "Raspberry Pi Trading"))
-
-            result.shouldBeNull()
-            server.requests.shouldBeEmpty()
-        }
-    }
-
-    @Test
-    fun a_host_with_a_model_is_not_probed() {
-        FakeLockdownd(reply = plist("iPad7,5")).use { server ->
-            val result = LockdownModelEnricher(port = server.port).enrich(candidate(model = "iPad8,3"))
-
-            result.shouldBeNull()
-            server.requests.shouldBeEmpty()
-        }
-    }
-
-    @Test
     fun a_closed_port_yields_nothing() {
         val closedPort = ServerSocket(0).use { it.localPort }
 
-        LockdownModelEnricher(port = closedPort).enrich(candidate()).shouldBeNull()
+        LockdownProbe(port = closedPort).model(candidate().ip, candidate().mac).shouldBeNull()
     }
 
     @Test
     fun a_device_that_never_answers_yields_nothing_after_the_read_timeout() {
         FakeLockdownd(reply = null).use { server ->
-            val enricher = LockdownModelEnricher(port = server.port, readTimeout = 200.milliseconds)
+            val probe = LockdownProbe(port = server.port, readTimeout = 200.milliseconds)
 
-            enricher.enrich(candidate()).shouldBeNull()
+            probe.model(candidate().ip, candidate().mac).shouldBeNull()
         }
     }
 
@@ -172,10 +142,10 @@ class LockdownModelEnricherTest {
     fun a_device_that_trickles_its_reply_is_given_up_on_after_the_read_timeout() {
         val slowReply = ByteBuffer.allocate(104).putInt(60_000).put(ByteArray(100)).array()
         FakeLockdownd(reply = slowReply, byteDelay = 100.milliseconds).use { server ->
-            val enricher = LockdownModelEnricher(port = server.port, readTimeout = 300.milliseconds)
+            val probe = LockdownProbe(port = server.port, readTimeout = 300.milliseconds)
 
             val started = System.nanoTime()
-            val result = enricher.enrich(candidate())
+            val result = probe.model(candidate().ip, candidate().mac)
             val elapsed = (System.nanoTime() - started).nanoseconds
 
             result.shouldBeNull()
@@ -186,16 +156,16 @@ class LockdownModelEnricherTest {
     @Test
     fun an_absurd_reply_length_yields_nothing() {
         FakeLockdownd(reply = ByteBuffer.allocate(4).putInt(Int.MAX_VALUE).array()).use { server ->
-            val enricher = LockdownModelEnricher(port = server.port, readTimeout = 200.milliseconds)
+            val probe = LockdownProbe(port = server.port, readTimeout = 200.milliseconds)
 
-            enricher.enrich(candidate()).shouldBeNull()
+            probe.model(candidate().ip, candidate().mac).shouldBeNull()
         }
     }
 
     @Test
     fun a_reply_that_is_not_a_plist_yields_nothing() {
         FakeLockdownd(reply = framed("not xml at all")).use { server ->
-            LockdownModelEnricher(port = server.port).enrich(candidate()).shouldBeNull()
+            LockdownProbe(port = server.port).model(candidate().ip, candidate().mac).shouldBeNull()
         }
     }
 
@@ -204,7 +174,7 @@ class LockdownModelEnricherTest {
         val body = """<?xml version="1.0"?><!DOCTYPE plist SYSTEM "file:///nonexistent/PropertyList.dtd">
             |<plist version="1.0"><dict><key>Value</key><string>iPad7,5</string></dict></plist>""".trimMargin()
         FakeLockdownd(reply = framed(body)).use { server ->
-            LockdownModelEnricher(port = server.port).enrich(candidate())?.model shouldBe "iPad7,5"
+            LockdownProbe(port = server.port).let { it.model(candidate().ip, candidate().mac) } shouldBe "iPad7,5"
         }
     }
 }
@@ -212,9 +182,7 @@ class LockdownModelEnricherTest {
 private fun candidate(
     ip: String = "127.0.0.1",
     mac: String? = "aa:bb:cc:dd:ee:01",
-    vendor: String? = null,
-    model: String? = null,
-) = Host(ip = ip, name = null, model = model, vendor = vendor, services = null, mac = mac)
+) = Host(ip = ip, name = null, model = null, vendor = null, services = null, mac = mac)
 
 private fun framed(body: String): ByteArray = body.toByteArray().let { ByteBuffer.allocate(4 + it.size).putInt(it.size).put(it).array() }
 

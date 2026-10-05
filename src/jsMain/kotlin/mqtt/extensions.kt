@@ -4,6 +4,8 @@ import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.flow.map
+import org.khronos.webgl.Int8Array
+import org.khronos.webgl.Uint8Array
 
 /**
  * Client connection options
@@ -81,5 +83,7 @@ typealias MqttMessage = Triple<String, ByteArray, dynamic>
  */
 val MqttClient.messages: Flow<MqttMessage>
     get() = on("message").map { (topic, message, packet) ->
-        MqttMessage(topic.unsafeCast<String>(), message.unsafeCast<ByteArray>(), packet)
+        // MQTT.js hands over a Buffer, a Uint8Array; read as a ByteArray, an Int8Array, its bytes above 127 would decode as Latin-1.
+        val payload = message.unsafeCast<Uint8Array>()
+        MqttMessage(topic.unsafeCast<String>(), Int8Array(payload.buffer, payload.byteOffset, payload.byteLength).unsafeCast<ByteArray>(), packet)
     }

@@ -19,6 +19,8 @@ data class DeviceModelCodes(
 
     override fun symbol(deviceModelCode: String): String? = models[deviceModelCode]?.symbol?.let { symbols[it] }
 
+    override fun symbolName(deviceModelCode: String): String? = models[deviceModelCode]?.symbol
+
     override fun toString(): String = (takeIf { size <= 5 } ?: (take(3) + "...").plus(last())).toString()
 
     /** What is known of a model code: the description of its type and the name of the symbol it is drawn with, each if any. */
@@ -35,6 +37,7 @@ data class DeviceModelCodes(
         override fun iterator(): Iterator<String> = instance.iterator()
         override fun description(deviceModelCode: String): String? = instance.description(deviceModelCode)
         override fun symbol(deviceModelCode: String): String? = instance.symbol(deviceModelCode)
+        override fun symbolName(deviceModelCode: String): String? = instance.symbolName(deviceModelCode)
 
         /** Sets the [DeviceModelCodes] singleton to be the specified [deviceModelCodes]. */
         fun set(deviceModelCodes: DeviceModelCodes): DeviceModelCodes = deviceModelCodes.also { instance = deviceModelCodes }
@@ -51,4 +54,7 @@ interface DeviceModelCodesLookup : Set<String> {
 
     /** Returns the SVG of the symbol the specified [deviceModelCode] is drawn with, or `null` if the code is unknown or gets none. */
     fun symbol(deviceModelCode: String): String?
+
+    /** Returns the name of the symbol the specified [deviceModelCode] is drawn with, or `null` if the code is unknown or gets none. */
+    fun symbolName(deviceModelCode: String): String?
 }

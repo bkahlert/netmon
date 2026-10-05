@@ -22,24 +22,23 @@ body::before { @apply content-[''] table h-0; }
 .divider-xs::before, .divider-xs::after { @apply h-[1px];}
 
 /*
- * The hosts of a scan fill the room they are given; no script measures anything. Kotlin writes the number of
- * cards of each section as --unstable and --stable on .scan__hosts, a size container, and the rules below turn
- * that and the container's size into columns, rows and a font size per card.
+ * The hosts of a scan fill the room they are given; no script measures anything. Kotlin writes the number of cells,
+ * a card per host and a label per group of hosts, as --cells on .hosts, the grid in .scan__hosts, a size container, and
+ * the rules below turn that and the container's size into columns, rows and a font size per cell.
  *
- * A card is 11.5625rem by 5.25rem at its natural size and lays itself out in em, so one font size scales it.
- * The stable section is 0.75 of that (--sigma). For both sections to end up at one scale, the unstable one gets
- * --balanced columns and the stable one --balanced / --sigma. --balanced follows from the number of cards and the
- * container's width to height ratio, which a container query sorts into steps (--ratio): CSS cannot divide two
- * lengths, and WPE WebKit 2.48.3 gets tan(atan2(w, h)) wrong for container units. auto-fill turns the column's
- * minimum width into a count, so the cards use as many natural columns as the width holds where they fit at
- * natural size; the .5px keeps floor(width / minimum) from losing a column to rounding. The section's height is that of
- * its rows at natural size and shrinks in proportion to it.
+ * A card is 11.5625rem by 6.25rem at its natural size and lays itself out in em, so one font size scales it. Its
+ * height is the card's padding and margin (1em), the name (1.25em) and the vendor, IP, link and status lines (1em each).
+ * A host without a link has no link line and so a card 1em shorter, which the cell centers.
+ * The grid gets --columns columns, which follow from the number of cells and the container's width to height ratio,
+ * which a container query sorts into steps (--ratio): CSS cannot divide two lengths, and WPE WebKit 2.48.3 gets
+ * tan(atan2(w, h)) wrong for container units. auto-fill turns the column's minimum width into a count, so the cards
+ * use as many natural columns as the width holds where they fit at natural size; the .5px keeps floor(width / minimum)
+ * from losing a column to rounding. The grid's height is that of its rows at natural size and shrinks to the container.
  */
 .scan__hosts {
-  --sigma-stable: .75;
   --cell-width: 11.5625rem;
-  --cell-height: 5.25rem;
-  --aspect: 2.2;
+  --cell-height: 6.25rem;
+  --aspect: calc(11.5625 / 6.25);
   --ratio: 1;
   @apply flex flex-1 flex-col min-h-0;
   container-type: size;
@@ -56,28 +55,36 @@ body::before { @apply content-[''] table h-0; }
 @container (min-aspect-ratio: 664/100) { .hosts { --ratio: 8; } }
 
 .hosts {
-  --sigma: 1;
-  --balanced: sqrt(var(--ratio) / var(--aspect) * (var(--unstable, 0) + var(--stable, 0) * var(--sigma-stable) * var(--sigma-stable)));
-  --columns: max(1, round(var(--balanced) / var(--sigma), 1));
+  --columns: max(1, round(sqrt(var(--ratio) / var(--aspect) * var(--cells, 0)), 1));
   @apply grid min-h-0 list-none m-0 p-0;
   flex: 0 1 auto;
-  grid-template-columns: repeat(auto-fill, minmax(min(calc(var(--cell-width) * var(--sigma)), calc(100cqw / var(--columns) - .5px)), 1fr));
-  grid-auto-rows: minmax(0, calc(var(--cell-height) * var(--sigma)));
+  grid-template-columns: repeat(auto-fill, minmax(min(var(--cell-width), calc(100cqw / var(--columns) - .5px)), 1fr));
+  grid-auto-rows: minmax(0, var(--cell-height));
   align-content: start;
 }
-
-.hosts--stable { --sigma: var(--sigma-stable); @apply opacity-50; }
 
 .hosts > li { @apply grid place-items-center min-w-0 min-h-0; container-type: size; }
 
 .host {
-  font-size: min(1rem * var(--sigma), 100cqw / 11.5625, 100cqh / 5.25);
+  font-size: min(1rem, 100cqw / 11.5625, 100cqh / 6.25);
   @apply flex rounded-[.25em];
   gap: .5em;
   width: 11.0625em;
   margin: .25em;
   padding: .25em .5em;
 }
+
+/* A group's label takes a cell of its own before the group's cards and scales with them. */
+.hosts__label {
+  font-size: min(1rem, 100cqw / 11.5625, 100cqh / 6.25);
+  @apply flex items-center overflow-hidden font-bold opacity-60;
+  gap: .5em;
+  width: 11.0625em;
+  margin: .25em;
+  padding: .25em .5em;
+}
+.hosts__label > span { @apply flex-none whitespace-nowrap; font-size: .875em; }
+.hosts__label::after { content: ''; @apply flex-1 h-px bg-current; }
 
 .host__aside { @apply flex-none; width: 2.5em; }
 .host__icon { @apply block; }
@@ -90,17 +97,14 @@ body::before { @apply content-[''] table h-0; }
 .host__name { --room: 8.07; --char: .68; @apply font-bold; font-size: .875em; line-height: calc(20 / 14); }
 .host__vendor, .host__ip, .host__status { --room: 9.417; --char: .6; font-size: .75em; line-height: calc(16 / 12); }
 .host__ip { --char: .6; }
+.host__link { --room: 9.417; --char: .6; @apply flex items-center whitespace-nowrap overflow-hidden opacity-60; gap: .25em; font-size: .75em; line-height: calc(16 / 12); }
+.host__link-icon { @apply flex-none; width: 1em; height: 1em; }
 
 /* A line shrinks by its length (--len) until it fits the text column, but not below .6 of its size; the rest ends in an ellipsis. */
 .fit { font-size: clamp(.6em, calc(var(--room) * 1em / (max(var(--len), 1) * var(--char))), 1em); }
 
-:root {
-  --HOST_STATE_CHANGE_HIGHLIGHT_DURATION: 60s;
-}
-
 .host[data-status=up] {
   --status-color: theme('colors.green.500');
-  --status-color-bright: theme('colors.green.100');
 }
 
 .host[data-status=down] {
@@ -113,49 +117,9 @@ body::before { @apply content-[''] table h-0; }
 
 .host__icon { color: var(--status-color); }
 
-/*
- * The glow and the ring of a highlighted host are pseudo-elements of their own that only fade in opacity, once a second.
- * Fading a box-shadow repaints the card in every frame and kept the Pi's software painter at a fifth of a core while one
- * host was highlighted, which scans keep up; fading the opacity smoothly keeps its compositor at 15 %.
- */
-.host--highlighted { position: relative; }
-
-.host--highlighted::before,
-.host--highlighted::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  pointer-events: none;
-  will-change: opacity;
-}
-
-.host--highlighted::after { box-shadow: 0 0 0 2px var(--status-color); }
-
-.host--highlighted[data-status=up]::before {
-  box-shadow: 0 0 4px 4px var(--status-color-bright, var(--status-color));
-  animation: host-glow steps(10) calc(var(--HOST_STATE_CHANGE_HIGHLIGHT_DURATION) / 6) both;
-}
-
-.host--highlighted[data-status=up]::after {
-  animation: host-ring-up steps(60) var(--HOST_STATE_CHANGE_HIGHLIGHT_DURATION) both;
-}
-
-.host--highlighted[data-status=down]::after {
-  animation: host-ring-down steps(60) var(--HOST_STATE_CHANGE_HIGHLIGHT_DURATION) both;
-}
-
-@keyframes host-glow {
-  0% { opacity: 1; }
-  100% { opacity: 0; }
-}
-
-@keyframes host-ring-up {
-  0%, 16.6% { opacity: 1; }
-  100% { opacity: 0; }
-}
-
-@keyframes host-ring-down {
-  0% { opacity: 1; }
-  100% { opacity: 0; }
-}
+/* The time a host has been up (OnlineAge) steps its ring and tint down from the newest to the calm oldest; nothing animates. */
+.host[data-age="5m"] { background-color: theme('colors.green.500 / 30%'); box-shadow: inset 0 0 0 2px theme('colors.green.500'); }
+.host[data-age="20m"] { background-color: theme('colors.green.500 / 18%'); box-shadow: inset 0 0 0 2px theme('colors.green.500 / 65%'); }
+.host[data-age="1h"] { background-color: theme('colors.green.500 / 10%'); box-shadow: inset 0 0 0 1px theme('colors.green.500 / 55%'); }
+.host[data-age="12h"] { background-color: theme('colors.green.500 / 5%'); box-shadow: inset 0 0 0 1px theme('colors.green.500 / 35%'); }
+.host[data-age="24h"] { box-shadow: inset 0 0 0 1px theme('colors.green.500 / 20%'); }

@@ -6,5 +6,6 @@ val JsonFormat: Json = Json {
     isLenient = true
     ignoreUnknownKeys = true
     explicitNulls = false
+    coerceInputValues = true
     prettyPrint = true
 }

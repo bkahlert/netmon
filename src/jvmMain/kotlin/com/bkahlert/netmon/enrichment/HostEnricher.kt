@@ -3,6 +3,9 @@ package com.bkahlert.netmon.enrichment
 import com.bkahlert.netmon.logging.SLF4J
 import com.bkahlert.netmon.Host
 import com.bkahlert.netmon.IP
+import com.bkahlert.netmon.Kind
+import com.bkahlert.netmon.Link
+import com.bkahlert.netmon.LinkSpeed
 import com.bkahlert.netmon.Status
 import kotlin.time.Instant
 import kotlin.reflect.KProperty1
@@ -55,6 +58,9 @@ abstract class HostPropertyEnricher<V>(
             vendor = if (property == Host::vendor && value is String) value else vendor,
             services = if (property == Host::services && value is Set<*>) value as Set<String> else services,
             mac = if (property == Host::mac && value is String) value else mac,
+            kind = if (property == Host::kind && value is Kind) value else kind,
+            link = if (property == Host::link && value is Link) value else link,
+            speed = if (property == Host::speed && value is LinkSpeed) value else speed,
         )
     }
 }

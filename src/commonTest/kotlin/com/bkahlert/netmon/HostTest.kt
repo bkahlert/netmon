@@ -47,12 +47,32 @@ class HostTest {
 
     @Test
     fun mac_round_trips() {
-        val host = Host(ip = IP.of("10.0.0.1"), status = Status.UP, mac = "dc:a6:32:a5:ba:b6")
+        val host = Host(ip = IP.of("10.0.0.1"), status = Status.UP, mac = "dc:00:00:00:00:12")
 
         val json = JsonFormat.encodeToString(Host.serializer(), host)
 
-        json shouldContain "\"mac\": \"dc:a6:32:a5:ba:b6\""
+        json shouldContain "\"mac\": \"dc:00:00:00:00:12\""
         JsonFormat.decodeFromString(Host.serializer(), json) shouldBe host
+    }
+
+    @Test
+    fun kind_link_and_speed_are_written_when_set_and_omitted_when_null() {
+        val host = Host(ip = IP.of("10.0.0.1"), kind = Kind.TELEVISION, link = Link.WIFI, speed = LinkSpeed(866))
+
+        val json = JsonFormat.encodeToString(Host.serializer(), host)
+
+        json shouldContain "\"kind\": \"Television\""
+        json shouldContain "\"link\": \"wifi\""
+        json shouldContain "\"speed\": 866"
+        JsonFormat.encodeToString(Host.serializer(), Host(ip = IP.of("10.0.0.1"))).shouldNotContain("\"kind\"")
+    }
+
+    @Test
+    fun an_unknown_link_token_reads_as_null() {
+        val result = JsonFormat.decodeFromString(Host.serializer(), """{"ip":"10.0.0.1","link":"fiber","kind":"Hoverboard"}""")
+
+        result.link shouldBe null
+        result.kind shouldBe Kind.GENERIC
     }
 
     /**
@@ -80,6 +100,9 @@ operator fun Host.Companion.invoke(
     services: Set<String>? = setOf("smb", "airplay"),
     lastSeen: Instant? = null,
     mac: String? = null,
+    kind: Kind? = null,
+    link: Link? = null,
+    speed: LinkSpeed? = null,
 ) = Host(
     ip = IP.of(ip),
     name = name,
@@ -90,6 +113,9 @@ operator fun Host.Companion.invoke(
     services = services,
     lastSeen = lastSeen,
     mac = mac,
+    kind = kind,
+    link = link,
+    speed = speed,
 )
 
 inline val Int.epoch get() = toLong().epoch

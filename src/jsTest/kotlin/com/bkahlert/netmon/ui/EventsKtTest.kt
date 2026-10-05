@@ -19,7 +19,7 @@ class EventsKtTest {
 
     @Test
     fun keeps_only_the_payloads_of_the_metrics_topic() = runTest {
-        val messages = flowOf(message("dt/netmon/netmon/eth0/192.168.16.0/24/scan", "{}"), message("dt/netmon/netmon/metrics", "m"))
+        val messages = flowOf(message("dt/netmon/netmon/eth0/198.51.100.0/24/scan", "{}"), message("dt/netmon/netmon/metrics", "m"))
 
         val payloads = messages.metricsPayloads().toList()
 

@@ -3,6 +3,9 @@ package com.bkahlert.netmon.scanner
 import com.bkahlert.netmon.Cidr
 import com.bkahlert.netmon.Host
 import com.bkahlert.netmon.IP
+import com.bkahlert.netmon.Kind
+import com.bkahlert.netmon.Link
+import com.bkahlert.netmon.LinkSpeed
 import com.bkahlert.netmon.Status
 import com.bkahlert.netmon.epoch
 import com.bkahlert.netmon.invoke
@@ -35,6 +38,42 @@ class ScanResultTest {
         new = emptyList(),
     ) { merged, _ ->
         merged.timestamp shouldBe 200.epoch
+    }
+
+    @Test
+    fun kind_link_and_speed_follow_the_scan_and_fall_back_to_the_record() = mergingShould(
+        old = listOf(Host(ip = "10.0.0.1", mac = "aa:bb:cc:dd:ee:01", kind = Kind.LAMP, link = Link.WIFI, speed = LinkSpeed(65))),
+        new = listOf(Host(ip = "10.0.0.1", mac = "aa:bb:cc:dd:ee:01", kind = Kind.SOCKET, link = null, speed = null)),
+    ) { merged, _ ->
+        merged.hosts.single() should {
+            it.kind shouldBe Kind.SOCKET
+            it.link shouldBe Link.WIFI
+            it.speed shouldBe LinkSpeed(65)
+        }
+    }
+
+    @Test
+    fun a_generic_scanned_kind_falls_back_to_the_recorded_kind() = mergingShould(
+        old = listOf(Host(ip = "10.0.0.1", mac = "aa:bb:cc:dd:ee:01", kind = Kind.LAMP)),
+        new = listOf(Host(ip = "10.0.0.1", mac = "aa:bb:cc:dd:ee:01", kind = Kind.GENERIC)),
+    ) { merged, _ ->
+        merged.hosts.single().kind shouldBe Kind.LAMP
+    }
+
+    @Test
+    fun a_specific_scanned_kind_wins_over_the_recorded_kind() = mergingShould(
+        old = listOf(Host(ip = "10.0.0.1", mac = "aa:bb:cc:dd:ee:01", kind = Kind.LAMP)),
+        new = listOf(Host(ip = "10.0.0.1", mac = "aa:bb:cc:dd:ee:01", kind = Kind.TELEVISION)),
+    ) { merged, _ ->
+        merged.hosts.single().kind shouldBe Kind.TELEVISION
+    }
+
+    @Test
+    fun a_generic_scanned_kind_stays_generic_without_a_recorded_kind() = mergingShould(
+        old = listOf(Host(ip = "10.0.0.1", mac = "aa:bb:cc:dd:ee:01", kind = null)),
+        new = listOf(Host(ip = "10.0.0.1", mac = "aa:bb:cc:dd:ee:01", kind = Kind.GENERIC)),
+    ) { merged, _ ->
+        merged.hosts.single().kind shouldBe Kind.GENERIC
     }
 
     @Test
@@ -452,7 +491,7 @@ class ScanResultTest {
     @Test
     fun merge_seen_host_keeps_recorded_fields_the_scan_lacks() {
         val recorded = Host(
-            name = "Anirul",
+            name = "Example-Mac",
             status = Status.UP,
             since = 50.epoch,
             lastSeen = 100.epoch,
@@ -602,7 +641,7 @@ class ScanResultTest {
     @Test
     fun merge_host_that_moved_keeps_its_record_under_the_new_ip() {
         val recorded = Host(
-            ip = "10.0.0.1", name = "Anirul", status = Status.UP, since = 50.epoch, lastSeen = 100.epoch,
+            ip = "10.0.0.1", name = "Example-Mac", status = Status.UP, since = 50.epoch, lastSeen = 100.epoch,
             model = "MacPro7,1", vendor = "Apple", services = setOf("smb"), mac = "aa:bb:cc:dd:ee:01",
         )
         val scanned = Host(
@@ -620,7 +659,7 @@ class ScanResultTest {
     @Test
     fun merge_new_device_on_a_taken_ip_inherits_nothing_and_replaces_the_old_host() {
         val recorded = Host(
-            ip = "10.0.0.1", name = "Anirul", status = Status.UP, since = 50.epoch, lastSeen = 100.epoch,
+            ip = "10.0.0.1", name = "Example-Mac", status = Status.UP, since = 50.epoch, lastSeen = 100.epoch,
             model = "MacPro7,1", vendor = "Apple", services = setOf("smb"), mac = "aa:bb:cc:dd:ee:01",
         )
         val scanned = Host(

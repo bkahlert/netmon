@@ -1,7 +1,7 @@
 SHELL := /bin/bash
 .DEFAULT_GOAL := help
 # Gradle's output directory is called build, so the targets are declared phony.
-.PHONY: help gradle metrics build browser test-jvm test-js test-metrics test-layout test-preview test-tier0 test-tier1 test-tier2 soak apt-probe bench test test-all vm-device vm-prepare vm broker preview preview-browser preview-vm preview-board deploy device-model-codes clean release
+.PHONY: help gradle metrics build browser test-jvm test-js test-metrics test-layout test-preview test-tier0 test-tier1 test-tier2 soak apt-probe bench test test-all vm-device vm-prepare vm broker preview preview-browser preview-vm preview-board deploy device-model-codes device-icons clean release
 
 PLATFORM ?= linux/arm64
 TARGET ?=
@@ -99,6 +99,9 @@ deploy: build ## install the built packages on TARGET over SSH
 
 device-model-codes: ## regenerate the model codes and symbols the display draws, from this Mac with device-icons
 	@$(UV) python tests/device_model_codes.py
+
+device-icons: ## regenerate the kind and brand icons the display draws, from the Iconify API
+	@$(UV) python tests/device_icons.py
 
 clean: ## remove build outputs
 	rm -rf dist packages/*/.build build

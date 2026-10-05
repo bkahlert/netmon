@@ -1,6 +1,7 @@
 package com.bkahlert.netmon
 
 import com.bkahlert.kommons.js.OnScreenConsole
+import com.bkahlert.netmon.model_identification.DeviceIcons
 import com.bkahlert.netmon.model_identification.DeviceModelCodes
 import com.bkahlert.netmon.model_identification.load
 import com.bkahlert.netmon.model_identification.resource
@@ -25,6 +26,14 @@ suspend fun main() {
         com.bkahlert.kommons.js.console.error("Device model codes %s failed to load", it)
     }.onSuccess {
         com.bkahlert.kommons.js.console.info("Device model codes %s loaded", it)
+    }
+
+    runCatching {
+        DeviceIcons.set(DeviceIcons.load(DeviceIcons.resource))
+    }.onFailure {
+        com.bkahlert.kommons.js.console.error("Device icons %s failed to load", it)
+    }.onSuccess {
+        com.bkahlert.kommons.js.console.info("Device icons loaded")
     }
 
     app { onScreenConsole.disable() }

@@ -43,7 +43,7 @@ open class CurrentTimeStore(
     companion object : CurrentTimeStore()
 }
 
-/** The clock of the stable section, whose texts change once a minute at most. */
+/** The clock of the texts of a host card that change once a minute at most. */
 object MinuteClock : CurrentTimeStore(1.minutes)
 
 /** Store of network scans. */

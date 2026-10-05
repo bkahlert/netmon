@@ -1,6 +1,6 @@
 package com.bkahlert.netmon.enrichment
 
-import com.bkahlert.netmon.Host
+import com.bkahlert.netmon.IP
 import com.bkahlert.netmon.logging.SLF4J
 import com.bkahlert.netmon.xml.SecureXml
 import java.io.DataOutputStream
@@ -20,18 +20,22 @@ import kotlin.time.Duration.Companion.seconds
 import kotlin.time.Instant
 
 /**
- * An enricher that reads the model of an Apple mobile device from iOS `lockdownd` on TCP port [LOCKDOWN_PORT].
+ * Reads the model of an Apple mobile device from iOS `lockdownd` on TCP port [LOCKDOWN_PORT].
  *
  * The device answers `GetValue` for `ProductType` (for example `iPad7,5`) without pairing. The protocol is undocumented.
- * Only a [Host] without a model whose vendor is unknown or Apple is probed. An answer is remembered for a day, a failure
- * for five minutes, per MAC address (per IP without one).
+ * An answer is remembered for a day, a failure for five minutes, per MAC address (per IP without one).
  */
-class LockdownModelEnricher(
+class LockdownProbe(
     private val port: Int = LOCKDOWN_PORT,
     private val clock: Clock = Clock.System,
     private val connectTimeout: Duration = 1.seconds,
     private val readTimeout: Duration = 2.seconds,
-) : HostEnricher {
+) {
+
+    /** What the clue source needs: the model behind an address, or `null`. */
+    fun interface Lookup {
+        fun model(ip: IP, mac: String?): String?
+    }
 
     private val logger by SLF4J
 
@@ -39,17 +43,14 @@ class LockdownModelEnricher(
 
     private val cache = ConcurrentHashMap<String, Probed>()
 
-    override fun enrich(entity: Host): Host? {
-        if (entity.model != null || !(entity.vendor == null || entity.vendor.startsWith("Apple", ignoreCase = true))) return null
+    fun model(ip: IP, mac: String?): String? {
         val now = clock.now()
-        val key = entity.mac ?: entity.ip.toString()
+        val key = mac ?: ip.toString()
         val probed = cache[key]?.takeIf { it.expiresAt > now } ?: run {
-            val model = probe(entity.ip.bytes)
+            val model = probe(ip.bytes)
             Probed(model, now + if (model != null) SUCCESS_TTL else FAILURE_TTL).also { cache[key] = it }
         }
-        val model = probed.model ?: return null
-        return entity.copy(model = model, vendor = entity.vendor ?: "Apple Inc.")
-            .also { logger.info("{} enriched: model={}", it, model) }
+        return probed.model
     }
 
     private fun probe(address: ByteArray): String? = try {

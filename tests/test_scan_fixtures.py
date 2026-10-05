@@ -39,3 +39,15 @@ class TestScans:
 
         decoded = json.loads(json.dumps(scan))
         assert (decoded["event"], decoded["type"], decoded["timestamp"]) == ("scan", "completed", NOW - 1)
+
+
+class TestKindsScan:
+    def test_has_its_hosts_on_documentation_addresses_only(self):
+        scan = next(iter(scan_fixtures.kinds_scan(now=NOW).values()))
+
+        assert all(host["ip"].startswith("192.0.2.") for host in scan["hosts"])
+
+    def test_has_hosts_that_are_up_and_down(self):
+        scan = next(iter(scan_fixtures.kinds_scan(now=NOW).values()))
+
+        assert {host["status"] for host in scan["hosts"]} == {"up", "down"}
