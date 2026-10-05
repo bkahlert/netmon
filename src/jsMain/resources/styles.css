@@ -38,8 +38,7 @@ body::before { @apply content-[''] table h-0; }
 .scan__hosts {
   --cell-width: 11.5625rem;
   --cell-height: 6.25rem;
-  /* The cell's aspect is 11.5625 / 6.25 = 1.85; a lower one gives a column more where the coarse --ratio steps round down. */
-  --aspect: 1.65;
+  --aspect: calc(11.5625 / 6.25);
   --ratio: 1;
   @apply flex flex-1 flex-col min-h-0;
   container-type: size;
