@@ -15,7 +15,7 @@ import kotlin.concurrent.withLock
 class JmDNSServiceInfoCache(
     val jmDns: JmDNS,
     private vararg val serviceTypes: String = WELL_KNOWN_SERVICE_TYPES,
-) : AutoCloseable {
+) : AutoCloseable, MdnsLookup {
 
     private val logger by SLF4J
 
@@ -81,11 +81,12 @@ class JmDNSServiceInfoCache(
         }
     }
 
-    /** Returns the servers that are associated with the given [ip]. */
-    fun servers(ip: IP): Set<String>? = mappings.ipAddressToServers[ip]
+    override fun servers(ip: IP): Set<String>? = mappings.ipAddressToServers[ip]
 
-    /** Returns the services that are associated with the given [ip]. */
-    fun services(ip: IP): Set<ServiceInfo>? = mappings.ipAddressToServices[ip]
+    override fun services(ip: IP): Set<ServiceInfo>? = mappings.ipAddressToServices[ip]
+
+    override fun services(application: String): List<ServiceInfo> =
+        servicesLock.withLock { services.values.filter { it.application == application } }
 
     override fun toString(): String = buildString {
         append(JmDNSServiceInfoCache::class.simpleName)
