@@ -5,14 +5,12 @@ import com.bkahlert.netmon.CurrentTimeStore
 import com.bkahlert.netmon.Event.ScanEvent
 import com.bkahlert.netmon.EventSource
 import com.bkahlert.netmon.Host
-import com.bkahlert.netmon.HostEventSettings
 import com.bkahlert.netmon.Kind
 import com.bkahlert.netmon.Link
 import com.bkahlert.netmon.MinuteClock
 import com.bkahlert.netmon.ScanEventSettings
 import com.bkahlert.netmon.ScanEventsStore
 import com.bkahlert.netmon.UiSettings
-import com.bkahlert.netmon.fritz2.partition
 import com.bkahlert.netmon.getElapsedTime
 import com.bkahlert.netmon.hosts
 import com.bkahlert.netmon.model_identification.DeviceIcons
@@ -59,7 +57,6 @@ fun RenderContext.networks(scanEventsStore: ScanEventsStore) {
 fun RenderContext.scan(
     source: EventSource,
     events: Store<ScanEvent>,
-    stabilizedThreshold: Duration = HostEventSettings.stabilizedThreshold,
 ): HtmlTag<HTMLElement> = div(
     joinClasses(
         "flex flex-col min-h-0 min-w-0 space-y-5 pt-4 sm:pb-4 sm:px-4 sm:rounded-xl",
@@ -69,33 +66,12 @@ fun RenderContext.scan(
 ) {
     meta(source, events)
 
-    val (unstableHosts, stableHosts) = events
-        .map(ScanEvent.hosts())
-        .partition { host ->
-            when (val elapsedTime = host.getElapsedTime()) {
-                null -> false // = always online / never missing during scan
-                else -> elapsedTime <= stabilizedThreshold
-            }
-        }
+    val hosts = events.map(ScanEvent.hosts())
 
     div("scan__hosts") {
-        inlineStyle(sectionSizes(unstableHosts.current.size, stableHosts.current.size))
-        inlineStyle(
-            unstableHosts.data.map { it.size }
-                .combine(stableHosts.data.map { it.size }, ::sectionSizes)
-        )
-        hosts(unstableHosts, slowClock = MinuteClock.data, classes = "hosts--unstable")
-        unstableHosts.data.map { it.isNotEmpty() }
-            .combine(stableHosts.data.map { it.isNotEmpty() }) { a, b ->
-                a && b
-            }.render {
-                if (it) {
-                    div("divider-xs opacity-60") {
-                        +"$stabilizedThreshold+ unchanged"
-                    }
-                }
-            }
-        hosts(stableHosts, clock = MinuteClock.data, classes = "hosts--stable")
+        inlineStyle(cells(hosts.current))
+        inlineStyle(hosts.data.map(::cells))
+        hosts(hosts, slowClock = MinuteClock.data)
     }
 }
 
@@ -119,7 +95,7 @@ private fun Host.elapsedTimes(clock: Flow<Instant>, slowClock: Flow<Instant>): F
     slowClock.drop(1).collect { emit(getElapsedTime(it)) }
 }
 
-private fun sectionSizes(unstable: Int, stable: Int): String = "--unstable: $unstable; --stable: $stable"
+private fun cells(hosts: List<Host>): String = "--cells: ${hosts.size}"
 
 private fun HtmlTag<HTMLElement>.meta(
     source: EventSource,
@@ -159,16 +135,12 @@ private fun HtmlTag<HTMLElement>.meta(
     }
 }
 
-/**
- * Renders the [hosts] as a grid of cards that the stylesheet sizes: the section's class in [classes] sets the
- * cards' scale, the enclosing `.scan__hosts` carries the section sizes.
- */
+/** Renders the [hosts] as a grid of cards that the stylesheet sizes by the number of cells the enclosing `.scan__hosts` carries. */
 fun RenderContext.hosts(
     hosts: Store<List<Host>>,
     clock: Flow<Instant> = CurrentTimeStore.data,
     slowClock: Flow<Instant> = clock,
-    classes: String? = null,
-): HtmlTag<HTMLUListElement> = ul(joinClasses("hosts", classes)) {
+): HtmlTag<HTMLUListElement> = ul("hosts") {
     hosts.data.renderEach(Host::ip, into = this) { value ->
         li { host(hosts.mapByElement(value, Host::ip), clock, slowClock) }
     }

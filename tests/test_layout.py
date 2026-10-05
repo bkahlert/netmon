@@ -93,13 +93,12 @@ class TestLayout:
 
         assert {h["fontSize"] for h in found["hosts"]} == {NATURAL}
 
-    def test_many_hosts_shrink_to_fit_and_the_stable_ones_less_than_the_recent(self, browser, page_server):
+    def test_many_hosts_shrink_to_one_size_that_stays_legible(self, browser, page_server):
         found = open_page(browser, page_server, PANEL, sources=1, counts=(14, 39))
 
-        unstable = {round(h["fontSize"], 1) for h in found["hosts"] if h["section"] == "unstable"}
-        stable = {round(h["fontSize"], 1) for h in found["hosts"] if h["section"] == "stable"}
-        assert max(unstable) == min(unstable) > 8
-        assert max(stable) == min(stable) < max(unstable)
+        sizes = {round(h["fontSize"], 1) for h in found["hosts"]}
+        assert len(sizes) == 1
+        assert min(sizes) > 7.5
 
     def test_many_hosts_use_the_panel_down_to_its_lower_part(self, browser, page_server):
         found = open_page(browser, page_server, PANEL, sources=1, counts=(14, 39))

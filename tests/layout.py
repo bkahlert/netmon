@@ -132,7 +132,6 @@ GEOMETRY = """() => {
     hosts: [...document.querySelectorAll('.host')].map(h => ({
       ...box(h),
       scan: scans.indexOf(h.closest('.networks > div > div')),
-      section: h.closest('.hosts').classList.contains('hosts--stable') ? 'stable' : 'unstable',
       fontSize: parseFloat(getComputedStyle(h).fontSize),
     })),
     zoomed: document.querySelectorAll('[style*=zoom], [data-zoomed]').length,
