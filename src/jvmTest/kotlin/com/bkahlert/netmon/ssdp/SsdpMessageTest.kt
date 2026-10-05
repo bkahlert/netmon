@@ -37,6 +37,17 @@ class SsdpMessageTest {
     }
 
     @Test
+    fun a_notify_with_nts_byebye_is_a_byebye_and_an_alive_or_a_response_is_not() {
+        val byebye = SsdpMessage.parse("NOTIFY * HTTP/1.1\r\nNT: upnp:rootdevice\r\nNTS: ssdp:byebye\r\nUSN: uuid:00000000-0000-4000-8000-000000000001::upnp:rootdevice\r\n\r\n")
+        val alive = SsdpMessage.parse("NOTIFY * HTTP/1.1\r\nNT: upnp:rootdevice\r\nNTS: ssdp:alive\r\n\r\n")
+        val response = SsdpMessage.parse("HTTP/1.1 200 OK\r\nST: upnp:rootdevice\r\n\r\n")
+
+        byebye.shouldNotBeNullAnd { it.isByebye shouldBe true }
+        alive.shouldNotBeNullAnd { it.isByebye shouldBe false }
+        response.shouldNotBeNullAnd { it.isByebye shouldBe false }
+    }
+
+    @Test
     fun a_search_request_and_garbage_are_not_messages() {
         SsdpMessage.parse("M-SEARCH * HTTP/1.1\r\nST: ssdp:all\r\n\r\n").shouldBeNull()
         SsdpMessage.parse("not http").shouldBeNull()

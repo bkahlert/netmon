@@ -10,6 +10,7 @@ data class SsdpMessage(val startLine: String, val headers: Map<String, String>) 
     val server: String? get() = headers["SERVER"]
     val notificationType: String? get() = headers["ST"] ?: headers["NT"]
     val usn: String? get() = headers["USN"]
+    val isByebye: Boolean get() = headers["NTS"].equals("ssdp:byebye", ignoreCase = true)
     val maxAge: Duration? get() = headers["CACHE-CONTROL"]?.let { MAX_AGE.find(it)?.groups?.get("seconds")?.value?.toIntOrNull()?.seconds }
 
     companion object {
