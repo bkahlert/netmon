@@ -6,9 +6,9 @@ import com.bkahlert.netmon.logging.SLF4J
 import com.bkahlert.netmon.enrichment.AmazonHostEnricher
 import com.bkahlert.netmon.enrichment.AppleHostEnricher
 import com.bkahlert.netmon.enrichment.DeviceInfoHostEnricher
+import com.bkahlert.netmon.enrichment.Enricher
 import com.bkahlert.netmon.enrichment.HostNameEnricher
 import com.bkahlert.netmon.enrichment.HostServicesEnricher
-import com.bkahlert.netmon.enrichment.LockdownModelEnricher
 import com.bkahlert.netmon.enrichment.SonosHostEnricher
 import com.bkahlert.netmon.logging.LoggingSettings
 import com.bkahlert.netmon.mdns.JmDNS
@@ -119,7 +119,7 @@ class Application(
                             AmazonHostEnricher(serviceInfoCache),
                             SonosHostEnricher(serviceInfoCache),
                             AppleHostEnricher(serviceInfoCache, DeviceModelCodes.load(DeviceModelCodes.resource)),
-                            LockdownModelEnricher(),
+                            Enricher<Host> { null }, // lockdownd now runs as LockdownClues; rewired in Task 10
                             HostServicesEnricher(serviceInfoCache),
                         ),
                         onScan = { scan ->
