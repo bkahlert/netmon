@@ -40,7 +40,7 @@ class NameTokensTest {
             row("Casey's iPad", Kind.TABLET),
             row("macbookpro-a", Kind.LAPTOP),
             row("pihole-main", Kind.COMPUTER),
-            row("homeassistent", Kind.COMPUTER),
+            row("homeassist-vm", Kind.COMPUTER),
             row("LGwebOSTV-2", Kind.TELEVISION),
             row("tv000000000001", Kind.TELEVISION),
             row("Indoorcam", Kind.CAMERA),

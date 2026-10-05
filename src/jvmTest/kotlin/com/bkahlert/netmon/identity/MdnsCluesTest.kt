@@ -97,7 +97,7 @@ class MdnsCluesTest {
         val result = clues(
             host(vendor = "Apple Inc.", mac = "f4:00:00:00:00:0e"),
             service("airplay", "Apple HomePod", "Apple-HomePod.local.", 7000, HOST_IP, "model" to "AudioAccessory5,1"),
-            service("hap", "HomePodSensor 294731", "Apple-HomePod.local.", 52427, HOST_IP, "md" to "HomePod", "ci" to "10"),
+            service("hap", "HomePodSensor 000001", "Apple-HomePod.local.", 52427, HOST_IP, "md" to "HomePod", "ci" to "10"),
             service("companion-link", "Apple HomePod", "Apple-HomePod.local.", 49155, HOST_IP, "rpMd" to "AudioAccessory5,1"),
         )
 

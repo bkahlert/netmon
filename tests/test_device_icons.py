@@ -14,7 +14,7 @@ ASSET = ROOT / "src/commonMain/resources/assets/device-icons.json"
 class TestKinds:
     def test_every_kotlin_kind_token_has_an_icon_and_nothing_else_does(self):
         source = (ROOT / "src/commonMain/kotlin/com/bkahlert/netmon/Kind.kt").read_text()
-        tokens = set(re.findall(r'^\s+[A-Z_]+\("([A-Za-z]+)"\)', source, re.M))
+        tokens = set(re.findall(r'^\s+[A-Z_]+\("(?P<token>[A-Za-z]+)"\)', source, re.M))
 
         assert set(device_icons.KINDS) == tokens
 
