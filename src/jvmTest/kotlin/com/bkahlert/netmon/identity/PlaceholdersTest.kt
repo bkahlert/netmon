@@ -40,6 +40,17 @@ class PlaceholdersTest {
     }
 
     @Test
+    fun drops_uuid_host_names_without_dashes_like_home_assistant_s() = runTest {
+        forAll(
+            row("00000000000040008000000000000002"),
+            row("0a0000000000400080000000000000ff.local."),
+            row("0A0000000000400080000000000000FF"),
+        ) { name ->
+            Placeholders.clean(name) shouldBe null
+        }
+    }
+
+    @Test
     fun keeps_real_names_without_the_local_suffix_or_trailing_dot() = runTest {
         forAll(
             row("LEDVANCE-Hallway-TV", "LEDVANCE-Hallway-TV"),

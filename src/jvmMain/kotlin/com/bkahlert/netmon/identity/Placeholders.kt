@@ -5,6 +5,8 @@ object Placeholders {
 
     private val patterns: List<Regex> = listOf(
         Regex("^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$", RegexOption.IGNORE_CASE),
+        // A UUID without dashes, which Home Assistant uses as its mDNS host name.
+        Regex("^[0-9a-f]{32}$", RegexOption.IGNORE_CASE),
         // A bare MAC or EUI-64, which Matter devices use as their mDNS host name.
         Regex("^[0-9a-f]{12}(?:[0-9a-f]{4})?$", RegexOption.IGNORE_CASE),
         Regex("^none$", RegexOption.IGNORE_CASE),
