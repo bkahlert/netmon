@@ -53,6 +53,30 @@ class ScanResultTest {
     }
 
     @Test
+    fun a_generic_scanned_kind_falls_back_to_the_recorded_kind() = mergingShould(
+        old = listOf(Host(ip = "10.0.0.1", mac = "aa:bb:cc:dd:ee:01", kind = Kind.LAMP)),
+        new = listOf(Host(ip = "10.0.0.1", mac = "aa:bb:cc:dd:ee:01", kind = Kind.GENERIC)),
+    ) { merged, _ ->
+        merged.hosts.single().kind shouldBe Kind.LAMP
+    }
+
+    @Test
+    fun a_specific_scanned_kind_wins_over_the_recorded_kind() = mergingShould(
+        old = listOf(Host(ip = "10.0.0.1", mac = "aa:bb:cc:dd:ee:01", kind = Kind.LAMP)),
+        new = listOf(Host(ip = "10.0.0.1", mac = "aa:bb:cc:dd:ee:01", kind = Kind.TELEVISION)),
+    ) { merged, _ ->
+        merged.hosts.single().kind shouldBe Kind.TELEVISION
+    }
+
+    @Test
+    fun a_generic_scanned_kind_stays_generic_without_a_recorded_kind() = mergingShould(
+        old = listOf(Host(ip = "10.0.0.1", mac = "aa:bb:cc:dd:ee:01", kind = null)),
+        new = listOf(Host(ip = "10.0.0.1", mac = "aa:bb:cc:dd:ee:01", kind = Kind.GENERIC)),
+    ) { merged, _ ->
+        merged.hosts.single().kind shouldBe Kind.GENERIC
+    }
+
+    @Test
     fun ip() = mergingShould(
         old = listOf(
             Host(

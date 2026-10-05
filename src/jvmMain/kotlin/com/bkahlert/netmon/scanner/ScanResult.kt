@@ -4,6 +4,7 @@ import com.bkahlert.netmon.logging.SLF4J
 import com.bkahlert.netmon.serialization.InstantAsEpochSecondsSerializer
 import com.bkahlert.netmon.Cidr
 import com.bkahlert.netmon.Host
+import com.bkahlert.netmon.Kind
 import com.bkahlert.netmon.Status
 import com.bkahlert.netmon.serialization.JsonFormat
 import kotlin.time.Duration
@@ -63,7 +64,7 @@ data class ScanResult(
             vendor = scanned.vendor ?: recorded?.vendor,
             services = scanned.services ?: recorded?.services,
             mac = scanned.mac ?: recorded?.mac,
-            kind = scanned.kind ?: recorded?.kind,
+            kind = scanned.kind?.takeUnless { it == Kind.GENERIC } ?: recorded?.kind ?: scanned.kind,
             link = scanned.link ?: recorded?.link,
             speed = scanned.speed ?: recorded?.speed,
         )
