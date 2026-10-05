@@ -42,6 +42,17 @@ class DeviceModelCodesTest {
     }
 
     @Test
+    fun symbolName() = runTest {
+        forAll(
+            row("FooPro6,1", "foopro.gen3"),
+            row("Baz1,1", "private.name"),
+            row("Qux", null),
+        ) { deviceModelCode, expected ->
+            TEST_DEVICE_MODEL_CODES.symbolName(deviceModelCode) shouldBe expected
+        }
+    }
+
+    @Test
     fun serialization() {
         val serialized = Json.encodeToString(TEST_DEVICE_MODEL_CODES)
         val deserialized = Json.decodeFromString<DeviceModelCodes>(serialized)
