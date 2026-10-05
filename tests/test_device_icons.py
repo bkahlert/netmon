@@ -1,3 +1,4 @@
+import json
 import re
 from pathlib import Path
 
@@ -7,6 +8,7 @@ import pytest
 pytestmark = pytest.mark.tier0
 
 ROOT = Path(__file__).resolve().parents[1]
+ASSET = ROOT / "src/commonMain/resources/assets/device-icons.json"
 
 
 class TestKinds:
@@ -54,3 +56,79 @@ class TestGroupByPrefix:
         result = device_icons.group_by_prefix(["mdi:wifi", "cbi:firetv", "mdi:lan"])
 
         assert result == {"mdi": ["lan", "wifi"], "cbi": ["firetv"]}
+
+
+class TestSafety:
+    @pytest.mark.parametrize(
+        "body",
+        [
+            "<script>alert(1)</script>",
+            '<path d="M1 1" onload="alert(1)"/>',
+            '<use href="https://example.com/x.svg#a"/>',
+            '<image href="https://example.com/x.png"/>',
+            '<path d="M1 1" xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="https://example.com"/>',
+            '<path d="M1 1" fill="url(https://example.com/x)"/>',
+            "<style>*{background:url(x)}</style>",
+            "<foreignObject><div/></foreignObject>",
+            "<!DOCTYPE x [<!ENTITY a 'b'>]><path d='&a;'/>",
+            '<path d="M1 1"',
+        ],
+    )
+    def test_svg_rejects_a_hostile_body(self, body):
+        data = {"prefix": "mdi", "width": 24, "height": 24, "icons": {"wifi": {"body": body}}}
+
+        with pytest.raises(ValueError):
+            device_icons.svg(data, "wifi")
+
+    def test_svg_rejects_an_unsafe_icon_name(self):
+        data = {"prefix": "mdi", "icons": {'x" onload="y': {"body": "<g/>"}}}
+
+        with pytest.raises(ValueError):
+            device_icons.svg(data, 'x" onload="y')
+
+    def test_build_rejects_a_hostile_svg(self):
+        svgs = {symbol: f'<svg xmlns="http://www.w3.org/2000/svg" data-symbol-name="{symbol}"><path d="M1 1"/></svg>' for symbol in device_icons.used_symbols()}
+        svgs["mdi:wifi"] = '<svg xmlns="http://www.w3.org/2000/svg"><script>alert(1)</script></svg>'
+
+        with pytest.raises(ValueError):
+            device_icons.build(svgs)
+
+
+class TestShippedAsset:
+    ALLOWED_TAGS = {"svg", "path", "g", "circle", "rect", "ellipse", "line", "polyline", "polygon"}
+    TAG = re.compile(r"</?(?P<name>[^\s/>]+)")
+    ATTRIBUTE = re.compile(r"\s(?P<name>[^\s=/>]+)\s*=")
+    FORBIDDEN = re.compile(r"url\(|script|style|image|foreignobject|<use|<!|&|href", re.I)
+
+    @pytest.fixture
+    def asset(self):
+        return json.loads(ASSET.read_text())
+
+    def test_every_tag_is_allowed(self, asset):
+        tags = {match["name"] for markup in asset["symbols"].values() for match in self.TAG.finditer(markup)}
+
+        assert tags <= self.ALLOWED_TAGS
+
+    def test_no_attribute_is_an_event_handler(self, asset):
+        attributes = {match["name"] for markup in asset["symbols"].values() for match in self.ATTRIBUTE.finditer(markup)}
+
+        assert not {name for name in attributes if re.fullmatch(r"on\w+", name, re.I)}
+
+    def test_no_script_style_image_use_reference_entity_or_doctype(self, asset):
+        offending = [symbol for symbol, markup in asset["symbols"].items() if self.FORBIDDEN.search(markup)]
+
+        assert offending == []
+
+    def test_every_symbol_key_is_its_own_symbol_name(self, asset):
+        names = {symbol: re.search(r'data-symbol-name="(?P<name>[^"]*)"', markup) for symbol, markup in asset["symbols"].items()}
+
+        assert {symbol: match and match["name"] for symbol, match in names.items()} == {symbol: symbol for symbol in asset["symbols"]}
+
+    def test_every_symbol_passes_the_generators_own_check(self, asset):
+        for markup in asset["symbols"].values():
+            device_icons.check_markup(markup)
+
+    def test_every_kind_and_matcher_points_at_a_shipped_symbol(self, asset):
+        referenced = {*asset["kinds"].values(), *(matcher["symbol"] for matcher in asset["specific"])}
+
+        assert referenced <= set(asset["symbols"])

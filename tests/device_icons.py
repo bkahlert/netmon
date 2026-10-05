@@ -6,8 +6,10 @@ to its SVG. Kinds come from Material Design Icons (Apache 2.0), brands from Cust
 """
 
 import json
+import re
 import sys
 import urllib.request
+import xml.etree.ElementTree as ElementTree
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -63,6 +65,16 @@ SPECIFIC = [
 ]
 EXTRA = {"ethernet": "mdi:ethernet", "wifi": "mdi:wifi"}
 
+# The display inlines these SVGs into its DOM, so only plain shapes and presentation attributes pass.
+SVG_NAMESPACE = "{http://www.w3.org/2000/svg}"
+ALLOWED_TAGS = {"svg", "path", "g", "circle", "rect", "ellipse", "line", "polyline", "polygon"}
+ALLOWED_ATTRIBUTES = {
+    "xmlns", "viewBox", "data-symbol-name", "d", "points", "transform", "x", "y", "x1", "y1", "x2", "y2", "cx", "cy", "r", "rx", "ry",
+    "width", "height", "fill", "fill-rule", "fill-opacity", "clip-rule", "opacity", "stroke", "stroke-width", "stroke-linecap",
+    "stroke-linejoin", "stroke-miterlimit", "stroke-opacity",
+}
+SAFE_NAME = re.compile(r"[a-z0-9]+(?:-[a-z0-9]+)*")
+
 
 def used_symbols() -> list[str]:
     """Return every symbol id the asset needs, sorted."""
@@ -90,9 +102,32 @@ def fetch(prefix: str, names: list[str]) -> dict:
     return data
 
 
+def check_markup(markup: str) -> None:
+    """Raise ValueError unless the SVG markup has only allowed tags and attributes and no entity, DOCTYPE or url() tricks."""
+    if "<!" in markup or "&" in markup or "url(" in markup.lower():
+        raise ValueError(f"disallowed construct in SVG: {markup[:80]}")
+    try:
+        root = ElementTree.fromstring(f"<root>{markup}</root>" if not markup.startswith("<svg") else markup)
+    except ElementTree.ParseError as error:
+        raise ValueError(f"SVG does not parse: {error}") from error
+    for element in root.iter():
+        tag = element.tag.removeprefix(SVG_NAMESPACE)
+        if tag != "root" and tag not in ALLOWED_TAGS:
+            raise ValueError(f"disallowed SVG tag: {element.tag}")
+        for attribute in element.attrib:
+            if attribute not in ALLOWED_ATTRIBUTES:
+                raise ValueError(f"disallowed SVG attribute: {attribute}")
+
+
 def svg(data: dict, name: str) -> str:
-    """Return the icon as a standalone SVG with a square viewBox around its box and a data-symbol-name."""
+    """Return the icon as a standalone SVG with a square viewBox around its box and a data-symbol-name.
+
+    Raises ValueError for a name or body that is not plain, safe SVG.
+    """
+    if not SAFE_NAME.fullmatch(data["prefix"]) or not SAFE_NAME.fullmatch(name):
+        raise ValueError(f"unsafe icon name: {data['prefix']}:{name}")
     icon = data["icons"][name]
+    check_markup(icon["body"])
     width = icon.get("width", data.get("width", 16))
     height = icon.get("height", data.get("height", 16))
     left = icon.get("left", data.get("left", 0))
@@ -108,7 +143,9 @@ def number(value: float) -> str:
 
 
 def build(svgs: dict[str, str]) -> dict:
-    """Return the JSON data; raises KeyError for a symbol svgs lacks."""
+    """Return the JSON data; raises KeyError for a symbol svgs lacks and ValueError for an unsafe SVG."""
+    for symbol in used_symbols():
+        check_markup(svgs[symbol])
     return {
         "kinds": dict(sorted(KINDS.items())),
         "specific": SPECIFIC,
