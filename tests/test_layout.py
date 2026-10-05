@@ -62,31 +62,18 @@ class TestLayout:
         assert iterations
         assert all(count != float("inf") for count in iterations), iterations
 
-    @pytest.mark.parametrize("status", ["up", "down"])
-    def test_a_highlighted_host_only_fades_in_opacity_so_it_is_not_repainted(self, browser, page_server, status):
+    def test_no_host_card_is_animated(self, browser, page_server):
         page = browser.new_page(viewport={"width": PANEL[0], "height": PANEL[1]})
         try:
-            page.route_web_socket("ws://127.0.0.1:1/", layout.broker({}))
+            scans = scan_fixtures.kinds_scan()
+            page.route_web_socket("ws://127.0.0.1:1/", layout.broker(scans))
             page.goto(page_server.url)
-            page.evaluate(
-                """status => {
-                    const host = document.createElement('div')
-                    host.className = 'host host--highlighted'
-                    host.dataset.status = status
-                    document.body.append(host)
-                }""",
-                status,
-            )
-            animated = page.evaluate(
-                """document.querySelector('.host--highlighted').getAnimations({ subtree: true })
-                    .flatMap(a => a.effect.getKeyframes().flatMap(k => Object.keys(k)))
-                    .filter(name => !['offset', 'computedOffset', 'easing', 'composite'].includes(name))"""
-            )
+            page.wait_for_function(SINCE_SHOWN, arg=len(scan_fixtures.KINDS_HOSTS), timeout=20_000)
+            animated = page.evaluate(ANIMATIONS_AFTER_TWO_FRAMES)
         finally:
             page.close()
 
-        assert animated
-        assert set(animated) == {"opacity"}, animated
+        assert animated == 0
 
     def test_a_few_hosts_keep_their_natural_size(self, browser, page_server):
         found = open_page(browser, page_server, PANEL, sources=1, counts=(3, 0))
@@ -152,6 +139,11 @@ def browser():
             pytest.fail(f"Playwright's WebKit is not installed; run `make browser`\n{e}")
         yield engine
         engine.close()
+
+
+SINCE_SHOWN = "count => [...document.querySelectorAll('.host__status')].filter(s => s.textContent.includes('since')).length === count"
+ANIMATIONS_AFTER_TWO_FRAMES = """new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(() =>
+    resolve([...document.querySelectorAll('.hosts')].flatMap(e => e.getAnimations({ subtree: true })).length))))"""
 
 
 def open_page(browser, page_server, size, sources=1, counts=(0, 0), slowdown=0, scans=None):

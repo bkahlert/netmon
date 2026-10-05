@@ -11,7 +11,6 @@ import com.bkahlert.netmon.Link
 import com.bkahlert.netmon.MinuteClock
 import com.bkahlert.netmon.ScanEventSettings
 import com.bkahlert.netmon.ScanEventsStore
-import com.bkahlert.netmon.UiSettings
 import com.bkahlert.netmon.getElapsedTime
 import com.bkahlert.netmon.groupedByKind
 import com.bkahlert.netmon.hosts
@@ -174,7 +173,6 @@ fun RenderContext.host(
     host: Store<Host>,
     clock: Flow<Instant>,
     slowClock: Flow<Instant>,
-    highlightDuration: Duration = UiSettings.HOST_STATE_CHANGE_HIGHLIGHT_DURATION,
 ) {
 
     val elapsedTime: Flow<Duration?> = host.data.flatMapLatest { it.elapsedTimes(clock, slowClock) }
@@ -195,7 +193,6 @@ fun RenderContext.host(
     val captions = combine(hostNames, modelNames, kinds, macs) { h, m, k, mac -> h?.substringBefore(".") ?: m ?: k?.label ?: mac?.takeLast(8) }
 
     div("host") {
-        className(elapsedTime.map { if (it != null && it < highlightDuration) "host--highlighted" else "" })
         attr("data-status", statuses.map { it?.toString()?.lowercase() ?: "" })
 
         div("host__aside") {

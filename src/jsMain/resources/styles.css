@@ -104,13 +104,8 @@ body::before { @apply content-[''] table h-0; }
 /* A line shrinks by its length (--len) until it fits the text column, but not below .6 of its size; the rest ends in an ellipsis. */
 .fit { font-size: clamp(.6em, calc(var(--room) * 1em / (max(var(--len), 1) * var(--char))), 1em); }
 
-:root {
-  --HOST_STATE_CHANGE_HIGHLIGHT_DURATION: 60s;
-}
-
 .host[data-status=up] {
   --status-color: theme('colors.green.500');
-  --status-color-bright: theme('colors.green.100');
 }
 
 .host[data-status=down] {
@@ -122,50 +117,3 @@ body::before { @apply content-[''] table h-0; }
 }
 
 .host__icon { color: var(--status-color); }
-
-/*
- * The glow and the ring of a highlighted host are pseudo-elements of their own that only fade in opacity, once a second.
- * Fading a box-shadow repaints the card in every frame and kept the Pi's software painter at a fifth of a core while one
- * host was highlighted, which scans keep up; fading the opacity smoothly keeps its compositor at 15 %.
- */
-.host--highlighted { position: relative; }
-
-.host--highlighted::before,
-.host--highlighted::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  pointer-events: none;
-  will-change: opacity;
-}
-
-.host--highlighted::after { box-shadow: 0 0 0 2px var(--status-color); }
-
-.host--highlighted[data-status=up]::before {
-  box-shadow: 0 0 4px 4px var(--status-color-bright, var(--status-color));
-  animation: host-glow steps(10) calc(var(--HOST_STATE_CHANGE_HIGHLIGHT_DURATION) / 6) both;
-}
-
-.host--highlighted[data-status=up]::after {
-  animation: host-ring-up steps(60) var(--HOST_STATE_CHANGE_HIGHLIGHT_DURATION) both;
-}
-
-.host--highlighted[data-status=down]::after {
-  animation: host-ring-down steps(60) var(--HOST_STATE_CHANGE_HIGHLIGHT_DURATION) both;
-}
-
-@keyframes host-glow {
-  0% { opacity: 1; }
-  100% { opacity: 0; }
-}
-
-@keyframes host-ring-up {
-  0%, 16.6% { opacity: 1; }
-  100% { opacity: 0; }
-}
-
-@keyframes host-ring-down {
-  0% { opacity: 1; }
-  100% { opacity: 0; }
-}
