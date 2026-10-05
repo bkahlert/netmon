@@ -3,13 +3,14 @@ package com.bkahlert.netmon
 import com.bkahlert.kommons.FileCache
 import com.bkahlert.kommons.Pid
 import com.bkahlert.netmon.logging.SLF4J
-import com.bkahlert.netmon.enrichment.AmazonHostEnricher
-import com.bkahlert.netmon.enrichment.AppleHostEnricher
-import com.bkahlert.netmon.enrichment.DeviceInfoHostEnricher
-import com.bkahlert.netmon.enrichment.Enricher
-import com.bkahlert.netmon.enrichment.HostNameEnricher
 import com.bkahlert.netmon.enrichment.HostServicesEnricher
-import com.bkahlert.netmon.enrichment.SonosHostEnricher
+import com.bkahlert.netmon.enrichment.LockdownProbe
+import com.bkahlert.netmon.identity.AppleCodes
+import com.bkahlert.netmon.identity.IdentityEnricher
+import com.bkahlert.netmon.identity.IdentityResolver
+import com.bkahlert.netmon.identity.LockdownClues
+import com.bkahlert.netmon.identity.MdnsClues
+import com.bkahlert.netmon.identity.OuiClues
 import com.bkahlert.netmon.logging.LoggingSettings
 import com.bkahlert.netmon.mdns.JmDNS
 import com.bkahlert.netmon.mdns.JmDNSServiceInfoCache
@@ -50,6 +51,8 @@ class Application(
             dataDir?.let(nmapMacPrefixesProvisioner::provisionIn)
         }
     }
+    private val appleCodes by lazy { AppleCodes(DeviceModelCodes.load(DeviceModelCodes.resource)) }
+    private val lockdownProbe by lazy { LockdownProbe() }
 
     fun start() {
         logger.info("Configuration: {}", configuration(hostname, cache.toString()))
@@ -114,12 +117,14 @@ class Application(
                         interfaceAddress = interfaceAddress,
                         scanner = nmapNetworkScanner,
                         enrichers = arrayOf(
-                            HostNameEnricher(serviceInfoCache),
-                            DeviceInfoHostEnricher(serviceInfoCache),
-                            AmazonHostEnricher(serviceInfoCache),
-                            SonosHostEnricher(serviceInfoCache),
-                            AppleHostEnricher(serviceInfoCache, DeviceModelCodes.load(DeviceModelCodes.resource)),
-                            Enricher<Host> { null }, // lockdownd now runs as LockdownClues; rewired in Task 10
+                            IdentityEnricher(
+                                IdentityResolver(),
+                                sources = listOf(
+                                    MdnsClues(serviceInfoCache, appleCodes),
+                                    OuiClues(),
+                                ),
+                                fallbacks = listOf(LockdownClues(LockdownProbe.Lookup(lockdownProbe::model), appleCodes)),
+                            ),
                             HostServicesEnricher(serviceInfoCache),
                         ),
                         onScan = { scan ->
