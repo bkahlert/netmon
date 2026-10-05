@@ -3,6 +3,9 @@ package com.bkahlert.netmon.scanner
 import com.bkahlert.netmon.Cidr
 import com.bkahlert.netmon.Host
 import com.bkahlert.netmon.IP
+import com.bkahlert.netmon.Kind
+import com.bkahlert.netmon.Link
+import com.bkahlert.netmon.LinkSpeed
 import com.bkahlert.netmon.Status
 import com.bkahlert.netmon.epoch
 import com.bkahlert.netmon.invoke
@@ -35,6 +38,18 @@ class ScanResultTest {
         new = emptyList(),
     ) { merged, _ ->
         merged.timestamp shouldBe 200.epoch
+    }
+
+    @Test
+    fun kind_link_and_speed_follow_the_scan_and_fall_back_to_the_record() = mergingShould(
+        old = listOf(Host(ip = "10.0.0.1", mac = "aa:bb:cc:dd:ee:01", kind = Kind.LAMP, link = Link.WIFI, speed = LinkSpeed(65))),
+        new = listOf(Host(ip = "10.0.0.1", mac = "aa:bb:cc:dd:ee:01", kind = Kind.SOCKET, link = null, speed = null)),
+    ) { merged, _ ->
+        merged.hosts.single() should {
+            it.kind shouldBe Kind.SOCKET
+            it.link shouldBe Link.WIFI
+            it.speed shouldBe LinkSpeed(65)
+        }
     }
 
     @Test

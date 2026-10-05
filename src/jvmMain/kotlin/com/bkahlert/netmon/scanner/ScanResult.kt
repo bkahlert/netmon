@@ -63,6 +63,9 @@ data class ScanResult(
             vendor = scanned.vendor ?: recorded?.vendor,
             services = scanned.services ?: recorded?.services,
             mac = scanned.mac ?: recorded?.mac,
+            kind = scanned.kind ?: recorded?.kind,
+            link = scanned.link ?: recorded?.link,
+            speed = scanned.speed ?: recorded?.speed,
         )
 
         recorded == null -> checkNotNull(scanned).copy(status = Status.DOWN, since = scanTime, lastSeen = null)
