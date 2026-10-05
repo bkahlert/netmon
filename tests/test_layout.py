@@ -75,6 +75,24 @@ class TestLayout:
 
         assert animated == 0
 
+    def test_each_step_of_time_online_has_a_style_of_its_own_and_the_oldest_none(self, browser, page_server):
+        page = browser.new_page(viewport={"width": PANEL[0], "height": PANEL[1]})
+        try:
+            page.route_web_socket("ws://127.0.0.1:1/", layout.broker(scan_fixtures.kinds_scan()))
+            page.goto(page_server.url)
+            page.wait_for_function(SINCE_SHOWN, arg=len(scan_fixtures.KINDS_HOSTS), timeout=20_000)
+            page.wait_for_function("document.querySelectorAll('.host[data-age]').length === 10", timeout=5_000)
+            styles = page.evaluate(STEP_STYLES)
+        finally:
+            page.close()
+
+        by_step = {card["age"]: (card["background"], card["shadow"]) for card in styles if card["age"]}
+        baseline = ("rgba(0, 0, 0, 0)", "none")
+        assert list(by_step) == ["5m", "20m", "1h", "12h", "24h", "older"]
+        assert len(set(by_step.values())) == 6
+        assert by_step["older"] == baseline
+        assert {(card["background"], card["shadow"]) for card in styles if not card["age"]} == {baseline}
+
     def test_a_few_hosts_keep_their_natural_size(self, browser, page_server):
         found = open_page(browser, page_server, PANEL, sources=1, counts=(3, 0))
 
@@ -144,6 +162,11 @@ def browser():
 SINCE_SHOWN = "count => [...document.querySelectorAll('.host__status')].filter(s => s.textContent.includes('since')).length === count"
 ANIMATIONS_AFTER_TWO_FRAMES = """new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(() =>
     resolve([...document.querySelectorAll('.hosts')].flatMap(e => e.getAnimations({ subtree: true })).length))))"""
+
+
+STEP_STYLES = """[...document.querySelectorAll('.host')]
+    .map(h => ({age: h.dataset.age, background: getComputedStyle(h).backgroundColor, shadow: getComputedStyle(h).boxShadow}))
+    .sort((a, b) => ['5m', '20m', '1h', '12h', '24h', 'older'].indexOf(a.age) - ['5m', '20m', '1h', '12h', '24h', 'older'].indexOf(b.age))"""
 
 
 def open_page(browser, page_server, size, sources=1, counts=(0, 0), slowdown=0, scans=None):

@@ -13,6 +13,7 @@ import com.bkahlert.netmon.ScanEventSettings
 import com.bkahlert.netmon.ScanEventsStore
 import com.bkahlert.netmon.getElapsedTime
 import com.bkahlert.netmon.groupedByKind
+import com.bkahlert.netmon.onlineAge
 import com.bkahlert.netmon.hosts
 import com.bkahlert.netmon.model_identification.DeviceIcons
 import com.bkahlert.netmon.model_identification.DeviceModelCodes
@@ -176,6 +177,7 @@ fun RenderContext.host(
 ) {
 
     val elapsedTime: Flow<Duration?> = host.data.flatMapLatest { it.elapsedTimes(clock, slowClock) }
+    val ages = host.data.flatMapLatest { value -> slowClock.map { now -> value.onlineAge(now)?.token } }.distinctUntilChanged()
 
     val ips = host.data.map { it.ip }.distinctUntilChanged()
     val hostNames = host.data.map { it.name }.distinctUntilChanged()
@@ -194,6 +196,7 @@ fun RenderContext.host(
 
     div("host") {
         attr("data-status", statuses.map { it?.toString()?.lowercase() ?: "" })
+        attr("data-age", ages)
 
         div("host__aside") {
             icon("host__icon w-full", icons)

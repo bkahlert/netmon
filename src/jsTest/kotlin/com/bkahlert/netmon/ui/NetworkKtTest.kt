@@ -105,6 +105,49 @@ class NetworkKtTest {
     }
 
     @Test
+    fun a_card_carries_the_step_of_its_time_online() = runTest {
+        val now = Clock.System.now()
+        val store = RootStore(listOf(Host(ip = IP.of("192.0.2.1"), status = Status.UP, since = now - 30.minutes)), job = job)
+
+        val container = rendered { hosts(store, clock = MutableStateFlow(now)) }
+
+        container.awaited({ ages() }) { it.isNotEmpty() } shouldContainExactly listOf("1h")
+        container.remove()
+    }
+
+    @Test
+    fun a_down_card_carries_no_step_of_time_online() = runTest {
+        val now = Clock.System.now()
+        val store = RootStore(listOf(Host(ip = IP.of("192.0.2.1"), status = Status.DOWN, since = now - 30.minutes)), job = job)
+
+        val container = rendered { hosts(store, clock = MutableStateFlow(now)) }
+
+        container.textOnce("since 30m")
+        nextFrames(3)
+        container.querySelector(".host")?.hasAttribute("data-age") shouldBe false
+        container.remove()
+    }
+
+    @Test
+    fun a_card_takes_the_next_step_of_time_online_on_a_tick_of_the_slow_clock() = runTest {
+        val now = Clock.System.now()
+        val fast = MutableStateFlow(now)
+        val slow = MutableStateFlow(now)
+        val store = RootStore(listOf(Host(ip = IP.of("192.0.2.1"), status = Status.UP, since = now - 5.minutes + 1.seconds)), job = job)
+        val container = rendered { hosts(store, clock = fast, slowClock = slow) }
+        container.awaited({ ages() }) { it.isNotEmpty() } shouldContainExactly listOf("5m")
+
+        fast.value = now + 2.seconds
+        nextFrames(3)
+        container.ages() shouldContainExactly listOf("5m")
+
+        slow.value = now + 2.seconds
+
+        container.awaited({ ages() }) { it == listOf("20m") } shouldContainExactly listOf("20m")
+        container.remove()
+    }
+
+    @Test
     fun a_scan_shows_hosts_of_any_age_in_one_collection() = runTest {
         val now = Clock.System.now()
         val events = RootStore(scan(now, host(1, now - 30.seconds), host(2, now - 3.hours), host(3, now - 5.hours)), job = job)
@@ -371,6 +414,9 @@ private fun HTMLElement.cellTexts(): List<String> =
 
 private fun HTMLElement.hostIps(section: String): List<String> =
     querySelectorAll("$section .font-mono").asList().map { it.textContent.orEmpty() }
+
+private fun HTMLElement.ages(): List<String> =
+    querySelectorAll(".host[data-age]").asList().mapNotNull { (it as Element).getAttribute("data-age") }
 
 private fun HTMLElement.fitLengths(): List<String> =
     querySelectorAll(".fit").asList().map { (it as HTMLElement).style.getPropertyValue("--len").trim() }

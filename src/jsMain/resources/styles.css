@@ -117,3 +117,10 @@ body::before { @apply content-[''] table h-0; }
 }
 
 .host__icon { color: var(--status-color); }
+
+/* The time a host has been up (OnlineAge) steps its ring and tint down from the newest to the calm oldest; nothing animates. */
+.host[data-age="5m"] { background-color: theme('colors.green.500 / 30%'); box-shadow: inset 0 0 0 2px theme('colors.green.500'); }
+.host[data-age="20m"] { background-color: theme('colors.green.500 / 18%'); box-shadow: inset 0 0 0 2px theme('colors.green.500 / 65%'); }
+.host[data-age="1h"] { background-color: theme('colors.green.500 / 10%'); box-shadow: inset 0 0 0 1px theme('colors.green.500 / 55%'); }
+.host[data-age="12h"] { background-color: theme('colors.green.500 / 5%'); box-shadow: inset 0 0 0 1px theme('colors.green.500 / 35%'); }
+.host[data-age="24h"] { box-shadow: inset 0 0 0 1px theme('colors.green.500 / 20%'); }
