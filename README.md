@@ -34,7 +34,9 @@ websocket listener), `netmon-display` (the web display behind lighttpd, shown fu
 `netmon-metrics`, which publishes the board's metrics every 5 s as OTLP/JSON to `dt/netmon/<node>/metrics`; without
 the package the status bar shows no figures.
 [devices/README.md](devices/README.md) has the details, including the one line a panel without EDID needs. The scanner
-reads `/etc/netmon/scanner.conf` (`BROKER_HOST`, `BROKER_PORT`, `NMAP_*`, `NETMON_SCANNER_OPTIONS`); the display
+reads `/etc/netmon/scanner.conf` (`BROKER_HOST`, `BROKER_PORT`, `NMAP_*`, `NETMON_SCANNER_OPTIONS`, and `FRITZBOX_USER`
+and `FRITZBOX_PASSWORD` of a FRITZ!Box account with App rights, which let the scanner read the router's host table with
+names, link type and speed; `FRITZBOX_URL` overrides the box found via mDNS); the display
 subscribes to the broker on the host the page was loaded from, port 8080, unless the URL's `broker.host` and
 `broker.port` query parameters say otherwise. Any browser on the LAN shows the same page at `http://<host>.local/`.
 Updates are `sudo apt upgrade`. Pi Hero 1's Ansible installer is frozen at the tag

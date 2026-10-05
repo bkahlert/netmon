@@ -11,6 +11,8 @@ import com.bkahlert.netmon.identity.IdentityResolver
 import com.bkahlert.netmon.identity.LockdownClues
 import com.bkahlert.netmon.identity.MdnsClues
 import com.bkahlert.netmon.identity.OuiClues
+import com.bkahlert.netmon.identity.RouterClues
+import com.bkahlert.netmon.identity.SsdpClues
 import com.bkahlert.netmon.logging.LoggingSettings
 import com.bkahlert.netmon.mdns.JmDNS
 import com.bkahlert.netmon.mdns.JmDNSServiceInfoCache
@@ -27,12 +29,20 @@ import com.bkahlert.netmon.net.networkInterface
 import com.bkahlert.netmon.nmap.NmapMacPrefixesProvisioner
 import com.bkahlert.netmon.nmap.NmapNetworkScanner
 import com.bkahlert.netmon.nmap.NmapSettings
+import com.bkahlert.netmon.router.FritzBoxEndpoint
+import com.bkahlert.netmon.router.FritzBoxHosts
+import com.bkahlert.netmon.router.FritzBoxSettings
+import com.bkahlert.netmon.router.Tr064Client
 import com.bkahlert.netmon.scanner.NetmonScanner
 import com.bkahlert.netmon.scanner.NetworkFilterSettings
 import com.bkahlert.netmon.scanner.ScannerSettings
 import com.bkahlert.netmon.serialization.JsonFormat
+import com.bkahlert.netmon.ssdp.DescriptionFetcher
+import com.bkahlert.netmon.ssdp.SsdpCache
 import java.net.InetAddress
 import java.net.InterfaceAddress
+import java.net.http.HttpClient
+import java.time.Duration
 import java.util.Collections
 import kotlin.system.exitProcess
 
@@ -54,6 +64,9 @@ class Application(
     private val appleCodes by lazy { AppleCodes(DeviceModelCodes.load(DeviceModelCodes.resource)) }
     private val lockdownProbe by lazy { LockdownProbe() }
 
+    /** One client for the router's TR-064 calls and the SSDP description fetches, which both speak plain HTTP/1.1 in the LAN. */
+    private val lanHttp by lazy { HttpClient.newBuilder().version(HttpClient.Version.HTTP_1_1).connectTimeout(Duration.ofSeconds(3)).build() }
+
     fun start() {
         logger.info("Configuration: {}", configuration(hostname, cache.toString()))
 
@@ -67,6 +80,7 @@ class Application(
                 BrokerSettings,
                 ScanEventSettings,
                 HostEventSettings,
+                FritzBoxSettings,
             ).joinToString(separator = "") { settings ->
                 "\n${settings::class.simpleName.orEmpty().padStart(30)}: ${settings.toString().substringAfter('[').substringBeforeLast(']')}"
             },
@@ -100,12 +114,26 @@ class Application(
 
         val serviceInfoCaches = Collections.synchronizedMap(mutableMapOf<InetAddress, JmDNSServiceInfoCache>())
         val scanners = Collections.synchronizedMap(mutableMapOf<InetAddress, NetmonScanner>())
+        val ssdpCaches = Collections.synchronizedMap(mutableMapOf<InetAddress, SsdpCache>())
+        val ssdpListeners = Collections.synchronizedMap(mutableMapOf<InetAddress, AutoCloseable>())
+        val routerTables = Collections.synchronizedMap(mutableMapOf<InetAddress, FritzBoxHosts>())
 
         val application = SlicedApplication(
             slice = namedInterfaceAddresses,
             start = { (interfaceAddress, interfaceName) ->
                 val serviceInfoCache = serviceInfoCaches.getOrPut(interfaceAddress.address) {
                     JmDNSServiceInfoCache(JmDNS(interfaceAddress.address, hostname), serviceTypes = emptyArray())
+                }
+                val ssdpCache = ssdpCaches.getOrPut(interfaceAddress.address) { SsdpCache(DescriptionFetcher(lanHttp)) }
+                ssdpListeners.getOrPut(interfaceAddress.address) {
+                    ssdpCache.listen(checkNotNull(interfaceAddress.networkInterface))
+                }
+                val routerTable = routerTables.getOrPut(interfaceAddress.address) {
+                    FritzBoxHosts(
+                        // Discovered per call inside the table's error handling, so a malformed URL is a warning, not a crash.
+                        client = { FritzBoxEndpoint.discover(FritzBoxSettings.url, serviceInfoCache)?.let { Tr064Client(it, FritzBoxSettings.credentials, lanHttp) } },
+                        credentials = FritzBoxSettings.credentials,
+                    ).also { it.start() }
                 }
 
                 val topicSubstitutions = mapOf("node" to hostname, "interface" to interfaceName, "cidr" to interfaceAddress.cidr.toString())
@@ -120,7 +148,9 @@ class Application(
                             IdentityEnricher(
                                 IdentityResolver(),
                                 sources = listOf(
+                                    RouterClues(routerTable),
                                     MdnsClues(serviceInfoCache, appleCodes),
+                                    SsdpClues(ssdpCache, serviceInfoCache),
                                     OuiClues(),
                                 ),
                                 fallbacks = listOf(LockdownClues(LockdownProbe.Lookup(lockdownProbe::model), appleCodes)),
@@ -163,6 +193,9 @@ class Application(
             },
             finalize = { (interfaceAddress, interfaceName) ->
                 scanners.remove(interfaceAddress.address)
+                ssdpListeners.remove(interfaceAddress.address)?.close()
+                ssdpCaches.remove(interfaceAddress.address)
+                routerTables.remove(interfaceAddress.address)?.close()
                 serviceInfoCaches.remove(interfaceAddress.address)?.also {
                     it.close()
                     it.jmDns.close()
