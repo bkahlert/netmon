@@ -249,8 +249,10 @@ fun RenderContext.host(
 
 /** The icon of a host: a known Apple model code's SF Symbol, else the first brand matcher, else the kind's symbol, else the display glyph. */
 fun hostIcon(model: String?, vendor: String?, name: String?, kind: Kind?): Uri =
-    (model?.let(DeviceModelCodes::symbol) ?: DeviceIcons.specificSymbol(vendor, model, name) ?: kind?.let(DeviceIcons::kindSymbol))
+    (model?.takeIf { APPLE_SHAPE.matches(it) }?.let(DeviceModelCodes::symbol) ?: DeviceIcons.specificSymbol(vendor, model, name) ?: kind?.let(DeviceIcons::kindSymbol))
         ?.let(DataUri::svg) ?: SFSymbols.display
+
+private val APPLE_SHAPE = Regex("[A-Za-z]+\\d+(?:,\\d+)?")
 
 private fun linkIcon(link: Link): Uri =
     DeviceIcons.symbol(if (link == Link.WIFI) "mdi:wifi" else "mdi:ethernet")?.let(DataUri::svg) ?: SFSymbols.display

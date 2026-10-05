@@ -248,6 +248,20 @@ class NetworkKtTest {
     }
 
     @Test
+    fun a_custom_model_code_that_is_no_apple_code_does_not_hide_the_brand_icon() = runTest {
+        withIcons {
+            val now = Clock.System.now()
+            val speaker = Host(ip = IP.of("192.168.1.1"), vendor = "Sonos", model = "One SL", kind = Kind.SPEAKER, status = Status.UP, since = now)
+            val store = RootStore(listOf(speaker), job = job)
+
+            val container = rendered { hosts(store, clock = MutableStateFlow(now)) }
+
+            container.awaited({ symbolNames() }) { it.isNotEmpty() } shouldContainExactly listOf("cbi:sonos-one")
+            container.remove()
+        }
+    }
+
+    @Test
     fun a_nameless_modelless_host_is_captioned_by_its_kind() = runTest {
         val now = Clock.System.now()
         val store = RootStore(listOf(Host(ip = IP.of("192.168.1.1"), kind = Kind.GAMING_DEVICE, mac = "80:00:00:00:00:0d", status = Status.UP, since = now)), job = job)
@@ -321,12 +335,15 @@ private fun HTMLElement.symbolNames(): List<String> =
     querySelectorAll(".host__icon").asList().mapNotNull { (it as? Element)?.getAttribute("data-symbol-name") }
 
 private suspend fun withIcons(block: suspend () -> Unit) {
-    DeviceModelCodes.set(DeviceModelCodes(models = mapOf("iPad8,3" to DeviceModelCodes.Model("iPad Pro", "ipad")), symbols = mapOf("ipad" to """<svg data-symbol-name="ipad" viewBox="0 0 10 10"><path d="M0 0"/></svg>""")))
+    DeviceModelCodes.set(DeviceModelCodes(models = mapOf("iPad8,3" to DeviceModelCodes.Model("iPad Pro", "ipad"), "One SL" to DeviceModelCodes.Model("One SL", "hifispeaker")), symbols = mapOf("ipad" to """<svg data-symbol-name="ipad" viewBox="0 0 10 10"><path d="M0 0"/></svg>""", "hifispeaker" to """<svg data-symbol-name="hifispeaker" viewBox="0 0 10 10"><path d="M0 0"/></svg>""")))
     DeviceIcons.set(
         DeviceIcons(
             kinds = mapOf("Socket" to "mdi:power-socket-eu", "SetTopBox" to "mdi:cast", "Tablet" to "mdi:tablet"),
-            specific = listOf(DeviceIcons.Matcher(vendor = "^Amazon$", model = "Fire TV", symbol = "cbi:firetv")),
-            symbols = listOf("mdi:power-socket-eu", "mdi:cast", "mdi:tablet", "cbi:firetv", "mdi:ethernet", "mdi:wifi")
+            specific = listOf(
+                DeviceIcons.Matcher(vendor = "^Amazon$", model = "Fire TV", symbol = "cbi:firetv"),
+                DeviceIcons.Matcher(vendor = "^Sonos$", model = "^One", symbol = "cbi:sonos-one"),
+            ),
+            symbols = listOf("mdi:power-socket-eu", "mdi:cast", "mdi:tablet", "cbi:firetv", "cbi:sonos-one", "mdi:ethernet", "mdi:wifi")
                 .associateWith { """<svg data-symbol-name="$it" viewBox="0 0 24 24"><path d="M0 0"/></svg>""" },
         ),
     )

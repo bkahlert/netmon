@@ -111,7 +111,7 @@ VERSION=X.Y.Z` and `git push origin vX.Y.Z`; the workflow builds, signs and publ
 The model codes the scanner recognises, and the description and SF Symbol the display draws for each, are
 `src/commonMain/resources/assets/device-model-codes.json`. `make device-model-codes` regenerates it on a Mac with
 [device-icons](https://github.com/bkahlert/device-icons), which reads them from macOS itself; the codes of the Fire TV
-and Sonos devices the enrichers report, and the symbols of Apple types that declare none, are
+and Sonos devices the scanner reports, and the symbols of Apple types that declare none, are
 [tests/device_model_codes.py](tests/device_model_codes.py)'s own.
 
 The icons for a host's kind and for specific brands are
