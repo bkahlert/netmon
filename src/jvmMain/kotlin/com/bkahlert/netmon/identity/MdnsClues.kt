@@ -26,7 +26,7 @@ class MdnsClues(
         return buildList {
             names(records, servers)
             models(records, emulator, machine)
-            appleCode(records, host, linuxHost)
+            appleCode(records, host, linuxHost, emulator)
             vendors(records, emulator)
             kinds(records, machine)
         }
@@ -66,11 +66,11 @@ class MdnsClues(
         }
     }
 
-    private fun MutableList<Clue>.appleCode(records: Records, host: Host, linuxHost: Boolean) {
+    private fun MutableList<Clue>.appleCode(records: Records, host: Host, linuxHost: Boolean, emulator: Boolean) {
         val code = listOfNotNull(
             records.txt("device-info", "model"),
-            records.txt("airplay", "model"),
-            records.txt("raop", "am"),
+            records.txt("airplay", "model")?.takeUnless { emulator },
+            records.txt("raop", "am")?.takeUnless { emulator },
             records.txt("companion-link", "rpMd"),
         ).firstOrNull { appleCodes.accepts(it, ouiVendor = host.vendor, mac = host.mac, linuxHost = linuxHost) } ?: return
         val normalized = appleCodes.normalize(code)

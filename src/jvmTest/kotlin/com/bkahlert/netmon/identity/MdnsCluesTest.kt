@@ -72,6 +72,27 @@ class MdnsCluesTest {
     }
 
     @Test
+    fun an_airplay_receiver_app_on_an_unknown_oui_does_not_pass_for_apple() {
+        val result = clues(
+            host(vendor = null, mac = "ec:8a:c4:76:da:f0"),
+            service("airplay", "AFTMM-36[AirPlay]", "192-168-17-36.local.", 7000, HOST_IP, "model" to "AppleTV3,1", "rmodel" to "AirReceiver3,1"),
+            service("raop", "EC8AC476DAF0@AFTMM-36[AirPlay]", "192-168-17-36.local.", 7000, HOST_IP, "am" to "AppleTV3,1"),
+        )
+
+        result.none { it.source == Source.APPLE_CODE } shouldBe true
+    }
+
+    @Test
+    fun an_airplay_receiver_app_on_a_private_mac_does_not_pass_for_apple() {
+        val result = clues(
+            host(vendor = null, mac = "4a:1d:30:53:a0:b2"),
+            service("airplay", "Receiver", "receiver.local.", 7000, HOST_IP, "model" to "AppleTV3,1", "rmodel" to "AirReceiver3,1"),
+        )
+
+        result.none { it.source == Source.APPLE_CODE } shouldBe true
+    }
+
+    @Test
     fun a_homepod_is_an_apple_speaker_although_its_hap_record_is_a_sensor() {
         val result = clues(
             host(vendor = "Apple Inc.", mac = "f4:34:f0:85:e7:64"),
