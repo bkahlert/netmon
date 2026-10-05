@@ -42,6 +42,12 @@ subscribes to the broker on the host the page was loaded from, port 8080, unless
 Updates are `sudo apt upgrade`. Pi Hero 1's Ansible installer is frozen at the tag
 [`netmon-ansible`](https://github.com/bkahlert/netmon/tree/netmon-ansible).
 
+## Documentation
+
+- [How the scanner works](docs/how-it-works.md): from the nmap scan through identification and the state file to the
+  display, with the rules a maintainer must keep and how to extend them.
+- [Open issues](docs/open-issues.md): what is still wrong, missing or risky after the device identification work.
+
 ## Development
 
 ### Run locally
