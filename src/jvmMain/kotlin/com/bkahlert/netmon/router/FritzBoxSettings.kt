@@ -16,7 +16,7 @@ object FritzBoxSettings : Settings("fritzbox") {
 
     val credentials: Credentials? get() = user?.let { u -> password?.let { p -> Credentials(u, p) } }
 
-    override fun toString(): String = "FritzBoxSettings[url=$url, user=$user, password=${password?.let { "***" }}]"
+    override fun toString(): String = "FritzBoxSettings[url=$url, user=${user?.let { "<set>" }}, password=${password?.let { "***" }}]"
 
     /** Reads a string setting as it is written, so a password with quotes or backslashes is not parsed as JSON. */
     private object VerbatimStrings : StringFormat {

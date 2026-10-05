@@ -8,19 +8,29 @@ import kotlin.test.Test
 class FritzBoxSettingsTest {
 
     @Test
-    fun the_password_never_appears_in_the_settings_text() {
+    fun neither_the_user_name_nor_the_password_appears_in_the_settings_text() {
         System.setProperty("fritzbox.user", "netmon")
         System.setProperty("fritzbox.password", "s3cret")
         try {
             val text = FritzBoxSettings.toString()
 
-            text shouldContain "user=netmon"
+            text shouldContain "user=<set>"
             text shouldContain "password=***"
+            text shouldNotContain "netmon"
             text shouldNotContain "s3cret"
         } finally {
             System.clearProperty("fritzbox.user")
             System.clearProperty("fritzbox.password")
         }
+    }
+
+    @Test
+    fun the_credentials_text_holds_neither_user_name_nor_password() {
+        val text = Credentials("netmon", "s3cret").toString()
+
+        text shouldContain "user=<set>"
+        text shouldNotContain "netmon"
+        text shouldNotContain "s3cret"
     }
 
     @Test
