@@ -37,7 +37,7 @@ class RestartFloorTest {
             notBefore = floor.at(7240.epoch),
         )
 
-        merged.hosts.single().status shouldBe Status.UP
+        merged.scan.hosts.single().status shouldBe Status.UP
     }
 
     @Test
@@ -50,7 +50,7 @@ class RestartFloorTest {
             notBefore = 10.epoch,
         )
 
-        merged.hosts.single().status shouldBe Status.DOWN
+        merged.scan.hosts.single().status shouldBe Status.DOWN
     }
 }
 

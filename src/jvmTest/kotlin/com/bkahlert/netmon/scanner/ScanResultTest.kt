@@ -41,6 +41,79 @@ class ScanResultTest {
     }
 
     @Test
+    fun merge_returns_changes_without_invoking_external_code() {
+        val oldHost = Host(ip = IP.of("10.0.0.1"), status = Status.DOWN, since = 100.epoch)
+        val scannedHost = Host(ip = IP.of("10.0.0.1"), status = Status.UP)
+        val oldScan = scanAt(100.epoch, oldHost)
+        val currentScan = scanAt(200.epoch, scannedHost)
+
+        val result = oldScan.merge(currentScan, downAfter = 3.minutes, notBefore = Instant.DISTANT_PAST)
+
+        result.scan shouldBe scanAt(
+            200.epoch,
+            Host(ip = IP.of("10.0.0.1"), status = Status.UP, since = 200.epoch, lastSeen = 200.epoch),
+        )
+        result.changedHosts shouldBe listOf(
+            Host(ip = IP.of("10.0.0.1"), status = Status.UP, since = 200.epoch, lastSeen = 200.epoch),
+        )
+    }
+
+    @Test
+    fun changes_keep_the_existing_pairing_order() {
+        val unchanged = Host(ip = IP.of("10.0.0.1"), status = Status.UP, since = 50.epoch, lastSeen = 100.epoch, mac = "aa:bb:cc:dd:ee:01")
+        val recovering = Host(ip = IP.of("10.0.0.2"), status = Status.DOWN, since = 80.epoch, lastSeen = 80.epoch, mac = "aa:bb:cc:dd:ee:02")
+        val expiring = Host(ip = IP.of("10.0.0.3"), status = Status.UP, since = 50.epoch, lastSeen = 100.epoch, mac = "aa:bb:cc:dd:ee:03")
+        val recoveredAtNewIp = Host(ip = IP.of("10.0.0.5"), status = Status.UP, mac = recovering.mac)
+        val newHost = Host(ip = IP.of("10.0.0.4"), status = Status.UP)
+        val unchangedScan = Host(ip = unchanged.ip, status = Status.UP, mac = unchanged.mac)
+        val oldScan = scanAt(100.epoch, unchanged, recovering, expiring)
+        val currentScan = scanAt(400.epoch, recoveredAtNewIp, newHost, unchangedScan)
+
+        val result = oldScan.merge(currentScan, downAfter = 3.minutes, notBefore = Instant.DISTANT_PAST)
+
+        result.scan.hosts shouldBe listOf(
+            unchanged.copy(lastSeen = 400.epoch),
+            expiring.copy(status = Status.DOWN, since = 100.epoch),
+            newHost.copy(since = 400.epoch, lastSeen = 400.epoch),
+            recoveredAtNewIp.copy(since = 400.epoch, lastSeen = 400.epoch),
+        )
+        result.changedHosts shouldBe listOf(
+            recoveredAtNewIp.copy(since = 400.epoch, lastSeen = 400.epoch),
+            newHost.copy(since = 400.epoch, lastSeen = 400.epoch),
+            expiring.copy(status = Status.DOWN, since = 100.epoch),
+        )
+    }
+
+    @Test
+    fun identity_only_updates_have_no_host_event() {
+        val oldHost = Host(
+            ip = IP.of("10.0.0.1"),
+            name = "old-name",
+            status = Status.UP,
+            since = 50.epoch,
+            lastSeen = 100.epoch,
+            model = "OldModel",
+            mac = "aa:bb:cc:dd:ee:01",
+        )
+        val scannedHost = Host(
+            ip = oldHost.ip,
+            name = "new-name",
+            status = Status.UP,
+            model = "NewModel",
+            mac = oldHost.mac,
+        )
+
+        val result = scanAt(100.epoch, oldHost).merge(
+            scanAt(130.epoch, scannedHost),
+            downAfter = 3.minutes,
+            notBefore = Instant.DISTANT_PAST,
+        )
+
+        result.scan.hosts.single() shouldBe oldHost.copy(name = "new-name", lastSeen = 130.epoch, model = "NewModel")
+        result.changedHosts shouldBe emptyList()
+    }
+
+    @Test
     fun kind_link_and_speed_follow_the_scan_and_fall_back_to_the_record() = mergingShould(
         old = listOf(Host(ip = "10.0.0.1", mac = "aa:bb:cc:dd:ee:01", kind = Kind.LAMP, link = Link.WIFI, speed = LinkSpeed(65))),
         new = listOf(Host(ip = "10.0.0.1", mac = "aa:bb:cc:dd:ee:01", kind = Kind.SOCKET, link = null, speed = null)),
@@ -426,11 +499,12 @@ class ScanResultTest {
         try {
             val file = directory.resolve("scan.json").also { it.writeText("stale") }
             val scan = scanAt(100.epoch, Host(status = Status.UP, since = 100.epoch, lastSeen = 100.epoch))
+            val store = JsonScanStateStore(file)
 
-            scan.save(file)
+            store.save(scan)
 
             file should {
-                ScanResult.load(it) shouldBe scan
+                store.load() shouldBe scan
                 directory.listDirectoryEntries().shouldContainExactly(listOf(it))
             }
         } finally {
@@ -441,7 +515,7 @@ class ScanResultTest {
     @Test
     fun an_older_state_file_loads_with_optional_fields_absent() {
         val resource = checkNotNull(javaClass.classLoader.getResource("assets/older-scan.json"))
-        val scan = checkNotNull(ScanResult.load(Paths.get(resource.toURI())))
+        val scan = checkNotNull(JsonScanStateStore(Paths.get(resource.toURI())).load())
         val host = scan.hosts.single()
 
         host.lastSeen shouldBe null
@@ -579,14 +653,12 @@ class ScanResultTest {
         val recorded = listOf("10.0.0.1", "10.0.0.2", "10.0.0.3").map {
             Host(ip = it, status = Status.UP, since = 50.epoch, lastSeen = 100.epoch)
         }
-        val changed = mutableListOf<Host>()
+        val merged = scanAt(100.epoch, *recorded.toTypedArray()).merge(scanAt(150.epoch), 3.minutes, Instant.DISTANT_PAST)
 
-        val merged = scanAt(100.epoch, *recorded.toTypedArray()).merge(scanAt(150.epoch), 3.minutes, Instant.DISTANT_PAST) { changed.add(it) }
-
-        merged.hosts should {
+        merged.scan.hosts should {
             it.shouldContainExactly(recorded)
-            changed.shouldBeEmpty()
         }
+        merged.changedHosts.shouldBeEmpty()
     }
 
     @Test
@@ -795,22 +867,18 @@ private fun mergingShould(
         hosts = new,
     )
 
-    val changed = mutableListOf<Host>()
-    val merged = initialScan
-        .merge(
-            currentResult = oldScan,
-            downAfter = downAfter,
-            notBefore = notBefore,
-            onChange = {},
-        )
-        .merge(
-            currentResult = newScan,
-            downAfter = downAfter,
-            notBefore = notBefore,
-            onChange = { changed.add(it) },
-        )
+    val recordedScan = initialScan.merge(
+        currentResult = oldScan,
+        downAfter = downAfter,
+        notBefore = notBefore,
+    ).scan
+    val merged = recordedScan.merge(
+        currentResult = newScan,
+        downAfter = downAfter,
+        notBefore = notBefore,
+    )
 
-    assertion(merged, changed)
+    assertion(merged.scan, merged.changedHosts)
 }
 
 /**
@@ -847,7 +915,6 @@ private fun ScanResult.mergedWith(
     downAfter: Duration = 3.minutes,
     notBefore: Instant = Instant.DISTANT_PAST,
 ): Merged {
-    val changed = mutableListOf<Host>()
-    val result = merge(current, downAfter, notBefore) { changed.add(it) }
-    return Merged(result, changed)
+    val result = merge(current, downAfter, notBefore)
+    return Merged(result.scan, result.changedHosts)
 }

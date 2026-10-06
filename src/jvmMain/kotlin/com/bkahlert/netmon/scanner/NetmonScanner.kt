@@ -25,6 +25,7 @@ class NetmonScanner(
     val `interface`: String = checkNotNull(interfaceAddress.networkInterface).name
     val cidr: Cidr = interfaceAddress.cidr
     val scanResultFile: Path = Paths.get("scan.$`interface`.${cidr.filenameString}.json")
+    private val stateStore = JsonScanStateStore(scanResultFile)
     private val restartFloor = RestartFloor()
 
     private fun scanInitially(): ScanResult {
@@ -38,7 +39,7 @@ class NetmonScanner(
     }
 
     fun scan() {
-        val oldScan = ScanResult.load(scanResultFile) ?: scanInitially()
+        val oldScan = stateStore.load() ?: scanInitially()
 
         val currentScan = ScanResult(
             `interface` = `interface`,
@@ -49,9 +50,10 @@ class NetmonScanner(
             timestamp = Clock.System.now(),
         )
 
-        oldScan.merge(currentScan, downAfter = ScannerSettings.downAfter, notBefore = restartFloor.at(currentScan.timestamp), onChange = onChange)
-            .also { onScan(it) }
-            .also { it.save(scanResultFile) }
+        val merged = oldScan.merge(currentScan, downAfter = ScannerSettings.downAfter, notBefore = restartFloor.at(currentScan.timestamp))
+        merged.changedHosts.forEach(onChange)
+        onScan(merged.scan)
+        stateStore.save(merged.scan)
     }
 
     override fun toString(): String = "network-scanner-$`interface`-$cidr"

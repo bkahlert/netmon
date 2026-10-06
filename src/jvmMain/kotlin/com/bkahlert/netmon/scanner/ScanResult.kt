@@ -1,28 +1,14 @@
 package com.bkahlert.netmon.scanner
 
-import com.bkahlert.netmon.logging.SLF4J
 import com.bkahlert.netmon.serialization.InstantAsEpochSecondsSerializer
 import com.bkahlert.netmon.Cidr
 import com.bkahlert.netmon.Host
 import com.bkahlert.netmon.Kind
 import com.bkahlert.netmon.Status
-import com.bkahlert.netmon.serialization.JsonFormat
 import kotlin.time.Duration
 import kotlin.time.Instant
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.StringFormat
-import kotlinx.serialization.decodeFromString
-import kotlinx.serialization.encodeToString
-import java.nio.channels.ClosedChannelException
-import java.nio.file.Path
-import java.nio.file.StandardCopyOption
-import kotlin.io.path.createTempFile
-import kotlin.io.path.exists
-import kotlin.io.path.moveTo
-import kotlin.io.path.name
-import kotlin.io.path.readText
-import kotlin.io.path.writeText
 
 @Serializable
 data class ScanResult(
@@ -36,22 +22,23 @@ data class ScanResult(
         currentResult: ScanResult,
         downAfter: Duration,
         notBefore: Instant,
-        onChange: (Host) -> Unit = {},
-    ): ScanResult {
+    ): MergeResult {
         check(`interface` == currentResult.`interface`) { "Interfaces do not match: $`interface` != ${currentResult.`interface`}" }
         check(cidr == currentResult.cidr) { "Networks do not match: $cidr != ${currentResult.cidr}" }
-        return ScanResult(
+        val changedHosts = mutableListOf<Host>()
+        val scan = ScanResult(
             `interface` = `interface`,
             cidr = cidr,
             hosts = pair(hosts, currentResult.hosts)
                 .map { (recordedHost, scannedHost) ->
                     val mergedHost = mergeHost(recordedHost, scannedHost, currentResult.timestamp, downAfter, notBefore)
-                    if (recordedHost == null || recordedHost.status != mergedHost.status) onChange(mergedHost)
+                    if (recordedHost == null || recordedHost.status != mergedHost.status) changedHosts += mergedHost
                     mergedHost
                 }
                 .sortedBy { it.ip },
             timestamp = currentResult.timestamp,
         )
+        return MergeResult(scan = scan, changedHosts = changedHosts)
     }
 
     private fun mergeHost(recorded: Host?, scanned: Host?, scanTime: Instant, downAfter: Duration, notBefore: Instant): Host = when {
@@ -108,42 +95,4 @@ data class ScanResult(
     }
 
     private val Host.seenUp: Boolean get() = status == null || status == Status.UP
-
-    fun save(
-        file: Path,
-        format: StringFormat = JsonFormat,
-    ) = try {
-        val content = format.encodeToString(this)
-        val tempFile = createTempFile(file.toAbsolutePath().parent, file.name, ".tmp")
-        tempFile.writeText(content)
-        tempFile.moveTo(file, StandardCopyOption.ATOMIC_MOVE)
-    } catch (e: ClosedChannelException) {
-        logger.info("Aborted saving scan result to {} was aborted", file.toAbsolutePath())
-    } catch (e: Throwable) {
-        logger.error("Error saving scan result to {}", file.toAbsolutePath(), e)
-    }
-
-    companion object {
-        private val logger by SLF4J
-
-        fun load(
-            file: Path,
-            format: StringFormat = JsonFormat,
-        ): ScanResult? = if (file.exists()) {
-            file.readText().runCatching {
-                format.decodeFromString<ScanResult>(this)
-            }.fold(
-                onSuccess = {
-                    logger.info("Loaded stored scan from {}", file)
-                    it
-                },
-                onFailure = { error ->
-                    logger.error("Error loading scan result", error)
-                    null
-                },
-            )
-        } else {
-            null
-        }
-    }
 }
