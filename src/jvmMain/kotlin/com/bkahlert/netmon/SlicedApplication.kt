@@ -147,7 +147,6 @@ sealed interface SlicedApplicationState {
             "${SlicedApplication::class.simpleName}(state=${this::class.simpleName}, updateInterval=$updateInterval, slices=${workers.keys})"
 
         init {
-            Runtime.getRuntime().addShutdownHook(Thread(this::terminate))
             manager.start()
         }
 
@@ -155,6 +154,7 @@ sealed interface SlicedApplicationState {
             private val value: T,
         ) : Thread("worker:$value") {
             override fun run() {
+                var failure: Throwable? = null
                 try {
                     start.invoke(value)
                     logger.info("Started {}", toString())
@@ -165,22 +165,29 @@ sealed interface SlicedApplicationState {
                         logger.info("Executed {}", toString())
                     }
                 } catch (e: InterruptedException) {
-                    finalize.invoke(value)
-                    logger.info("Terminated {} due to interruption", toString())
-                    return
                 } catch (e: Throwable) {
-                    failed.add(value)
-                    try {
-                        finalize.invoke(value)
-                        logger.error("Terminated {} due to failure", toString(), e)
-                    } finally {
-                        manager.interrupt()
-                    }
-                    return
+                    failure = e
                 }
 
-                finalize.invoke(value)
-                logger.info("Terminated {}", toString())
+                try {
+                    finalize.invoke(value)
+                } catch (finalizeFailure: Throwable) {
+                    val workerFailure = failure
+                    if (workerFailure == null) {
+                        failure = finalizeFailure
+                    } else if (workerFailure !== finalizeFailure) {
+                        workerFailure.addSuppressed(finalizeFailure)
+                    }
+                }
+
+                val workerFailure = failure
+                if (workerFailure != null) {
+                    failed.add(value)
+                    logger.error("Terminated {} due to failure", toString(), workerFailure)
+                    manager.interrupt()
+                } else {
+                    logger.info("Terminated {} due to interruption", toString())
+                }
             }
 
             override fun toString(): String = "${this::class.simpleName}($value)"

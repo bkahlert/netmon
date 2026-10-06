@@ -16,8 +16,12 @@ import io.kotest.matchers.string.shouldMatch
 import io.kotest.matchers.types.shouldBeInstanceOf
 import kotlinx.coroutines.test.runTest
 import java.util.Collections
+import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.CompletableFuture
+import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicInteger
+import java.util.concurrent.atomic.AtomicReference
 import kotlin.concurrent.thread
 import kotlin.test.Test
 import kotlin.time.Duration
@@ -228,15 +232,23 @@ class SlicedApplicationTest : AbstractIntegrationTest() {
     @Test
     fun wait_for_workers() {
         val invocations = Invocations<String>()
+        val busyWorkStarted = CountDownLatch(1)
         val application = SlicedApplication(
             slice = Slices("foo", "bar"),
-            process = { if (it == "bar") 500.milliseconds.busyWait() else 50.milliseconds.wait() },
+            process = {
+                if (it == "bar") {
+                    busyWorkStarted.countDown()
+                    600.milliseconds.busyWait()
+                } else {
+                    50.milliseconds.wait()
+                }
+            },
             finalize = { invocations.finalized(it) },
         )
 
         measureTime {
             application.start()
-            100.milliseconds.wait()
+            busyWorkStarted.await(5, TimeUnit.SECONDS) shouldBe true
             application.terminate()
         } shouldBeGreaterThan 500.milliseconds
     }
@@ -316,13 +328,71 @@ class SlicedApplicationTest : AbstractIntegrationTest() {
     }
 
     @Test
-    fun termination_confirmation() {
-        val logMessages = runUntilLogged(SlicedApplicationTest::class) { it.contains("Executed Worker") }
+    fun removed_slice_closes_its_session_and_reappearance_gets_fresh_resources() {
+        val slices = AtomicReference(setOf("lan"))
+        val sessions = ConcurrentHashMap<String, NetworkSession>()
+        val created = AtomicInteger()
+        val sessionCreated = CountDownLatch(2)
+        val scansStarted = CountDownLatch(2)
+        val firstScanStarted = CountDownLatch(1)
+        val firstClosed = CountDownLatch(1)
+        val closed = mutableListOf<Int>()
+        val holdWorker = CountDownLatch(1)
+        val application = SlicedApplication(
+            slice = { slices.get() },
+            updateInterval = 10.milliseconds,
+            start = { slice ->
+                val id = created.incrementAndGet()
+                sessions[slice] = NetworkSession.open { resources ->
+                    resources.own(AutoCloseable {
+                        synchronized(closed) { closed += id }
+                        if (id == 1) firstClosed.countDown()
+                    })
+                    testScanner()
+                }
+                sessionCreated.countDown()
+            },
+            process = { slice ->
+                sessions.getValue(slice).scan()
+                firstScanStarted.countDown()
+                scansStarted.countDown()
+                holdWorker.await()
+            },
+            finalize = { slice -> sessions.remove(slice)?.close() },
+        )
 
-        logMessages should {
-            it.shouldNotBeEmpty()
-            it.last().message shouldMatch Regex("Terminated SlicedApplication\\(state=Terminated, .*, failed=\\[]\\)")
+        val started = application.start()
+        try {
+            firstScanStarted.await(5, TimeUnit.SECONDS) shouldBe true
+            slices.set(emptySet())
+            firstClosed.await(5, TimeUnit.SECONDS) shouldBe true
+            slices.set(setOf("lan"))
+            sessionCreated.await(5, TimeUnit.SECONDS) shouldBe true
+            scansStarted.await(5, TimeUnit.SECONDS) shouldBe true
+        } finally {
+            started.terminate()
         }
+
+        synchronized(closed) { closed.toList() } shouldContainExactly listOf(1, 2)
+    }
+
+    @Test
+    fun worker_cleanup_failure_marks_the_slice_failed() {
+        val processStarted = CountDownLatch(1)
+        val application = SlicedApplication(
+            slice = { listOf("lan") },
+            process = {
+                processStarted.countDown()
+                CountDownLatch(1).await()
+            },
+            finalize = { throw IllegalStateException("cleanup failed") },
+        )
+
+        val started = application.start()
+        processStarted.await(5, TimeUnit.SECONDS) shouldBe true
+        val result = started.terminate()
+
+        result.failed.shouldContainExactly("lan")
     }
 
     companion object {

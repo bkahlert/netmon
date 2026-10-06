@@ -11,28 +11,12 @@ import kotlin.time.Duration
 
 // JmDNS extensions, since the wording consistency and lack of nullity annotations are the library is a catastrophe
 
-/**
- * Creates a [JmDNS] instance using [JmDNS.create],
- * **and** creates a shutdown hook that calls [JmDNS.close].
- *
- * This seems to have been the original behavior of [JmDNS.create],
- * but in the version `3.5.8` the shutdown hook registration is commented out.
- *
- * @param addr
- *            IP address to bind to.
- * @param name
- *            name of the newly created JmDNS
- * @param threadSleepDuration
- *            time that the JmDNS listener thread should sleep between multicast receives
- * @return jmDNS instance
- */
+/** Creates a [JmDNS] instance using [JmDNS.create]; the caller is responsible for closing it. */
 fun JmDNS(
     addr: InetAddress? = null,
     name: String? = null,
     threadSleepDuration: Duration = Duration.ZERO,
-): JmDNS = JmDNS.create(addr, name, threadSleepDuration.inWholeMilliseconds).apply {
-    Runtime.getRuntime().addShutdownHook(Thread { close() })
-}
+): JmDNS = JmDNS.create(addr, name, threadSleepDuration.inWholeMilliseconds)
 
 /**
  * Kotlin-friendly version of [javax.jmdns.ServiceTypeListener].

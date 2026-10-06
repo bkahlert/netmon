@@ -46,7 +46,7 @@ import java.net.InterfaceAddress
 import java.net.http.HttpClient
 import java.nio.file.Paths
 import java.time.Duration
-import java.util.Collections
+import java.util.concurrent.ConcurrentHashMap
 import kotlin.system.exitProcess
 import kotlin.time.Clock
 
@@ -114,89 +114,92 @@ class Application(
         ).also {
             logger.info("{} connected", it)
         }
+        val resources = ApplicationResources(publisher)
+        val shutdownHook = Thread(resources::close, "netmon-shutdown")
+        var shutdownHookRegistered = false
+        try {
+            Runtime.getRuntime().addShutdownHook(shutdownHook)
+            shutdownHookRegistered = true
 
-
-        val serviceInfoCaches = Collections.synchronizedMap(mutableMapOf<InetAddress, JmDNSServiceInfoCache>())
-        val scanners = Collections.synchronizedMap(mutableMapOf<InetAddress, NetmonScanner>())
-        val ssdpCaches = Collections.synchronizedMap(mutableMapOf<InetAddress, SsdpCache>())
-        val ssdpListeners = Collections.synchronizedMap(mutableMapOf<InetAddress, AutoCloseable>())
-        val routerTables = Collections.synchronizedMap(mutableMapOf<InetAddress, FritzBoxHosts>())
-
-        val application = SlicedApplication(
-            slice = namedInterfaceAddresses,
-            start = { (interfaceAddress, interfaceName) ->
-                val serviceInfoCache = serviceInfoCaches.getOrPut(interfaceAddress.address) {
-                    JmDNSServiceInfoCache(JmDNS(interfaceAddress.address, hostname), serviceTypes = emptyArray())
-                }
-                val ssdpCache = ssdpCaches.getOrPut(interfaceAddress.address) { SsdpCache(DescriptionFetcher(lanHttp)) }
-                ssdpListeners.getOrPut(interfaceAddress.address) {
-                    ssdpCache.listen(checkNotNull(interfaceAddress.networkInterface))
-                }
-                val routerTable = routerTables.getOrPut(interfaceAddress.address) {
-                    FritzBoxHosts(
-                        // Discovered per call inside the table's error handling, so a malformed URL is a warning, not a crash.
-                        client = { FritzBoxEndpoint.discover(FritzBoxSettings.url, serviceInfoCache)?.let { Tr064Client(it, FritzBoxSettings.credentials, lanHttp) } },
-                        credentials = FritzBoxSettings.credentials,
-                    ).also { it.start() }
-                }
-
-                val topicSubstitutions = mapOf("node" to hostname, "interface" to interfaceName, "cidr" to interfaceAddress.cidr.toString())
-                val scanTopic = ScanEventSettings.topic.toString(topicSubstitutions)
-                val hostTopic = HostEventSettings.topic.toString(topicSubstitutions)
-                val networkContext = NetworkContext(interfaceName, interfaceAddress.cidr)
-                val eventPublisher = ScannerEventPublisher(publisher, scanTopic, hostTopic)
-
-                scanners.getOrPut(interfaceAddress.address) {
-                    NetmonScanner(
-                        context = networkContext,
-                        scanner = NmapScanAdapter(nmapNetworkScanner::scan),
-                        enrichers = listOf(
-                            IdentityEnricher(
-                                IdentityResolver(),
-                                sources = listOf(
-                                    RouterClues(routerTable),
-                                    MdnsClues(serviceInfoCache, appleCodes),
-                                    SsdpClues(ssdpCache, serviceInfoCache),
-                                    OuiClues(),
-                                ),
-                                fallbacks = listOf(LockdownClues(LockdownProbe.Lookup(lockdownProbe::model), appleCodes)),
+            val sessions = ConcurrentHashMap<Pair<InterfaceAddress, String>, NetworkSession>()
+            val application = SlicedApplication(
+                slice = namedInterfaceAddresses,
+                start = { slice ->
+                    sessions[slice] = NetworkSession.open { sessionResources ->
+                        val (interfaceAddress, interfaceName) = slice
+                        val jmDns = sessionResources.own(JmDNS(interfaceAddress.address, hostname))
+                        val serviceInfoCache = sessionResources.own(JmDNSServiceInfoCache(jmDns, serviceTypes = emptyArray()))
+                        val ssdpCache = SsdpCache(DescriptionFetcher(lanHttp))
+                        sessionResources.own(ssdpCache.listen(checkNotNull(interfaceAddress.networkInterface)))
+                        val routerTable = sessionResources.own(
+                            FritzBoxHosts(
+                                // Discovered per call inside the table's error handling, so a malformed URL is a warning, not a crash.
+                                client = { FritzBoxEndpoint.discover(FritzBoxSettings.url, serviceInfoCache)?.let { Tr064Client(it, FritzBoxSettings.credentials, lanHttp) } },
+                                credentials = FritzBoxSettings.credentials,
                             ),
-                            HostServicesEnricher(serviceInfoCache),
-                        ),
-                        state = JsonScanStateStore(
-                            Paths.get("scan.${networkContext.interfaceName}.${networkContext.cidr.filenameString}.json"),
-                        ),
-                        clock = Clock.System,
-                        downAfter = ScannerSettings.downAfter,
-                        onScan = eventPublisher::publishScan,
-                        onChange = eventPublisher::publishChange,
-                    )
-                }
-            },
-            process = { (interfaceAddress, _) ->
-                scanners.getValue(interfaceAddress.address).scan()
-                Thread.sleep(ScannerSettings.pauseDuration.inWholeMilliseconds)
-            },
-            finalize = { (interfaceAddress, interfaceName) ->
-                scanners.remove(interfaceAddress.address)
-                ssdpListeners.remove(interfaceAddress.address)?.close()
-                ssdpCaches.remove(interfaceAddress.address)
-                routerTables.remove(interfaceAddress.address)?.close()
-                serviceInfoCaches.remove(interfaceAddress.address)?.also {
-                    it.close()
-                    it.jmDns.close()
-                }.also { stoppedCache ->
-                    if (stoppedCache != null) {
+                        ).also { it.start() }
+
+                        val topicSubstitutions = mapOf("node" to hostname, "interface" to interfaceName, "cidr" to interfaceAddress.cidr.toString())
+                        val scanTopic = ScanEventSettings.topic.toString(topicSubstitutions)
+                        val hostTopic = HostEventSettings.topic.toString(topicSubstitutions)
+                        val networkContext = NetworkContext(interfaceName, interfaceAddress.cidr)
+                        val eventPublisher = ScannerEventPublisher(publisher, scanTopic, hostTopic)
+
+                        NetmonScanner(
+                            context = networkContext,
+                            scanner = NmapScanAdapter(nmapNetworkScanner::scan),
+                            enrichers = listOf(
+                                IdentityEnricher(
+                                    IdentityResolver(),
+                                    sources = listOf(
+                                        RouterClues(routerTable),
+                                        MdnsClues(serviceInfoCache, appleCodes),
+                                        SsdpClues(ssdpCache, serviceInfoCache),
+                                        OuiClues(),
+                                    ),
+                                    fallbacks = listOf(LockdownClues(LockdownProbe.Lookup(lockdownProbe::model), appleCodes)),
+                                ),
+                                HostServicesEnricher(serviceInfoCache),
+                            ),
+                            state = JsonScanStateStore(
+                                Paths.get("scan.${networkContext.interfaceName}.${networkContext.cidr.filenameString}.json"),
+                            ),
+                            clock = Clock.System,
+                            downAfter = ScannerSettings.downAfter,
+                            onScan = eventPublisher::publishScan,
+                            onChange = eventPublisher::publishChange,
+                        )
+                    }
+                },
+                process = { slice ->
+                    sessions.getValue(slice).scan()
+                    Thread.sleep(ScannerSettings.pauseDuration.inWholeMilliseconds)
+                },
+                finalize = { (interfaceAddress, interfaceName) ->
+                    sessions.remove(interfaceAddress to interfaceName)?.also {
+                        it.close()
                         logger.info("Stopped scanning {}:{} and corresponding cache", interfaceName, interfaceAddress.cidr)
-                    } else {
-                        logger.warn("Stopped scanning {}:{} but no corresponding cache found", interfaceName, interfaceAddress.cidr)
+                    } ?: logger.warn("Stopped scanning {}:{} but no corresponding cache found", interfaceName, interfaceAddress.cidr)
+                },
+            )
+
+            val started = application.start()
+            resources.ownWorkerManager { started.terminate() }
+            val failed = started.waitForTermination().failed
+            check(failed.isEmpty()) { "Errors occurred scanning the following ${failed.size} network(s): ${failed.joinToString { it.first.cidr.toString() }}" }
+        } finally {
+            try {
+                resources.close()
+            } finally {
+                if (shutdownHookRegistered) {
+                    try {
+                        Runtime.getRuntime().removeShutdownHook(shutdownHook)
+                    } catch (e: IllegalStateException) {
+                        logger.debug("JVM shutdown is in progress; leaving the shutdown hook registered")
                     }
                 }
-            },
-        )
-
-        val failed = application.start().waitForTermination().failed
-        check(failed.isEmpty()) { "Errors occurred scanning the following ${failed.size} network(s): ${failed.joinToString { it.first.cidr.toString() }}" }
+            }
+        }
     }
 
     companion object {

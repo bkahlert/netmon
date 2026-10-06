@@ -19,15 +19,17 @@ class MqttPublisher<T>(
     val stringFormat: StringFormat = JsonFormat,
     val serializer: SerializationStrategy<T>,
     identifier: String? = null,
-) : Publisher<T> {
+    client: MqttClient? = null,
+) : Publisher<T>, AutoCloseable {
     private val logger by SLF4J
 
     val url: String = url(host, port, path)
 
-    private val client: MqttClient = MqttClient(url, identifier ?: UUID.randomUUID().toString(), MemoryPersistence()).also {
+    private val client: MqttClient = client ?: MqttClient(url, identifier ?: UUID.randomUUID().toString(), MemoryPersistence()).also {
         logger.info("Connecting to {}", url)
         it.connect(connectOptions())
     }
+    private var closed = false
 
     override fun publish(topic: String, event: T): Boolean {
         val payload = stringFormat.encodeToString(serializer, event).encodeToByteArray()
@@ -48,6 +50,30 @@ class MqttPublisher<T>(
     }
 
     override fun toString(): String = "${this::class.simpleName}(url=$url, connected=${client.isConnected})"
+
+    @Synchronized
+    override fun close() {
+        if (closed) return
+        closed = true
+
+        var failure: Throwable? = null
+        try {
+            if (client.isConnected) client.disconnect()
+        } catch (disconnectFailure: Throwable) {
+            failure = disconnectFailure
+        }
+        try {
+            client.close()
+        } catch (closeFailure: Throwable) {
+            val disconnectFailure = failure
+            if (disconnectFailure == null) {
+                failure = closeFailure
+            } else if (disconnectFailure !== closeFailure) {
+                disconnectFailure.addSuppressed(closeFailure)
+            }
+        }
+        failure?.let { throw it }
+    }
 
     companion object {
         /** Returns the broker URI: `ws://` for the broker's websocket ports 8080 and 8081, `tcp://` otherwise, [path] appended when given. */

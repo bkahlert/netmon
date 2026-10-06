@@ -2,9 +2,14 @@ package com.bkahlert.netmon.mqtt
 
 import io.kotest.data.forAll
 import io.kotest.data.row
+import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.should
 import io.kotest.matchers.shouldBe
 import kotlinx.coroutines.test.runTest
+import kotlinx.serialization.builtins.serializer
+import org.eclipse.paho.client.mqttv3.MqttClient
+import org.eclipse.paho.client.mqttv3.MqttException
+import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence
 import kotlin.test.Test
 
 class MqttPublisherTest {
@@ -29,5 +34,54 @@ class MqttPublisherTest {
             it.isAutomaticReconnect shouldBe true
             it.maxReconnectDelay shouldBe 30_000
         }
+    }
+
+    @Test
+    fun close_disconnects_then_closes_the_client_once() {
+        val operations = mutableListOf<String>()
+        val publisher = MqttPublisher(
+            host = "broker.local",
+            port = 1883,
+            serializer = String.serializer(),
+            client = FakeMqttClient(operations),
+        )
+
+        publisher.close()
+        publisher.close()
+
+        operations shouldBe listOf("disconnect", "close")
+    }
+
+    @Test
+    fun close_still_closes_the_client_when_disconnect_fails() {
+        val operations = mutableListOf<String>()
+        val disconnectFailure = MqttException(1)
+        val publisher = MqttPublisher(
+            host = "broker.local",
+            port = 1883,
+            serializer = String.serializer(),
+            client = FakeMqttClient(operations, disconnectFailure),
+        )
+
+        val failure = shouldThrow<MqttException> { publisher.close() }
+
+        failure shouldBe disconnectFailure
+        operations shouldBe listOf("disconnect", "close")
+    }
+}
+
+private class FakeMqttClient(
+    private val operations: MutableList<String>,
+    private val disconnectFailure: MqttException? = null,
+) : MqttClient("tcp://localhost:1883", "netmon-test", MemoryPersistence()) {
+    override fun isConnected(): Boolean = true
+
+    override fun disconnect() {
+        operations += "disconnect"
+        disconnectFailure?.let { throw it }
+    }
+
+    override fun close() {
+        operations += "close"
     }
 }
