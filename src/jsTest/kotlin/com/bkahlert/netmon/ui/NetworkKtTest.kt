@@ -152,7 +152,7 @@ class NetworkKtTest {
         val now = Clock.System.now()
         val events = RootStore(scan(now, host(1, now - 30.seconds), host(2, now - 3.hours), host(3, now - 5.hours)), job = job)
 
-        val container = rendered { scan(source, events) }
+        val container = rendered { scan(source, events, MutableStateFlow(now), MutableStateFlow(now)) }
 
         container.awaited({ hostIps(".hosts") }) { it.size == 3 } shouldContainExactly listOf("192.0.2.1", "192.0.2.2", "192.0.2.3")
         container.querySelectorAll(".hosts").length shouldBe 1
@@ -164,7 +164,7 @@ class NetworkKtTest {
         val now = Clock.System.now()
         val events = RootStore(scan(now, host(1, now - 30.seconds), host(2, now - 3.hours)), job = job)
 
-        val container = rendered { scan(source, events) }
+        val container = rendered { scan(source, events, MutableStateFlow(now), MutableStateFlow(now)) }
 
         container.awaited({ cells() }) { it == "3" } shouldBe "3"
         container.remove()
@@ -174,7 +174,7 @@ class NetworkKtTest {
     fun a_scan_updates_the_number_of_cells_when_a_host_joins() = runTest {
         val now = Clock.System.now()
         val events = RootStore(scan(now, host(1, now - 30.seconds)), job = job)
-        val container = rendered { scan(source, events) }
+        val container = rendered { scan(source, events, MutableStateFlow(now), MutableStateFlow(now)) }
         container.awaited({ cells() }) { it == "2" }
 
         events.update(scan(now, host(1, now - 30.seconds), host(2, now - 2.hours)))
@@ -188,7 +188,7 @@ class NetworkKtTest {
         val now = Clock.System.now()
         val events = RootStore(scan(now, host(1, now, Kind.SOCKET), host(2, now), host(3, now, Kind.ROUTER), host(4, now, Kind.LAPTOP)), job = job)
 
-        val container = rendered { scan(source, events) }
+        val container = rendered { scan(source, events, MutableStateFlow(now), MutableStateFlow(now)) }
 
         container.awaited({ cellTexts() }) { it.size == 8 && "" !in it } shouldContainExactly listOf(
             "Network", "192.0.2.3", "Computers", "192.0.2.4", "Smart home", "192.0.2.1", "Other", "192.0.2.2",
@@ -201,7 +201,7 @@ class NetworkKtTest {
         val now = Clock.System.now()
         val events = RootStore(scan(now, host(200, now), host(10, now), host(9, now)), job = job)
 
-        val container = rendered { scan(source, events) }
+        val container = rendered { scan(source, events, MutableStateFlow(now), MutableStateFlow(now)) }
 
         container.awaited({ cellTexts() }) { it.size == 4 && "" !in it } shouldContainExactly listOf("Other", "192.0.2.9", "192.0.2.10", "192.0.2.200")
         container.remove()
@@ -212,7 +212,7 @@ class NetworkKtTest {
         val now = Clock.System.now()
         val events = RootStore(scan(now, host(1, now, Kind.SOCKET), host(2, now, Kind.LAMP), host(3, now)), job = job)
 
-        val container = rendered { scan(source, events) }
+        val container = rendered { scan(source, events, MutableStateFlow(now), MutableStateFlow(now)) }
 
         container.awaited({ cells() }) { it == "5" } shouldBe "5"
         container.remove()
@@ -222,7 +222,7 @@ class NetworkKtTest {
     fun a_host_that_changes_its_kind_moves_to_its_new_group() = runTest {
         val now = Clock.System.now()
         val events = RootStore(scan(now, host(1, now, Kind.ROUTER), host(2, now)), job = job)
-        val container = rendered { scan(source, events) }
+        val container = rendered { scan(source, events, MutableStateFlow(now), MutableStateFlow(now)) }
         container.awaited({ cellTexts() }) { it.size == 4 }
 
         events.update(scan(now, host(1, now, Kind.ROUTER), host(2, now, Kind.NETWORK_SWITCH)))
@@ -405,7 +405,7 @@ class NetworkKtTest {
         val now = Clock.System.now()
         val events = RootStore(scan(now, host(1, now - 30.seconds), host(2, now - 3.hours)), job = job)
 
-        val container = rendered { scan(source, events) }
+        val container = rendered { scan(source, events, MutableStateFlow(now), MutableStateFlow(now)) }
         container.awaited({ hostIps(".hosts") }) { it.size == 2 } shouldContainExactly listOf("192.0.2.1", "192.0.2.2")
         nextFrames(5)
 

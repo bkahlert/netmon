@@ -1,14 +1,12 @@
 package com.bkahlert.netmon.ui
 
 import com.bkahlert.netmon.uri.DataUri
-import com.bkahlert.netmon.CurrentTimeStore
 import com.bkahlert.netmon.Event.ScanEvent
 import com.bkahlert.netmon.EventSource
 import com.bkahlert.netmon.Host
 import com.bkahlert.netmon.HostGroup
 import com.bkahlert.netmon.Kind
 import com.bkahlert.netmon.Link
-import com.bkahlert.netmon.MinuteClock
 import com.bkahlert.netmon.ScanEventSettings
 import com.bkahlert.netmon.ScanEventsStore
 import com.bkahlert.netmon.getElapsedTime
@@ -46,19 +44,27 @@ import kotlin.time.Duration.Companion.ZERO
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Instant
 
-fun RenderContext.networks(scanEventsStore: ScanEventsStore) {
+/** Renders [scanEventsStore], using [clock] and [slowClock] to update time-based details. */
+fun RenderContext.networks(
+    scanEventsStore: ScanEventsStore,
+    clock: Flow<Instant>,
+    slowClock: Flow<Instant>,
+) {
     div("h-full grid grid-cols-[repeat(auto-fit,minmax(min(15rem,100%),1fr))] auto-rows-[minmax(0,1fr)] gap-4") {
         scanEventsStore.data
             .map { it.keys.toList() }
             .renderEach(into = this) { source ->
-                scan(source, scanEventsStore.mapByKey(source))
+                scan(source, scanEventsStore.mapByKey(source), clock, slowClock)
             }
     }
 }
 
+/** Renders [events] from [source], updating scan and host ages from [clock] and [slowClock]. */
 fun RenderContext.scan(
     source: EventSource,
     events: Store<ScanEvent>,
+    clock: Flow<Instant>,
+    slowClock: Flow<Instant>,
 ): HtmlTag<HTMLElement> = div(
     joinClasses(
         "flex flex-col min-h-0 min-w-0 space-y-5 pt-4 sm:pb-4 sm:px-4 sm:rounded-xl",
@@ -66,12 +72,12 @@ fun RenderContext.scan(
         "overflow-hidden",
     ),
 ) {
-    meta(source, events)
+    meta(source, events, clock)
 
     val hosts = events.map(ScanEvent.hosts())
 
     div("scan__hosts") {
-        hosts(hosts, slowClock = MinuteClock.data)
+        hosts(hosts, clock, slowClock)
     }
 }
 
@@ -98,9 +104,10 @@ private fun Host.elapsedTimes(clock: Flow<Instant>, slowClock: Flow<Instant>): F
 private fun HtmlTag<HTMLElement>.meta(
     source: EventSource,
     events: Store<ScanEvent>,
+    clock: Flow<Instant>,
     datedThreshold: Duration = ScanEventSettings.datedThreshold,
 ) {
-    val timePassed = CurrentTimeStore.data
+    val timePassed = clock
         .combine(events.data.map { it.timestamp }) { now, timestamp ->
             (now - timestamp).coerceAtLeast(ZERO)
         }
@@ -134,12 +141,12 @@ private fun HtmlTag<HTMLElement>.meta(
 }
 
 /**
- * Renders the [hosts] as a grid of cards by [HostGroup], each group after a label, that the stylesheet sizes by the
- * number of cells the grid carries as `--cells`.
+ * Renders [hosts] as a grid of cards by [HostGroup], each group after a label, that the stylesheet sizes by the
+ * number of cells the grid carries as `--cells`. Uses [clock] and [slowClock] to update time-based details.
  */
 fun RenderContext.hosts(
     hosts: Store<List<Host>>,
-    clock: Flow<Instant> = CurrentTimeStore.data,
+    clock: Flow<Instant>,
     slowClock: Flow<Instant> = clock,
 ): HtmlTag<HTMLUListElement> = ul("hosts") {
     val cells = hosts.data.map { it.cells() }

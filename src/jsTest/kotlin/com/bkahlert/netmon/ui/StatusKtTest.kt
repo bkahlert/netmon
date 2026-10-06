@@ -11,12 +11,14 @@ import io.kotest.matchers.string.shouldContain
 import io.kotest.matchers.string.shouldNotContain
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlin.test.Test
+import kotlin.time.Clock
 
 class StatusKtTest {
 
     @Test
     fun shows_the_kiosks_sample_as_pills_between_the_title_and_the_start() = runTest {
-        val container = rendered { status(ConsoleLogStore("info" to "Starting..."), MutableStateFlow(SAMPLE)) }
+        val now = Clock.System.now()
+        val container = rendered { status(ConsoleLogStore("info" to "Starting...", job), MutableStateFlow(SAMPLE), MutableStateFlow(now), now) }
 
         val text = container.textOnce("kiosk 161 MB")
 
@@ -29,7 +31,10 @@ class StatusKtTest {
 
     @Test
     fun shows_the_build_version_next_to_the_title() = runTest {
-        val container = rendered { status(ConsoleLogStore("info" to "Starting..."), MutableStateFlow(SAMPLE), version = "v2.2.0-4-g54adb6b") }
+        val now = Clock.System.now()
+        val container = rendered {
+            status(ConsoleLogStore("info" to "Starting...", job), MutableStateFlow(SAMPLE), MutableStateFlow(now), now, version = "v2.2.0-4-g54adb6b")
+        }
 
         val text = container.textOnce("kiosk 161 MB")
 
@@ -41,7 +46,8 @@ class StatusKtTest {
 
     @Test
     fun shows_the_version_baked_in_at_build_time_by_default() = runTest {
-        val container = rendered { status(ConsoleLogStore("info" to "Starting..."), MutableStateFlow(null)) }
+        val now = Clock.System.now()
+        val container = rendered { status(ConsoleLogStore("info" to "Starting...", job), MutableStateFlow(null), MutableStateFlow(now), now) }
 
         val text = container.textOnce("Starting...")
 
@@ -52,7 +58,8 @@ class StatusKtTest {
 
     @Test
     fun shows_no_pills_without_a_sample() = runTest {
-        val container = rendered { status(ConsoleLogStore("info" to "Starting..."), MutableStateFlow(null)) }
+        val now = Clock.System.now()
+        val container = rendered { status(ConsoleLogStore("info" to "Starting...", job), MutableStateFlow(null), MutableStateFlow(now), now) }
 
         val text = container.textOnce("Starting...")
 
@@ -63,7 +70,10 @@ class StatusKtTest {
 
     @Test
     fun leaves_out_the_pill_of_an_absent_source() = runTest {
-        val container = rendered { status(ConsoleLogStore("info" to "Starting..."), MutableStateFlow(SAMPLE.copy(webCpu = null))) }
+        val now = Clock.System.now()
+        val container = rendered {
+            status(ConsoleLogStore("info" to "Starting...", job), MutableStateFlow(SAMPLE.copy(webCpu = null)), MutableStateFlow(now), now)
+        }
 
         val text = container.textOnce("kiosk 118 %")
 

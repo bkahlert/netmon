@@ -2,16 +2,22 @@ package com.bkahlert.netmon.ui
 
 import com.bkahlert.netmon.BUILD_VERSION
 import com.bkahlert.netmon.ConsoleLogStore
-import com.bkahlert.netmon.CurrentTimeStore
 import com.bkahlert.netmon.KioskStats
 import com.bkahlert.netmon.cpuText
 import com.bkahlert.netmon.memoryText
 import dev.fritz2.core.RenderContext
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
-import kotlin.time.Clock
+import kotlin.time.Instant
 
-fun RenderContext.status(consoleLogStore: ConsoleLogStore, kioskStats: Flow<KioskStats?>, version: String = BUILD_VERSION) {
+/** Renders [consoleLogStore], [kioskStats] and [version], refreshing elapsed time from [startedAt] via [clock]. */
+fun RenderContext.status(
+    consoleLogStore: ConsoleLogStore,
+    kioskStats: Flow<KioskStats?>,
+    clock: Flow<Instant>,
+    startedAt: Instant,
+    version: String = BUILD_VERSION,
+) {
     h1("font-bold") { +"Network Monitor" }
     pill(null, version, "the version this display was built from")
     div("flex items-baseline gap-1 empty:hidden") {
@@ -26,9 +32,8 @@ fun RenderContext.status(consoleLogStore: ConsoleLogStore, kioskStats: Flow<Kios
     div("opacity-50") {
         +"started "
         span {
-            val start = Clock.System.now()
-            CurrentTimeStore.data
-                .map { now -> (start - now).toMomentString() }
+            clock
+                .map { now -> (startedAt - now).toMomentString() }
                 .renderText(into = this)
         }
     }

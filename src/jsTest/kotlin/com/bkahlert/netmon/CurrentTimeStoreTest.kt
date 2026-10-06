@@ -1,27 +1,28 @@
 package com.bkahlert.netmon
 
 import com.bkahlert.netmon.fritz2.runTest
-import io.kotest.matchers.comparables.shouldBeGreaterThan
 import io.kotest.matchers.shouldBe
-import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.withTimeout
 import kotlin.test.Test
+import kotlin.time.Clock
 import kotlin.time.Duration.Companion.milliseconds
-import kotlin.time.Duration.Companion.minutes
+import kotlin.time.Duration.Companion.seconds
+import kotlin.time.Instant
 
 class CurrentTimeStoreTest {
 
     @Test
     fun ticks_at_its_interval() = runTest {
-        val store = CurrentTimeStore(refreshInterval = 50.milliseconds)
-        val initial = store.current
+        val clock = MutableClock(Instant.fromEpochSeconds(1_000))
+        val store = CurrentTimeStore(1.milliseconds, clock, job)
+        val next = Instant.fromEpochSeconds(1_001)
+        clock.current = next
 
-        delay(200)
-
-        store.current shouldBeGreaterThan initial
+        withTimeout(1.seconds) { store.data.first { it == next } } shouldBe next
     }
+}
 
-    @Test
-    fun the_minute_clock_ticks_once_a_minute() {
-        MinuteClock.refreshInterval shouldBe 1.minutes
-    }
+private class MutableClock(var current: Instant) : Clock {
+    override fun now(): Instant = current
 }
