@@ -439,6 +439,18 @@ class ScanResultTest {
     }
 
     @Test
+    fun an_older_state_file_loads_with_optional_fields_absent() {
+        val resource = checkNotNull(javaClass.classLoader.getResource("assets/older-scan.json"))
+        val scan = checkNotNull(ScanResult.load(Paths.get(resource.toURI())))
+        val host = scan.hosts.single()
+
+        host.lastSeen shouldBe null
+        host.kind shouldBe null
+        host.link shouldBe null
+        host.speed shouldBe null
+    }
+
+    @Test
     fun merge_unseen_just_before_downAfter_keeps_host_up() {
         val recorded = Host(status = Status.UP, since = 50.epoch, lastSeen = 100.epoch)
 

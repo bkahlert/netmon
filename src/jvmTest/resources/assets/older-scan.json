@@ -1,0 +1,13 @@
+{
+  "interface": "en0",
+  "cidr": "10.0.0.0/24",
+  "hosts": [
+    {
+      "ip": "10.0.0.7",
+      "name": "legacy-host",
+      "status": "up",
+      "since": 90
+    }
+  ],
+  "timestamp": 100
+}
