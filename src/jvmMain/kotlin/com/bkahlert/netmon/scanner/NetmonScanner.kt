@@ -2,59 +2,51 @@ package com.bkahlert.netmon.scanner
 
 import com.bkahlert.netmon.logging.SLF4J
 import kotlin.time.Clock
-import com.bkahlert.netmon.Cidr
 import com.bkahlert.netmon.Host
 import com.bkahlert.netmon.enrichment.Enricher
-import com.bkahlert.netmon.net.cidr
-import com.bkahlert.netmon.net.networkInterface
-import com.bkahlert.netmon.nmap.NmapNetworkScanner
-import com.bkahlert.netmon.nmap.TimingTemplate
-import java.net.InterfaceAddress
-import java.nio.file.Path
-import java.nio.file.Paths
+import kotlin.time.Duration
 
 class NetmonScanner(
-    val interfaceAddress: InterfaceAddress,
-    val scanner: NmapNetworkScanner,
-    vararg val enrichers: Enricher<Host>,
+    val context: NetworkContext,
+    val scanner: NetworkScan,
+    val enrichers: List<Enricher<Host>>,
+    val state: ScanStateStore,
+    private val clock: Clock,
+    private val downAfter: Duration,
     val onScan: (ScanResult) -> Unit,
     val onChange: (Host) -> Unit,
 ) {
     private val logger by SLF4J
 
-    val `interface`: String = checkNotNull(interfaceAddress.networkInterface).name
-    val cidr: Cidr = interfaceAddress.cidr
-    val scanResultFile: Path = Paths.get("scan.$`interface`.${cidr.filenameString}.json")
-    private val stateStore = JsonScanStateStore(scanResultFile)
     private val restartFloor = RestartFloor()
 
     private fun scanInitially(): ScanResult {
         logger.info("Performing initial scan...")
         return ScanResult(
-            `interface` = `interface`,
-            cidr = cidr,
-            hosts = scanner.scan(cidr, timingTemplate = TimingTemplate.Insane),
-            timestamp = Clock.System.now(),
+            `interface` = context.interfaceName,
+            cidr = context.cidr,
+            hosts = scanner.scan(context.cidr, ScanMode.INITIAL),
+            timestamp = clock.now(),
         )
     }
 
     fun scan() {
-        val oldScan = stateStore.load() ?: scanInitially()
+        val oldScan = state.load() ?: scanInitially()
 
         val currentScan = ScanResult(
-            `interface` = `interface`,
-            cidr = cidr,
-            hosts = scanner.scan(cidr).map { host ->
+            `interface` = context.interfaceName,
+            cidr = context.cidr,
+            hosts = scanner.scan(context.cidr, ScanMode.NORMAL).map { host ->
                 enrichers.fold(host) { acc, enricher -> enricher.enrich(acc) ?: acc }
             },
-            timestamp = Clock.System.now(),
+            timestamp = clock.now(),
         )
 
-        val merged = oldScan.merge(currentScan, downAfter = ScannerSettings.downAfter, notBefore = restartFloor.at(currentScan.timestamp))
+        val merged = oldScan.merge(currentScan, downAfter = downAfter, notBefore = restartFloor.at(currentScan.timestamp))
         merged.changedHosts.forEach(onChange)
         onScan(merged.scan)
-        stateStore.save(merged.scan)
+        state.save(merged.scan)
     }
 
-    override fun toString(): String = "network-scanner-$`interface`-$cidr"
+    override fun toString(): String = "network-scanner-${context.interfaceName}-${context.cidr}"
 }

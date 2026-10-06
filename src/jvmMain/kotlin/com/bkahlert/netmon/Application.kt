@@ -20,6 +20,7 @@ import com.bkahlert.netmon.model_identification.DeviceModelCodes
 import com.bkahlert.netmon.model_identification.load
 import com.bkahlert.netmon.model_identification.resource
 import com.bkahlert.netmon.mqtt.MqttPublisher
+import com.bkahlert.netmon.mqtt.ScannerEventPublisher
 import com.bkahlert.netmon.net.SystemInterfaceAddressResolver
 import com.bkahlert.netmon.net.cidr
 import com.bkahlert.netmon.net.isWireless
@@ -28,12 +29,15 @@ import com.bkahlert.netmon.net.onePerNetwork
 import com.bkahlert.netmon.net.networkInterface
 import com.bkahlert.netmon.nmap.NmapMacPrefixesProvisioner
 import com.bkahlert.netmon.nmap.NmapNetworkScanner
+import com.bkahlert.netmon.nmap.NmapScanAdapter
 import com.bkahlert.netmon.nmap.NmapSettings
 import com.bkahlert.netmon.router.FritzBoxEndpoint
 import com.bkahlert.netmon.router.FritzBoxHosts
 import com.bkahlert.netmon.router.FritzBoxSettings
 import com.bkahlert.netmon.router.Tr064Client
+import com.bkahlert.netmon.scanner.JsonScanStateStore
 import com.bkahlert.netmon.scanner.NetmonScanner
+import com.bkahlert.netmon.scanner.NetworkContext
 import com.bkahlert.netmon.scanner.NetworkFilterSettings
 import com.bkahlert.netmon.scanner.ScannerSettings
 import com.bkahlert.netmon.serialization.JsonFormat
@@ -42,9 +46,11 @@ import com.bkahlert.netmon.ssdp.SsdpCache
 import java.net.InetAddress
 import java.net.InterfaceAddress
 import java.net.http.HttpClient
+import java.nio.file.Paths
 import java.time.Duration
 import java.util.Collections
 import kotlin.system.exitProcess
+import kotlin.time.Clock
 
 class Application(
     private val hostname: String = kotlin.runCatching { InetAddress.getLocalHost() }
@@ -139,12 +145,14 @@ class Application(
                 val topicSubstitutions = mapOf("node" to hostname, "interface" to interfaceName, "cidr" to interfaceAddress.cidr.toString())
                 val scanTopic = ScanEventSettings.topic.toString(topicSubstitutions)
                 val hostTopic = HostEventSettings.topic.toString(topicSubstitutions)
+                val networkContext = NetworkContext(interfaceName, interfaceAddress.cidr)
+                val eventPublisher = ScannerEventPublisher(publisher, scanTopic, hostTopic)
 
                 scanners.getOrPut(interfaceAddress.address) {
                     NetmonScanner(
-                        interfaceAddress = interfaceAddress,
-                        scanner = nmapNetworkScanner,
-                        enrichers = arrayOf(
+                        context = networkContext,
+                        scanner = NmapScanAdapter(nmapNetworkScanner::scan),
+                        enrichers = listOf(
                             IdentityEnricher(
                                 IdentityResolver(),
                                 sources = listOf(
@@ -157,33 +165,13 @@ class Application(
                             ),
                             HostServicesEnricher(serviceInfoCache),
                         ),
-                        onScan = { scan ->
-                            publisher.publish(
-                                topic = scanTopic,
-                                event = Event.ScanEvent(
-                                    type = Event.ScanEvent.Type.COMPLETED,
-                                    hosts = scan.hosts,
-                                    timestamp = scan.timestamp,
-                                ),
-                            )
-
-                            logger.info(
-                                "Scan {}:{} with {} host(s) completed and published to {}: {}",
-                                interfaceName, interfaceAddress.cidr,
-                                scan.hosts.size,
-                                scanTopic,
-                                scan.hosts.joinToString(limit = 4) { it.ip.toString() }
-                            )
-                        },
-                        onChange = { host ->
-                            publisher.publish(
-                                topic = hostTopic,
-                                event = Event.HostEvent(
-                                    type = if (host.status == Status.DOWN) Event.HostEvent.Type.DOWN else Event.HostEvent.Type.UP,
-                                    host = host,
-                                ),
-                            )
-                        },
+                        state = JsonScanStateStore(
+                            Paths.get("scan.${networkContext.interfaceName}.${networkContext.cidr.filenameString}.json"),
+                        ),
+                        clock = Clock.System,
+                        downAfter = ScannerSettings.downAfter,
+                        onScan = eventPublisher::publishScan,
+                        onChange = eventPublisher::publishChange,
                     )
                 }
             },
