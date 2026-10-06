@@ -8,7 +8,7 @@ import pytest
 pytestmark = pytest.mark.tier0
 
 ROOT = Path(__file__).resolve().parents[1]
-ASSET = ROOT / "src/commonMain/resources/assets/device-icons.json"
+ASSET = ROOT / "src/jsMain/resources/assets/device-icons.json"
 
 
 class TestKinds:

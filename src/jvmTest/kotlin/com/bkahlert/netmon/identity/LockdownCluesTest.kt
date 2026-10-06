@@ -5,9 +5,6 @@ import com.bkahlert.netmon.IP
 import com.bkahlert.netmon.Kind
 import com.bkahlert.netmon.enrichment.LockdownProbe
 import com.bkahlert.netmon.invoke
-import com.bkahlert.netmon.model_identification.DeviceModelCodes
-import com.bkahlert.netmon.model_identification.load
-import com.bkahlert.netmon.model_identification.resource
 import io.kotest.matchers.collections.shouldBeEmpty
 import io.kotest.matchers.collections.shouldContainExactly
 import io.kotest.matchers.shouldBe
@@ -42,7 +39,7 @@ class LockdownCluesTest {
     }
 }
 
-private val appleCodes = AppleCodes(DeviceModelCodes.load(DeviceModelCodes.resource))
+private val appleCodes = AppleCodes(loadModelCatalog())
 
 private fun probe(answer: () -> String?) = object : LockdownProbe.Lookup {
     override fun model(ip: IP, mac: String?): String? = answer()

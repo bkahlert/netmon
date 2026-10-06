@@ -79,6 +79,32 @@ class TestBuild:
             assert result["models"]["Macintosh"]["symbol"] is None
 
 
+class TestBuildCatalog:
+    def test_presentation_symbols_do_not_change_classification(self):
+        codes = device_model_codes.build(INDEX, SVGS)["models"]
+        changed_svgs = {name: svg.replace('fill="currentColor"', 'fill="red"') for name, svg in SVGS.items()}
+        changed_codes = device_model_codes.build(INDEX, changed_svgs)["models"]
+
+        assert device_model_codes.build_catalog(codes, EXISTING_CATALOG) == device_model_codes.build_catalog(changed_codes, EXISTING_CATALOG)
+
+    def test_existing_explicit_kinds_survive_regeneration(self):
+        result = device_model_codes.build_catalog(["MacPro7,1", "MacProNew1,1"], EXISTING_CATALOG)
+
+        assert result == {"models": {"MacPro7,1": "Computer", "MacProNew1,1": None}}
+
+    def test_new_models_have_no_implicit_kind(self):
+        result = device_model_codes.build_catalog(["NewApple2,1"], EXISTING_CATALOG)
+
+        assert result["models"]["NewApple2,1"] is None
+
+    def test_membership_follows_generated_model_identifiers_not_symbol_availability(self):
+        codes = device_model_codes.build(INDEX, SVGS)["models"]
+        result = device_model_codes.build_catalog(codes, EXISTING_CATALOG)
+
+        assert set(result["models"]) == set(codes)
+        assert "iPhone19,4" in result["models"]
+
+
 class TestSquare:
     def test_pads_a_tall_symbol_to_a_centred_square(self):
         result = device_model_codes.square('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 81.53 109.97"><path d="M0 0"/></svg>', "ipad")
@@ -124,6 +150,7 @@ INDEX = {
     },
     "dropped": {"no type": ["AppleDisplay18,2"], "no symbol name": ["Macintosh", "PowerMac7,2", "RackMac1,1", "Xserve3,1"], "no symbol": ["iPhone19,4"]},
 }
+EXISTING_CATALOG = {"models": {"MacPro7,1": "Computer", "FireTV": None}}
 SVGS = {
     name: f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {width} 100"><path fill="currentColor" d="M0 0L{width} 100Z"/></svg>'
     for name, width in [("macpro.gen3", "82"), ("xserve", "120"), ("xserve.raid", "120"), ("macpro.gen1", "90"), ("mediastick", "40"), ("hifispeaker", "60"), ("display", "100")]

@@ -318,25 +318,15 @@ could run it. Pis, NAS boxes and AirPlay receiver apps advertise Apple codes to 
 when all of these hold:
 
 - Without its `@…` suffix, it has Apple's shape `^[A-Za-z]+\d+(?:,\d+)?$` (`iPad8,3`, `AirPort4`).
-- It is a key of [device-model-codes.json](../src/commonMain/resources/assets/device-model-codes.json). That table's
+- It is a key of [model-catalog.json](../src/jvmMain/resources/assets/model-catalog.json). That scanner catalog's
   custom codes such as `One SL` lack the shape and are no Apple codes.
 - The host does not announce itself as Linux: no `_workstation` service and no `_device-info` `machine`, as avahi
   publishes both.
 - nmap's vendor is Apple or unknown, or the MAC is private.
 
-A rejected code is dropped, not stored. An accepted code's kind comes from the SF Symbol name the table gives it:
-
-| Symbol starts with | Kind |
-|---|---|
-| `ipad` | Tablet |
-| `iphone` | Smartphone |
-| `macbook` | Laptop |
-| `mac`, `imac`, `desktop`, `xserve`, or is `pc` | Computer |
-| `appletv` | SetTopBox |
-| `homepod`, `hifispeaker` | Speaker |
-| `applewatch` | SmartWatch |
-| `airport` | Router |
-| is `display` | Monitor |
+A rejected code is dropped, not stored. An accepted code's optional kind comes from its explicit entry in
+[model-catalog.json](../src/jvmMain/resources/assets/model-catalog.json), not its SF Symbol. Unclassified and newly
+recognized codes remain without a kind until someone assigns one.
 
 ### AirPlay emulators
 
@@ -524,9 +514,9 @@ it spans two levels. Each decoded scan replaces the host list of its source (nod
 `hostIcon` in [network.kt](../src/jsMain/kotlin/com/bkahlert/netmon/ui/network.kt) picks the first that exists:
 
 1. The SF Symbol of a model with Apple's shape that
-   [device-model-codes.json](../src/commonMain/resources/assets/device-model-codes.json) knows.
+   [device-model-codes.json](../src/jsMain/resources/assets/device-model-codes.json) knows.
 2. The first `specific` matcher of
-   [device-icons.json](../src/commonMain/resources/assets/device-icons.json) that fits vendor, model and name.
+   [device-icons.json](../src/jsMain/resources/assets/device-icons.json) that fits vendor, model and name.
 3. The icon of the host's kind.
 4. The generic display glyph.
 
@@ -681,9 +671,9 @@ Run `make test-jvm`, `make test-js` and `make test-tier0` after any of these cha
    the kind defaults of [OuiClues](../src/jvmMain/kotlin/com/bkahlert/netmon/identity/OuiClues.kt), or
    [NameTokens](../src/jvmMain/kotlin/com/bkahlert/netmon/identity/NameTokens.kt), each with its test.
 4. Give it an icon in `KINDS` of [device_icons.py](../tests/device_icons.py) and run `make device-icons`.
-   [test_device_icons.py](../tests/test_device_icons.py) and
-   [DeviceIconsResourceTest](../src/jvmTest/kotlin/com/bkahlert/netmon/model_identification/DeviceIconsResourceTest.kt)
-   fail until every kind has one.
+   [test_device_icons.py](../tests/test_device_icons.py) checks the generated data, and
+   [PresentationAssetsTest](../src/jsTest/kotlin/com/bkahlert/netmon/model_identification/PresentationAssetsTest.kt)
+   checks the browser can fetch the packaged assets.
 
 ### Add an icon
 
@@ -692,6 +682,6 @@ Run `make test-jvm`, `make test-js` and `make test-tier0` after any of these cha
 2. Take icons from Material Design Icons (`mdi:`) or Simple Icons (`simple-icons:`) only; the generator's tests reject
    other sets.
 3. Run `make device-icons` and commit the regenerated
-   [device-icons.json](../src/commonMain/resources/assets/device-icons.json).
+   [device-icons.json](../src/jsMain/resources/assets/device-icons.json).
 4. Cover the precedence in [NetworkKtTest](../src/jsTest/kotlin/com/bkahlert/netmon/ui/NetworkKtTest.kt) and matcher
    behaviour in [DeviceIconsTest](../src/commonTest/kotlin/com/bkahlert/netmon/model_identification/DeviceIconsTest.kt).

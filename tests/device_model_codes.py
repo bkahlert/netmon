@@ -1,11 +1,12 @@
-"""The device model codes the scanner knows and the display draws, regenerated from device-icons on a Mac.
+"""Generate the scanner catalog and display model assets from device-icons on a Mac.
 
-`make device-model-codes` writes src/commonMain/resources/assets/device-model-codes.json, read-optimized for the display:
-`models` maps each model code to the description and symbol name of its type, `symbols` maps each symbol name to its
-SVG, so a lookup is two map reads. The Apple model codes and symbols come from device-icons' `symbols export`; the
-codes the scanner reports for other devices, and the symbols of Apple types that declare none, are added here.
+`make device-model-codes` writes src/jvmMain/resources/assets/model-catalog.json, mapping model codes to optional kind
+tokens, and src/jsMain/resources/assets/device-model-codes.json, mapping codes to descriptions and symbol names and
+symbols to SVGs. Apple model codes and symbols come from device-icons' `symbols export`; other device codes and the
+symbols of Apple types that declare none are added here.
 """
 
+from collections.abc import Iterable
 import json
 import re
 import subprocess
@@ -14,7 +15,8 @@ import tempfile
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-OUT = ROOT / "src" / "commonMain" / "resources" / "assets" / "device-model-codes.json"
+OUT = ROOT / "src" / "jsMain" / "resources" / "assets" / "device-model-codes.json"
+CATALOG_OUT = ROOT / "src" / "jvmMain" / "resources" / "assets" / "model-catalog.json"
 DEVICE_ICONS = ["uvx", "--from", "git+https://github.com/bkahlert/device-icons@v0.3.0", "device-icons"]
 # Model codes the scanner reports for Amazon and Sonos devices, and netmon's own: description and symbol name of each.
 CUSTOM = {
@@ -64,6 +66,12 @@ def build(index: dict, svgs: dict[str, str]) -> dict:
     return {"models": dict(sorted(models.items())), "symbols": {name: square(svgs[name], name) for name in used}}
 
 
+def build_catalog(model_codes: Iterable[str], existing: dict) -> dict:
+    """Return explicit kinds for the generated model codes, leaving new codes unclassified."""
+    existing_models = existing.get("models", {})
+    return {"models": {code: existing_models.get(code) for code in sorted(set(model_codes))}}
+
+
 def fallback(code: str) -> str | None:
     """Return the symbol name of the first FALLBACKS pattern the model code matches, or None."""
     return next((symbol for pattern, symbol in FALLBACKS if pattern.search(code)), None)
@@ -108,8 +116,10 @@ def main(argv: list[str]) -> int:
         index = json.loads((types / "index.json").read_text())
         svgs = {path.stem: path.read_text() for out in (types, extras) for path in (out / "symbols").glob("*.svg")}
     data = build(index, svgs)
+    catalog = build_catalog(data["models"], json.loads(CATALOG_OUT.read_text()))
     OUT.write_text(render(data))
-    print(f"{len(data['models'])} model codes, {len(data['symbols'])} symbols in {OUT.relative_to(ROOT)}")
+    CATALOG_OUT.write_text(render(catalog))
+    print(f"{len(data['models'])} model codes, {len(data['symbols'])} symbols, {len(catalog['models'])} catalog entries")
     return 0
 
 

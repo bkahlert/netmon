@@ -1,6 +1,6 @@
 """The kind and brand icons the display draws, fetched from the Iconify API.
 
-`make device-icons` writes src/commonMain/resources/assets/device-icons.json: `kinds` maps each Kind token to a symbol
+`make device-icons` writes src/jsMain/resources/assets/device-icons.json: `kinds` maps each Kind token to a symbol
 id, `specific` lists vendor/model/name regex matchers to a symbol id (first match wins), `symbols` maps each symbol id
 to its SVG. Kinds and device shapes come from Material Design Icons (Apache 2.0), vendor wordmarks from Simple Icons (CC0 1.0).
 """
@@ -13,7 +13,7 @@ import xml.etree.ElementTree as ElementTree
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-OUT = ROOT / "src" / "commonMain" / "resources" / "assets" / "device-icons.json"
+OUT = ROOT / "src" / "jsMain" / "resources" / "assets" / "device-icons.json"
 API = "https://api.iconify.design"
 
 KINDS = {

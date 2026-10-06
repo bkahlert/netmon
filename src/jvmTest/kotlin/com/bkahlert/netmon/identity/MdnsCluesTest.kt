@@ -8,9 +8,6 @@ import com.bkahlert.netmon.mdns.ServiceInfo
 import com.bkahlert.netmon.mdns.binaryProperty
 import com.bkahlert.netmon.mdns.service
 import com.bkahlert.netmon.mdns.withProperty
-import com.bkahlert.netmon.model_identification.DeviceModelCodes
-import com.bkahlert.netmon.model_identification.load
-import com.bkahlert.netmon.model_identification.resource
 import io.kotest.matchers.collections.shouldBeEmpty
 import io.kotest.matchers.collections.shouldContain
 import io.kotest.matchers.collections.shouldContainExactly
@@ -229,4 +226,4 @@ private const val HOST_IP = "10.0.0.7"
 private fun host(vendor: String? = null, mac: String? = null) = Host(ip = HOST_IP, name = null, model = null, vendor = vendor, services = null, mac = mac)
 
 private fun clues(host: Host, vararg services: ServiceInfo): List<Clue> =
-    MdnsClues(FakeMdns(*services), AppleCodes(DeviceModelCodes.load(DeviceModelCodes.resource))).clues(host)
+    MdnsClues(FakeMdns(*services), AppleCodes(loadModelCatalog())).clues(host)

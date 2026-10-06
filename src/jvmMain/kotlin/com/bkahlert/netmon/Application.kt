@@ -13,12 +13,10 @@ import com.bkahlert.netmon.identity.MdnsClues
 import com.bkahlert.netmon.identity.OuiClues
 import com.bkahlert.netmon.identity.RouterClues
 import com.bkahlert.netmon.identity.SsdpClues
+import com.bkahlert.netmon.identity.loadModelCatalog
 import com.bkahlert.netmon.logging.LoggingSettings
 import com.bkahlert.netmon.mdns.JmDNS
 import com.bkahlert.netmon.mdns.JmDNSServiceInfoCache
-import com.bkahlert.netmon.model_identification.DeviceModelCodes
-import com.bkahlert.netmon.model_identification.load
-import com.bkahlert.netmon.model_identification.resource
 import com.bkahlert.netmon.mqtt.MqttPublisher
 import com.bkahlert.netmon.mqtt.ScannerEventPublisher
 import com.bkahlert.netmon.net.SystemInterfaceAddressResolver
@@ -67,7 +65,7 @@ class Application(
             dataDir?.let(nmapMacPrefixesProvisioner::provisionIn)
         }
     }
-    private val appleCodes by lazy { AppleCodes(DeviceModelCodes.load(DeviceModelCodes.resource)) }
+    private val appleCodes by lazy { AppleCodes(loadModelCatalog()) }
     private val lockdownProbe by lazy { LockdownProbe() }
 
     /** One client for the router's TR-064 calls and the SSDP description fetches, which both speak plain HTTP/1.1 in the LAN. */

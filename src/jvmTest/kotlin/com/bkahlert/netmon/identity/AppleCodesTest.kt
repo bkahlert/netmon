@@ -1,7 +1,6 @@
 package com.bkahlert.netmon.identity
 
 import com.bkahlert.netmon.Kind
-import com.bkahlert.netmon.model_identification.DeviceModelCodes
 import io.kotest.data.forAll
 import io.kotest.data.row
 import io.kotest.matchers.shouldBe
@@ -33,6 +32,7 @@ class AppleCodesTest {
     @Test
     fun the_finder_colour_suffix_is_stripped() {
         codes.normalize("Mac15,4@ECOLOR=4") shouldBe "Mac15,4"
+        codes.kindOf("Mac14,13@ECOLOR=4") shouldBe Kind.LAPTOP
     }
 
     @Test
@@ -45,7 +45,7 @@ class AppleCodesTest {
     }
 
     @Test
-    fun the_kind_follows_the_symbol_family() = runTest {
+    fun the_kind_follows_its_explicit_classification() = runTest {
         forAll(
             row("iPad8,3", Kind.TABLET),
             row("iPhone14,2", Kind.SMARTPHONE),
@@ -60,26 +60,41 @@ class AppleCodesTest {
             codes.kindOf(code) shouldBe expected
         }
     }
+
+    @Test
+    fun classification_uses_explicit_kind_without_a_symbol() {
+        val classifier = AppleCodes(ModelCatalog(mapOf("Mac14,13" to Kind.LAPTOP)))
+
+        classifier.kindOf("Mac14,13") shouldBe Kind.LAPTOP
+    }
+
+    @Test
+    fun new_models_have_no_implicit_kind() {
+        val catalog = ModelCatalog(mapOf("Mac99,1" to null))
+
+        catalog.contains("Mac99,1") shouldBe true
+        AppleCodes(catalog).kindOf("Mac99,1") shouldBe null
+    }
 }
 
 private val codes = AppleCodes(
-    DeviceModelCodes(
-        models = mapOf(
-            "iPad8,3" to DeviceModelCodes.Model("iPad Pro", "ipad"),
-            "iPhone14,2" to DeviceModelCodes.Model("iPhone 13 Pro", "iphone.gen3"),
-            "Mac14,13" to DeviceModelCodes.Model("MacBook Air", "macbook.gen2"),
-            "Mac14,8" to DeviceModelCodes.Model("Mac Studio", "macstudio"),
-            "Mac15,4" to DeviceModelCodes.Model("iMac", "desktopcomputer"),
-            "MacPro7,1" to DeviceModelCodes.Model("Mac Pro", "macpro.gen3"),
-            "AppleTV3,1" to DeviceModelCodes.Model("Apple TV", "appletv"),
-            "AudioAccessory5,1" to DeviceModelCodes.Model("HomePod mini", "homepodmini"),
-            "Watch6,1" to DeviceModelCodes.Model("Apple Watch", "applewatch"),
-            "AirPort4" to DeviceModelCodes.Model("AirPort Extreme", "airport.extreme"),
-            "AirPort5" to DeviceModelCodes.Model("AirPort Express", "airport.express"),
-            "One SL" to DeviceModelCodes.Model("One SL", "hifispeaker"),
-            "FireTV" to DeviceModelCodes.Model("Fire TV", "mediastick"),
-            "Speaker" to DeviceModelCodes.Model("Speaker", "hifispeaker"),
-            "FireTVStick4K" to DeviceModelCodes.Model("Fire TV Stick 4K", "mediastick"),
+    ModelCatalog(
+        mapOf(
+            "iPad8,3" to Kind.TABLET,
+            "iPhone14,2" to Kind.SMARTPHONE,
+            "Mac14,13" to Kind.LAPTOP,
+            "Mac14,8" to Kind.COMPUTER,
+            "Mac15,4" to Kind.COMPUTER,
+            "MacPro7,1" to Kind.COMPUTER,
+            "AppleTV3,1" to Kind.SET_TOP_BOX,
+            "AudioAccessory5,1" to Kind.SPEAKER,
+            "Watch6,1" to Kind.SMART_WATCH,
+            "AirPort4" to Kind.ROUTER,
+            "AirPort5" to Kind.ROUTER,
+            "One SL" to Kind.SPEAKER,
+            "FireTV" to null,
+            "Speaker" to Kind.SPEAKER,
+            "FireTVStick4K" to null,
         ),
     ),
 )

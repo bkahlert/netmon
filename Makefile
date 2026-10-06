@@ -97,7 +97,7 @@ deploy: build ## install the built packages on TARGET over SSH
 	@test -n "$(TARGET)" || { echo "usage: make deploy TARGET=pi@host"; exit 2; }
 	@$(UV) python -m pihero_testkit.deploy "$(TARGET)"
 
-device-model-codes: ## regenerate the model codes and symbols the display draws, from this Mac with device-icons
+device-model-codes: ## regenerate scanner classification and display model assets from this Mac
 	@$(UV) python tests/device_model_codes.py
 
 device-icons: ## regenerate the kind and brand icons the display draws, from the Iconify API
