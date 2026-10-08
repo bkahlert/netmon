@@ -8,7 +8,6 @@ import com.bkahlert.netmon.scanner.scan.enrichment.HostServicesEnricher
 import com.bkahlert.netmon.scanner.discovery.lockdown.LockdownProbe
 import com.bkahlert.netmon.scanner.identity.AppleCodes
 import com.bkahlert.netmon.scanner.identity.IdentityEnricher
-import com.bkahlert.netmon.scanner.identity.IdentityResolver
 import com.bkahlert.netmon.scanner.identity.LockdownClues
 import com.bkahlert.netmon.scanner.identity.MdnsClues
 import com.bkahlert.netmon.scanner.identity.OuiClues
@@ -154,14 +153,11 @@ class Application(
                             scanner = NmapScanAdapter(nmapNetworkScanner::scan),
                             enrichers = listOf(
                                 IdentityEnricher(
-                                    IdentityResolver(),
-                                    sources = listOf(
-                                        RouterClues(routerTable),
-                                        MdnsClues(serviceInfoCache, appleCodes),
-                                        SsdpClues(ssdpCache, serviceInfoCache),
-                                        OuiClues(),
-                                    ),
-                                    fallbacks = listOf(LockdownClues(LockdownProbe.Lookup(lockdownProbe::model), appleCodes)),
+                                    routerClues = RouterClues(routerTable),
+                                    mdnsClues = MdnsClues(serviceInfoCache, appleCodes),
+                                    ssdpClues = SsdpClues(ssdpCache, serviceInfoCache),
+                                    ouiClues = OuiClues(),
+                                    lockdownClues = LockdownClues(LockdownProbe.Lookup(lockdownProbe::model), appleCodes),
                                 ),
                                 HostServicesEnricher(serviceInfoCache),
                             ),
