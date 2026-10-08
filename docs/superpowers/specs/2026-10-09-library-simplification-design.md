@@ -177,6 +177,72 @@ If safe discovery-only use requires a protocol rewrite or fails any gate,
 stop adoption and keep the current backend. Do not increase memory limits,
 ship both backends, or silently fall back at runtime.
 
+### Task 5 decision: reject 3.0.5 before runtime prototyping
+
+The 2026-10-09 source feasibility gate is **REJECT**. Keep `SsdpCache` wired.
+No candidate, dependency, or application-wiring changes were introduced.
+This rejects the pinned release under the isolation and no-protocol-rewrite
+constraints; it is not a native-runtime or footprint result.
+
+The [published 3.0.5 sources][task5-sources] and binary were inspected.
+The retrieval source matches the release tag byte-for-byte.
+The decisive path is:
+
+- [RetrieveRemoteDescriptors.java][descriptor-retrieval], lines 71–73 and
+  101–112, uses a private static map keyed only by descriptor URL.
+  A second session's retrieval returns without describing or registering its
+  root while the first session retrieves that URL.
+- [ReceivingSearchResponse.java][task5-search-response], lines 97–110,
+  also drops that response **before** consulting the configured retrieval
+  executor. No retry or cross-session delivery is scheduled on that branch.
+- [ReceivingNotification.java][task5-notification], lines 118–126, and the
+  search-response path instantiate `RetrieveRemoteDescriptors` directly.
+  [ProtocolFactoryImpl.java][task5-protocol-factory], lines 105–115, provides
+  receiving-protocol factories, but no remote-descriptor-retriever factory.
+  Binary signatures confirm the private map/device and absent factory.
+
+Supported alternatives were checked before rejecting:
+
+- A protocol-factory guard can enforce literal HTTP sender/LOCATION equality
+  before delegating either receiving path, including before registry renewal.
+- A secure root-only `DeviceDescriptorBinder` can omit services and embedded
+  devices before hydration. This avoids secondary requests without pretending
+  an empty exclusive-service array disables them.
+- The per-instance address constructor, nullable stream-server factory,
+  executor configuration, and registry subclass provide useful boundaries.
+  None replaces the release's cross-session retrieval deduplication.
+- Per-session single-thread executors cannot serialize other sessions.
+  `ReceivingAsync.waitBeforeExecution()` provides no atomic reservation;
+  polling the public static probe still races with another session's retrieval.
+  Binder, HTTP-client, and registry-listener hooks are downstream of the drop.
+- Process-wide serialization could prevent overlapping retrievals, but would
+  couple sessions' discovery scheduling instead of keeping discovery isolated.
+  Replacing receiver execution or swapping retrieval tasks in an executor
+  would maintain new protocol orchestration. Neither is an accepted workaround.
+
+The existing SSDP package contains **299 physical Kotlin lines**, including
+comments and blank lines:
+[DeviceDescription.kt](../../../src/jvmMain/kotlin/com/bkahlert/netmon/scanner/discovery/ssdp/DeviceDescription.kt) 62,
+[SsdpCache.kt](../../../src/jvmMain/kotlin/com/bkahlert/netmon/scanner/discovery/ssdp/SsdpCache.kt) 206, and
+[SsdpMessage.kt](../../../src/jvmMain/kotlin/com/bkahlert/netmon/scanner/discovery/ssdp/SsdpMessage.kt) 31.
+This is a source count, not a footprint measurement.
+Candidate source reduction is **NOT RUN**.
+Adversarial and registry/isolation fixtures, candidate JVM tests, native build
+and native UDP/HTTP/expiry/shutdown execution are **NOT RUN**.
+Same-runtime baseline/candidate jar and native bytes, startup, idle and scan-peak
+RSS, service memory and threads are **NOT RUN**.
+Installed boot/soak checks under `64m`/`128M` limits are **NOT RUN**.
+No historical measurement substitutes for these gates.
+Task 3's arm64 compilation does not establish Task 5 runtime or footprint.
+
+The release's CDDL-1.0 manifest and license were reviewed.
+Any future redistribution needs covered-source availability, a license copy,
+and retained attribution; rejection adds no packaged library or copied source.
+The full [Task 5 report][task5-report] records alternatives, commands, hashes,
+limitations, and the unchanged production boundary.
+Pinned artifacts and command logs remain in the ignored
+[evidence workspace][task5-evidence].
+
 ## Evidence and acceptance
 
 Record baseline and candidate source lines, artifact bytes, startup time,
@@ -192,3 +258,9 @@ Update matching entries in [open-issues.md](../../open-issues.md) only when
 the issue's observable failure is actually resolved.
 
 [descriptor-retrieval]: https://github.com/jupnp/jupnp/blob/3.0.5/bundles/org.jupnp/src/main/java/org/jupnp/protocol/RetrieveRemoteDescriptors.java
+[task5-sources]: https://repo.maven.apache.org/maven2/org/jupnp/org.jupnp/3.0.5/org.jupnp-3.0.5-sources.jar
+[task5-search-response]: https://github.com/jupnp/jupnp/blob/3.0.5/bundles/org.jupnp/src/main/java/org/jupnp/protocol/async/ReceivingSearchResponse.java
+[task5-notification]: https://github.com/jupnp/jupnp/blob/3.0.5/bundles/org.jupnp/src/main/java/org/jupnp/protocol/async/ReceivingNotification.java
+[task5-protocol-factory]: https://github.com/jupnp/jupnp/blob/3.0.5/bundles/org.jupnp/src/main/java/org/jupnp/protocol/ProtocolFactoryImpl.java
+[task5-report]: ../../../.superpowers/sdd/2026-10-09-library-simplification/task-5-report.md
+[task5-evidence]: ../../../.cache/task-5-evidence/
