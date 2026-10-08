@@ -39,8 +39,7 @@ Each worker cycle runs in this order:
    collects raw hosts with `nmap -sn`.
 3. [`IdentityEnricher`](../src/jvmMain/kotlin/com/bkahlert/netmon/scanner/identity/IdentityEnricher.kt)
    collects clues from the router, mDNS, SSDP, and OUI, then lockdownd when no model exists,
-   then DNS and name tokens. [`IdentityResolver`](../src/jvmMain/kotlin/com/bkahlert/netmon/scanner/identity/IdentityResolver.kt)
-   applies the trust order per field.
+   then DNS and name tokens, and applies the trust order per field.
 4. [`HostServicesEnricher`](../src/jvmMain/kotlin/com/bkahlert/netmon/scanner/scan/enrichment/HostServicesEnricher.kt)
    adds the mDNS service names announced at the host IP.
 5. [`ScanResult`](../src/jvmMain/kotlin/com/bkahlert/netmon/scanner/scan/ScanResult.kt)
