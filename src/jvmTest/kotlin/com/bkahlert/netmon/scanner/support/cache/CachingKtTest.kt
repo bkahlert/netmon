@@ -14,10 +14,13 @@ import io.kotest.matchers.paths.shouldExist
 import io.kotest.matchers.should
 import io.kotest.matchers.shouldBe
 import kotlinx.coroutines.test.runTest
+import java.io.IOException
+import java.io.InputStream
 import java.nio.file.attribute.PosixFilePermission
 import kotlin.io.path.appendLines
 import kotlin.io.path.createFile
 import kotlin.io.path.getPosixFilePermissions
+import kotlin.io.path.listDirectoryEntries
 import kotlin.io.path.pathString
 import kotlin.io.path.readLines
 import kotlin.io.path.readText
@@ -130,6 +133,56 @@ class CachingKtTest {
         }
     }
 
+    @Test
+    fun update_keeps_cached_file_when_refresh_stream_is_interrupted() = runTest {
+        val directory = createTempDirectory()
+        val cache = FileCache(directory)
+        cache.put("name", "cached data".byteInputStream())
+
+        val result = runCatching {
+            cache.update(
+                "name",
+                {
+                    object : InputStream() {
+                        private var firstByteRead = false
+
+                        override fun read(): Int =
+                            if (firstByteRead) throw IOException("Download interrupted")
+                            else 'x'.code.also { firstByteRead = true }
+                    }
+                },
+            ) { true }
+        }
+
+        result.isSuccess shouldBe true
+        result.getOrThrow().readText() shouldBe "cached data"
+        directory.listDirectoryEntries().size shouldBe 1
+    }
+
+    @Test
+    fun update_uses_cached_file_when_source_rejects_download() = runTest {
+        val cache = FileCache(createTempDirectory())
+        cache.put("name", "cached data".byteInputStream())
+
+        val result = runCatching {
+            cache.update("name", { throw IOException("Downloaded data is invalid") }) { true }
+        }
+
+        result.isSuccess shouldBe true
+        result.getOrThrow().readText() shouldBe "cached data"
+    }
+
+    @Test
+    fun update_propagates_source_failure_without_cached_file() = runTest {
+        val cache = FileCache(createTempDirectory())
+
+        val failure = shouldThrow<IOException> {
+            cache.update("name", { throw IOException("Offline") }) { true }
+        }
+
+        failure.message shouldBe "Offline"
+        cache.get("name").shouldBeNull()
+    }
 
     @Test
     fun file_cache3() = runTest {

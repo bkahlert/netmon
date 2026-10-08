@@ -1,6 +1,7 @@
 package com.bkahlert.netmon.scanner.app
 
 import com.bkahlert.netmon.scanner.support.cache.FileCache
+import com.bkahlert.netmon.scanner.support.cache.SystemLocations
 import com.bkahlert.netmon.scanner.support.process.Pid
 import com.bkahlert.netmon.scanner.support.logging.SLF4J
 import com.bkahlert.netmon.scanner.scan.enrichment.HostServicesEnricher
@@ -64,7 +65,7 @@ class Application(
     )::resolve,
 ) {
 
-    private val cache: FileCache by lazy { FileCache.of("netmon") }
+    private val cache: FileCache by lazy { FileCache(SystemLocations.NetmonCache) }
     private val nmapMacPrefixesProvisioner: NmapMacPrefixesProvisioner by lazy { NmapMacPrefixesProvisioner(cache) }
     private val nmapNetworkScanner by lazy {
         NmapNetworkScanner().apply {

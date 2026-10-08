@@ -65,6 +65,12 @@ Updates are `sudo apt upgrade`. Pi Hero 1's Ansible installer is frozen at the t
 ./gradlew runJvm
 ```
 
+The scanner keeps its MAC vendor download cache and Nmap data under
+`~/Library/Caches/com.bkahlert.netmon` on macOS, or
+`${XDG_CACHE_HOME:-~/.cache}/com.bkahlert.netmon` on Linux. Nmap reads the
+`nmap` subdirectory; `NMAP_DATA_DIR` overrides this location.
+Existing `./nmap` and caches named `netmon` are no longer used by default.
+
 #### Run the web display component locally
 
 Three make targets show the page while you edit it. All read it from Gradle's dev server on port 8081, take the same

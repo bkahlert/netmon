@@ -1,5 +1,6 @@
 package com.bkahlert.netmon.scanner.nmap
 
+import com.bkahlert.netmon.scanner.support.cache.SystemLocations
 import com.bkahlert.netmon.support.config.Settings
 import com.bkahlert.netmon.support.serialization.UnquotedStringsFormat.Companion.unquoted
 import com.bkahlert.netmon.contract.serialization.JsonFormat
@@ -22,5 +23,5 @@ object NmapSettings : Settings("nmap", JsonFormat.unquoted) {
                 else require(dir.parent?.isWritable() == true) { "Data directory $dir does not exist and ${dir.parent} is not writeable" }
             }
         }
-    private val _dataDir: String? by setting(default = "./nmap", name = "dataDir")
+    private val _dataDir: String? by setting(default = SystemLocations.NetmonCache.resolve("nmap").toString(), name = "dataDir")
 }

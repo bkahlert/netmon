@@ -2,14 +2,18 @@ package com.bkahlert.netmon.scanner.support.cache
 
 import com.bkahlert.netmon.scanner.support.logging.SLF4J
 import java.io.InputStream
+import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
+import java.nio.file.StandardCopyOption.ATOMIC_MOVE
+import java.nio.file.StandardCopyOption.REPLACE_EXISTING
 import java.security.MessageDigest
 import kotlin.io.path.copyToRecursively
 import kotlin.io.path.createDirectories
 import kotlin.io.path.createDirectory
 import kotlin.io.path.createParentDirectories
 import kotlin.io.path.createTempDirectory
+import kotlin.io.path.deleteIfExists
 import kotlin.io.path.deleteExisting
 import kotlin.io.path.deleteRecursively
 import kotlin.io.path.div
@@ -51,6 +55,9 @@ object SystemLocations {
             Temp
         }
     }
+
+    /** The cache directory for Netmon. */
+    val NetmonCache: Path by lazy { Cache.resolve("com.bkahlert.netmon").createDirectories() }
 }
 
 private val logger by SLF4J
@@ -128,17 +135,32 @@ class FileCache(val directory: Path) {
      * Stores the contents of the given [source],
      * if no file with the given [name] exists, yet, or
      * if the given [predicate] returns `true` for the existing file.
+     *
+     * If refreshing fails, returns the existing file when one is available; otherwise, propagates the failure.
      */
-    fun update(name: String, source: () -> InputStream, predicate: (Path) -> Boolean): Path = name.path.also {
-        if (!it.exists()) {
-            source().copyTo(it).also {
-                logger.info("Updated data for name={}, reason=cache-miss", name)
-            }
-        } else if (predicate(it)) {
-            source().copyTo(it).also {
-                logger.info("Updated data for name={}, reason=predicate-match", name)
+    fun update(name: String, source: () -> InputStream, predicate: (Path) -> Boolean): Path {
+        val destination = name.path
+        val cachedFile = destination.takeIf { it.exists() }
+        if (cachedFile == null || predicate(cachedFile)) {
+            var temporaryFile: Path? = null
+            try {
+                val downloadFile = Files.createTempFile(directory.createDirectories(), "cache-", ".tmp")
+                temporaryFile = downloadFile
+                source().use { it.copyTo(downloadFile) }
+                Files.move(downloadFile, destination, ATOMIC_MOVE, REPLACE_EXISTING)
+                logger.info(
+                    "Updated data for name={}, reason={}",
+                    name,
+                    if (cachedFile == null) "cache-miss" else "predicate-match",
+                )
+            } catch (e: Exception) {
+                if (cachedFile == null) throw e
+                logger.warn("Failed to update data for name={}, using cached data", name, e)
+            } finally {
+                temporaryFile?.deleteIfExists()
             }
         }
+        return destination
     }
 
     fun remove(name: String): Boolean = name.path.takeIf { it.exists() }?.let {
