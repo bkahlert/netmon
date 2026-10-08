@@ -158,7 +158,7 @@ tasks.named<Test>("jvmTest") {
             excludeTestsMatching("*IntegrationTest")
             excludeTestsMatching("*NmapNetworkScannerTest.scan*")
             // Thread timing under a loaded CI runner; passes locally and failed once in a release run.
-            excludeTestsMatching("*SlicedApplicationTest")
+            excludeTestsMatching("*SlicedApplicationTest.wait_for_workers")
         }
     }
 }

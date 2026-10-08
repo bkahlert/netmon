@@ -28,13 +28,14 @@ import kotlin.time.Duration.Companion.minutes
  *
  * Uses [messages] when provided, or connects to the production broker otherwise. Uses [clock] for display time and
  * freshness checks. Calls [onSuccess] after the first network scan renders. Returns a [DisplayApp] that owns the
- * mounted displays and their subscriptions.
+ * mounted displays and their subscriptions, and calls [onDispose] when it is disposed or mounting fails.
  */
 suspend fun app(
     statusTarget: HTMLElement,
     networksTarget: HTMLElement,
     messages: Flow<MqttMessage>? = null,
     clock: Clock = Clock.System,
+    onDispose: () -> Unit = {},
     onSuccess: () -> Unit = {},
 ): DisplayApp {
     val startedAt = clock.now()
@@ -71,11 +72,18 @@ suspend fun app(
             networks(scanEventsStore, currentTime.data, minuteClock.data)
         }
 
-        return DisplayApp(appJob, renders)
+        return DisplayApp(appJob, renders, onDispose)
     } catch (failure: Throwable) {
         withContext(NonCancellable) {
-            renders.asReversed().forEach { it.dispose() }
-            appJob.cancelAndJoin()
+            try {
+                renders.asReversed().forEach { it.dispose() }
+            } finally {
+                try {
+                    onDispose()
+                } finally {
+                    appJob.cancelAndJoin()
+                }
+            }
         }
         throw failure
     }

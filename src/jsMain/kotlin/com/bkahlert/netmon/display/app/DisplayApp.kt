@@ -10,6 +10,7 @@ import kotlinx.coroutines.withContext
 class DisplayApp internal constructor(
     private val job: Job,
     private val renders: List<OwnedRender>,
+    private val onDispose: () -> Unit,
 ) {
     private var disposed = false
 
@@ -21,7 +22,11 @@ class DisplayApp internal constructor(
             try {
                 renders.asReversed().forEach { it.dispose() }
             } finally {
-                job.cancelAndJoin()
+                try {
+                    onDispose()
+                } finally {
+                    job.cancelAndJoin()
+                }
             }
         }
     }

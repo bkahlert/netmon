@@ -31,6 +31,26 @@ import com.bkahlert.netmon.contract.Event
 class DisplayAppTest {
 
     @Test
+    fun disposes_owned_resources_when_the_app_is_disposed() = runTest {
+        val statusTarget = target()
+        val networksTarget = target()
+        var disposeCalls = 0
+        val display = app(
+            statusTarget,
+            networksTarget,
+            messages = flow { awaitCancellation() },
+            onDispose = { disposeCalls++ },
+        )
+
+        display.dispose()
+        display.dispose()
+
+        disposeCalls shouldBe 1
+        statusTarget.remove()
+        networksTarget.remove()
+    }
+
+    @Test
     fun shares_one_broker_connection_and_clears_only_its_targets_on_disposal() = runTest {
         var starts = 0
         var active = 0
