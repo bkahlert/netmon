@@ -10,17 +10,19 @@ import com.bkahlert.netmon.scanner.state.ScanStateStore
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.collections.shouldContainExactly
 import io.kotest.matchers.shouldBe
+import io.kotest.matchers.types.shouldBeInstanceOf
 import java.io.IOException
 import kotlin.test.Test
 
 class NetworkSessionTest {
 
     @Test
-    fun scan_delegates_to_its_scanner() {
+    fun process_delegates_to_its_scanner() {
         var scans = 0
         val session = NetworkSession.open { testScanner { scans++ } }
 
-        session.scan()
+        session.shouldBeInstanceOf<SliceWorker>()
+        session.process()
 
         scans shouldBe 1
     }

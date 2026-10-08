@@ -1,6 +1,8 @@
 package com.bkahlert.netmon.scanner.app
 
+import com.bkahlert.netmon.contract.invoke
 import com.bkahlert.netmon.scanner.support.logging.SLF4J
+import com.bkahlert.netmon.scanner.support.test.AbstractIntegrationTest
 import io.kotest.data.forAll
 import io.kotest.data.row
 import io.kotest.inspectors.forAll
@@ -16,7 +18,6 @@ import io.kotest.matchers.string.shouldMatch
 import io.kotest.matchers.types.shouldBeInstanceOf
 import kotlinx.coroutines.test.runTest
 import java.util.Collections
-import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
@@ -28,8 +29,6 @@ import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
 import kotlin.time.measureTime
-import com.bkahlert.netmon.contract.invoke
-import com.bkahlert.netmon.scanner.support.test.AbstractIntegrationTest
 
 class SlicedApplicationTest : AbstractIntegrationTest() {
 
@@ -39,7 +38,7 @@ class SlicedApplicationTest : AbstractIntegrationTest() {
             row(Slices()),
             row(Slices("foo", "bar")),
         ) { slices ->
-            val application = SlicedApplication(slices) { 10.milliseconds.wait() }
+            val application = SlicedApplication(slice = slices) { worker { 10.milliseconds.wait() } }
             application.started shouldBe false
             application.terminated shouldBe false
 
@@ -60,11 +59,16 @@ class SlicedApplicationTest : AbstractIntegrationTest() {
         val invocations = Invocations<String>()
         val application = SlicedApplication(
             slice = Slices("foo", "bar"),
-            process = {
-                invocations.processed(it)
-                10.milliseconds.wait()
+            open = { slice ->
+                invocations.opened(slice)
+                worker(
+                    process = {
+                        invocations.processed(slice)
+                        10.milliseconds.wait()
+                    },
+                    close = { invocations.closed(slice) },
+                )
             },
-            finalize = { invocations.finalized(it) },
         )
 
         application.start()
@@ -73,34 +77,14 @@ class SlicedApplicationTest : AbstractIntegrationTest() {
 
         invocations.keys.shouldContainExactlyInAnyOrder("foo", "bar")
         invocations["foo"] should { fooInvocations ->
+            fooInvocations.filterIsInstance<Invocations.Invocation.OPENED<*>>().size shouldBe 1
             fooInvocations.shouldNotBeEmpty()
             fooInvocations.forAll { fooInvocation -> fooInvocation.thread shouldBe fooInvocations.first().thread }
         }
-        invocations["bar"] should { fooInvocations ->
-            fooInvocations.shouldNotBeEmpty()
-            fooInvocations.forAll { barInvocation -> barInvocation.thread shouldBe fooInvocations.first().thread }
-        }
-    }
-
-    @Test
-    fun start() = runTest {
-        val invocations = Invocations<String>()
-        val application = SlicedApplication(
-            slice = Slices("foo", "bar"),
-            start = { invocations.started(it) },
-            process = {
-                invocations.processed(it)
-                10.milliseconds.wait()
-            },
-        )
-
-        application.start()
-        100.milliseconds.wait()
-        application.terminate()
-
-        invocations.groupBy { it.slice }.forAll { (_, invocations) ->
-            invocations.shouldNotBeEmpty()
-            invocations.take(1).forAll { it.shouldBeInstanceOf<Invocations.Invocation.STARTED<*>>() }
+        invocations["bar"] should { barInvocations ->
+            barInvocations.filterIsInstance<Invocations.Invocation.OPENED<*>>().size shouldBe 1
+            barInvocations.shouldNotBeEmpty()
+            barInvocations.forAll { barInvocation -> barInvocation.thread shouldBe barInvocations.first().thread }
         }
     }
 
@@ -109,11 +93,16 @@ class SlicedApplicationTest : AbstractIntegrationTest() {
         val invocations = Invocations<String>()
         val application = SlicedApplication(
             slice = Slices("foo", "bar"),
-            process = {
-                invocations.processed(it)
-                10.milliseconds.wait()
+            open = { slice ->
+                invocations.opened(slice)
+                worker(
+                    process = {
+                        invocations.processed(slice)
+                        10.milliseconds.wait()
+                    },
+                    close = { invocations.closed(slice) },
+                )
             },
-            finalize = { invocations.finalized(it) },
         )
 
         application.start()
@@ -121,12 +110,16 @@ class SlicedApplicationTest : AbstractIntegrationTest() {
         application.terminate()
 
         invocations["foo"] should { fooInvocations ->
-            fooInvocations.shouldNotBeEmpty()
-            fooInvocations.dropLast(1).forAll { fooInvocation -> fooInvocation.shouldBeInstanceOf<Invocations.Invocation.PROCESSED<*>>() }
+            fooInvocations.filterIsInstance<Invocations.Invocation.PROCESSED<*>>().size shouldBeGreaterThan 1
+            fooInvocations.dropLast(1).drop(1).forAll { fooInvocation ->
+                fooInvocation.shouldBeInstanceOf<Invocations.Invocation.PROCESSED<*>>()
+            }
         }
-        invocations["bar"] should { fooInvocations ->
-            fooInvocations.shouldNotBeEmpty()
-            fooInvocations.dropLast(1).forAll { barInvocation -> barInvocation.shouldBeInstanceOf<Invocations.Invocation.PROCESSED<*>>() }
+        invocations["bar"] should { barInvocations ->
+            barInvocations.filterIsInstance<Invocations.Invocation.PROCESSED<*>>().size shouldBeGreaterThan 1
+            barInvocations.dropLast(1).drop(1).forAll { barInvocation ->
+                barInvocation.shouldBeInstanceOf<Invocations.Invocation.PROCESSED<*>>()
+            }
         }
     }
 
@@ -137,11 +130,16 @@ class SlicedApplicationTest : AbstractIntegrationTest() {
         val application = SlicedApplication(
             slice = slices,
             updateInterval = 10.milliseconds,
-            process = {
-                invocations.processed(it)
-                10.milliseconds.wait()
+            open = { slice ->
+                invocations.opened(slice)
+                worker(
+                    process = {
+                        invocations.processed(slice)
+                        10.milliseconds.wait()
+                    },
+                    close = { invocations.closed(slice) },
+                )
             },
-            finalize = { invocations.finalized(it) },
         )
 
         application.start()
@@ -164,11 +162,16 @@ class SlicedApplicationTest : AbstractIntegrationTest() {
         val application = SlicedApplication(
             slice = slices,
             updateInterval = 10.milliseconds,
-            process = {
-                invocations.processed(it)
-                10.milliseconds.wait()
+            open = { slice ->
+                invocations.opened(slice)
+                worker(
+                    process = {
+                        invocations.processed(slice)
+                        10.milliseconds.wait()
+                    },
+                    close = { invocations.closed(slice) },
+                )
             },
-            finalize = { invocations.finalized(it) },
         )
 
         application.start()
@@ -189,20 +192,25 @@ class SlicedApplicationTest : AbstractIntegrationTest() {
         val invocations = Invocations<String>()
         val application = SlicedApplication(
             slice = Slices("foo", "bar"),
-            process = {
-                invocations.processed(it)
-                10.milliseconds.wait()
+            open = { slice ->
+                invocations.opened(slice)
+                worker(
+                    process = {
+                        invocations.processed(slice)
+                        10.milliseconds.wait()
+                    },
+                    close = { invocations.closed(slice) },
+                )
             },
-            finalize = { invocations.finalized(it) },
         )
 
         application.start()
         100.milliseconds.wait()
         application.terminate()
 
-        invocations.groupBy { it.slice }.forAll { (_, invocations) ->
-            invocations.shouldNotBeEmpty()
-            invocations.takeLast(1).forAll { it.shouldBeInstanceOf<Invocations.Invocation.FINALIZED<*>>() }
+        invocations.groupBy { it.slice }.forAll { (_, perSliceInvocations) ->
+            perSliceInvocations.filterIsInstance<Invocations.Invocation.CLOSED<*>>().size shouldBe 1
+            perSliceInvocations.takeLast(1).forAll { it.shouldBeInstanceOf<Invocations.Invocation.CLOSED<*>>() }
         }
     }
 
@@ -211,11 +219,16 @@ class SlicedApplicationTest : AbstractIntegrationTest() {
         val invocations = Invocations<String>()
         val application = SlicedApplication(
             slice = Slices("foo", "bar"),
-            process = {
-                invocations.processed(it)
-                10.milliseconds.wait()
+            open = { slice ->
+                invocations.opened(slice)
+                worker(
+                    process = {
+                        invocations.processed(slice)
+                        10.milliseconds.wait()
+                    },
+                    close = { invocations.closed(slice) },
+                )
             },
-            finalize = { invocations.finalized(it) },
         )
 
         val started = application.start()
@@ -225,27 +238,29 @@ class SlicedApplicationTest : AbstractIntegrationTest() {
         }
         started.waitForTermination()
 
-        invocations.groupBy { it.slice }.forAll { (_, invocations) ->
-            invocations.shouldNotBeEmpty()
-            invocations.takeLast(1).forAll { it.shouldBeInstanceOf<Invocations.Invocation.FINALIZED<*>>() }
+        invocations.groupBy { it.slice }.forAll { (_, perSliceInvocations) ->
+            perSliceInvocations.filterIsInstance<Invocations.Invocation.CLOSED<*>>().size shouldBe 1
+            perSliceInvocations.takeLast(1).forAll { it.shouldBeInstanceOf<Invocations.Invocation.CLOSED<*>>() }
         }
     }
 
     @Test
     fun wait_for_workers() {
-        val invocations = Invocations<String>()
         val busyWorkStarted = CountDownLatch(1)
         val application = SlicedApplication(
             slice = Slices("foo", "bar"),
-            process = {
-                if (it == "bar") {
-                    busyWorkStarted.countDown()
-                    600.milliseconds.busyWait()
-                } else {
-                    50.milliseconds.wait()
-                }
+            open = { slice ->
+                worker(
+                    process = {
+                        if (slice == "bar") {
+                            busyWorkStarted.countDown()
+                            600.milliseconds.busyWait()
+                        } else {
+                            50.milliseconds.wait()
+                        }
+                    },
+                )
             },
-            finalize = { invocations.finalized(it) },
         )
 
         measureTime {
@@ -259,7 +274,11 @@ class SlicedApplicationTest : AbstractIntegrationTest() {
     fun failed_workers() {
         val application = SlicedApplication(
             slice = Slices("foo", "bar"),
-            process = { if (it == "bar") throw RuntimeException("test") else 50.milliseconds.wait() },
+            open = { slice ->
+                worker {
+                    if (slice == "bar") throw RuntimeException("test") else 50.milliseconds.wait()
+                }
+            },
         )
 
         application.start()
@@ -270,27 +289,37 @@ class SlicedApplicationTest : AbstractIntegrationTest() {
     }
 
     @Test
-    fun finalization_failed_worker() {
+    fun processing_failure_closes_the_worker() {
         val invocations = Invocations<String>()
         val application = SlicedApplication(
             slice = Slices("foo", "bar"),
-            process = { if (it == "bar") throw RuntimeException("test") else 50.milliseconds.wait() },
-            finalize = { invocations.finalized(it) },
+            open = { slice ->
+                invocations.opened(slice)
+                worker(
+                    process = {
+                        invocations.processed(slice)
+                        if (slice == "bar") throw RuntimeException("test") else 10.seconds.wait()
+                    },
+                    close = { invocations.closed(slice) },
+                )
+            },
         )
 
-        application.start()
-        100.milliseconds.wait()
-        application.terminate()
+        val started = application.start()
+        val state = CompletableFuture.supplyAsync { started.waitForTermination() }.get(5, TimeUnit.SECONDS)
 
-        invocations["bar"].shouldNotBeEmpty().last().shouldBeInstanceOf<Invocations.Invocation.FINALIZED<*>>()
+        state.failed.shouldContainExactly("bar")
+        invocations["bar"].takeLast(1).single().shouldBeInstanceOf<Invocations.Invocation.CLOSED<*>>()
     }
 
     @Test
-    fun failed_start_ends_the_application() {
+    fun failed_open_ends_the_application() {
         val application = SlicedApplication(
             slice = Slices("foo", "bar"),
-            start = { if (it == "bar") throw RuntimeException("test") },
-            process = { 50.milliseconds.wait() },
+            open = { slice ->
+                if (slice == "bar") throw RuntimeException("test")
+                worker { 50.milliseconds.wait() }
+            },
         )
 
         val started = application.start()
@@ -304,90 +333,114 @@ class SlicedApplicationTest : AbstractIntegrationTest() {
         val invocations = Invocations<String>()
         val application = SlicedApplication(
             slice = Slices("foo", "bar"),
-            process = { if (it == "bar") throw RuntimeException("test") else 10.seconds.wait() },
-            finalize = { invocations.finalized(it) },
+            open = { slice ->
+                invocations.opened(slice)
+                worker(
+                    process = {
+                        if (slice == "bar") throw RuntimeException("test") else 10.seconds.wait()
+                    },
+                    close = { invocations.closed(slice) },
+                )
+            },
         )
 
         val started = application.start()
         val state = CompletableFuture.supplyAsync { started.waitForTermination() }.get(5, TimeUnit.SECONDS)
 
         state.failed.shouldContainExactly("bar")
-        invocations["foo"].shouldContainExactly(Invocations.Invocation.FINALIZED("foo"))
+        invocations["foo"].shouldContainExactly(Invocations.Invocation.OPENED("foo"), Invocations.Invocation.CLOSED("foo"))
     }
 
     @Test
-    fun failed_worker_with_failed_finalization_ends_the_application() {
+    fun close_failure_on_processing_failure_is_suppressed() {
+        val processingFailure = RuntimeException("test")
+        val closeFailure = RuntimeException("close")
         val application = SlicedApplication(
             slice = Slices("foo", "bar"),
-            process = { if (it == "bar") throw RuntimeException("test") else 50.milliseconds.wait() },
-            finalize = { if (it == "bar") throw RuntimeException("finalize") },
+            open = { slice ->
+                worker(
+                    process = {
+                        if (slice == "bar") throw processingFailure else 50.milliseconds.wait()
+                    },
+                    close = { if (slice == "bar") throw closeFailure },
+                )
+            },
         )
 
         val started = application.start()
         val state = CompletableFuture.supplyAsync { started.waitForTermination() }.get(5, TimeUnit.SECONDS)
 
         state.failed.shouldContainExactly("bar")
+        processingFailure.suppressed.toList() shouldContainExactly listOf(closeFailure)
     }
 
     @Test
-    fun removed_slice_closes_its_session_and_reappearance_gets_fresh_resources() {
+    fun removed_slice_closes_its_worker_and_reappearance_gets_fresh_resources() {
         val slices = AtomicReference(setOf("lan"))
-        val sessions = ConcurrentHashMap<String, NetworkSession>()
         val created = AtomicInteger()
-        val sessionCreated = CountDownLatch(2)
-        val scansStarted = CountDownLatch(2)
-        val firstScanStarted = CountDownLatch(1)
+        val opened = CountDownLatch(2)
+        val firstProcessed = CountDownLatch(1)
         val firstClosed = CountDownLatch(1)
-        val closed = mutableListOf<Int>()
         val holdWorker = CountDownLatch(1)
+        val lifecycle = Collections.synchronizedList(mutableListOf<Pair<String, Int>>())
         val application = SlicedApplication(
             slice = { slices.get() },
             updateInterval = 10.milliseconds,
-            start = { slice ->
+            open = { slice ->
                 val id = created.incrementAndGet()
-                sessions[slice] = NetworkSession.open { resources ->
-                    resources.own(AutoCloseable {
-                        synchronized(closed) { closed += id }
-                        if (id == 1) firstClosed.countDown()
-                    })
-                    testScanner()
-                }
-                sessionCreated.countDown()
+                lifecycle += "opened" to id
+                opened.countDown()
+                worker(
+                    process = {
+                        firstProcessed.countDown()
+                        holdWorker.await()
+                    },
+                    close = {
+                        lifecycle += "closed" to id
+                        if (slice == "lan" && id == 1) firstClosed.countDown()
+                    },
+                )
             },
-            process = { slice ->
-                sessions.getValue(slice).scan()
-                firstScanStarted.countDown()
-                scansStarted.countDown()
-                holdWorker.await()
-            },
-            finalize = { slice -> sessions.remove(slice)?.close() },
         )
 
         val started = application.start()
         try {
-            firstScanStarted.await(5, TimeUnit.SECONDS) shouldBe true
+            firstProcessed.await(5, TimeUnit.SECONDS) shouldBe true
             slices.set(emptySet())
+            holdWorker.countDown()
             firstClosed.await(5, TimeUnit.SECONDS) shouldBe true
+            val eventsAfterFirstClose = synchronized(lifecycle) { lifecycle.toList() }
+            eventsAfterFirstClose shouldContainExactly listOf("opened" to 1, "closed" to 1)
+
+            holdWorker.await(0, TimeUnit.SECONDS) shouldBe true
             slices.set(setOf("lan"))
-            sessionCreated.await(5, TimeUnit.SECONDS) shouldBe true
-            scansStarted.await(5, TimeUnit.SECONDS) shouldBe true
+            opened.await(5, TimeUnit.SECONDS) shouldBe true
         } finally {
             started.terminate()
         }
 
-        synchronized(closed) { closed.toList() } shouldContainExactly listOf(1, 2)
+        synchronized(lifecycle) { lifecycle.toList() } shouldContainExactly listOf(
+            "opened" to 1,
+            "closed" to 1,
+            "opened" to 2,
+            "closed" to 2,
+        )
     }
 
     @Test
-    fun worker_cleanup_failure_marks_the_slice_failed() {
+    fun close_failure_marks_the_slice_failed() {
         val processStarted = CountDownLatch(1)
         val application = SlicedApplication(
             slice = { listOf("lan") },
-            process = {
-                processStarted.countDown()
-                CountDownLatch(1).await()
+            open = {
+                worker(
+                    process = {
+                        processStarted.countDown()
+                        CountDownLatch(1).await()
+                    },
+                    close = { throw IllegalStateException("cleanup failed") },
+                )
             },
-            finalize = { throw IllegalStateException("cleanup failed") },
         )
 
         val started = application.start()
@@ -407,8 +460,7 @@ class SlicedApplicationTest : AbstractIntegrationTest() {
             logger.info("a")
             val application = SlicedApplication(
                 slice = Slices("foo", "bar"),
-                process = { 40.milliseconds.wait() },
-                finalize = { logger.info("Finalizing {}", it) },
+                open = { worker { 40.milliseconds.wait() } },
             )
             logger.info("c")
 
@@ -438,9 +490,9 @@ private data class Slices<T>(
 
 private class Invocations<T> : MutableList<Invocations.Invocation<T>> by Collections.synchronizedList(mutableListOf()) {
 
-    fun started(slice: T): Boolean = this.add(Invocation.STARTED(slice))
+    fun opened(slice: T): Boolean = this.add(Invocation.OPENED(slice))
     fun processed(slice: T): Boolean = this.add(Invocation.PROCESSED(slice))
-    fun finalized(slice: T): Boolean = this.add(Invocation.FINALIZED(slice))
+    fun closed(slice: T): Boolean = this.add(Invocation.CLOSED(slice))
 
     val keys: Set<T> get() = this.map { it.slice }.toSet()
     operator fun get(slice: T): List<Invocation<T>> = this.filter { it.slice == slice }
@@ -448,12 +500,20 @@ private class Invocations<T> : MutableList<Invocations.Invocation<T>> by Collect
     override fun toString(): String = this.joinToString(", ", "(", ")")
 
     sealed class Invocation<T>(open val slice: T, val thread: Thread) {
-        data class STARTED<T>(override val slice: T) : Invocation<T>(slice, Thread.currentThread())
+        data class OPENED<T>(override val slice: T) : Invocation<T>(slice, Thread.currentThread())
         data class PROCESSED<T>(override val slice: T) : Invocation<T>(slice, Thread.currentThread())
-        data class FINALIZED<T>(override val slice: T) : Invocation<T>(slice, Thread.currentThread())
+        data class CLOSED<T>(override val slice: T) : Invocation<T>(slice, Thread.currentThread())
 
         override fun toString(): String = "$slice ${this::class.simpleName?.lowercase()} by ${thread.name}"
     }
+}
+
+private fun worker(
+    process: () -> Unit = {},
+    close: () -> Unit = {},
+): SliceWorker = object : SliceWorker {
+    override fun process() = process()
+    override fun close() = close()
 }
 
 @Suppress("NOTHING_TO_INLINE")
