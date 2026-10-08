@@ -106,6 +106,7 @@ kotlin {
                 implementation("dev.fritz2:core:$fritz2Version")
 
                 implementation(npm("mqtt", "5.16.0")) { because("MQTT client for the browser; imported as mqtt/dist/mqtt.esm") }
+                implementation(npm("ipaddr.js", "2.5.0"))
 
                 // tailwind
                 implementation(npm("tailwindcss", "^3.4")) { because("low-level CSS classes") }

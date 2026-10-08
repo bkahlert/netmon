@@ -16,6 +16,72 @@ import kotlin.test.Test
 class IPTest {
 
     @Test
+    fun zero_prefix_addresses() = runTest {
+        forAll(
+            row("::", ByteArray(16)),
+            row("::1", byteArrayOf(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1)),
+            row("fe80::1", byteArrayOf(-2, -128, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1)),
+        ) { text, expected ->
+            val result = IP.of(text)
+            result should {
+                it::class shouldBe IPv6::class
+                it.bytes.size shouldBe 16
+                it.bytes shouldBe expected
+            }
+        }
+    }
+
+    @Test
+    fun mixed_mapped_address() {
+        val result = IP.of("::ffff:192.168.0.1")
+        result should {
+            it shouldBe IP.of("192.168.0.1")
+            it::class shouldBe IPv4::class
+            it.bytes shouldBe byteArrayOf(-64, -88, 0, 1)
+        }
+    }
+
+    @Test
+    fun mapped_cidr() {
+        val result = Cidr.parse("::ffff:192.168.0.1/128")
+        result should {
+            it.ip shouldBe IP.of("192.168.0.1")
+            it.mask shouldBe 32
+            it.toString() shouldBe "192.168.0.1/32"
+            it.filenameString shouldBe "192-168-0-1_32"
+        }
+    }
+
+    @Test
+    fun codec_round_trips() = runTest {
+        forAll(
+            row("::", "::", "--"),
+            row("::1", "::1", "--1"),
+            row("fe80::1", "fe80::1", "fe80--1"),
+            row("::ffff:192.168.0.1", "192.168.0.1", "192-168-0-1"),
+            row("::ffff:c0a8:0001", "192.168.0.1", "192-168-0-1"),
+            row("2001:db8::192.168.0.1", "2001:db8::c0a8:1", "2001-db8--c0a8-1"),
+            row("2001:0:0:1:0:0:2:3", "2001::1:0:0:2:3", "2001--1-0-0-2-3"),
+            row("2001:db8:1:0:2:3:4:5", "2001:db8:1::2:3:4:5", "2001-db8-1--2-3-4-5"),
+            row("ffff:8000:abcd:1:2:3:4:ff", "ffff:8000:abcd:1:2:3:4:ff", "ffff-8000-abcd-1-2-3-4-ff"),
+        ) { input, expectedText, expectedFilename ->
+            val result = IP.of(input)
+            result should {
+                it.toString() shouldBe expectedText
+                it.filenameString shouldBe expectedFilename
+            }
+            val fromBytes = IP.of(result.bytes)
+            val fromText = IP.of(result.toString())
+            val json = JsonFormat.encodeToString(IPSerializer, result)
+            val fromJson = JsonFormat.decodeFromString(IPSerializer, json)
+            fromBytes shouldBe result
+            fromText shouldBe result
+            json shouldBe "\"$expectedText\""
+            fromJson shouldBe result
+        }
+    }
+
+    @Test
     fun instantiation() = runTest {
         forAll(
             row("192.168.0.1", IP.of("192.168.0.1"), IPv4::class),
