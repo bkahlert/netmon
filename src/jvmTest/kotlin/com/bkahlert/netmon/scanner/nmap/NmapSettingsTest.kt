@@ -1,5 +1,6 @@
 package com.bkahlert.netmon.scanner.nmap
 
+import com.bkahlert.netmon.scanner.support.cache.SystemLocations
 import com.bkahlert.netmon.support.config.withTestConfig
 import io.kotest.assertions.throwables.shouldThrowAny
 import io.kotest.data.forAll
@@ -11,6 +12,15 @@ import java.nio.file.Paths
 import kotlin.test.Test
 
 class NmapSettingsTest {
+
+    @Test
+    fun data_dir_defaults_to_application_cache() = runTest {
+        withTestConfig {
+            val result = NmapSettings.dataDir
+
+            result shouldBe SystemLocations.Cache.resolve("com.bkahlert.netmon/nmap")
+        }
+    }
 
     @Test
     fun privileged() = runTest {

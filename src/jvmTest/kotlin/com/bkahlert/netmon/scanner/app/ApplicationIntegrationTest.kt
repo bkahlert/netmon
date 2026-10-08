@@ -48,6 +48,7 @@ class ApplicationIntegrationTest : AbstractIntegrationTest() {
                 environment()["BROKER_PORT"] = mqttContainer.firstMappedPort.toString()
                 environment()["DEBUG"] = "*.netmon*,-*mdns*"
                 environment()["NMAP_PRIVILEGED"] = "false"
+                environment()["NMAP_DATA_DIR"] = workingDirectory.resolve("nmap").toString()
                 environment()["SCANNER_PAUSE_DURATION"] = "PT1S"
                 environment()["PATH"] = "$nmapBin${File.pathSeparator}${environment()["PATH"].orEmpty()}"
             }
@@ -71,7 +72,9 @@ class ApplicationIntegrationTest : AbstractIntegrationTest() {
             it.forAny { (_, message) -> message.shouldContain("Configuration: ") }
             it.forAny { (_, message) -> message.shouldContain("Settings: ") }
             it.forAny { (_, message) -> message shouldMatch Regex("""Interface addresses found: \S+:::1(?:%\S+)?/128""") }
-            it.forAny { (_, message) -> message.shouldContain("Provisioned file=nmap-mac-prefixes at path=./nmap/nmap-mac-prefixes") }
+            it.forAny { (_, message) ->
+                message.shouldContain("Provisioned file=nmap-mac-prefixes at path=${workingDirectory.resolve("nmap/nmap-mac-prefixes")}")
+            }
             it.forAny { (_, message) -> message.shouldContain("host(s) completed and published") }
             it.forAny { (_, message) -> message.shouldContain("Stopped scanning") }
             it.last().message shouldMatch Regex("Terminated SlicedApplication\\(state=Terminated, .*, failed=\\[]\\)")

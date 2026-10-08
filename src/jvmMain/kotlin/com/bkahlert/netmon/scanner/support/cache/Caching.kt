@@ -55,6 +55,9 @@ object SystemLocations {
             Temp
         }
     }
+
+    /** The cache directory for Netmon. */
+    val NetmonCache: Path by lazy { Cache.resolve("com.bkahlert.netmon").createDirectories() }
 }
 
 private val logger by SLF4J
