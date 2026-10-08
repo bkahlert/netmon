@@ -47,7 +47,6 @@ import java.net.InterfaceAddress
 import java.net.http.HttpClient
 import java.nio.file.Paths
 import java.time.Duration
-import java.util.concurrent.ConcurrentHashMap
 import kotlin.system.exitProcess
 import kotlin.time.Clock
 import com.bkahlert.netmon.contract.Event
@@ -128,12 +127,10 @@ class Application(
             Runtime.getRuntime().addShutdownHook(shutdownHook)
             shutdownHookRegistered = true
 
-            val sessions = ConcurrentHashMap<Pair<InterfaceAddress, String>, NetworkSession>()
             val application = SlicedApplication(
                 slice = namedInterfaceAddresses,
-                start = { slice ->
-                    sessions[slice] = NetworkSession.open { sessionResources ->
-                        val (interfaceAddress, interfaceName) = slice
+                open = { (interfaceAddress, interfaceName) ->
+                    val session = NetworkSession.open { sessionResources ->
                         val jmDns = sessionResources.own(JmDNS(interfaceAddress.address, hostname))
                         val serviceInfoCache = sessionResources.own(JmDNSServiceInfoCache(jmDns, serviceTypes = emptyArray()))
                         val ssdpCache = SsdpCache(DescriptionFetcher(lanHttp))
@@ -177,16 +174,18 @@ class Application(
                             onChange = eventPublisher::publishChange,
                         )
                     }
-                },
-                process = { slice ->
-                    sessions.getValue(slice).scan()
-                    Thread.sleep(ScannerSettings.pauseDuration.inWholeMilliseconds)
-                },
-                finalize = { (interfaceAddress, interfaceName) ->
-                    sessions.remove(interfaceAddress to interfaceName)?.also {
-                        it.close()
-                        logger.info("Stopped scanning {}:{} and corresponding cache", interfaceName, interfaceAddress.cidr)
-                    } ?: logger.warn("Stopped scanning {}:{} but no corresponding cache found", interfaceName, interfaceAddress.cidr)
+
+                    object : SliceWorker by session {
+                        override fun process() {
+                            session.process()
+                            Thread.sleep(ScannerSettings.pauseDuration.inWholeMilliseconds)
+                        }
+
+                        override fun close() {
+                            session.close()
+                            logger.info("Stopped scanning {}:{} and corresponding cache", interfaceName, interfaceAddress.cidr)
+                        }
+                    }
                 },
             )
 

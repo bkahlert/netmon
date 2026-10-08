@@ -5,9 +5,9 @@ import com.bkahlert.netmon.scanner.scan.NetmonScanner
 internal class NetworkSession private constructor(
     private val scanner: NetmonScanner,
     private val resources: NetworkResources,
-) : AutoCloseable {
+) : SliceWorker {
 
-    fun scan() = scanner.scan()
+    override fun process() = scanner.scan()
 
     override fun close() = resources.close()
 

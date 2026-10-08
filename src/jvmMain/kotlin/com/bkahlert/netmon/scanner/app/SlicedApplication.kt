@@ -9,25 +9,34 @@ import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 
 /**
- * An application that starts a worker for each slice returned by
- * the specified [slices] with each worker calling
- * the specified [process] repeatedly until
- * either [terminate] is called or the virtual machine is shut down.
+ * A worker that owns a slice's processing lifecycle.
  *
- * The [slices] is called in the specified [updateInterval]
- * to update the slices to be processed.
+ * [process] is called repeatedly until processing stops. [close] is called
+ * once after processing stops, whether processing ended by interruption or by
+ * failure.
+ */
+interface SliceWorker : AutoCloseable {
+    fun process()
+}
+
+/**
+ * An application that starts one [SliceWorker] per slice returned by [slice].
+ *
+ * Each worker is opened on its slice thread by [open], [SliceWorker.process] is
+ * called repeatedly until [terminate] is called or the virtual machine shuts
+ * down, and [SliceWorker.close] is called once after processing stops.
+ *
+ * [slice] is called every [updateInterval] to update the slices to process.
  */
 class SlicedApplication<T>(
     slice: () -> Iterable<T>,
     private val updateInterval: Duration = 5.seconds,
-    start: (T) -> Unit = {},
-    finalize: (T) -> Unit = {},
-    private val process: (T) -> Unit,
+    private val open: (T) -> SliceWorker,
 ) {
 
     private val logger: Logger by SLF4J
     private val state: AtomicReference<SlicedApplicationState> =
-        AtomicReference(SlicedApplicationState.Initial(logger, slice, updateInterval, start, process, finalize))
+        AtomicReference(SlicedApplicationState.Initial(logger, slice, updateInterval, open))
 
     val started: Boolean
         get() = state.get() is SlicedApplicationState.Started<*>
@@ -59,13 +68,11 @@ sealed interface SlicedApplicationState {
         private val logger: Logger,
         private val slice: () -> Iterable<T>,
         private val updateInterval: Duration = 5.seconds,
-        private val start: (T) -> Unit,
-        private val process: (T) -> Unit,
-        private val finalize: (T) -> Unit,
+        private val open: (T) -> SliceWorker,
     ) : SlicedApplicationState {
         fun start(): Started<T> {
             logger.debug("Starting {}...", this)
-            return Started(logger, slice, updateInterval, start, process, finalize).also {
+            return Started(logger, slice, updateInterval, open).also {
                 Thread.sleep(10) // give the manager a chance to have the workers updated and be contained in the start log
                 logger.info("Started {}", it)
             }
@@ -79,9 +86,7 @@ sealed interface SlicedApplicationState {
         private val logger: Logger,
         private val slice: () -> Iterable<T>,
         private val updateInterval: Duration = 5.seconds,
-        private val start: (T) -> Unit,
-        private val process: (T) -> Unit,
-        private val finalize: (T) -> Unit,
+        private val open: (T) -> SliceWorker,
     ) : SlicedApplicationState {
 
         private var workers: Map<T, Worker> = emptyMap()
@@ -154,14 +159,15 @@ sealed interface SlicedApplicationState {
             private val value: T,
         ) : Thread("worker:$value") {
             override fun run() {
+                var worker: SliceWorker? = null
                 var failure: Throwable? = null
                 try {
-                    start.invoke(value)
+                    worker = open.invoke(value)
                     logger.info("Started {}", toString())
 
                     while (!interrupted()) {
                         logger.debug("Executing {}...", toString())
-                        process.invoke(value)
+                        worker.process()
                         logger.info("Executed {}", toString())
                     }
                 } catch (e: InterruptedException) {
@@ -170,13 +176,13 @@ sealed interface SlicedApplicationState {
                 }
 
                 try {
-                    finalize.invoke(value)
-                } catch (finalizeFailure: Throwable) {
+                    worker?.close()
+                } catch (closeFailure: Throwable) {
                     val workerFailure = failure
                     if (workerFailure == null) {
-                        failure = finalizeFailure
-                    } else if (workerFailure !== finalizeFailure) {
-                        workerFailure.addSuppressed(finalizeFailure)
+                        failure = closeFailure
+                    } else if (workerFailure !== closeFailure) {
+                        workerFailure.addSuppressed(closeFailure)
                     }
                 }
 
