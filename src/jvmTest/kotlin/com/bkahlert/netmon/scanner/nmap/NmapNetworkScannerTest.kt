@@ -1,10 +1,10 @@
 package com.bkahlert.netmon.scanner.nmap
 
 import com.bkahlert.netmon.scanner.support.cache.FileCache
-import com.bkahlert.netmon.support.test.createTempDirectory
 import com.bkahlert.netmon.scanner.support.logging.LoggingSettings
 import com.bkahlert.netmon.scanner.support.net.SystemInterfaceAddressResolver
 import com.bkahlert.netmon.scanner.support.net.cidr
+import com.bkahlert.netmon.support.test.createTempDirectory
 import io.kotest.inspectors.forAll
 import io.kotest.inspectors.forAtLeastOne
 import io.kotest.matchers.collections.shouldNotBeEmpty
