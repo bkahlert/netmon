@@ -37,7 +37,7 @@ kotlin {
         @OptIn(ExperimentalKotlinGradlePluginApi::class)
         binaries {
             executable {
-                mainClass.set("com.bkahlert.netmon.Application")
+                mainClass.set("com.bkahlert.netmon.scanner.app.Application")
             }
         }
     }
@@ -172,7 +172,7 @@ tasks {
     named<ShadowJar>("shadowJar") {
         archiveBaseName.set("netmon")
         archiveVersion.set("")
-        manifest { attributes["Main-Class"] = "com.bkahlert.netmon.Application" }
+        manifest { attributes["Main-Class"] = "com.bkahlert.netmon.scanner.app.Application" }
         mergeServiceFiles()
     }
 

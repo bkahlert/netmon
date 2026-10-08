@@ -2,8 +2,7 @@
 The soak and the apt probe register their options and markers here; both are opt-in and skipped on podman."""
 import pytest
 
-import booted
-import vm_device
+from netmon_dev.system import booted, vm_device
 
 BOOTED_ONLY = ("soak", "apt")
 
@@ -21,6 +20,7 @@ def pytest_configure(config):
     config.addinivalue_line("markers", "soak: samples both units' memory for minutes on a booted VM or device (vm, ssh), opt-in")
     config.addinivalue_line("markers", "layout: loads the built page in Playwright's WebKit against a scripted broker, opt-in (make test-layout)")
     config.addinivalue_line("markers", "apt: runs apt next to the live stack on a booted VM or device (vm, ssh), opt-in")
+    config.addinivalue_line("markers", "requires_webkit: needs Playwright's WebKit installed before collection")
     if config.getoption("--target") == "vm" and not config.getoption("--device"):
         config.option.device = str(vm_device.write())
 
@@ -28,10 +28,10 @@ def pytest_configure(config):
 # After the -m deselection, so a run without the display test does not need the browser.
 @pytest.hookimpl(trylast=True)
 def pytest_collection_modifyitems(config, items):
+    if any(item.get_closest_marker("requires_webkit") for item in items) and not booted.webkit_installed():
+        raise pytest.UsageError("Playwright's WebKit is not installed; run `make browser`")
     if config.getoption("--target") == "podman":
         for item in items:
             if any(marker in item.keywords for marker in BOOTED_ONLY):
                 item.add_marker(pytest.mark.skip(reason="needs a booted system"))
         return
-    if any(item.path.name in ("test_display.py", "test_layout.py") for item in items) and not booted.webkit_installed():
-        raise pytest.UsageError("Playwright's WebKit is not installed; run `make browser`")
