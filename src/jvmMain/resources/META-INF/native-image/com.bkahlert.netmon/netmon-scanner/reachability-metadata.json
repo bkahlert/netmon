@@ -6,7 +6,7 @@
     { "type": "org.eclipse.paho.client.mqttv3.internal.ResourceBundleCatalog", "methods": [{ "name": "<init>", "parameterTypes": [] }] }
   ],
   "resources": [
-    { "glob": "assets/device-model-codes.json" },
+    { "glob": "assets/model-catalog.json" },
     { "glob": "simplelogger.properties" },
     { "glob": "version.properties" }
   ],

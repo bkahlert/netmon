@@ -37,7 +37,7 @@ kotlin {
         @OptIn(ExperimentalKotlinGradlePluginApi::class)
         binaries {
             executable {
-                mainClass.set("com.bkahlert.netmon.Application")
+                mainClass.set("com.bkahlert.netmon.scanner.app.Application")
             }
         }
     }
@@ -158,7 +158,7 @@ tasks.named<Test>("jvmTest") {
             excludeTestsMatching("*IntegrationTest")
             excludeTestsMatching("*NmapNetworkScannerTest.scan*")
             // Thread timing under a loaded CI runner; passes locally and failed once in a release run.
-            excludeTestsMatching("*SlicedApplicationTest")
+            excludeTestsMatching("*SlicedApplicationTest.wait_for_workers")
         }
     }
 }
@@ -172,7 +172,7 @@ tasks {
     named<ShadowJar>("shadowJar") {
         archiveBaseName.set("netmon")
         archiveVersion.set("")
-        manifest { attributes["Main-Class"] = "com.bkahlert.netmon.Application" }
+        manifest { attributes["Main-Class"] = "com.bkahlert.netmon.scanner.app.Application" }
         mergeServiceFiles()
     }
 

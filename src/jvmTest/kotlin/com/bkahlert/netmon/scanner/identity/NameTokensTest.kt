@@ -1,0 +1,68 @@
+package com.bkahlert.netmon.scanner.identity
+
+import com.bkahlert.netmon.contract.Kind
+import io.kotest.data.forAll
+import io.kotest.data.row
+import io.kotest.matchers.collections.shouldBeEmpty
+import io.kotest.matchers.shouldBe
+import kotlinx.coroutines.test.runTest
+import kotlin.test.Test
+
+class NameTokensTest {
+
+    @Test
+    fun a_brand_prefix_names_vendor_and_kind() = runTest {
+        forAll(
+            row("LEDVANCE-Hallway-TV", "Ledvance", Kind.LAMP),
+            row("RingIntercom-0a", "Ring", Kind.DOOR_BELL),
+            row("Sonoff-Plug-1", "Sonoff", Kind.SOCKET),
+            row("tado-bridge-1", "tado", Kind.HUB),
+            row("FYTA-Hub-1", "FYTA", Kind.HUB),
+            row("net-ac-0001", "Midea", Kind.AIR_CONDITIONER),
+            row("Nanoleaf-Panels", "Nanoleaf", Kind.LAMP),
+            row("Sonos-OneSL", "Sonos", Kind.SPEAKER),
+            row("Philips-hue-bridge-1", "Signify", Kind.HUB),
+            row("zhimi-airpurifier-v7", "Xiaomi", Kind.AIR_PURIFIER),
+        ) { name, vendor, kind ->
+            val result = NameTokens.matches(name).first()
+
+            result.vendor shouldBe vendor
+            result.kind shouldBe kind
+        }
+    }
+
+    @Test
+    fun a_product_word_names_only_the_kind() = runTest {
+        forAll(
+            row("espressif", Kind.CIRCUIT_BOARD),
+            row("ESP_1A2B3C", Kind.CIRCUIT_BOARD),
+            row("iPhone", Kind.SMARTPHONE),
+            row("Casey's iPad", Kind.TABLET),
+            row("macbookpro-a", Kind.LAPTOP),
+            row("pihole-main", Kind.COMPUTER),
+            row("homeassist-vm", Kind.COMPUTER),
+            row("LGwebOSTV-2", Kind.TELEVISION),
+            row("tv000000000001", Kind.TELEVISION),
+            row("Indoorcam", Kind.CAMERA),
+            row("NPI000009", Kind.PRINTER),
+            row("Apple-HomePod", Kind.SPEAKER),
+        ) { name, kind ->
+            val result = NameTokens.matches(name).first()
+
+            result.vendor shouldBe null
+            result.kind shouldBe kind
+        }
+    }
+
+    @Test
+    fun a_location_word_like_tv_in_a_plug_name_does_not_make_a_television() {
+        val result = NameTokens.matches("LEDVANCE-Hallway-TV")
+
+        result.map { it.kind } shouldBe listOf(Kind.LAMP)
+    }
+
+    @Test
+    fun an_unknown_name_matches_nothing() {
+        NameTokens.matches("Example").shouldBeEmpty()
+    }
+}

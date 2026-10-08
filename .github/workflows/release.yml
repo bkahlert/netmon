@@ -34,9 +34,11 @@ jobs:
         with: { go-version-file: packages/netmon-metrics/src/go.mod, cache-dependency-path: packages/netmon-metrics/src/go.sum }
       - run: uv sync --frozen
       - run: make build
+      - run: make browser BROWSER_ARGS=--with-deps
       - run: make test-jvm
       - run: make test-metrics
       - run: make test-tier0
+      - run: make test-layout
       - run: make test-tier1
       - name: Check out the published repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1

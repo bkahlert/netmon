@@ -1,13 +1,14 @@
 SHELL := /bin/bash
 .DEFAULT_GOAL := help
 # Gradle's output directory is called build, so the targets are declared phony.
-.PHONY: help gradle metrics build browser test-jvm test-js test-metrics test-layout test-preview test-tier0 test-tier1 test-tier2 soak apt-probe bench test test-all vm-device vm-prepare vm broker preview preview-browser preview-vm preview-board deploy device-model-codes device-icons clean release
+.PHONY: help gradle metrics build browser test-jvm test-js test-metrics test-layout test-gradle test-preview test-tier0 test-tier1 test-tier2 soak apt-probe bench test test-all vm-device vm-prepare vm broker preview preview-browser preview-vm preview-board deploy device-model-codes device-icons clean release
 
 PLATFORM ?= linux/arm64
 TARGET ?=
 QEMU_ACCEL ?= hvf
 BROWSER_ARGS ?=
 UV := uv run --frozen
+UV_PYTHON := PYTHONPATH=.:tools $(UV) python
 GRADLE_ARGS ?= --no-daemon --console=plain
 
 help: ## list targets
@@ -64,14 +65,19 @@ apt-probe: ## apt update and a reinstall next to the live stack, with apt's peak
 	@$(UV) pytest -m apt $(if $(TARGET),--target=ssh --target-uri=$(TARGET),--target=vm --qemu-accel=$(QEMU_ACCEL)) $(APT_ARGS)
 
 bench: ## the display's scripted benchmark on a board: TARGET=pi@host VARIANTS="ref ... ." (default .) RUNS=1
-	@$(UV) python tests/bench.py
+	@$(UV_PYTHON) -m netmon_dev.bench
 
-test: test-jvm test-js test-metrics test-tier0 test-tier1 ## JVM, JS and Go unit tests, tiers 0 and 1, what CI runs
+test-gradle: ## the Gradle-backed checks in a safe order for one project directory
+	@$(MAKE) test-jvm
+	@$(MAKE) test-js
+	@$(MAKE) test-layout
+
+test: test-gradle test-metrics test-tier0 test-tier1 ## JVM, JS and Go unit tests, tiers 0 and 1, what CI runs
 
 test-all: test test-tier2 ## everything, what make release runs
 
 vm-device: ## render the sample device file for the VM into dist/vm-device
-	@$(UV) python tests/vm_device.py
+	@$(UV_PYTHON) -m netmon_dev.system.vm_device
 
 vm-prepare: ## build and cache the tier-2 base image under ~/.cache/pihero
 	@$(UV) python -m pihero_testkit.prepare
@@ -80,16 +86,16 @@ vm: vm-device ## boot the tier-2 VM from the sample device file and keep it runn
 	@$(UV) python -m pihero_testkit.vm --keep --qemu-accel=$(QEMU_ACCEL) --device=dist/vm-device
 
 broker: ## run the preview's fake broker (Mosquitto with the fixture) until Ctrl-C (SCAN=14+39 sets the hosts)
-	@$(UV) python tests/preview_broker.py
+	@$(UV_PYTHON) -m netmon_dev.preview.broker
 
 preview-browser: ## the broker, the dev server and the page in a browser tab (BROKER=fake|HOST:PORT SCAN=14+39 INSPECT=Safari)
-	@$(UV) python tests/preview.py --on browser
+	@$(UV_PYTHON) -m netmon_dev.preview --on browser
 
 preview-vm: ## the broker, the dev server and the kiosk's WebKit in a VM window, its inspector in Safari (BROKER=fake|HOST:PORT SCAN=14+39 INSPECT=Safari)
-	@$(UV) python tests/preview.py --on vm
+	@$(UV_PYTHON) -m netmon_dev.preview --on vm
 
 preview-board: ## the broker, the dev server and the kiosk of a real Pi, its inspector in Safari (TARGET=pi@host BROKER=fake|board|HOST:PORT SCAN=14+39 INSPECT=Safari)
-	@$(UV) python tests/preview.py --on board
+	@$(UV_PYTHON) -m netmon_dev.preview --on board
 
 preview: preview-vm ## the same as preview-vm
 
@@ -97,11 +103,11 @@ deploy: build ## install the built packages on TARGET over SSH
 	@test -n "$(TARGET)" || { echo "usage: make deploy TARGET=pi@host"; exit 2; }
 	@$(UV) python -m pihero_testkit.deploy "$(TARGET)"
 
-device-model-codes: ## regenerate the model codes and symbols the display draws, from this Mac with device-icons
-	@$(UV) python tests/device_model_codes.py
+device-model-codes: ## regenerate scanner classification and display model assets from this Mac
+	@$(UV_PYTHON) -m netmon_dev.assets.device_model_codes
 
 device-icons: ## regenerate the kind and brand icons the display draws, from the Iconify API
-	@$(UV) python tests/device_icons.py
+	@$(UV_PYTHON) -m netmon_dev.assets.device_icons
 
 clean: ## remove build outputs
 	rm -rf dist packages/*/.build build
