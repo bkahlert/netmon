@@ -85,6 +85,22 @@ See [mqtt-contract.md](mqtt-contract.md) for the wire-level rules.
 
 ## Threading and resource ownership
 
+[SlicedApplication](../src/jvmMain/kotlin/com/bkahlert/netmon/scanner/app/SlicedApplication.kt)
+owns one root coroutine job, a manager coroutine, and one child job per active
+network slice. The manager reconciles slices between `delay(updateInterval)` calls.
+Its synchronous `start()`, `terminate()`, and `waitForTermination()` handles do not
+expose coroutines. Concurrent starts share one manager; shutdown callers share
+one final snapshot.
+
+Each worker's entire factory, processing, and closure lifetime runs inside
+`runInterruptible(Dispatchers.IO)`, on the same thread.
+Removing a slice cancels and joins its worker before opening replacements.
+A returning slice receives fresh resources.
+Factory, processing, supplier, or cleanup failures stop the whole application;
+cancellation alone does not mark a slice failed.
+Cleanup runs once, and its failure is suppressed onto a processing failure.
+Termination waits for all cleanup, including work that cannot be interrupted.
+
 One network session owns these per-slice resources:
 
 - JmDNS and the mDNS service cache
@@ -94,6 +110,11 @@ One network session owns these per-slice resources:
 
 The application owns the shared MQTT publisher, the bounded lockdownd probe,
 and the shared LAN HTTP client.
+The application owner stops and joins the worker manager before closing the
+publisher. Cancelling a worker blocked in
+[`CommandLine.exec()`](../src/jvmMain/kotlin/com/bkahlert/netmon/scanner/support/exec/CommandLine.kt)
+destroys and reaps the child, closes its streams, and joins both output drainers
+before worker cleanup returns.
 The scan loop waits on nmap, lockdownd, and MQTT acknowledgements only.
 
 ## Extending the scanner safely

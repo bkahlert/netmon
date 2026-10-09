@@ -1,10 +1,18 @@
 package com.bkahlert.netmon.scanner.app
 
 import com.bkahlert.netmon.scanner.support.logging.SLF4J
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
+import kotlinx.coroutines.job
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.runInterruptible
 import org.slf4j.Logger
 import java.util.Collections
-import java.util.concurrent.atomic.AtomicReference
-import kotlin.concurrent.thread
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 
@@ -22,11 +30,13 @@ interface SliceWorker : AutoCloseable {
 /**
  * An application that starts one [SliceWorker] per slice returned by [slice].
  *
- * Each worker is opened on its slice thread by [open], [SliceWorker.process] is
+ * Each worker is opened on an IO thread by [open], [SliceWorker.process] is
  * called repeatedly until [terminate] is called or the virtual machine shuts
  * down, and [SliceWorker.close] is called once after processing stops.
  *
+ * Factory, processing, and closure run on the same thread for each lifetime.
  * [slice] is called every [updateInterval] to update the slices to process.
+ * A supplier or worker failure stops all workers.
  */
 class SlicedApplication<T>(
     slice: () -> Iterable<T>,
@@ -35,31 +45,41 @@ class SlicedApplication<T>(
 ) {
 
     private val logger: Logger by SLF4J
-    private val state: AtomicReference<SlicedApplicationState> =
-        AtomicReference(SlicedApplicationState.Initial(logger, slice, updateInterval, open))
+    private val stateLock = Any()
+    private val initial = SlicedApplicationState.Initial(logger, slice, updateInterval, open)
+    private var startedState: SlicedApplicationState.Started<T>? = null
+    private var terminatedState: SlicedApplicationState.Terminated<T>? = null
 
     val started: Boolean
-        get() = state.get() is SlicedApplicationState.Started<*>
+        get() = synchronized(stateLock) { startedState != null && terminatedState == null }
     val terminated: Boolean
-        get() = state.get() is SlicedApplicationState.Terminated<*>
+        get() = synchronized(stateLock) { terminatedState != null }
 
-    @Suppress("UNCHECKED_CAST")
-    fun start(): SlicedApplicationState.Started<T> = state.updateAndGet { currentState ->
-        when (currentState) {
-            is SlicedApplicationState.Initial<*> -> currentState.start()
-            is SlicedApplicationState.Started<*> -> currentState.also { logger.warn("Already started {}", it) }
-            is SlicedApplicationState.Terminated<*> -> error("Already terminated $currentState")
-        }
-    } as SlicedApplicationState.Started<T>
+    /**
+     * Starts slice reconciliation, or returns the existing started handle.
+     * Concurrent calls share one worker manager.
+     * @throws IllegalStateException if the application has terminated.
+     */
+    fun start(): SlicedApplicationState.Started<T> = synchronized(stateLock) {
+        check(terminatedState == null) { "Already terminated $terminatedState" }
+        startedState ?: initial.start().also { startedState = it }
+    }
 
-    @Suppress("UNCHECKED_CAST")
-    fun terminate(): SlicedApplicationState.Terminated<T> = state.updateAndGet { currentState ->
-        when (currentState) {
-            is SlicedApplicationState.Initial<*> -> error("Can't terminate. Never started $currentState")
-            is SlicedApplicationState.Started<*> -> currentState.terminate()
-            is SlicedApplicationState.Terminated<*> -> currentState.also { logger.warn("Already terminated {}", it) }
+    /**
+     * Stops all workers and returns the shared final snapshot after cleanup.
+     * Waits for noninterruptible work to finish.
+     * @throws IllegalStateException if the application has never started.
+     */
+    fun terminate(): SlicedApplicationState.Terminated<T> {
+        val started = synchronized(stateLock) {
+            terminatedState?.let { return it }
+            checkNotNull(startedState) { "Can't terminate. Never started $initial" }
         }
-    } as SlicedApplicationState.Terminated<T>
+        val result = started.terminate()
+        return synchronized(stateLock) {
+            terminatedState ?: result.also { terminatedState = it }
+        }
+    }
 }
 
 sealed interface SlicedApplicationState {
@@ -73,7 +93,6 @@ sealed interface SlicedApplicationState {
         fun start(): Started<T> {
             logger.debug("Starting {}...", this)
             return Started(logger, slice, updateInterval, open).also {
-                Thread.sleep(10) // give the manager a chance to have the workers updated and be contained in the start log
                 logger.info("Started {}", it)
             }
         }
@@ -89,92 +108,86 @@ sealed interface SlicedApplicationState {
         private val open: (T) -> SliceWorker,
     ) : SlicedApplicationState {
 
-        private var workers: Map<T, Worker> = emptyMap()
+        private var workers: Map<T, Job> = emptyMap()
         private val failed = Collections.synchronizedSet(mutableSetOf<T>())
+        private val root = Job()
+        private val scope = CoroutineScope(root + Dispatchers.Default)
+        private val snapshotLock = Any()
+        private var snapshot: Terminated<T>? = null
 
-        private val manager = thread(name = "manager", start = false) {
-            while (!Thread.interrupted()) {
-                updateWorkers()
+        init {
+            scope.launch {
                 try {
-                    Thread.sleep(updateInterval.inWholeMilliseconds)
-                } catch (e: InterruptedException) {
-                    Thread.currentThread().interrupt()
+                    while (isActive) {
+                        updateWorkers()
+                        delay(updateInterval)
+                    }
+                } catch (_: CancellationException) {
+                } catch (failure: Throwable) {
+                    logger.error("Terminated slice manager due to failure", failure)
+                } finally {
+                    root.cancel()
                 }
             }
         }
 
+        /** Returns the shared final snapshot after the manager and all workers finish cleanup. */
         fun waitForTermination(): Terminated<T> {
             logger.info("Waiting for {} to terminate...", this)
-            manager.join()
-            workers.values.forEach(Started<T>.Worker::interrupt)
-            workers.values.forEach(Started<T>.Worker::join)
-            return Terminated(slices = workers.keys, failed = failed)
+            runBlocking { root.join() }
+            return synchronized(snapshotLock) {
+                snapshot ?: Terminated(
+                    slices = Collections.unmodifiableSet(workers.keys.toSet()),
+                    failed = Collections.unmodifiableSet(synchronized(failed) { failed.toSet() }),
+                ).also { snapshot = it }
+            }
         }
 
-        private fun updateWorkers() {
+        private suspend fun updateWorkers() {
             logger.debug("Updating workers...")
-            val requiredSlices: Iterable<T> = slice.invoke()
-            val currentSlices: Set<T> = workers.keys
-            val evictedSlices: Set<T> = workers.filterKeys { it !in requiredSlices }
-                .also { toBeEvicted ->
-                    if (toBeEvicted.isNotEmpty()) {
-                        logger.debug("Evicting {}...", toBeEvicted.values)
-                        toBeEvicted.values.forEach(Started<T>.Worker::interrupt)
-                        toBeEvicted.values.forEach(Started<T>.Worker::join)
-                        logger.info("Evicted {}", toBeEvicted.values)
-                    }
+            val requiredSlices = slice().toSet()
+            val removed = workers.filterKeys { it !in requiredSlices }
+            removed.values.forEach { it.cancel() }
+            removed.values.forEach { it.join() }
+            workers = workers - removed.keys
+            for (value in requiredSlices - workers.keys) {
+                val job = scope.launch {
+                    val workerJob = coroutineContext.job
+                    runInterruptible(Dispatchers.IO) { runWorker(value, workerJob) }
                 }
-                .keys
-
-            val startedWorkers: Map<T, Worker> = requiredSlices.minus(currentSlices).associateWith { Worker(it).apply { start() } }
-
-            workers = workers - evictedSlices + startedWorkers
-            logger.debug(
-                "Updated workers to started={}, existing={}, evicted={}",
-                startedWorkers.keys,
-                workers.keys - startedWorkers.keys,
-                evictedSlices,
-            )
+                workers = workers + (value to job)
+            }
         }
 
+        /** Stops all workers and waits for their cleanup before returning the shared final snapshot. */
         fun terminate(): Terminated<T> {
             logger.debug("Terminating {}...", this)
-            manager.interrupt()
-            manager.join()
-            if (workers.values.isNotEmpty()) {
-                workers.values.forEach(Started<T>.Worker::interrupt)
-                workers.values.forEach(Started<T>.Worker::join)
-            }
-            return Terminated(slices = workers.keys, failed = failed).also { logger.info("Terminated {}", it) }
+            root.cancel()
+            return waitForTermination().also { logger.info("Terminated {}", it) }
         }
 
         override fun toString(): String =
-            "${SlicedApplication::class.simpleName}(state=${this::class.simpleName}, updateInterval=$updateInterval, slices=${workers.keys})"
+            "${SlicedApplication::class.simpleName}(state=${this::class.simpleName}, updateInterval=$updateInterval)"
 
-        init {
-            manager.start()
-        }
-
-        inner class Worker(
-            private val value: T,
-        ) : Thread("worker:$value") {
-            override fun run() {
-                var worker: SliceWorker? = null
-                var failure: Throwable? = null
-                try {
-                    worker = open.invoke(value)
-                    logger.info("Started {}", toString())
-
-                    while (!interrupted()) {
-                        logger.debug("Executing {}...", toString())
-                        worker.process()
-                        logger.info("Executed {}", toString())
-                    }
-                } catch (e: InterruptedException) {
-                } catch (e: Throwable) {
-                    failure = e
+        private fun runWorker(value: T, job: Job) {
+            var worker: SliceWorker? = null
+            var failure: Throwable? = null
+            try {
+                worker = open(value)
+                logger.info("Started worker for {}", value)
+                while (job.isActive) {
+                    if (Thread.currentThread().isInterrupted) throw InterruptedException("Worker thread interrupted")
+                    worker.process()
                 }
-
+            } catch (workerFailure: InterruptedException) {
+                if (!job.isCancelled) failure = workerFailure
+            } catch (workerFailure: CancellationException) {
+                if (!job.isCancelled) failure = workerFailure
+            } catch (workerFailure: Throwable) {
+                failure = workerFailure
+            } finally {
+                // Noninterruptible processing can return with the cancellation interrupt still set.
+                Thread.interrupted()
                 try {
                     worker?.close()
                 } catch (closeFailure: Throwable) {
@@ -189,14 +202,12 @@ sealed interface SlicedApplicationState {
                 val workerFailure = failure
                 if (workerFailure != null) {
                     failed.add(value)
-                    logger.error("Terminated {} due to failure", toString(), workerFailure)
-                    manager.interrupt()
+                    logger.error("Terminated worker for {} due to failure", value, workerFailure)
+                    root.cancel()
                 } else {
-                    logger.info("Terminated {} due to interruption", toString())
+                    logger.info("Terminated worker for {} due to interruption", value)
                 }
             }
-
-            override fun toString(): String = "${this::class.simpleName}($value)"
         }
     }
 
