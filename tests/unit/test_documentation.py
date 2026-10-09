@@ -87,17 +87,6 @@ class TestMaintainerDocumentation:
         for link in ("architecture.md", "scanner.md", "display.md", "mqtt-contract.md", "open-issues.md"):
             assert f"]({link})" in how_it_works
 
-    def test_historical_links_are_labeled_as_historical(self):
-        violations = []
-        for path in CURRENT_DOCS:
-            for line_number, line in enumerate(path.read_text().splitlines(), start=1):
-                for match in LINK.finditer(line):
-                    target = match.group(1)
-                    if "docs/superpowers/" in target and "historical" not in line.lower():
-                        violations.append(f"{path.relative_to(ROOT)}:{line_number}:{target}")
-
-        assert not violations, violations
-
     def test_local_links_in_current_docs_resolve(self):
         broken = []
         for document in CURRENT_DOCS:

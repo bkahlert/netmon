@@ -13,11 +13,3 @@ Use the current maintainer pages below for the active ownership split.
   display extension points.
 - [MQTT contract](mqtt-contract.md): scan, host, and metrics topics, payload compatibility, QoS, and retention.
 - [Open issues](open-issues.md): what is still wrong, missing, or risky.
-
-## Historical background
-
-- [Historical architecture design](superpowers/specs/2026-10-06-architecture-cohesion-design.md)
-- [Historical architecture plan](superpowers/plans/2026-10-06-architecture-cohesion.md)
-
-The historical documents explain why the split happened.
-They are not the current maintenance instructions.
