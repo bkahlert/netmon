@@ -219,9 +219,11 @@ A protocol-factory gate accepted only `upnp:rootdevice`, required a literal
 HTTP `LOCATION` host equal to the sender, and accepted goodbyes only from a
 registered root's sender. A registry subclass capped roots at 512.
 It reused `DeviceDescription.kt`.
-Twelve candidate JVM fixtures passed on JDK 17 in an isolated network namespace.
-They covered concurrent same-URL retrieval by two sessions,
-adversarial locations and bodies, expiry, renewal, the cap, and shutdown.
+The 12 original candidate JVM fixtures passed on JDK 17 in an isolated
+network namespace. They covered concurrent same-URL retrieval by two
+sessions, adversarial locations and bodies, expiry, renewal, the cap, and
+shutdown. A thirteenth fixture added in FIXROUND2 covers known extra headers
+on root notifications; all 13 passed in the isolated Podman namespace.
 Using per-session locks made two cross-session fixtures fail.
 
 The line gate compares the files a candidate replaces:
@@ -231,22 +233,44 @@ totaling **237 physical lines**.
 [DeviceDescription.kt](../../../src/jvmMain/kotlin/com/bkahlert/netmon/scanner/discovery/ssdp/DeviceDescription.kt)
 (62 lines) is reused by both.
 The candidate needs 212 Kotlin lines plus 5 moved lookup lines.
-jUPnP also instantiates header classes reflectively, so a native image
-needs one metadata line per reachable header class.
-Real SSDP traffic reaches **21** classes through `NT`, `USN`, `ST`, `NTS`,
-`HOST`, `SERVER`, `LOCATION`, `CACHE-CONTROL`, `USER-AGENT`,
-`CONTENT-TYPE`, `MAN`, `MX`, and `EXT`.
-The candidate totals **238 lines, one more than the baseline**.
-Registering only the 9 classes the fixtures reached gives 226 lines,
-but every other root, device, service, or M-SEARCH header would log an
-instantiation error. That is not an acceptable production trade.
+jUPnP's `UpnpHeaders.parseHeaders()` is lazy, but it parses every retained
+known header after a typed getter runs. `UpnpHeader.newInstance()` then tries
+the header type's constructors reflectively. The candidate's raw gate runs
+first, but it accepts root notifications with extra known header values.
+Their later typed parsing can therefore reach classes outside the ordinary
+root-alive and search-response fixtures.
 
-Native build and UDP/HTTP/expiry/shutdown execution are **NOT RUN**.
+FIXROUND2 sent two root `NOTIFY` datagrams through the actual adapter in an
+isolated Podman namespace. Both retained valid root-alive fields, fit the
+release's 640-byte datagram limit, and added adversarial recognized headers
+and values. The test passed and GraalVM's native-image agent recorded **21**
+UPnP header constructors. The trace includes the 9 classes seen by the
+ordinary fixtures plus `ContentTypeHeader`, `DeviceTypeHeader`,
+`DeviceUSNHeader`, `MANHeader`, `MXHeader`, `NTEventHeader`,
+`ServiceTypeHeader`, `ServiceUSNHeader`, `UDADeviceTypeHeader`,
+`UDAServiceTypeHeader`, `UDNHeader`, and `UserAgentHeader`.
+This evidence uses accepted root notifications; rejected non-root
+advertisements and ordinary M-SEARCH messages do not justify the count.
+The agent output is in
+[`reachability-metadata.json`](../../../.cache/task-5-evidence/agent-config-fixround2-final4/reachability-metadata.json).
+
+The jUPnP binary contains no native-image metadata for these headers.
+The scanner's existing metadata format places one reflection entry per
+physical line, so the 21 agent-observed constructors add 21 maintained lines.
+Candidate total: 212 adapter lines + 5 moved lookup lines + 21 metadata
+entries = **238 lines, one more than the 237-line baseline**. The 9 ordinary
+fixture entries alone would not cover the candidate's accepted root-message
+inputs. The source-line gate therefore still rejects adoption; it does not
+depend on an assumed 16-core thread budget or a formatting-only line.
+
+JVM UDP/HTTP/expiry/shutdown fixtures passed, and the native-image agent
+fixture passed. The arm64 native binary build and native UDP/HTTP/expiry/
+shutdown execution are **NOT RUN**.
 Same-runtime jar and native bytes, startup, idle and scan-peak RSS,
 service memory, and threads are **NOT RUN**.
 Installed boot/soak checks under `64m`/`128M` limits are **NOT RUN**.
-They cannot change a failed line gate.
-Task 3's arm64 compilation does not establish Task 5 runtime or footprint.
+Task 3's arm64 compilation does not establish Task 5 native runtime or
+footprint.
 
 The release's CDDL-1.0 manifest and license were reviewed.
 Any future redistribution needs covered-source availability, a license copy,
