@@ -175,11 +175,14 @@ sealed interface SlicedApplicationState {
             try {
                 worker = open(value)
                 logger.info("Started worker for {}", value)
-                while (job.isActive && !Thread.currentThread().isInterrupted) {
+                while (job.isActive) {
+                    if (Thread.currentThread().isInterrupted) throw InterruptedException("Worker thread interrupted")
                     worker.process()
                 }
-            } catch (_: InterruptedException) {
-            } catch (_: CancellationException) {
+            } catch (workerFailure: InterruptedException) {
+                if (!job.isCancelled) failure = workerFailure
+            } catch (workerFailure: CancellationException) {
+                if (!job.isCancelled) failure = workerFailure
             } catch (workerFailure: Throwable) {
                 failure = workerFailure
             } finally {

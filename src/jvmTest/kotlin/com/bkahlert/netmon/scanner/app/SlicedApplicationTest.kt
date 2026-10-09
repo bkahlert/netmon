@@ -6,6 +6,7 @@ import io.kotest.matchers.collections.shouldBeEmpty
 import io.kotest.matchers.collections.shouldContainExactly
 import io.kotest.matchers.collections.shouldContainExactlyInAnyOrder
 import io.kotest.matchers.shouldBe
+import kotlinx.coroutines.CancellationException
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.StandardWatchEventKinds.ENTRY_MODIFY
@@ -162,6 +163,41 @@ class SlicedApplicationTest {
     @Test
     fun processing_failure_closes_the_worker() {
         assertFailure { worker(process = { throw IllegalStateException("process") }) }
+    }
+
+    @Test
+    fun active_factory_cancellation_ends_the_application() {
+        assertFailure(expectedCloses = 0) { throw CancellationException("open") }
+    }
+
+    @Test
+    fun active_processing_cancellation_closes_the_worker() {
+        assertFailure { worker(process = { throw CancellationException("process") }) }
+    }
+
+    @Test
+    fun close_failure_on_active_processing_cancellation_is_suppressed() {
+        val processingFailure = CancellationException("process")
+        val closeFailure = IllegalStateException("close")
+        assertFailure {
+            worker(process = { throw processingFailure }, close = { throw closeFailure })
+        }
+        processingFailure.suppressed.toList() shouldContainExactly listOf(closeFailure)
+    }
+
+    @Test
+    fun active_factory_interruption_ends_the_application() {
+        assertFailure(expectedCloses = 0) { throw InterruptedException("open") }
+    }
+
+    @Test
+    fun active_processing_interruption_closes_the_worker() {
+        assertFailure { worker(process = { throw InterruptedException("process") }) }
+    }
+
+    @Test
+    fun active_processing_interrupt_flag_ends_the_application() {
+        assertFailure { worker(process = { Thread.currentThread().interrupt() }) }
     }
 
     @Test
@@ -329,6 +365,59 @@ class SlicedApplicationTest {
     }
 
     @Test
+    fun cancelled_factory_cancellation_is_not_a_failure() {
+        val opening = CountDownLatch(1)
+        val application = SlicedApplication(slice = { listOf("lan") }) {
+            opening.countDown()
+            try {
+                CountDownLatch(1).await()
+                error("Factory must be interrupted")
+            } catch (_: InterruptedException) {
+                throw CancellationException("cancelled open")
+            }
+        }
+        application.start()
+        val result = try {
+            opening.awaitSignal()
+            application.terminate()
+        } finally {
+            application.terminate()
+        }
+        result.failed.shouldBeEmpty()
+    }
+
+    @Test
+    fun cancelled_processing_cancellation_closes_once_without_failure() {
+        val processing = CountDownLatch(1)
+        val events = Collections.synchronizedList(mutableListOf<Pair<String, Thread>>())
+        val application = SlicedApplication(slice = { listOf("lan") }) {
+            events += "open" to Thread.currentThread()
+            worker(
+                process = {
+                    events += "process" to Thread.currentThread()
+                    processing.countDown()
+                    try {
+                        CountDownLatch(1).await()
+                    } catch (_: InterruptedException) {
+                        throw CancellationException("cancelled process")
+                    }
+                },
+                close = { events += "close" to Thread.currentThread() },
+            )
+        }
+        application.start()
+        val result = try {
+            processing.awaitSignal()
+            application.terminate()
+        } finally {
+            application.terminate()
+        }
+        result.failed.shouldBeEmpty()
+        events.map { it.first } shouldContainExactly listOf("open", "process", "close")
+        events.map { it.second }.distinct().size shouldBe 1
+    }
+
+    @Test
     fun termination_waits_for_noninterruptible_work() {
         val processing = CountDownLatch(1)
         val interrupted = CountDownLatch(1)
@@ -427,11 +516,20 @@ private fun assertFailure(expectedCloses: Int = 1, openFailed: () -> SliceWorker
     val siblingProcessing = CountDownLatch(1)
     val siblingCloses = AtomicInteger()
     val failedCloses = AtomicInteger()
+    val failedEvents = Collections.synchronizedList(mutableListOf<Pair<String, Thread>>())
     val application = SlicedApplication(slice = { listOf("foo", "bar") }) { slice ->
         if (slice == "bar") {
             siblingProcessing.await()
+            failedEvents += "open" to Thread.currentThread()
             val failed = openFailed()
-            worker(process = { failed.process() }, close = { failedCloses.incrementAndGet(); failed.close() })
+            worker(
+                process = { failedEvents += "process" to Thread.currentThread(); failed.process() },
+                close = {
+                    failedEvents += "close" to Thread.currentThread()
+                    failedCloses.incrementAndGet()
+                    failed.close()
+                },
+            )
         } else {
             worker(
                 process = { siblingProcessing.countDown(); CountDownLatch(1).await() },
@@ -447,6 +545,9 @@ private fun assertFailure(expectedCloses: Int = 1, openFailed: () -> SliceWorker
         snapshot.failed.shouldContainExactly("bar")
         siblingCloses.get() shouldBe 1
         failedCloses.get() shouldBe expectedCloses
+        failedEvents.map { it.first } shouldContainExactly
+            if (expectedCloses == 0) listOf("open") else listOf("open", "process", "close")
+        failedEvents.map { it.second }.distinct().size shouldBe 1
     } finally {
         application.terminate()
         waiter.join(SECONDS.toMillis(5))

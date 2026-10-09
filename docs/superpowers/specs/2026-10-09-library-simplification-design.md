@@ -62,7 +62,9 @@ across joins. Concurrent `start()` calls must not create duplicate workers.
 
 Run each worker's entire open/process/close lifetime inside `runInterruptible`
 on `Dispatchers.IO`. This retains the existing same-thread factory/process/close
-contract. Cancellation is not a slice failure. Factory, processing, and cleanup
+contract. Owned-job cancellation is not a slice failure.
+Cancellation or interruption thrown by an active worker is a worker failure.
+Factory, processing, and cleanup
 failures remain logged and recorded; cleanup failure is suppressed onto an
 existing processing failure. Cleanup must execute exactly once after cancellation.
 Reconciliation must join and close a removed worker before reopening that slice.
@@ -200,9 +202,10 @@ That map is not a blocker under shared serialization:
 
 - [RouterImpl.java][task5-router], lines 253–265, runs every receiving
   protocol on the configured remote-listener executor.
-- Each session uses a one-thread remote-listener executor.
-  Its tasks hold one process-wide fair lock.
-- The async-protocol executor runs retrievals inline on that thread.
+- Each session shares one single-thread executor between its remote-listener
+  and async-protocol work. It has a bounded queue of 64 tasks and `DiscardPolicy`.
+- Retrievals are queued, not run inline. Each receiving or retrieval task
+  holds one process-wide fair lock while it runs.
 - Receipt and retrieval therefore never overlap across sessions.
   The map is empty whenever a receiving protocol checks it.
   Neither drop branch can fire, so no retry or cross-session delivery is needed.
