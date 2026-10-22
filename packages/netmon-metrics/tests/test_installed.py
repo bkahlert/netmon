@@ -55,13 +55,19 @@ class TestMessage:
         assert "isMonotonic" not in limit["sum"]
         assert resource["schemaUrl"] == "https://opentelemetry.io/schemas/1.43.0"
 
-    def test_holds_the_scanner_unit_with_its_state_from_systemd(self, host, mosquitto_clients):
-        request = latest(host, lambda r: unit(r, "netmon-scanner.service") is not None)
+    def test_holds_the_scanner_unit_with_its_state_from_systemd(self, host, mosquitto_clients, pytestconfig):
+        sampled_after = float(host.check_output("date +%s.%N"))
+        request = latest(host, lambda r: at(r) > sampled_after and unit(r, "netmon-scanner.service") is not None)
 
         scanner = unit(request, "netmon-scanner.service")
         states = {p["attributes"][0]["value"]["stringValue"]: p["asInt"] for p in metric(scanner, "systemd.unit.state")["gauge"]["dataPoints"]}
-        assert states["active"] == "1"
-        assert "systemd.unit.memory.usage" in names(scanner)
+        assert at(request) > sampled_after
+        assert set(states.values()) <= {"0", "1"}
+        assert sum(int(value) for value in states.values()) == 1
+        # Podman's missing raw-socket capabilities make the scanner restart and remove its cgroup.
+        if pytestconfig.getoption("--target") != "podman":
+            assert states["active"] == "1"
+            assert "systemd.unit.memory.usage" in names(scanner)
 
     def test_holds_the_scanner_process(self, host, mosquitto_clients):
         request = latest(host, lambda r: by_attribute(r, "process.executable.name", "netmon-scanner") is not None)
