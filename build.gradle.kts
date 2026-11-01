@@ -7,8 +7,8 @@ import org.jetbrains.kotlin.gradle.targets.js.yarn.YarnPlugin
 import org.jetbrains.kotlin.gradle.targets.js.yarn.YarnRootExtension
 
 plugins {
-    kotlin("multiplatform") version "2.4.20"
-    kotlin("plugin.serialization") version "2.4.20"
+    kotlin("multiplatform") version "2.4.21"
+    kotlin("plugin.serialization") version "2.4.21"
     id("com.gradleup.shadow") version "9.6.1"
 }
 
@@ -55,10 +55,10 @@ kotlin {
     sourceSets {
         commonMain {
             dependencies {
-                implementation(project.dependencies.platform("org.jetbrains.kotlinx:kotlinx-coroutines-bom:1.11.0"))
+                implementation(project.dependencies.platform("org.jetbrains.kotlinx:kotlinx-coroutines-bom:1.12.0"))
                 implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core")
 
-                implementation(project.dependencies.platform("org.jetbrains.kotlinx:kotlinx-serialization-bom:1.11.0"))
+                implementation(project.dependencies.platform("org.jetbrains.kotlinx:kotlinx-serialization-bom:1.12.0"))
                 implementation("org.jetbrains.kotlinx:kotlinx-serialization-core")
                 implementation("org.jetbrains.kotlinx:kotlinx-serialization-json")
             }
@@ -67,7 +67,7 @@ kotlin {
             dependencies {
                 implementation(kotlin("test"))
 
-                implementation(project.dependencies.platform("io.kotest:kotest-bom:6.2.5"))
+                implementation(project.dependencies.platform("io.kotest:kotest-bom:6.2.6"))
                 implementation("io.kotest:kotest-common")
                 implementation("io.kotest:kotest-assertions-core")
                 implementation("io.kotest:kotest-assertions-table")
@@ -84,7 +84,7 @@ kotlin {
                 implementation("org.jetbrains.kotlinx:kotlinx-coroutines-slf4j")
 
                 implementation("org.eclipse.paho:org.eclipse.paho.client.mqttv3:1.2.5") { because("publish scans over MQTT 3; no transitive dependencies") }
-                implementation("org.jmdns:jmdns:3.6.3") { because("mDNS / Bonjour based hostname resolution") }
+                implementation("org.jmdns:jmdns:3.6.4") { because("mDNS / Bonjour based hostname resolution") }
             }
             languageSettings.optIn("kotlin.io.path.ExperimentalPathApi")
         }
